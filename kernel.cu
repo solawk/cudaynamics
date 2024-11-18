@@ -1,8 +1,12 @@
-﻿
+﻿// CUDA
+
 #include "cuda_runtime.h"
 #include "device_launch_parameters.h"
 
 #include <stdio.h>
+#include "imgui_main.h"
+
+// Includes end here
 
 cudaError_t addWithCuda(int *c, const int *a, const int *b, unsigned int size);
 
@@ -36,6 +40,8 @@ int main()
         fprintf(stderr, "cudaDeviceReset failed!");
         return 1;
     }
+
+    imgui_main(0, 0);
 
     return 0;
 }
