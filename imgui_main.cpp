@@ -302,10 +302,12 @@ int imgui_main(int, char**)
             ImGui::InputText("##Plot name input", plotNameBuffer, 64, ImGuiInputTextFlags_None);
             ImGui::PopItemWidth();
 
+            std::string variablexyz[] = { "x", "y", "z" };
+
             ImGui::PushItemWidth(150.0f);
             for (int sv = 0; sv < 3; sv++)
             {
-                ImGui::Text(("Variable " + std::to_string(sv+1)).c_str());
+                ImGui::Text(("Variable " + variablexyz[sv]).c_str());
                 ImGui::SameLine();
                 if (ImGui::BeginCombo(("##Plot builder var " + std::to_string(sv + 1)).c_str(), selectedPlotVars[sv] > -1 ? kernel::VAR_NAMES[selectedPlotVars[sv]] : "-"))
                 {
@@ -386,9 +388,10 @@ int imgui_main(int, char**)
                 memcpy(dataBuffer, computedVariation, variationSize * sizeof(float));
 
                 populateAxisBuffer((float*)axisBuffer, plotRangeSize / 10, plotRangeSize / 10, plotRangeSize / 10);
-                rotateOffsetBuffer((float*)axisBuffer, 6, plotWindows[w].pitch, plotWindows[w].yaw, 0, 0, 0);
+                rotateOffsetBuffer((float*)axisBuffer, 6, 0, 1, 2, plotWindows[w].pitch, plotWindows[w].yaw, 0, 0, 0);
 
-                if (computedData != nullptr) rotateOffsetBuffer((float*)dataBuffer, computedSteps + 1, plotWindows[w].pitch, plotWindows[w].yaw, plotWindows[w].xOffset, plotWindows[w].yOffset, plotWindows[w].zOffset);
+                if (computedData != nullptr) rotateOffsetBuffer((float*)dataBuffer, computedSteps + 1, 0, 1, 2,
+                    plotWindows[w].pitch, plotWindows[w].yaw, plotWindows[w].xOffset, plotWindows[w].yOffset, plotWindows[w].zOffset);
 
 
                 ImPlot::SetNextLineStyle(ImVec4(1.0f, 1.0f, 1.0f, 1.0f));

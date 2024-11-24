@@ -24,19 +24,19 @@ void populateAxisBuffer(float* buffer, float x, float y, float z)
 	buffer[17] = -z * 0.5f;
 }
 
-void rotateOffsetBuffer(float* buffer, int pointCount, float pitch, float yaw, float xo, float yo, float zo)
+void rotateOffsetBuffer(float* buffer, int pointCount, int xdo, int ydo, int zdo, float pitch, float yaw, float xo, float yo, float zo)
 {
 	float x, y, z, zt;
 
 	for (int i = 0; i < pointCount; i++)
 	{
-		x = ((float*)buffer)[i * 3 + 0] + xo;
-		y = ((float*)buffer)[i * 3 + 1] + yo;
-		z = ((float*)buffer)[i * 3 + 2] + zo;
+		x = ((float*)buffer)[i * 3 + xdo] + xo;
+		y = ((float*)buffer)[i * 3 + ydo] + yo;
+		z = ((float*)buffer)[i * 3 + zdo] + zo;
 
-		((float*)buffer)[i * 3 + 1] = y * cosf(-pitch * DEG2RAD) - z * sinf(-pitch * DEG2RAD);
-		((float*)buffer)[i * 3 + 2] = zt = y * sinf(-pitch * DEG2RAD) + z * cosf(-pitch * DEG2RAD);
+		((float*)buffer)[i * 3 + ydo] = y * cosf(-pitch * DEG2RAD) - z * sinf(-pitch * DEG2RAD);
+		((float*)buffer)[i * 3 + zdo] = zt = y * sinf(-pitch * DEG2RAD) + z * cosf(-pitch * DEG2RAD);
 
-		((float*)buffer)[i * 3 + 0] = x * cosf(yaw * DEG2RAD) + zt * sinf(yaw * DEG2RAD);
+		((float*)buffer)[i * 3 + xdo] = x * cosf(yaw * DEG2RAD) + zt * sinf(yaw * DEG2RAD);
 	}
 }
