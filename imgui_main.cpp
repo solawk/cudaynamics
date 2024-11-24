@@ -1,5 +1,12 @@
 #include "imgui_main.h"
+#include "implot/implot.h"
 #include <tchar.h>
+#include <stdio.h>
+#include <string>
+#include <objects.h>
+#include <vector>
+#include <implot_internal.h>
+#include "imgui_utils.h"
 
 // Data
 static ID3D11Device* g_pd3dDevice = nullptr;
@@ -9,9 +16,6 @@ static bool                     g_SwapChainOccluded = false;
 static UINT                     g_ResizeWidth = 0, g_ResizeHeight = 0;
 static ID3D11RenderTargetView* g_mainRenderTargetView = nullptr;
 
-// Forward declarations of helper functions
-
-
 // Main code
 int imgui_main(int, char**)
 {
@@ -19,7 +23,7 @@ int imgui_main(int, char**)
     //ImGui_ImplWin32_EnableDpiAwareness();
     WNDCLASSEXW wc = { sizeof(wc), CS_CLASSDC, WndProc, 0L, 0L, GetModuleHandle(nullptr), nullptr, nullptr, nullptr, nullptr, L"ImGui Example", nullptr };
     ::RegisterClassExW(&wc);
-    HWND hwnd = ::CreateWindowW(wc.lpszClassName, L"Dear ImGui DirectX11 Example", WS_OVERLAPPEDWINDOW, 100, 100, 50, 50, nullptr, nullptr, wc.hInstance, nullptr);
+    HWND hwnd = ::CreateWindowW(wc.lpszClassName, L"Dear ImGui DirectX11 Example", WS_OVERLAPPEDWINDOW, 100, 100, 300, 50, nullptr, nullptr, wc.hInstance, nullptr);
 
     // Initialize Direct3D
     if (!CreateDeviceD3D(hwnd))
@@ -30,12 +34,14 @@ int imgui_main(int, char**)
     }
 
     // Show the window
-    ::ShowWindow(hwnd, SW_HIDE);
+    ::ShowWindow(hwnd, SW_SHOWDEFAULT);
+    //::ShowWindow(hwnd, SW_HIDE);
     ::UpdateWindow(hwnd);
 
     // Setup Dear ImGui context
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
+    ImPlot::CreateContext();
     ImGuiIO& io = ImGui::GetIO(); (void)io;
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
@@ -74,7 +80,7 @@ int imgui_main(int, char**)
     // - Read 'docs/FONTS.md' for more instructions and details.
     // - Remember that in C/C++ if you want to include a backslash \ in a string literal you need to write a double backslash \\ !
     //io.Fonts->AddFontDefault();
-    io.Fonts->AddFontFromFileTTF("c:\\Windows\\Fonts\\segoeui.ttf", 24.0f);
+    io.Fonts->AddFontFromFileTTF("C:\\Users\\Alexander\\AppData\\Local\\Microsoft\\Windows\\Fonts\\UbuntuMono-R.ttf", 24.0f);
     //io.Fonts->AddFontFromFileTTF("../../misc/fonts/DroidSans.ttf", 16.0f);
     //io.Fonts->AddFontFromFileTTF("../../misc/fonts/Roboto-Medium.ttf", 16.0f);
     //io.Fonts->AddFontFromFileTTF("../../misc/fonts/Cousine-Regular.ttf", 15.0f);
@@ -82,12 +88,41 @@ int imgui_main(int, char**)
     //IM_ASSERT(font != nullptr);
 
     // Our state
-    bool show_demo_window = false;
-    bool show_another_window = false;
     ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
+
+    int uniqueIds = 0;
+
+    void* computedData = nullptr;
+    void* dataBuffer = nullptr;
+    void* axisBuffer = new float[3 * 6] {}; // 3 axis, 6 points;
+    int computedSteps = 0;
+    bool autofitAfterComputing = false;
+    bool showComputedPlot = false; // TEMP
+    PostRanging rangingData;
+    if (kernel::executeOnLaunch)
+    {
+        if (computedData) delete[] (float*)computedData;
+        compute(&computedData, &rangingData);
+        showComputedPlot = true;
+        computedSteps = kernel::steps;
+        if (dataBuffer) delete[] dataBuffer;
+        dataBuffer = new float[(computedSteps + 1) * kernel::VAR_COUNT];
+    }
+
+    float DEG2RAD = 3.141592f / 180.0f;
 
     // Main loop
     bool work = true;
+
+    std::vector<PlotWindow> plotWindows;
+    char* plotNameBuffer = new char[64]();
+    strcpy(plotNameBuffer, "Plot");
+
+    int selectedPlotVars[3]; selectedPlotVars[0] = 0; for (int i = 1; i < 3; i++) selectedPlotVars[i] = -1;
+
+    int variation = 0;
+    int stride = 1;
+
     while (work)
     {
         // Poll and handle messages (inputs, window resize, etc.)
@@ -125,43 +160,254 @@ int imgui_main(int, char**)
         ImGui_ImplWin32_NewFrame();
         ImGui::NewFrame();
 
-        // 1. Show the big demo window (Most of the sample code is in ImGui::ShowDemoWindow()! You can browse its code to learn more about Dear ImGui!).
-        if (show_demo_window)
-            ImGui::ShowDemoWindow(&show_demo_window);
-
-        // 2. Show a simple window that we create ourselves. We use a Begin/End pair to create a named window.
+        // MAIN WINDOW
         {
-            static float f = 0.0f;
-            static int counter = 0;
+            style.WindowMenuButtonPosition = ImGuiDir_Left;
+            ImGui::Begin("CUDAynamics", &work);
+            ImGui::Text(kernel::name);
 
-            ImGui::Begin("Hello, world!", &work);
+            // Parameters & Variables
 
-            ImGui::Text("This is some useful text.");               // Display some text (you can use a format strings too)
-            ImGui::Checkbox("Demo Window", &show_demo_window);      // Edit bools storing our window open/close state
-            ImGui::Checkbox("Another Window", &show_another_window);
+            char* NAME_PADDED;
+            int maxNameLength = 0;
 
-            ImGui::SliderFloat("float", &f, 0.0f, 1.0f);            // Edit 1 float using a slider from 0.0f to 1.0f
-            ImGui::ColorEdit3("clear color", (float*)&clear_color); // Edit 3 floats representing a color
+            for (int i = 0; i < kernel::PARAM_COUNT; i++) if (strlen(kernel::PARAM_NAMES[i]) > maxNameLength) maxNameLength = (int)strlen(kernel::PARAM_NAMES[i]);
+            for (int i = 0; i < kernel::VAR_COUNT; i++) if (strlen(kernel::VAR_NAMES[i]) > maxNameLength) maxNameLength = (int)strlen(kernel::VAR_NAMES[i]);          
 
-            if (ImGui::Button("Button"))                            // Buttons return true when clicked (most widgets return true when edited/activated)
-                counter++;
-            ImGui::SameLine();
-            ImGui::Text("counter = %d", counter);
+            ImGui::SeparatorText("Variables");
+
+            for (int i = 0; i < kernel::VAR_COUNT; i++)
+            {
+                NAME_PADDED = new char[maxNameLength + 1];
+                strcpy(NAME_PADDED, kernel::VAR_NAMES[i]);
+                for (int j = (int)strlen(kernel::VAR_NAMES[i]); j < maxNameLength; j++)
+                    NAME_PADDED[j] = ' ';
+                NAME_PADDED[maxNameLength] = 0;
+
+                ImGui::Text(NAME_PADDED);
+                ImGui::SameLine();
+                ImGui::PushItemWidth(150.0f);
+                ImGui::InputFloat(("##" + std::string(kernel::VAR_NAMES[i])).c_str(), &(kernel::VAR_VALUES[i]), 0.0f, 0.0f, "%f");
+                ImGui::PopItemWidth();
+
+                ImGui::SameLine();
+                bool isRanging = kernel::VAR_RANGING[i];
+                if (ImGui::Checkbox(("##RANGING_" + std::string(kernel::VAR_NAMES[i])).c_str(), &(isRanging)))
+                {
+                    kernel::VAR_RANGING[i] = !kernel::VAR_RANGING[i];
+                }
+
+                if (kernel::VAR_RANGING[i])
+                {
+                    ImGui::SameLine();
+                    ImGui::PushItemWidth(150.0f);
+                    ImGui::InputFloat(("##STEP_" + std::string(kernel::VAR_NAMES[i])).c_str(), &(kernel::VAR_STEPS[i]), 0.0f, 0.0f, "%f");
+
+                    ImGui::SameLine();
+                    ImGui::InputFloat(("##MAX_" + std::string(kernel::VAR_NAMES[i])).c_str(), &(kernel::VAR_MAX[i]), 0.0f, 0.0f, "%f");
+                    ImGui::PopItemWidth();
+                }
+            }
+
+            ImGui::SeparatorText("Parameters");
+
+            for (int i = 0; i < kernel::PARAM_COUNT; i++)
+            {
+                NAME_PADDED = new char[maxNameLength + 1];
+                strcpy(NAME_PADDED, kernel::PARAM_NAMES[i]);
+                for (int j = (int)strlen(kernel::PARAM_NAMES[i]); j < maxNameLength; j++)
+                    NAME_PADDED[j] = ' ';
+                NAME_PADDED[maxNameLength] = 0;
+
+                ImGui::Text(NAME_PADDED);
+                ImGui::SameLine();
+                ImGui::PushItemWidth(150.0f);
+                ImGui::InputFloat(("##" + std::string(kernel::PARAM_NAMES[i])).c_str(), &(kernel::PARAM_VALUES[i]), 0.0f, 0.0f, "%f");
+                ImGui::PopItemWidth();
+
+                ImGui::SameLine();
+                bool isRanging = kernel::PARAM_RANGING[i];
+                if (ImGui::Checkbox(("##RANGING_" + std::string(kernel::PARAM_NAMES[i])).c_str(), &(isRanging)))
+                {
+                    kernel::PARAM_RANGING[i] = !kernel::PARAM_RANGING[i];
+                }
+
+                if (kernel::PARAM_RANGING[i])
+                {
+                    ImGui::SameLine();
+                    ImGui::PushItemWidth(150.0f);
+                    ImGui::InputFloat(("##STEP_" + std::string(kernel::PARAM_NAMES[i])).c_str(), &(kernel::PARAM_STEPS[i]), 0.0f, 0.0f, "%f");
+
+                    ImGui::SameLine();
+                    ImGui::InputFloat(("##MAX_" + std::string(kernel::PARAM_NAMES[i])).c_str(), &(kernel::PARAM_MAX[i]), 0.0f, 0.0f, "%f");
+                    ImGui::PopItemWidth();
+                }
+            }
+
+            // Modelling
+
+            ImGui::SeparatorText("Modelling");
+            ImGui::PushItemWidth(200.0f);
+            ImGui::InputInt("Steps", &(kernel::steps), 1, 1000);
+            ImGui::InputFloat("Step size", &(kernel::stepSize), 0.0f, 0.0f, "%f");
+            ImGui::PopItemWidth();
 
             ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
 
+            if (ImGui::Button("Compute"))
+            {
+                if (computedData) delete[] (float*)computedData;
+                compute(&computedData, &rangingData);
+                showComputedPlot = true;
+                computedSteps = kernel::steps;
+                if (dataBuffer) delete[] dataBuffer;
+                dataBuffer = new float[(computedSteps + 1) * kernel::VAR_COUNT];
+
+                autofitAfterComputing = true;
+            }
+
+            // Ranging
+
+            variation = 0;
+            stride = 1;
+
+            if (rangingData.rangingCount > 0)
+            {
+                ImGui::SeparatorText("Ranging");
+
+                for (int r = 0; r < rangingData.rangingCount; r++)
+                {
+                    float currentValue = rangingData.min[r] + rangingData.step[r] * rangingData.currentStep[r];
+                    rangingData.currentValue[r] = currentValue;
+
+                    ImGui::PushItemWidth(150.0f);
+                    ImGui::DragInt(("##" + rangingData.names[r] + "_ranging").c_str(), &(rangingData.currentStep[r]), 1.0f, 0, rangingData.stepCount[r]-1);
+                    ImGui::SameLine();
+                    ImGui::Text((rangingData.names[r] + " = " + std::to_string(currentValue)).c_str());
+                    ImGui::PopItemWidth();
+                }
+
+                for (int r = rangingData.rangingCount - 1; r >= 0; r--)
+                {
+                    variation += rangingData.currentStep[r] * stride;
+                    stride *= rangingData.stepCount[r];
+                }
+            }
+
+            // Graph Builder
+
+            ImGui::SeparatorText("Graph Builder");
+
+            ImGui::PushItemWidth(300.0f);
+            ImGui::InputText("##Plot name input", plotNameBuffer, 64, ImGuiInputTextFlags_None);
+            ImGui::PopItemWidth();
+
+            ImGui::PushItemWidth(150.0f);
+            for (int sv = 0; sv < 3; sv++)
+            {
+                ImGui::Text(("Variable " + std::to_string(sv+1)).c_str());
+                ImGui::SameLine();
+                if (ImGui::BeginCombo(("##Plot builder var " + std::to_string(sv + 1)).c_str(), selectedPlotVars[sv] > -1 ? kernel::VAR_NAMES[selectedPlotVars[sv]] : "-"))
+                {
+                    for (int v = (sv > 0 ? -1 : 0); v < kernel::VAR_COUNT; v++)
+                    {
+                        bool isSelected = selectedPlotVars[sv] == v;
+                        ImGuiSelectableFlags selectableFlags = 0;
+
+                        if (v == -1)
+                        {
+                            if (sv == 0 && (selectedPlotVars[1] > -1 || selectedPlotVars[2] > -1)) selectableFlags = ImGuiSelectableFlags_Disabled;
+                            if (sv == 1 && (selectedPlotVars[2] > -1)) selectableFlags = ImGuiSelectableFlags_Disabled;
+                            if (ImGui::Selectable("-", isSelected, selectableFlags)) selectedPlotVars[sv] = -1;
+                        }
+                        else
+                        {
+                            if (sv == 1 && selectedPlotVars[0] == -1) selectableFlags = ImGuiSelectableFlags_Disabled;
+                            if (sv == 2 && selectedPlotVars[1] == -1) selectableFlags = ImGuiSelectableFlags_Disabled;
+                            if (v == selectedPlotVars[(sv + 1) % 3] || v == selectedPlotVars[(sv + 2) % 3]) selectableFlags = ImGuiSelectableFlags_Disabled;
+                            if (ImGui::Selectable(v > -1 ? kernel::VAR_NAMES[v] : "-", isSelected, selectableFlags)) selectedPlotVars[sv] = v;
+                        }
+                    }
+                    ImGui::EndCombo();
+                }
+            }
+            ImGui::PopItemWidth();            
+
+            if (ImGui::Button("Create graph"))
+            {
+                plotWindows.push_back(PlotWindow(uniqueIds++, plotNameBuffer, true));
+            }
+
             ImGui::End();
         }
 
-        // 3. Show another simple window.
-        if (show_another_window)
+        // PLOT WINDOWS //
+
+        for (int w = 0; w < plotWindows.size(); w++)
         {
-            ImGui::Begin("Another Window", &show_another_window);   // Pass a pointer to our bool variable (the window will have a closing button that will clear the bool when clicked)
-            ImGui::Text("Hello from another window!");
-            if (ImGui::Button("Close Me"))
-                show_another_window = false;
+            PlotWindow* window = &(plotWindows[w]);
+            if (!window->active)
+            {
+                plotWindows.erase(plotWindows.begin() + w);
+                w--;
+                continue;
+            }
+
+            style.WindowMenuButtonPosition = ImGuiDir_None;
+            ImGui::Begin((window->name + std::to_string(window->id)).c_str(), &(window->active));
+
+            if (window->yaw >= 360.0f) window->yaw -= 360.0f;
+            if (window->yaw < 0.0f) window->yaw += 360.0f;
+
+            if (window->pitch > 90.0f) window->pitch = 90.0f;
+            if (window->pitch < -90.0f) window->pitch = -90.0f;
+
+            ImGui::DragFloat("Yaw", &(window->yaw), 1.0f);
+            ImGui::DragFloat("Pitch", &(window->pitch), 1.0f);
+
+            ImGui::DragFloat("x offset", &(window->xOffset), 1.0f);
+            ImGui::DragFloat("y offset", &(window->yOffset), 1.0f);
+            ImGui::DragFloat("z offset", &(window->zOffset), 1.0f);
+
+            ImPlotAxisFlags axisFlags = (autofitAfterComputing ? ImPlotAxisFlags_AutoFit : 0);
+            ImPlot::BeginPlot(window->name.c_str(), "", "", ImVec2(-1, -1), ImPlotFlags_NoLegend | ImPlotFlags_NoTitle, axisFlags, axisFlags);
+            ImPlotPlot* plot = ImPlot::GetPlot(window->name.c_str());
+
+            float plotRangeSize = (float)plot->Axes[ImAxis_X1].Range.Max - (float)plot->Axes[ImAxis_X1].Range.Min;
+
+            plot->is3d = true;
+            plot->deltax = &(window->yaw);
+            plot->deltay = &(window->pitch);
+
+            if (showComputedPlot)
+            {
+                int variationSize = kernel::VAR_COUNT * (computedSteps + 1);
+                void* computedVariation = (float*)computedData + (variationSize * variation);
+                memcpy(dataBuffer, computedVariation, variationSize * sizeof(float));
+
+                populateAxisBuffer((float*)axisBuffer, plotRangeSize / 10, plotRangeSize / 10, plotRangeSize / 10);
+                rotateOffsetBuffer((float*)axisBuffer, 6, plotWindows[w].pitch, plotWindows[w].yaw, 0, 0, 0);
+
+                if (computedData != nullptr) rotateOffsetBuffer((float*)dataBuffer, computedSteps + 1, plotWindows[w].pitch, plotWindows[w].yaw, plotWindows[w].xOffset, plotWindows[w].yOffset, plotWindows[w].zOffset);
+
+
+                ImPlot::SetNextLineStyle(ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
+                ImPlot::PlotLine(window->name.c_str(), &(((float*)dataBuffer)[0]), &(((float*)dataBuffer)[1]), computedSteps + 1, 0, 0, sizeof(float) * 3);
+
+                // Axis
+                ImPlot::SetNextLineStyle(ImVec4(1.0f, 0.0f, 0.0f, 1.0f));
+                ImPlot::PlotLine(window->name.c_str(), &(((float*)axisBuffer)[0]), &(((float*)axisBuffer)[1]), 2, 0, 0, sizeof(float) * 3);
+                ImPlot::SetNextLineStyle(ImVec4(0.0f, 1.0f, 0.0f, 1.0f));
+                ImPlot::PlotLine(window->name.c_str(), &(((float*)axisBuffer)[6]), &(((float*)axisBuffer)[7]), 2, 0, 0, sizeof(float) * 3);
+                ImPlot::SetNextLineStyle(ImVec4(0.0f, 0.0f, 1.0f, 1.0f));
+                ImPlot::PlotLine(window->name.c_str(), &(((float*)axisBuffer)[12]), &(((float*)axisBuffer)[13]), 2, 0, 0, sizeof(float) * 3);
+            }
+            ImPlot::EndPlot();
+
             ImGui::End();
         }
+
+        autofitAfterComputing = false;
 
         // Rendering
         ImGui::Render();
@@ -186,11 +432,16 @@ int imgui_main(int, char**)
     // Cleanup
     ImGui_ImplDX11_Shutdown();
     ImGui_ImplWin32_Shutdown();
+    ImPlot::DestroyContext();
     ImGui::DestroyContext();
 
     CleanupDeviceD3D();
     ::DestroyWindow(hwnd);
     ::UnregisterClassW(wc.lpszClassName, wc.hInstance);
+
+    if (computedData != nullptr) delete[] computedData;
+    if (dataBuffer != nullptr) delete[] dataBuffer;
+    if (axisBuffer != nullptr) delete[] axisBuffer;
 
     return 0;
 }
