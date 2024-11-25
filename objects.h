@@ -78,7 +78,8 @@ public:
 struct PostRanging
 {
 public:
-	int rangingCount;
+	int rangingCount;		// Amount of ranging variables/parameters
+	int totalVariations;	// Ranging var/param combinations count
 
 	vector<string> names;
 	vector<float> min;
@@ -93,11 +94,13 @@ public:
 	PostRanging()
 	{
 		rangingCount = 0;
+		totalVariations = 0;
 	}
 
 	void clear()
 	{
 		rangingCount = 0;
+		totalVariations = 0;
 
 		names.clear();
 		min.clear();

@@ -93,23 +93,28 @@ int imgui_main(int, char**)
     int uniqueIds = 0;
 
     void* computedData = nullptr;
-    void* dataBuffer = nullptr;
+    void* dataBuffer = nullptr; // One variation buffer
+    void* particleBuffer = nullptr; // One step buffer
     void* axisBuffer = new float[3 * 6] {}; // 3 axis, 6 points;
     int computedSteps = 0;
     bool autofitAfterComputing = false;
-    bool showComputedPlot = false; // TEMP
+    //bool showComputedPlot = false; // TEMP
     PostRanging rangingData;
     if (kernel::executeOnLaunch)
     {
         if (computedData) delete[] (float*)computedData;
         compute(&computedData, &rangingData);
-        showComputedPlot = true;
+        //showComputedPlot = true;
         computedSteps = kernel::steps;
         if (dataBuffer) delete[] dataBuffer;
         dataBuffer = new float[(computedSteps + 1) * kernel::VAR_COUNT];
     }
 
     float DEG2RAD = 3.141592f / 180.0f;
+    bool enabledParticles = false;
+    float particleSpeed = 100.0f; // Steps per second
+    float particlePhase = 0.0f;
+    int particleStep = 0;
 
     // Main loop
     bool work = true;
@@ -122,6 +127,7 @@ int imgui_main(int, char**)
 
     int variation = 0;
     int stride = 1;
+    float frameTime;
 
     while (work)
     {
@@ -251,17 +257,36 @@ int imgui_main(int, char**)
             ImGui::InputInt("Steps", &(kernel::steps), 1, 1000);
             ImGui::InputFloat("Step size", &(kernel::stepSize), 0.0f, 0.0f, "%f");
             ImGui::PopItemWidth();
+            
+            bool tempEnabledParticles = enabledParticles;
+            if (ImGui::Checkbox("Particles enabled", &(tempEnabledParticles)))
+            {
+                enabledParticles = !enabledParticles;
+            }
+            if (tempEnabledParticles)
+            {
+                ImGui::SameLine();
+                ImGui::PushItemWidth(200.0f);
+                ImGui::InputFloat("Animation speed", &(particleSpeed), 1.0f, 100.0f, "%f");
+                ImGui::PopItemWidth();
+                ImGui::DragInt("Animation step", &(particleStep), 1.0f, 0, computedSteps-1);
+            }
 
+            frameTime = 1.0f / io.Framerate;
             ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
 
-            if (ImGui::Button("Compute"))
+            if (ImGui::Button("= COMPUTE ="))
             {
                 if (computedData) delete[] (float*)computedData;
                 compute(&computedData, &rangingData);
-                showComputedPlot = true;
+                //showComputedPlot = true;
                 computedSteps = kernel::steps;
+
                 if (dataBuffer) delete[] dataBuffer;
                 dataBuffer = new float[(computedSteps + 1) * kernel::VAR_COUNT];
+
+                if (particleBuffer) delete[] particleBuffer;
+                particleBuffer = new float[rangingData.totalVariations * kernel::VAR_COUNT];
 
                 autofitAfterComputing = true;
             }
@@ -381,21 +406,40 @@ int imgui_main(int, char**)
             plot->deltax = &(window->yaw);
             plot->deltay = &(window->pitch);
 
-            if (showComputedPlot)
+            if (computedData != nullptr)
             {
                 int variationSize = kernel::VAR_COUNT * (computedSteps + 1);
-                void* computedVariation = (float*)computedData + (variationSize * variation);
-                memcpy(dataBuffer, computedVariation, variationSize * sizeof(float));
 
                 populateAxisBuffer((float*)axisBuffer, plotRangeSize / 10, plotRangeSize / 10, plotRangeSize / 10);
                 rotateOffsetBuffer((float*)axisBuffer, 6, 0, 1, 2, plotWindows[w].pitch, plotWindows[w].yaw, 0, 0, 0);
 
-                if (computedData != nullptr) rotateOffsetBuffer((float*)dataBuffer, computedSteps + 1, 0, 1, 2,
-                    plotWindows[w].pitch, plotWindows[w].yaw, plotWindows[w].xOffset, plotWindows[w].yOffset, plotWindows[w].zOffset);
+                if (!enabledParticles) // One variation, all steps
+                {
+                    void* computedVariation = (float*)computedData + (variationSize * variation);
+                    memcpy(dataBuffer, computedVariation, variationSize * sizeof(float));
 
+                    rotateOffsetBuffer((float*)dataBuffer, computedSteps + 1, 0, 1, 2,
+                        plotWindows[w].pitch, plotWindows[w].yaw, plotWindows[w].xOffset, plotWindows[w].yOffset, plotWindows[w].zOffset);
 
-                ImPlot::SetNextLineStyle(ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
-                ImPlot::PlotLine(window->name.c_str(), &(((float*)dataBuffer)[0]), &(((float*)dataBuffer)[1]), computedSteps + 1, 0, 0, sizeof(float) * 3);
+                    ImPlot::SetNextLineStyle(ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
+                    ImPlot::PlotLine(window->name.c_str(), &(((float*)dataBuffer)[0]), &(((float*)dataBuffer)[1]), computedSteps + 1, 0, 0, sizeof(float) * 3);
+                }
+                else // All variations, one certain step
+                {
+                    for (int v = 0; v < rangingData.totalVariations; v++)
+                    {
+                        ((float*)particleBuffer)[v * kernel::VAR_COUNT + 0] = ((float*)computedData)[(variationSize * v) + (kernel::VAR_COUNT * particleStep) + 0];
+                        ((float*)particleBuffer)[v * kernel::VAR_COUNT + 1] = ((float*)computedData)[(variationSize * v) + (kernel::VAR_COUNT * particleStep) + 1];
+                        ((float*)particleBuffer)[v * kernel::VAR_COUNT + 2] = ((float*)computedData)[(variationSize * v) + (kernel::VAR_COUNT * particleStep) + 2];
+                    }
+
+                    rotateOffsetBuffer((float*)particleBuffer, rangingData.totalVariations, 0, 1, 2,
+                        plotWindows[w].pitch, plotWindows[w].yaw, plotWindows[w].xOffset, plotWindows[w].yOffset, plotWindows[w].zOffset);
+
+                    ImPlot::SetNextLineStyle(ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
+                    ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle, 1.0f);
+                    ImPlot::PlotScatter(window->name.c_str(), &(((float*)particleBuffer)[0]), &(((float*)particleBuffer)[1]), rangingData.totalVariations, 0, 0, sizeof(float) * 3);
+                }
 
                 // Axis
                 ImPlot::SetNextLineStyle(ImVec4(1.0f, 0.0f, 0.0f, 1.0f));
@@ -444,6 +488,7 @@ int imgui_main(int, char**)
 
     if (computedData != nullptr) delete[] computedData;
     if (dataBuffer != nullptr) delete[] dataBuffer;
+    if (particleBuffer != nullptr) delete[] particleBuffer;
     if (axisBuffer != nullptr) delete[] axisBuffer;
 
     return 0;

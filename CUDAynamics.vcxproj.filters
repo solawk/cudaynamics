@@ -73,9 +73,6 @@
     </ClInclude>
     <ClInclude Include="imgui_main.h" />
     <ClInclude Include="main.h" />
-    <ClInclude Include="kernels\lorenzExample.h">
-      <Filter>kernels</Filter>
-    </ClInclude>
     <ClInclude Include="implot\implot.h">
       <Filter>implot</Filter>
     </ClInclude>
@@ -84,6 +81,9 @@
     </ClInclude>
     <ClInclude Include="objects.h" />
     <ClInclude Include="imgui_utils.h" />
+    <ClInclude Include="kernels\lorenzExample.h">
+      <Filter>kernels</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="kernels\lorenzExample.cu">

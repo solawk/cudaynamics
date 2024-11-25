@@ -129,9 +129,7 @@
     <ClInclude Include="objects.h" />
   </ItemGroup>
   <ItemGroup>
-    <CudaCompile Include="kernels\lorenzExample.cu">
-      <ExtensibleWholeProgramCompilation Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExtensibleWholeProgramCompilation>
-    </CudaCompile>
+    <CudaCompile Include="kernels\lorenzExample.cu" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

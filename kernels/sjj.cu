@@ -3,7 +3,7 @@
 #include <stdio.h>
 #include <fstream>
 
-#include "lorenzExample.h"
+#include "sjj.h"
 #include <objects.h>
 #include <chrono>
 
@@ -14,25 +14,24 @@
 
 namespace kernel
 {
-    const char* name = "Lorenz system";
+    const char* name = "Shunted Josephson Junction";
 
-    const char* VAR_NAMES[]{ "x", "y", "z" };
-    float VAR_VALUES[]{ 1.0f, 1.0f, 1.0f };
-    bool VAR_RANGING[]{ true, true, true };
-    float VAR_STEPS[]{ 1.0f, 1.0f, 1.0f };
-    float VAR_MAX[]{ 29.0f, 29.0f, 29.0f };
+    const char* VAR_NAMES[]{ "x1", "x2", "x3" };
+    float VAR_VALUES[]{ -0.31f, 3.3f, 0.76f };
+    bool VAR_RANGING[]{ false, false, false };
+    float VAR_STEPS[]{ 1.0f, 3.0f, 0.0f };
+    float VAR_MAX[]{ 31.0f, 34.0f, 0.0f };
     int VAR_STEP_COUNTS[]{ 0, 0, 0 };
 
-    const char* PARAM_NAMES[]{ "sigma", "rho", "beta" };
-    float PARAM_VALUES[]{ 10.0f, 28.0f, (8.0f / 3.0f) };
-    bool PARAM_RANGING[]{ false, false, false };
-    float PARAM_STEPS[]{ 1.0f, 1.0f, 0.0f };
-    float PARAM_MAX[]{ 19.0f, 40.0f, 0.0f };
-    int PARAM_STEP_COUNTS[]{ 0, 0, 0 };
+    const char* PARAM_NAMES[]{ "betaL", "betaC", "i", "Vg/IcRs", "Rn", "Rsg" };
+    float PARAM_VALUES[]{ 29.215f, 0.707f, 1.25f, 6.9f, 0.367f, 0.0478f };
+    bool PARAM_RANGING[]{ false, false, false, false, false, false };
+    float PARAM_STEPS[]{ 1.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f };
+    float PARAM_MAX[]{ 19.0f, 40.0f, 0.0f, 0.0f, 0.0f, 0.0f };
+    int PARAM_STEP_COUNTS[]{ 0, 0, 0, 0, 0, 0 };
 
-    bool executeOnLaunch = false;
+    bool executeOnLaunch = true;
     int steps = 10000;
-    int bufferSteps = 10000;
     float stepSize = 0.01f;
     bool onlyShowLast = false;
 }
@@ -74,26 +73,33 @@ __global__ void kernelProgram(float* data, float* params, PreRanging* ranging, i
     }
 
     // Copying initial state to other variations
-    V(x) = V0(x);
-    V(y) = V0(y);
-    V(z) = V0(z);
+    V(x0) = V0(x0);
+    V(x1) = V0(x1);
+    V(x2) = V0(x2);
 
-    for (int i = 0; i < steps; i++)
+    for (int s = 0; s < steps; s++)
     {
-        stepStart = variationStart + i * NEXT;
+        stepStart = variationStart + s * NEXT;
 
-        float dx = P(sigma) * (V(y) - V(x));
-        float dy = V(x) * (P(rho) - V(z)) - V(y);
-        float dz = V(x) * V(y) - P(beta) * V(z);
+        // x[0] = x[0] + h*( x[1] );
+        // x[2] = x[2] + h * ((1 / p[0]) * (x[1] - x[2]));
+        // x[1] = x[1] + h * ((1 / p[1]) * (p[2] - ((x[1] > p[3]) ? p[4] : p[5]) * x[1] - sin(x[0]) - x[2]));
 
-        V(x + NEXT) = V(x) + h * dx;
-        V(y + NEXT) = V(y) + h * dy;
-        V(z + NEXT) = V(z) + h * dz;
+        V(x0 + NEXT) = V(x0) + h * V(x1);
+        V(x2 + NEXT) = V(x2) + h * (1.0f / P(p0)) * (V(x1) - V(x2));
+        V(x1 + NEXT) = V(x1) + h * (1.0f / P(p1)) *
+            (
+                P(p2)
+                - ((V(x1) > P(p3)) ? P(p4) : P(p5)) * V(x1)
+                - sinf(V(x0 + NEXT))
+                - V(x2 + NEXT)
+            );
     }
 
-    /*data[variationStart + 0] = b;
-    data[variationStart + 1] = t;
-    data[variationStart + 2] = variation;*/
+    for (int s = 0; s < steps + 1; s++)
+    {
+        data[s * NEXT + 0] = sinf(data[s * NEXT + 0]);
+    }
 }
 
 cudaError_t execute(float* data, int rangingCount, int variationSize, int variations, unsigned long int size)
@@ -230,7 +236,6 @@ int compute(void** dest, PostRanging* rangingData)
     }
     
     rangingData->rangingCount = rangingCount;
-    rangingData->totalVariations = variations;
     unsigned long int variationSize = kernel::VAR_COUNT * (kernel::steps + 1); // All steps for the current parameter/variable value combination
     unsigned long int size = variationSize * variations; // Entire data array size
     float* data = new float[size];
@@ -255,10 +260,10 @@ int compute(void** dest, PostRanging* rangingData)
 #define WRITE 0
 #if WRITE
     std::ofstream outputFile;
-    outputFile.open("lorentz.txt", std::ios::out);
+    outputFile.open("output.txt", std::ios::out);
     for (unsigned long int i = 0; i < size / 3; i++)
     {
-        outputFile << data[3 * i + kernel::x] << " " << data[3 * i + kernel::y] << " " << data[3 * i + kernel::z] << std::endl;
+        outputFile << data[3 * i + kernel::x0] << " " << data[3 * i + kernel::x1] << " " << data[3 * i + kernel::x2] << std::endl;
     }
 #endif
 
