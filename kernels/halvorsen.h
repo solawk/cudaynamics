@@ -12,7 +12,7 @@ namespace kernel
 	extern float VAR_MAX[];
 	extern int VAR_STEP_COUNTS[];
 
-	enum PARAMETERS { sigma, rho, beta, PARAM_COUNT };
+	enum PARAMETERS { alpha, PARAM_COUNT };
 	extern const char* PARAM_NAMES[];
 	extern float PARAM_VALUES[];
 	extern bool PARAM_RANGING[];

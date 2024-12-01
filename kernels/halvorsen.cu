@@ -3,7 +3,7 @@
 #include <stdio.h>
 #include <fstream>
 
-#include "lorenzExample.h"
+#include "halvorsen.h"
 #include <objects.h>
 #include <chrono>
 #include <wtypes.h>
@@ -15,21 +15,21 @@
 
 namespace kernel
 {
-    const char* name = "Lorenz system";
+    const char* name = "Halvorsen";
 
     const char* VAR_NAMES[]{ "x", "y", "z" };
-    float VAR_VALUES[]{ 1.0f, 1.0f, 1.0f };
+    float VAR_VALUES[]{ -1.48f, -1.51f, 2.04f };
     bool VAR_RANGING[]{ true, true, true };
     float VAR_STEPS[]{ 2.0f, 2.0f, 2.0f };
     float VAR_MAX[]{ 29.0f, 29.0f, 29.0f };
     int VAR_STEP_COUNTS[]{ 0, 0, 0 };
 
-    const char* PARAM_NAMES[]{ "sigma", "rho", "beta" };
-    float PARAM_VALUES[]{ 10.0f, 28.0f, (8.0f / 3.0f) };
-    bool PARAM_RANGING[]{ false, false, false };
-    float PARAM_STEPS[]{ 1.0f, 1.0f, 0.0f };
-    float PARAM_MAX[]{ 19.0f, 40.0f, 0.0f };
-    int PARAM_STEP_COUNTS[]{ 0, 0, 0 };
+    const char* PARAM_NAMES[]{ "alpha" };
+    float PARAM_VALUES[]{ 1.89f };
+    bool PARAM_RANGING[]{ false };
+    float PARAM_STEPS[]{ 1.0f };
+    float PARAM_MAX[]{ 19.0f };
+    int PARAM_STEP_COUNTS[]{ 0 };
 
     bool executeOnLaunch = true;
     int steps = 1000;
@@ -82,9 +82,9 @@ __global__ void kernelProgram(float* data, float* params, PreRanging* ranging, i
     {
         stepStart = variationStart + i * NEXT;
 
-        float dx = P(sigma) * (V(y) - V(x));
-        float dy = V(x) * (P(rho) - V(z)) - V(y);
-        float dz = V(x) * V(y) - P(beta) * V(z);
+        float dx = -P(alpha)*V(x) - 4*V(y) - 4*V(z) - V(y)*V(y);
+        float dy = -P(alpha)*V(y) - 4*V(z) - 4*V(x) - V(z)*V(z);
+        float dz = -P(alpha)*V(z) - 4*V(x) - 4*V(y) - V(x)*V(x);
 
         V(x + NEXT) = V(x) + h * dx;
         V(y + NEXT) = V(y) + h * dy;

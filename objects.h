@@ -14,7 +14,7 @@ public:
 	string name; // Name of the window
 	string plotName; // Name of the plot, generated from variable names
 	PlotType type;
-	int variables; // Bit mask of variable indeces (up to 32 variables per graph)
+	vector<int> variables;
 
 	// Plot rotation
 	bool is3d;

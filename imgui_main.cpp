@@ -7,6 +7,7 @@
 #include <vector>
 #include <implot_internal.h>
 #include "imgui_utils.h"
+#include <future>
 
 // Data
 static ID3D11Device* g_pd3dDevice = nullptr;
@@ -16,14 +17,72 @@ static bool                     g_SwapChainOccluded = false;
 static UINT                     g_ResizeWidth = 0, g_ResizeHeight = 0;
 static ID3D11RenderTargetView* g_mainRenderTargetView = nullptr;
 
+int uniqueIds = 0; // Unique window IDs
+
+void* computedData[2] = { nullptr, nullptr }; // For double buffering the computations, aren't null when computed
+HANDLE computationWriteSemaphore; // Semaphore to write computations to the buffer
+int playedBufferIndex = 0; // Buffer currently shown
+int bufferToFillIndex = 0; // Buffer to send computations to
+/* pB btF
+*  0   0   Start, computation is triggered for buffer 0 and switches btF
+*  0   1   Buffer 0 is played, meanwhile buffer 1 gets filled. Playing through the buffer 0 switches pB and triggers computation for buffer 0
+*  1   0   Buffer 1 is played, meanwhile buffer 0 gets filled...
+* */
+
+void* dataBuffer = nullptr; // One variation buffer
+void* particleBuffer = nullptr; // One step buffer
+void* axisBuffer = new float[3 * 6] {}; // 3 axis, 6 points;
+int computedSteps = 0;
+bool autofitAfterComputing = false; // Temporary flag to autofit computed data
+PostRanging rangingData;
+bool executedOnLaunch = false; // Temporary flag to execute computations on launch if needed
+
+float DEG2RAD = 3.141592f / 180.0f; // Multiplier for degrees to convert to radians
+bool enabledParticles = false; // Particles mode
+bool playingParticles = false; // Playing animation
+float particleSpeed = 200.0f; // Steps per second
+float particlePhase = 0.0f; // Animation frame cooldown
+int particleStep = 0; // Current step of the computations to show
+bool continuousComputingEnabled = false; // Continuously compute next batch of steps via double buffering
+
+// Marker settings
+bool markerSettingsWindowEnabled = true;
+float markerSize = 1.0f;
+ImVec4 markerColor = ImVec4(1.0f, 1.0f, 1.0f, 0.5f);
+
+// Temporary variables
+int variation = 0;
+int stride = 1;
+float frameTime; // In seconds
+
+void computing()
+{
+    if (computedData[bufferToFillIndex]) delete[](float*)computedData[bufferToFillIndex];
+
+    std::future<int> computationFuture = std::async(compute, &(computedData[bufferToFillIndex]), &rangingData, &computationWriteSemaphore);
+    computationFuture.wait(); 
+    //compute(&(computedData[bufferToFillIndex]), &rangingData);
+
+    computedSteps = kernel::steps;
+
+    if (dataBuffer) delete[] dataBuffer;
+    dataBuffer = new float[(computedSteps + 1) * kernel::VAR_COUNT];
+
+    if (particleBuffer) delete[] particleBuffer;
+    particleBuffer = new float[rangingData.totalVariations * kernel::VAR_COUNT];
+
+    autofitAfterComputing = true;
+    executedOnLaunch = true;
+}
+
 // Main code
 int imgui_main(int, char**)
 {
     // Create application window
-    //ImGui_ImplWin32_EnableDpiAwareness();
-    WNDCLASSEXW wc = { sizeof(wc), CS_CLASSDC, WndProc, 0L, 0L, GetModuleHandle(nullptr), nullptr, nullptr, nullptr, nullptr, L"ImGui Example", nullptr };
+    ImGui_ImplWin32_EnableDpiAwareness();
+    WNDCLASSEXW wc = { sizeof(wc), CS_CLASSDC, WndProc, 0L, 0L, GetModuleHandle(nullptr), nullptr, nullptr, nullptr, nullptr, L"CUDAynamics", nullptr };
     ::RegisterClassExW(&wc);
-    HWND hwnd = ::CreateWindowW(wc.lpszClassName, L"Dear ImGui DirectX11 Example", WS_OVERLAPPEDWINDOW, 100, 100, 300, 50, nullptr, nullptr, wc.hInstance, nullptr);
+    HWND hwnd = ::CreateWindowW(wc.lpszClassName, L"CUDAynamics", WS_OVERLAPPEDWINDOW, 100, 100, 400, 50, nullptr, nullptr, wc.hInstance, nullptr);
 
     // Initialize Direct3D
     if (!CreateDeviceD3D(hwnd))
@@ -71,14 +130,6 @@ int imgui_main(int, char**)
     ImGui_ImplWin32_Init(hwnd);
     ImGui_ImplDX11_Init(g_pd3dDevice, g_pd3dDeviceContext);
 
-    // Load Fonts
-    // - If no fonts are loaded, dear imgui will use the default font. You can also load multiple fonts and use ImGui::PushFont()/PopFont() to select them.
-    // - AddFontFromFileTTF() will return the ImFont* so you can store it if you need to select the font among multiple.
-    // - If the file cannot be loaded, the function will return a nullptr. Please handle those errors in your application (e.g. use an assertion, or display an error and quit).
-    // - The fonts will be rasterized at a given size (w/ oversampling) and stored into a texture when calling ImFontAtlas::Build()/GetTexDataAsXXXX(), which ImGui_ImplXXXX_NewFrame below will call.
-    // - Use '#define IMGUI_ENABLE_FREETYPE' in your imconfig file to use Freetype for higher quality font rendering.
-    // - Read 'docs/FONTS.md' for more instructions and details.
-    // - Remember that in C/C++ if you want to include a backslash \ in a string literal you need to write a double backslash \\ !
     //io.Fonts->AddFontDefault();
     io.Fonts->AddFontFromFileTTF("C:\\Users\\Alexander\\AppData\\Local\\Microsoft\\Windows\\Fonts\\UbuntuMono-R.ttf", 24.0f);
     //io.Fonts->AddFontFromFileTTF("../../misc/fonts/DroidSans.ttf", 16.0f);
@@ -87,47 +138,14 @@ int imgui_main(int, char**)
     //ImFont* font = io.Fonts->AddFontFromFileTTF("c:\\Windows\\Fonts\\ArialUni.ttf", 18.0f, nullptr, io.Fonts->GetGlyphRangesJapanese());
     //IM_ASSERT(font != nullptr);
 
-    // Our state
-    ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
-
-    int uniqueIds = 0;
-
-    void* computedData = nullptr;
-    void* dataBuffer = nullptr; // One variation buffer
-    void* particleBuffer = nullptr; // One step buffer
-    void* axisBuffer = new float[3 * 6] {}; // 3 axis, 6 points;
-    int computedSteps = 0;
-    bool autofitAfterComputing = false;
-    //bool showComputedPlot = false; // TEMP
-    PostRanging rangingData;
-    if (kernel::executeOnLaunch)
-    {
-        if (computedData) delete[] (float*)computedData;
-        compute(&computedData, &rangingData);
-        //showComputedPlot = true;
-        computedSteps = kernel::steps;
-        if (dataBuffer) delete[] dataBuffer;
-        dataBuffer = new float[(computedSteps + 1) * kernel::VAR_COUNT];
-    }
-
-    float DEG2RAD = 3.141592f / 180.0f;
-    bool enabledParticles = false;
-    float particleSpeed = 100.0f; // Steps per second
-    float particlePhase = 0.0f;
-    int particleStep = 0;
-
     // Main loop
     bool work = true;
 
     std::vector<PlotWindow> plotWindows;
     char* plotNameBuffer = new char[64]();
-    strcpy(plotNameBuffer, "Plot");
+    strcpy_s(plotNameBuffer, 5, "Plot");
 
     int selectedPlotVars[3]; selectedPlotVars[0] = 0; for (int i = 1; i < 3; i++) selectedPlotVars[i] = -1;
-
-    int variation = 0;
-    int stride = 1;
-    float frameTime;
 
     while (work)
     {
@@ -174,7 +192,7 @@ int imgui_main(int, char**)
 
             // Parameters & Variables
 
-            char* NAME_PADDED;
+            string namePadded;
             int maxNameLength = 0;
 
             for (int i = 0; i < kernel::PARAM_COUNT; i++) if (strlen(kernel::PARAM_NAMES[i]) > maxNameLength) maxNameLength = (int)strlen(kernel::PARAM_NAMES[i]);
@@ -184,13 +202,11 @@ int imgui_main(int, char**)
 
             for (int i = 0; i < kernel::VAR_COUNT; i++)
             {
-                NAME_PADDED = new char[maxNameLength + 1];
-                strcpy(NAME_PADDED, kernel::VAR_NAMES[i]);
+                namePadded = kernel::VAR_NAMES[i];
                 for (int j = (int)strlen(kernel::VAR_NAMES[i]); j < maxNameLength; j++)
-                    NAME_PADDED[j] = ' ';
-                NAME_PADDED[maxNameLength] = 0;
+                    namePadded += ' ';
 
-                ImGui::Text(NAME_PADDED);
+                ImGui::Text(namePadded.c_str());
                 ImGui::SameLine();
                 ImGui::PushItemWidth(150.0f);
                 ImGui::InputFloat(("##" + std::string(kernel::VAR_NAMES[i])).c_str(), &(kernel::VAR_VALUES[i]), 0.0f, 0.0f, "%f");
@@ -219,13 +235,11 @@ int imgui_main(int, char**)
 
             for (int i = 0; i < kernel::PARAM_COUNT; i++)
             {
-                NAME_PADDED = new char[maxNameLength + 1];
-                strcpy(NAME_PADDED, kernel::PARAM_NAMES[i]);
+                namePadded = kernel::PARAM_NAMES[i];
                 for (int j = (int)strlen(kernel::PARAM_NAMES[i]); j < maxNameLength; j++)
-                    NAME_PADDED[j] = ' ';
-                NAME_PADDED[maxNameLength] = 0;
+                    namePadded += ' ';
 
-                ImGui::Text(NAME_PADDED);
+                ImGui::Text(namePadded.c_str());
                 ImGui::SameLine();
                 ImGui::PushItemWidth(150.0f);
                 ImGui::InputFloat(("##" + std::string(kernel::PARAM_NAMES[i])).c_str(), &(kernel::PARAM_VALUES[i]), 0.0f, 0.0f, "%f");
@@ -263,32 +277,56 @@ int imgui_main(int, char**)
             {
                 enabledParticles = !enabledParticles;
             }
+
             if (tempEnabledParticles)
             {
                 ImGui::SameLine();
                 ImGui::PushItemWidth(200.0f);
                 ImGui::InputFloat("Animation speed", &(particleSpeed), 1.0f, 100.0f, "%f");
                 ImGui::PopItemWidth();
-                ImGui::DragInt("Animation step", &(particleStep), 1.0f, 0, computedSteps-1);
+                ImGui::DragInt("Animation step", &(particleStep), 1.0f, 0, kernel::steps);
+                bool tempPlayingParticles = playingParticles;
+                if (ImGui::Checkbox("Play", &(tempPlayingParticles)))
+                {
+                    playingParticles = !playingParticles;
+                }
+
+                bool tempMarkerSettings = markerSettingsWindowEnabled;
+                if (ImGui::Checkbox("Marker settings window", &(tempMarkerSettings)))
+                {
+                    markerSettingsWindowEnabled = !markerSettingsWindowEnabled;
+                }
             }
 
             frameTime = 1.0f / io.Framerate;
             ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
 
-            if (ImGui::Button("= COMPUTE ="))
+            if (playingParticles && enabledParticles)
             {
-                if (computedData) delete[] (float*)computedData;
-                compute(&computedData, &rangingData);
-                //showComputedPlot = true;
-                computedSteps = kernel::steps;
+                particlePhase += frameTime * particleSpeed;
+                int passedSteps = (int)floor(particlePhase);
+                particlePhase -= (float)passedSteps;
 
-                if (dataBuffer) delete[] dataBuffer;
-                dataBuffer = new float[(computedSteps + 1) * kernel::VAR_COUNT];
+                particleStep += passedSteps;
+                if (particleStep > kernel::steps) // Reached the end of animation
+                {
+                    if (continuousComputingEnabled)
+                    {
+                        // Starting from another buffer
 
-                if (particleBuffer) delete[] particleBuffer;
-                particleBuffer = new float[rangingData.totalVariations * kernel::VAR_COUNT];
+                    }
+                    else
+                    {
+                        // Stopping
+                        particleStep = kernel::steps;
+                        playingParticles = false;
+                    }                   
+                }
+            }
 
-                autofitAfterComputing = true;
+            if (ImGui::Button("= COMPUTE =") || (kernel::executeOnLaunch && !executedOnLaunch))
+            {
+                computing();
             }
 
             // Ranging
@@ -323,9 +361,9 @@ int imgui_main(int, char**)
 
             ImGui::SeparatorText("Graph Builder");
 
-            ImGui::PushItemWidth(300.0f);
-            ImGui::InputText("##Plot name input", plotNameBuffer, 64, ImGuiInputTextFlags_None);
-            ImGui::PopItemWidth();
+            //ImGui::PushItemWidth(300.0f);
+            //ImGui::InputText("##Plot name input", plotNameBuffer, 64, ImGuiInputTextFlags_None);
+            //ImGui::PopItemWidth();
 
             std::string variablexyz[] = { "x", "y", "z" };
 
@@ -368,6 +406,19 @@ int imgui_main(int, char**)
             ImGui::End();
         }
 
+        // MARKER SETTINGS WINDOW //
+
+        if (markerSettingsWindowEnabled)
+        {
+            ImGui::Begin("Marker settings", &markerSettingsWindowEnabled);
+
+            ImGui::DragFloat("Marker size", &markerSize, 0.1f);
+            if (markerSize < 0.0f) markerSize = 0.0f;
+            ImGui::ColorEdit4("Marker color", (float*)(&markerColor));
+
+            ImGui::End();
+        }
+
         // PLOT WINDOWS //
 
         for (int w = 0; w < plotWindows.size(); w++)
@@ -406,7 +457,7 @@ int imgui_main(int, char**)
             plot->deltax = &(window->yaw);
             plot->deltay = &(window->pitch);
 
-            if (computedData != nullptr)
+            if (computedData[0] != nullptr)
             {
                 int variationSize = kernel::VAR_COUNT * (computedSteps + 1);
 
@@ -415,7 +466,7 @@ int imgui_main(int, char**)
 
                 if (!enabledParticles) // One variation, all steps
                 {
-                    void* computedVariation = (float*)computedData + (variationSize * variation);
+                    void* computedVariation = (float*)(computedData[0]) + (variationSize * variation);
                     memcpy(dataBuffer, computedVariation, variationSize * sizeof(float));
 
                     rotateOffsetBuffer((float*)dataBuffer, computedSteps + 1, 0, 1, 2,
@@ -428,16 +479,17 @@ int imgui_main(int, char**)
                 {
                     for (int v = 0; v < rangingData.totalVariations; v++)
                     {
-                        ((float*)particleBuffer)[v * kernel::VAR_COUNT + 0] = ((float*)computedData)[(variationSize * v) + (kernel::VAR_COUNT * particleStep) + 0];
-                        ((float*)particleBuffer)[v * kernel::VAR_COUNT + 1] = ((float*)computedData)[(variationSize * v) + (kernel::VAR_COUNT * particleStep) + 1];
-                        ((float*)particleBuffer)[v * kernel::VAR_COUNT + 2] = ((float*)computedData)[(variationSize * v) + (kernel::VAR_COUNT * particleStep) + 2];
+                        for (int var = 0; var < 3; var++)
+                            ((float*)particleBuffer)[v * kernel::VAR_COUNT + var] = ((float*)(computedData[0]))[(variationSize * v) + (kernel::VAR_COUNT * particleStep) + var];
                     }
 
                     rotateOffsetBuffer((float*)particleBuffer, rangingData.totalVariations, 0, 1, 2,
                         plotWindows[w].pitch, plotWindows[w].yaw, plotWindows[w].xOffset, plotWindows[w].yOffset, plotWindows[w].zOffset);
 
-                    ImPlot::SetNextLineStyle(ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
-                    ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle, 1.0f);
+                    ImPlot::SetNextLineStyle(markerColor);
+                    ImPlot::PushStyleVar(ImPlotStyleVar_MarkerWeight, 0.0f);
+                    //ImPlot::PushStyleVar(ImPlotStyleVar_FillAlpha, 0.25f);
+                    ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle, markerSize);
                     ImPlot::PlotScatter(window->name.c_str(), &(((float*)particleBuffer)[0]), &(((float*)particleBuffer)[1]), rangingData.totalVariations, 0, 0, sizeof(float) * 3);
                 }
 
@@ -458,6 +510,7 @@ int imgui_main(int, char**)
 
         // Rendering
         ImGui::Render();
+        ImVec4 clear_color = ImVec4(1.0f, 1.0f, 1.0f, 1.00f);
         const float clear_color_with_alpha[4] = { clear_color.x * clear_color.w, clear_color.y * clear_color.w, clear_color.z * clear_color.w, clear_color.w };
         g_pd3dDeviceContext->OMSetRenderTargets(1, &g_mainRenderTargetView, nullptr);
         g_pd3dDeviceContext->ClearRenderTargetView(g_mainRenderTargetView, clear_color_with_alpha);
@@ -486,7 +539,8 @@ int imgui_main(int, char**)
     ::DestroyWindow(hwnd);
     ::UnregisterClassW(wc.lpszClassName, wc.hInstance);
 
-    if (computedData != nullptr) delete[] computedData;
+    if (computedData[0] != nullptr) delete[] computedData[0];
+    if (computedData[1] != nullptr) delete[] computedData[1];
     if (dataBuffer != nullptr) delete[] dataBuffer;
     if (particleBuffer != nullptr) delete[] particleBuffer;
     if (axisBuffer != nullptr) delete[] axisBuffer;

@@ -6,6 +6,7 @@
 #include "sjj.h"
 #include <objects.h>
 #include <chrono>
+#include <wtypes.h>
 
 #define V0(n) varValues[kernel::n]
 #define V(n) data[stepStart + kernel::n]
@@ -18,9 +19,9 @@ namespace kernel
 
     const char* VAR_NAMES[]{ "x1", "x2", "x3" };
     float VAR_VALUES[]{ -0.31f, 3.3f, 0.76f };
-    bool VAR_RANGING[]{ false, false, false };
-    float VAR_STEPS[]{ 1.0f, 3.0f, 0.0f };
-    float VAR_MAX[]{ 31.0f, 34.0f, 0.0f };
+    bool VAR_RANGING[]{ true, true, true };
+    float VAR_STEPS[]{ 0.1f, 0.1f, 0.1f };
+    float VAR_MAX[]{ -0.01f, 4.3f, 1.76f };
     int VAR_STEP_COUNTS[]{ 0, 0, 0 };
 
     const char* PARAM_NAMES[]{ "betaL", "betaC", "i", "Vg/IcRs", "Rn", "Rsg" };
@@ -98,7 +99,7 @@ __global__ void kernelProgram(float* data, float* params, PreRanging* ranging, i
 
     for (int s = 0; s < steps + 1; s++)
     {
-        data[s * NEXT + 0] = sinf(data[s * NEXT + 0]);
+        data[variationStart + s * NEXT + 0] = sinf(data[variationStart + s * NEXT + 0]);
     }
 }
 
@@ -181,7 +182,7 @@ Error:
     return cudaStatus;
 }
 
-int compute(void** dest, PostRanging* rangingData)
+int compute(void** dest, PostRanging* rangingData, HANDLE* writeSemaphore)
 {
     std::chrono::steady_clock::time_point before = std::chrono::steady_clock::now();
     std::chrono::steady_clock::time_point after;
@@ -234,8 +235,9 @@ int compute(void** dest, PostRanging* rangingData)
         else
             kernel::PARAM_STEP_COUNTS[i] = 0;
     }
-    
+
     rangingData->rangingCount = rangingCount;
+    rangingData->totalVariations = variations;
     unsigned long int variationSize = kernel::VAR_COUNT * (kernel::steps + 1); // All steps for the current parameter/variable value combination
     unsigned long int size = variationSize * variations; // Entire data array size
     float* data = new float[size];
