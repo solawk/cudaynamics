@@ -2,8 +2,7 @@
 
 #include "imgui_main.h"
 
-#include "kernels/sjj.h"
+#include "kernels/lorenzExample.h"
 #include <objects.h>
-#include <wtypes.h>
 
-int compute(void**, PostRanging*, HANDLE*);
+int compute(void**, float*, PostRanging*);

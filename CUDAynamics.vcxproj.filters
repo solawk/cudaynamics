@@ -81,10 +81,12 @@
     </ClInclude>
     <ClInclude Include="objects.h" />
     <ClInclude Include="imgui_utils.h" />
+    <ClInclude Include="cuda_macros.h" />
   </ItemGroup>
   <ItemGroup>
-    <CudaCompile Include="kernels\sjj.cu">
+    <CudaCompile Include="kernels\lorenzExample.cu">
       <Filter>kernels</Filter>
     </CudaCompile>
+    <CudaCompile Include="main.cu" />
   </ItemGroup>
 </Project>

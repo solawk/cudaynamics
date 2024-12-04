@@ -1,4 +1,6 @@
 #pragma once
+#include "cuda_runtime.h"
+#include "../objects.h"
 
 namespace kernel
 {
@@ -25,3 +27,7 @@ namespace kernel
 	extern float stepSize;
 	extern bool onlyShowLast;
 }
+
+const int THREADS_PER_BLOCK = 64;
+
+__global__ void kernelProgram(float*, float*, PreRanging*, int, float, int, float*);

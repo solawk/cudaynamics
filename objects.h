@@ -4,7 +4,9 @@
 
 using namespace std;
 
-enum PlotType { Series, Phase, Orbit };
+#define calculateStepCount(_min, _max, _step) (int)((_max - _min) / _step) + 1
+
+enum PlotType { Series, Phase, Orbit, PlotType_COUNT };
 
 struct PlotWindow
 {
@@ -65,11 +67,16 @@ public:
 	int rangingCount;
 	SinglePreRangingInfo rangings[32]{ 0 };
 	int totalVariations;
+	bool continuation; // For first batch – false (forming initial values from ranging data), for next batches – true (initial values are pre-formed from previous final values)
 
-	PreRanging(int _v, int _p, int _r, int _t)
+	PreRanging(int _v, int _p)
 	{
 		varCount = _v;
 		paramCount = _p;
+	}
+
+	void setRangingAndVariations(int _r, int _t)
+	{
 		rangingCount = _r;
 		totalVariations = _t;
 	}
