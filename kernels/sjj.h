@@ -1,10 +1,12 @@
 #pragma once
+#include "cuda_runtime.h"
+#include "../objects.h"
 
 namespace kernel
 {
 	extern const char* name;
 
-	enum VARIABLES { x0, x1, x2, VAR_COUNT };
+	enum VARIABLES { sin_x0, x0, x1, x2, VAR_COUNT };
 	extern const char* VAR_NAMES[];
 	extern float VAR_VALUES[];
 	extern bool VAR_RANGING[];
@@ -25,3 +27,7 @@ namespace kernel
 	extern float stepSize;
 	extern bool onlyShowLast;
 }
+
+const int THREADS_PER_BLOCK = 64;
+
+__global__ void kernelProgram(float* data, float* params, PreRanging* ranging, int steps, float h, int variationSize, float* previousData);

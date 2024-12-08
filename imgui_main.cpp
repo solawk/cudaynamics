@@ -9,6 +9,7 @@
 #include "imgui_utils.h"
 #include <future>
 #include <atomic>
+#include <set>
 
 // Data
 static ID3D11Device* g_pd3dDevice = nullptr;
@@ -36,7 +37,7 @@ float* valuesOverride = nullptr; // For transferring end variable values to the 
 void* axisBuffer = new float[3 * 6] {}; // 3 axis, 6 points
 int computedSteps = 0; // Step count for the current computation
 bool autofitAfterComputing = false; // Temporary flag to autofit computed data
-PostRanging rangingData; // Data about variation variables and parameters
+PostRanging rangingData[2]; // Data about variation variables and parameters (1 per buffer for stability)
 bool executedOnLaunch = false; // Temporary flag to execute computations on launch if needed
 
 float DEG2RAD = 3.141592f / 180.0f; // Multiplier for degrees to convert to radians
@@ -65,6 +66,9 @@ ImVec4 disabledColor = ImVec4(0.137f * 0.5f, 0.271f * 0.5f, 0.427f * 0.5f, 1.0f)
 ImVec4 disabledTextColor = ImVec4(1.0f, 1.0f, 1.0f, 0.5f);
 
 std::future<int> computationFutures[2];
+
+bool rangingWindowEnabled = true;
+bool graphBuilderWindowEnabled = true;
 
 void deleteBothBuffers()
 {
@@ -139,7 +143,7 @@ void computing()
         computedData[bufferToFillIndex] = nullptr;
     }*/
 
-    computationFutures[bufferToFillIndex] = std::async(asyncComputation, &(computedData[bufferToFillIndex]), &rangingData);
+    computationFutures[bufferToFillIndex] = std::async(asyncComputation, &(computedData[bufferToFillIndex]), &(rangingData[bufferToFillIndex]));
 }
 
 // Main code
@@ -198,7 +202,7 @@ int imgui_main(int, char**)
     ImGui_ImplDX11_Init(g_pd3dDevice, g_pd3dDeviceContext);
 
     //io.Fonts->AddFontDefault();
-    io.Fonts->AddFontFromFileTTF("C:\\Users\\Alexander\\AppData\\Local\\Microsoft\\Windows\\Fonts\\UbuntuMono-R.ttf", 24.0f);
+    io.Fonts->AddFontFromFileTTF("UbuntuMono-R.ttf", 24.0f);
     //io.Fonts->AddFontFromFileTTF("../../misc/fonts/DroidSans.ttf", 16.0f);
     //io.Fonts->AddFontFromFileTTF("../../misc/fonts/Roboto-Medium.ttf", 16.0f);
     //io.Fonts->AddFontFromFileTTF("../../misc/fonts/Cousine-Regular.ttf", 15.0f);
@@ -212,8 +216,9 @@ int imgui_main(int, char**)
     char* plotNameBuffer = new char[64]();
     strcpy_s(plotNameBuffer, 5, "Plot");
 
-    PlotType plotType = Phase;
+    PlotType plotType = Series;
     int selectedPlotVars[3]; selectedPlotVars[0] = 0; for (int i = 1; i < 3; i++) selectedPlotVars[i] = -1;
+    set<int> selectedPlotVarsSet;
 
     while (work)
     {
@@ -375,7 +380,8 @@ int imgui_main(int, char**)
             {
                 ImGui::SameLine();
                 ImGui::PushItemWidth(200.0f);
-                ImGui::InputFloat("Animation speed", &(particleSpeed), 1.0f, 100.0f, "%f");
+                ImGui::DragFloat("Animation speed", &(particleSpeed), 1.0f);
+                if (particleSpeed < 0.0f) particleSpeed = 0.0f;
                 ImGui::PopItemWidth();
                 ImGui::DragInt("Animation step", &(particleStep), 1.0f, 0, kernel::steps);
 
@@ -463,31 +469,38 @@ int imgui_main(int, char**)
             }
             if (noComputedData) ImGui::PopStyleColor();
 
+            ImGui::End();
+
             // Ranging
 
             variation = 0;
             stride = 1;
 
-            if (rangingData.rangingCount > 0 && computedDataReady[playedBufferIndex])
+            if (rangingData[playedBufferIndex].rangingCount > 0 && computedDataReady[playedBufferIndex])
             {
-                ImGui::SeparatorText("Ranging");
-
-                for (int r = 0; r < rangingData.rangingCount; r++)
+                if (rangingWindowEnabled)
                 {
-                    float currentValue = rangingData.min[r] + rangingData.step[r] * rangingData.currentStep[r];
-                    rangingData.currentValue[r] = currentValue;
+                    ImGui::Begin("Ranging", &rangingWindowEnabled);
 
-                    ImGui::PushItemWidth(150.0f);
-                    ImGui::DragInt(("##" + rangingData.names[r] + "_ranging").c_str(), &(rangingData.currentStep[r]), 1.0f, 0, rangingData.stepCount[r]-1);
-                    ImGui::SameLine();
-                    ImGui::Text((rangingData.names[r] + " = " + std::to_string(currentValue)).c_str());
-                    ImGui::PopItemWidth();
+                    for (int r = 0; r < rangingData[playedBufferIndex].rangingCount; r++)
+                    {
+                        float currentValue = rangingData[playedBufferIndex].min[r] + rangingData[playedBufferIndex].step[r] * rangingData[playedBufferIndex].currentStep[r];
+                        rangingData[playedBufferIndex].currentValue[r] = currentValue;
+
+                        ImGui::PushItemWidth(150.0f);
+                        ImGui::DragInt(("##" + rangingData[playedBufferIndex].names[r] + "_ranging").c_str(), &(rangingData[playedBufferIndex].currentStep[r]), 1.0f, 0, rangingData[playedBufferIndex].stepCount[r] - 1);
+                        ImGui::SameLine();
+                        ImGui::Text((rangingData[playedBufferIndex].names[r] + " = " + std::to_string(currentValue)).c_str());
+                        ImGui::PopItemWidth();
+                    }
+
+                    ImGui::End();
                 }
 
-                for (int r = rangingData.rangingCount - 1; r >= 0; r--)
+                for (int r = rangingData[playedBufferIndex].rangingCount - 1; r >= 0; r--)
                 {
-                    variation += rangingData.currentStep[r] * stride;
-                    stride *= rangingData.stepCount[r];
+                    variation += rangingData[playedBufferIndex].currentStep[r] * stride;
+                    stride *= rangingData[playedBufferIndex].stepCount[r];
                 }
             }
 
@@ -496,83 +509,121 @@ int imgui_main(int, char**)
 
             // Graph Builder
 
-            ImGui::SeparatorText("Graph Builder");
-
-            //ImGui::PushItemWidth(300.0f);
-            //ImGui::InputText("##Plot name input", plotNameBuffer, 64, ImGuiInputTextFlags_None);
-            //ImGui::PopItemWidth();
-
-
-            // Type
-            std::string plottypes[] = { "Time series", "Phase space", "Orbit diagram" };
-            ImGui::Text("Plot type ");
-            ImGui::SameLine();
-            ImGui::PushItemWidth(250.0f);
-            if (ImGui::BeginCombo("##Plot type", (plottypes[plotType]).c_str()))
+            if (graphBuilderWindowEnabled)
             {
-                for (int t = 0; t < PlotType_COUNT; t++)
+                ImGui::Begin("Graph Builder", &graphBuilderWindowEnabled);
+
+                //ImGui::PushItemWidth(300.0f);
+                //ImGui::InputText("##Plot name input", plotNameBuffer, 64, ImGuiInputTextFlags_None);
+                //ImGui::PopItemWidth();
+
+                // Type
+                std::string plottypes[] = { "Time series", "Phase diagram", "Orbit diagram" };
+                ImGui::Text("Plot type ");
+                ImGui::SameLine();
+                ImGui::PushItemWidth(250.0f);
+                if (ImGui::BeginCombo("##Plot type", (plottypes[plotType]).c_str()))
                 {
-                    bool isSelected = plotType == t;
-                    ImGuiSelectableFlags selectableFlags = 0;
-
-                    if (ImGui::Selectable(plottypes[t].c_str(), isSelected, selectableFlags)) plotType = (PlotType)t;
-                }
-                ImGui::EndCombo();
-            }
-            ImGui::PopItemWidth();
-
-            std::string variablexyz[] = { "x", "y", "z" };
-
-            switch (plotType)
-            {
-            case Series:
-
-                break;
-
-            case Phase:
-                ImGui::PushItemWidth(150.0f);
-                for (int sv = 0; sv < 3; sv++)
-                {
-                    ImGui::Text(("Variable " + variablexyz[sv]).c_str());
-                    ImGui::SameLine();
-                    if (ImGui::BeginCombo(("##Plot builder var " + std::to_string(sv + 1)).c_str(), selectedPlotVars[sv] > -1 ? kernel::VAR_NAMES[selectedPlotVars[sv]] : "-"))
+                    for (int t = 0; t < PlotType_COUNT; t++)
                     {
-                        for (int v = (sv > 0 ? -1 : 0); v < kernel::VAR_COUNT; v++)
-                        {
-                            bool isSelected = selectedPlotVars[sv] == v;
-                            ImGuiSelectableFlags selectableFlags = 0;
-
-                            if (v == -1)
-                            {
-                                if (sv == 0 && (selectedPlotVars[1] > -1 || selectedPlotVars[2] > -1)) selectableFlags = ImGuiSelectableFlags_Disabled;
-                                if (sv == 1 && (selectedPlotVars[2] > -1)) selectableFlags = ImGuiSelectableFlags_Disabled;
-                                if (ImGui::Selectable("-", isSelected, selectableFlags)) selectedPlotVars[sv] = -1;
-                            }
-                            else
-                            {
-                                if (sv == 1 && selectedPlotVars[0] == -1) selectableFlags = ImGuiSelectableFlags_Disabled;
-                                if (sv == 2 && selectedPlotVars[1] == -1) selectableFlags = ImGuiSelectableFlags_Disabled;
-                                if (v == selectedPlotVars[(sv + 1) % 3] || v == selectedPlotVars[(sv + 2) % 3]) selectableFlags = ImGuiSelectableFlags_Disabled;
-                                if (ImGui::Selectable(v > -1 ? kernel::VAR_NAMES[v] : "-", isSelected, selectableFlags)) selectedPlotVars[sv] = v;
-                            }
-                        }
-                        ImGui::EndCombo();
+                        bool isSelected = plotType == t;
+                        ImGuiSelectableFlags selectableFlags = 0;
+                        if (ImGui::Selectable(plottypes[t].c_str(), isSelected, selectableFlags)) plotType = (PlotType)t;
                     }
+
+                    ImGui::EndCombo();
                 }
                 ImGui::PopItemWidth();
-                break;
 
-            case Orbit:
+                std::string variablexyz[] = { "x", "y", "z" };
 
-                break;
-            }   
+                switch (plotType)
+                {
+                case Series:
 
-            if (ImGui::Button("Create graph"))
-            {
-                plotWindows.push_back(PlotWindow(uniqueIds++, plotNameBuffer, true));
+                    // Variable adding combo
+
+                    ImGui::Text("Add variable");
+                    ImGui::SameLine();
+                    if (ImGui::BeginCombo("##Add variable combo", " ", ImGuiComboFlags_NoPreview))
+                    {
+                        for (int v = 0; v < kernel::VAR_COUNT; v++)
+                        {
+                            bool isSelected = selectedPlotVarsSet.find(v) != selectedPlotVarsSet.end();
+                            ImGuiSelectableFlags selectableFlags = 0;
+
+                            if (isSelected) selectableFlags = ImGuiSelectableFlags_Disabled;
+                            if (ImGui::Selectable(kernel::VAR_NAMES[v])) selectedPlotVarsSet.insert(v);
+                        }
+
+                        ImGui::EndCombo();
+                    }
+
+                    // Variable list
+
+                    for (const int& v : selectedPlotVarsSet)
+                    {
+                        if (ImGui::Button(("x##" + std::to_string(v)).c_str()))
+                        {
+                            selectedPlotVarsSet.erase(v);
+                        }
+                        ImGui::SameLine();
+                        ImGui::Text(("- " + std::string(kernel::VAR_NAMES[v])).c_str());
+                    }
+
+                    break;
+
+                case Phase:
+                    ImGui::PushItemWidth(150.0f);
+                    for (int sv = 0; sv < 3; sv++)
+                    {
+                        ImGui::Text(("Variable " + variablexyz[sv]).c_str());
+                        ImGui::SameLine();
+                        if (ImGui::BeginCombo(("##Plot builder var " + std::to_string(sv + 1)).c_str(), selectedPlotVars[sv] > -1 ? kernel::VAR_NAMES[selectedPlotVars[sv]] : "-"))
+                        {
+                            for (int v = (sv > 0 ? -1 : 0); v < kernel::VAR_COUNT; v++)
+                            {
+                                bool isSelected = selectedPlotVars[sv] == v;
+                                ImGuiSelectableFlags selectableFlags = 0;
+
+                                if (v == -1)
+                                {
+                                    if (sv == 0 && (selectedPlotVars[1] > -1 || selectedPlotVars[2] > -1)) selectableFlags = ImGuiSelectableFlags_Disabled;
+                                    if (sv == 1 && (selectedPlotVars[2] > -1)) selectableFlags = ImGuiSelectableFlags_Disabled;
+                                    if (ImGui::Selectable("-", isSelected, selectableFlags)) selectedPlotVars[sv] = -1;
+                                }
+                                else
+                                {
+                                    if (sv == 1 && selectedPlotVars[0] == -1) selectableFlags = ImGuiSelectableFlags_Disabled;
+                                    if (sv == 2 && selectedPlotVars[1] == -1) selectableFlags = ImGuiSelectableFlags_Disabled;
+                                    if (v == selectedPlotVars[(sv + 1) % 3] || v == selectedPlotVars[(sv + 2) % 3]) selectableFlags = ImGuiSelectableFlags_Disabled;
+                                    if (ImGui::Selectable(v > -1 ? kernel::VAR_NAMES[v] : "-", isSelected, selectableFlags)) selectedPlotVars[sv] = v;
+                                }
+                            }
+                            ImGui::EndCombo();
+                        }
+                    }
+                    ImGui::PopItemWidth();
+                    break;
+
+                case Orbit:
+
+                    break;
+                }
+
+                if (ImGui::Button("Create graph"))
+                {
+                    PlotWindow plotWindow = PlotWindow(uniqueIds++, plotNameBuffer, true);
+                    plotWindow.type = plotType;
+
+                    if (plotType == Series) plotWindow.AssignVariables(selectedPlotVarsSet);
+                    if (plotType == Phase) plotWindow.AssignVariables(selectedPlotVars);
+
+                    plotWindows.push_back(plotWindow);
+                }
+
+                ImGui::End();
             }
-
-            ImGui::End();
         }
 
         // MARKER SETTINGS WINDOW //
@@ -613,88 +664,150 @@ int imgui_main(int, char**)
             }
 
             style.WindowMenuButtonPosition = ImGuiDir_None;
-            ImGui::Begin((window->name + std::to_string(window->id)).c_str(), &(window->active));
+            std::string windowName = window->name + std::to_string(window->id);
+            std::string plotName = windowName + "_plot";
+            ImGui::Begin(windowName.c_str(), &(window->active));
 
-            if (window->yaw >= 360.0f) window->yaw -= 360.0f;
-            if (window->yaw < 0.0f) window->yaw += 360.0f;
-
-            if (window->pitch > 90.0f) window->pitch = 90.0f;
-            if (window->pitch < -90.0f) window->pitch = -90.0f;
-
-            ImGui::DragFloat("Yaw", &(window->yaw), 1.0f);
-            ImGui::DragFloat("Pitch", &(window->pitch), 1.0f);
-
-            ImGui::DragFloat("x offset", &(window->xOffset), 1.0f);
-            ImGui::DragFloat("y offset", &(window->yOffset), 1.0f);
-            ImGui::DragFloat("z offset", &(window->zOffset), 1.0f);
-
+            // Common variables
             ImPlotAxisFlags axisFlags = (autofitAfterComputing ? ImPlotAxisFlags_AutoFit : 0);
-            ImPlot::BeginPlot(window->name.c_str(), "", "", ImVec2(-1, -1), ImPlotFlags_NoLegend | ImPlotFlags_NoTitle, axisFlags, axisFlags);
-            ImPlotPlot* plot = ImPlot::GetPlot(window->name.c_str());
+            ImPlotPlot* plot;
 
-            float plotRangeSize = (float)plot->Axes[ImAxis_X1].Range.Max - (float)plot->Axes[ImAxis_X1].Range.Min;
-
-            plot->is3d = true;
-            plot->deltax = &(window->yaw);
-            plot->deltay = &(window->pitch);
-
-            if (computedDataReady[playedBufferIndex])
+            switch (window->type)
             {
-                int variationSize = kernel::VAR_COUNT * (computedSteps + 1);
+            case Series:
 
-                populateAxisBuffer((float*)axisBuffer, plotRangeSize / 10, plotRangeSize / 10, plotRangeSize / 10);
-                rotateOffsetBuffer((float*)axisBuffer, 6, 0, 1, 2, plotWindows[w].pitch, plotWindows[w].yaw, 0, 0, 0);
+                ImPlot::BeginPlot(plotName.c_str(), "", "", ImVec2(-1, -1), ImPlotFlags_NoTitle, axisFlags, axisFlags);
+                plot = ImPlot::GetPlot(plotName.c_str());
 
-                if (!enabledParticles) // Trajectory - one variation, all steps
+                plot->is3d = false;
+
+                if (computedDataReady[playedBufferIndex])
                 {
+                    int variationSize = kernel::VAR_COUNT * (computedSteps + 1);
+
                     void* computedVariation = (float*)(computedData[playedBufferIndex]) + (variationSize * variation);
                     memcpy(dataBuffer, computedVariation, variationSize * sizeof(float));
 
-                    rotateOffsetBuffer((float*)dataBuffer, computedSteps + 1, 0, 1, 2,
-                        plotWindows[w].pitch, plotWindows[w].yaw, plotWindows[w].xOffset, plotWindows[w].yOffset, plotWindows[w].zOffset);
+                    //void PlotLine(const char* label_id, const T* values, int count, double xscale, double x0, ImPlotLineFlags flags, int offset, int stride)
 
-                    ImPlot::SetNextLineStyle(ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
-                    ImPlot::PlotLine(window->name.c_str(), &(((float*)dataBuffer)[0]), &(((float*)dataBuffer)[1]), computedSteps + 1, 0, 0, sizeof(float) * 3);
-                }
-                else // Particles - all variations, one certain step
-                {
-                    for (int v = 0; v < rangingData.totalVariations; v++)
+                    for (int v = 0; v < window->variableCount; v++)
                     {
-                        for (int var = 0; var < 3; var++)
-                            ((float*)particleBuffer)[v * kernel::VAR_COUNT + var] = ((float*)(computedData[playedBufferIndex]))[(variationSize * v) + (kernel::VAR_COUNT * particleStep) + var];
+                        //ImPlot::SetNextLineStyle(ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
+                        ImPlot::PlotLine((std::string(kernel::VAR_NAMES[window->variables[v]]) + "##" + plotName + std::to_string(v)).c_str(),
+                            &(((float*)dataBuffer)[window->variables[v]]),computedSteps + 1, 1.0f, 0.0f, ImPlotLineFlags_None, 0, sizeof(float) * kernel::VAR_COUNT);
+                    }
+                }
+
+                break;
+
+            case Phase:
+                // PHASE DIAGRAM
+                bool is3d = window->variableCount == 3;
+
+                if (is3d)
+                {
+                    if (window->yaw >= 360.0f) window->yaw -= 360.0f;
+                    if (window->yaw < 0.0f) window->yaw += 360.0f;
+
+                    if (window->pitch > 90.0f) window->pitch = 90.0f;
+                    if (window->pitch < -90.0f) window->pitch = -90.0f;
+
+                    ImGui::DragFloat("Yaw", &(window->yaw), 1.0f);
+                    ImGui::DragFloat("Pitch", &(window->pitch), 1.0f);
+
+                    ImGui::DragFloat("x offset", &(window->xOffset), 1.0f);
+                    ImGui::DragFloat("y offset", &(window->yOffset), 1.0f);
+                    ImGui::DragFloat("z offset", &(window->zOffset), 1.0f);
+
+                    ImGui::DragFloat("x scale", &(window->xScale), 1.0f);
+                    ImGui::DragFloat("y scale", &(window->yScale), 1.0f);
+                    ImGui::DragFloat("z scale", &(window->zScale), 1.0f);
+
+                    axisFlags |= ImPlotAxisFlags_NoGridLines | ImPlotAxisFlags_NoTickMarks | ImPlotAxisFlags_NoTickLabels;
+                }
+
+                ImPlot::BeginPlot(plotName.c_str(), "", "", ImVec2(-1, -1), ImPlotFlags_NoLegend | ImPlotFlags_NoTitle, axisFlags, axisFlags);
+                plot = ImPlot::GetPlot(plotName.c_str());
+
+                float plotRangeSize = (float)plot->Axes[ImAxis_X1].Range.Max - (float)plot->Axes[ImAxis_X1].Range.Min;
+
+                plot->is3d = is3d;
+                plot->deltax = &(window->yaw);
+                plot->deltay = &(window->pitch);
+
+                if (computedDataReady[playedBufferIndex])
+                {
+                    int variationSize = kernel::VAR_COUNT * (computedSteps + 1);
+
+                    populateAxisBuffer((float*)axisBuffer, plotRangeSize / 10, plotRangeSize / 10, plotRangeSize / 10);
+                    if (is3d) rotateOffsetBuffer((float*)axisBuffer, 6, 3, 0, 1, 2, window->pitch, window->yaw, 0, 0, 0);
+
+                    int xIndex = is3d ? 0 : window->variables[0];
+                    int yIndex = is3d ? 1 : window->variables[1];
+
+                    if (!enabledParticles) // Trajectory - one variation, all steps
+                    {
+                        void* computedVariation = (float*)(computedData[playedBufferIndex]) + (variationSize * variation);
+                        memcpy(dataBuffer, computedVariation, variationSize * sizeof(float));
+
+                        if (is3d)
+                            rotateOffsetBuffer((float*)dataBuffer, computedSteps + 1, kernel::VAR_COUNT, window->variables[0], window->variables[1], window->variables[2],
+                                window->pitch, window->yaw, window->xOffset, window->yOffset, window->zOffset);
+
+                        ImPlot::SetNextLineStyle(ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
+                        ImPlot::PlotLine(plotName.c_str(), &(((float*)dataBuffer)[xIndex]), &(((float*)dataBuffer)[yIndex]), computedSteps + 1, 0, 0, sizeof(float) * kernel::VAR_COUNT);
+                    }
+                    else // Particles - all variations, one certain step
+                    {
+                        for (int v = 0; v < rangingData[playedBufferIndex].totalVariations; v++)
+                        {
+                            for (int var = 0; var < kernel::VAR_COUNT; var++)
+                                ((float*)particleBuffer)[v * kernel::VAR_COUNT + var] = ((float*)(computedData[playedBufferIndex]))[(variationSize * v) + (kernel::VAR_COUNT * particleStep) + var];
+                        }
+
+                        if (is3d)
+                            rotateOffsetBuffer((float*)particleBuffer, rangingData[playedBufferIndex].totalVariations, kernel::VAR_COUNT, window->variables[0], window->variables[1], window->variables[2],
+                                window->pitch, window->yaw, window->xOffset, window->yOffset, window->zOffset);
+
+                        ImPlot::SetNextLineStyle(markerColor);
+                        ImPlot::PushStyleVar(ImPlotStyleVar_MarkerWeight, markerOutlineSize);
+                        //ImPlot::PushStyleVar(ImPlotStyleVar_FillAlpha, 0.25f);
+                        ImPlot::SetNextMarkerStyle(markerShape, markerSize);
+                        ImPlot::PlotScatter(plotName.c_str(), &(((float*)particleBuffer)[xIndex]), &(((float*)particleBuffer)[yIndex]), rangingData[playedBufferIndex].totalVariations, 0, 0, sizeof(float) * kernel::VAR_COUNT);
                     }
 
-                    rotateOffsetBuffer((float*)particleBuffer, rangingData.totalVariations, 0, 1, 2,
-                        plotWindows[w].pitch, plotWindows[w].yaw, plotWindows[w].xOffset, plotWindows[w].yOffset, plotWindows[w].zOffset);
+                    // Axis
+                    ImPlot::SetNextLineStyle(ImVec4(1.0f, 0.0f, 0.0f, 1.0f));
+                    ImPlot::PlotLine(plotName.c_str(), &(((float*)axisBuffer)[0]), &(((float*)axisBuffer)[1]), 2, 0, 0, sizeof(float) * 3);
+                    ImPlot::SetNextLineStyle(ImVec4(0.0f, 1.0f, 0.0f, 1.0f));
+                    ImPlot::PlotLine(plotName.c_str(), &(((float*)axisBuffer)[6]), &(((float*)axisBuffer)[7]), 2, 0, 0, sizeof(float) * 3);
 
-                    ImPlot::SetNextLineStyle(markerColor);
-                    ImPlot::PushStyleVar(ImPlotStyleVar_MarkerWeight, markerOutlineSize);
-                    //ImPlot::PushStyleVar(ImPlotStyleVar_FillAlpha, 0.25f);
-                    ImPlot::SetNextMarkerStyle(markerShape, markerSize);
-                    ImPlot::PlotScatter(window->name.c_str(), &(((float*)particleBuffer)[0]), &(((float*)particleBuffer)[1]), rangingData.totalVariations, 0, 0, sizeof(float) * 3);
+                    if (is3d)
+                    {
+                        ImPlot::SetNextLineStyle(ImVec4(0.0f, 0.0f, 1.0f, 1.0f));
+                        ImPlot::PlotLine(plotName.c_str(), &(((float*)axisBuffer)[12]), &(((float*)axisBuffer)[13]), 2, 0, 0, sizeof(float) * 3);
+                    }
+
+                    // Axis names
+                    ImPlot::PushStyleColor(ImPlotCol_InlayText, ImVec4(1.0f, 0.2f, 0.2f, 1.0f));
+                    ImPlot::PlotText(kernel::VAR_NAMES[window->variables[0]], ((float*)axisBuffer)[0], ((float*)axisBuffer)[1], ImVec2(0.0f, 0.0f));
+                    ImPlot::PopStyleColor();
+                    ImPlot::PushStyleColor(ImPlotCol_InlayText, ImVec4(0.2f, 1.0f, 0.2f, 1.0f));
+                    ImPlot::PlotText(kernel::VAR_NAMES[window->variables[1]], ((float*)axisBuffer)[6], ((float*)axisBuffer)[7], ImVec2(0.0f, 0.0f));
+                    ImPlot::PopStyleColor();
+
+                    if (is3d)
+                    {
+                        ImPlot::PushStyleColor(ImPlotCol_InlayText, ImVec4(0.2f, 0.2f, 1.0f, 1.0f));
+                        ImPlot::PlotText(kernel::VAR_NAMES[window->variables[2]], ((float*)axisBuffer)[12], ((float*)axisBuffer)[13], ImVec2(0.0f, 0.0f));
+                        ImPlot::PopStyleColor();
+                    }
                 }
+                // PHASE DIAGRAM END
+                break;
+            }           
 
-                // Axis
-                ImPlot::SetNextLineStyle(ImVec4(1.0f, 0.0f, 0.0f, 1.0f));
-                ImPlot::PlotLine(window->name.c_str(), &(((float*)axisBuffer)[0]), &(((float*)axisBuffer)[1]), 2, 0, 0, sizeof(float) * 3);
-                ImPlot::SetNextLineStyle(ImVec4(0.0f, 1.0f, 0.0f, 1.0f));
-                ImPlot::PlotLine(window->name.c_str(), &(((float*)axisBuffer)[6]), &(((float*)axisBuffer)[7]), 2, 0, 0, sizeof(float) * 3);
-                ImPlot::SetNextLineStyle(ImVec4(0.0f, 0.0f, 1.0f, 1.0f));
-                ImPlot::PlotLine(window->name.c_str(), &(((float*)axisBuffer)[12]), &(((float*)axisBuffer)[13]), 2, 0, 0, sizeof(float) * 3);
-
-                // Axis names
-                ImPlot::PushStyleColor(ImPlotCol_InlayText, ImVec4(1.0f, 0.2f, 0.2f, 1.0f));
-                ImPlot::PlotText("x", ((float*)axisBuffer)[0], ((float*)axisBuffer)[1], ImVec2(0.0f, 0.0f));
-                ImPlot::PopStyleColor();
-                ImPlot::PushStyleColor(ImPlotCol_InlayText, ImVec4(0.2f, 1.0f, 0.2f, 1.0f));
-                ImPlot::PlotText("y", ((float*)axisBuffer)[6], ((float*)axisBuffer)[7], ImVec2(0.0f, 0.0f));
-                ImPlot::PopStyleColor();
-                ImPlot::PushStyleColor(ImPlotCol_InlayText, ImVec4(0.2f, 0.2f, 1.0f, 1.0f));
-                ImPlot::PlotText("z", ((float*)axisBuffer)[12], ((float*)axisBuffer)[13], ImVec2(0.0f, 0.0f));
-                ImPlot::PopStyleColor();
-            }
             ImPlot::EndPlot();
-
             ImGui::End();
         }
 

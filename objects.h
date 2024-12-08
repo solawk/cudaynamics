@@ -1,6 +1,7 @@
 #pragma once
 #include <string>
 #include <vector>
+#include <set>
 
 using namespace std;
 
@@ -17,12 +18,14 @@ public:
 	string plotName; // Name of the plot, generated from variable names
 	PlotType type;
 	vector<int> variables;
+	int variableCount;
 
 	// Plot rotation
 	bool is3d;
 	float yaw;
 	float pitch;
 	float xOffset, yOffset, zOffset;
+	float xScale, yScale, zScale;
 
 	PlotWindow(int _id, string _name, bool _is3d)
 	{
@@ -37,6 +40,34 @@ public:
 		xOffset = 0.0f;
 		yOffset = 0.0f;
 		zOffset = 0.0f;
+
+		xScale = 0.0f;
+		yScale = 0.0f;
+		zScale = 0.0f;
+	}
+
+	void AssignVariables(int* variablesArray)
+	{
+		variableCount = 0;
+		for (int i = 0; i < 32; i++)
+		{
+			if (variablesArray[i] > -1)
+			{
+				variableCount++;
+				variables.push_back(variablesArray[i]);
+			}
+			else break;
+		}
+	}
+
+	void AssignVariables(set<int>& variablesSet)
+	{
+		variableCount = 0;
+		for (const int& v : variablesSet)
+		{
+			variableCount++;
+			variables.push_back(v);
+		}
 	}
 };
 

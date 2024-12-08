@@ -3209,13 +3209,13 @@ void EndPlot() {
 
         if (plot.is3d)
         {
-            float minRange = plot.Axes[ImAxis_X1].Range.Min;
+            /*float minRange = plot.Axes[ImAxis_X1].Range.Min;
             if (plot.Axes[ImAxis_Y1].Range.Min < minRange) minRange = plot.Axes[ImAxis_Y1].Range.Min;
             float maxRange = plot.Axes[ImAxis_X1].Range.Max;
             if (plot.Axes[ImAxis_Y1].Range.Max < maxRange) maxRange = plot.Axes[ImAxis_Y1].Range.Max;
 
             plot.Axes[ImAxis_X1].Range.Min = plot.Axes[ImAxis_Y1].Range.Min = minRange;
-            plot.Axes[ImAxis_X1].Range.Max = plot.Axes[ImAxis_Y1].Range.Max = maxRange;
+            plot.Axes[ImAxis_X1].Range.Max = plot.Axes[ImAxis_Y1].Range.Max = maxRange;*/
         }
     }
 

@@ -84,9 +84,9 @@
     <ClInclude Include="cuda_macros.h" />
   </ItemGroup>
   <ItemGroup>
+    <CudaCompile Include="main.cu" />
     <CudaCompile Include="kernels\lorenzExample.cu">
       <Filter>kernels</Filter>
     </CudaCompile>
-    <CudaCompile Include="main.cu" />
   </ItemGroup>
 </Project>
