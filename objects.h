@@ -15,10 +15,9 @@ public:
 	bool active; // Deactivated window is removed
 	int id; // Unique id
 	string name; // Name of the window
-	string plotName; // Name of the plot, generated from variable names
 	PlotType type;
-	vector<int> variables;
 	int variableCount;
+	vector<int> variables;
 
 	// Plot rotation
 	bool is3d;
@@ -26,6 +25,12 @@ public:
 	float pitch;
 	float xOffset, yOffset, zOffset;
 	float xScale, yScale, zScale;
+
+	PlotWindow(int _id)
+	{
+		active = true;
+		id = _id;
+	}
 
 	PlotWindow(int _id, string _name, bool _is3d)
 	{
@@ -68,6 +73,64 @@ public:
 			variableCount++;
 			variables.push_back(v);
 		}
+	}
+
+	string ExportAsString()
+	{
+		string exportString = name;
+
+		exportString += " " + to_string((int)type);
+
+		exportString += " " + to_string((int)is3d);
+		exportString += " " + to_string(yaw) + " " + to_string(pitch);
+		exportString += " " + to_string(xOffset) + " " + to_string(yOffset) + " " + to_string(zOffset);
+		exportString += " " + to_string(xScale) + " " + to_string(yScale) + " " + to_string(zScale);
+
+		exportString += " " + to_string(variableCount);
+		for (int v : variables)
+			exportString += " " + to_string(v);
+
+		exportString += "\n";
+
+		return exportString;
+	}
+
+	void ImportAsString(string input)
+	{
+		// string split by Arafat Hasan
+		// https://stackoverflow.com/questions/14265581/parse-split-a-string-in-c-using-string-delimiter-standard-c
+		size_t pos_start = 0, pos_end, delim_len = 1;
+		std::string token;
+		std::vector<std::string> data;
+		while ((pos_end = input.find(" ", pos_start)) != std::string::npos)
+		{
+			token = input.substr(pos_start, pos_end - pos_start);
+			pos_start = pos_end + delim_len;
+			data.push_back(token);
+		}
+		data.push_back(input.substr(pos_start));
+
+		//vector<string> data = split(input, " ");
+
+		name = data[0];
+		type = (PlotType)atoi(data[1].c_str());
+
+		is3d = (bool)atoi(data[2].c_str());
+		yaw = atof(data[3].c_str());
+		pitch = atof(data[4].c_str());
+
+		xOffset = atof(data[5].c_str());
+		yOffset = atof(data[6].c_str());
+		zOffset = atof(data[7].c_str());
+
+		xScale = atof(data[8].c_str());
+		yScale = atof(data[9].c_str());
+		zScale = atof(data[10].c_str());
+
+		variableCount = atoi(data[11].c_str());
+		variables.clear();
+		for (int i = 0; i < variableCount; i++)
+			variables.push_back(atoi(data[12 + i].c_str()));
 	}
 };
 

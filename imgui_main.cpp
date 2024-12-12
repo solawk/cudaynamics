@@ -1,17 +1,5 @@
 #include "imgui_main.h"
-#include "implot/implot.h"
-#include <tchar.h>
-#include <stdio.h>
-#include <string>
-#include <objects.h>
-#include <vector>
-#include <implot_internal.h>
-#include "imgui_utils.h"
-#include <future>
-#include <atomic>
-#include <set>
 
-// Data
 static ID3D11Device* g_pd3dDevice = nullptr;
 static ID3D11DeviceContext* g_pd3dDeviceContext = nullptr;
 static IDXGISwapChain* g_pSwapChain = nullptr;
@@ -19,22 +7,19 @@ static bool                     g_SwapChainOccluded = false;
 static UINT                     g_ResizeWidth = 0, g_ResizeHeight = 0;
 static ID3D11RenderTargetView* g_mainRenderTargetView = nullptr;
 
+std::vector<PlotWindow> plotWindows;
 int uniqueIds = 0; // Unique window IDs
 
 void* computedData[2] = { nullptr, nullptr }; // For double buffering the computations, aren't null when computed
 atomic_bool computedDataReady[2] = { false, false };
 int playedBufferIndex = 0; // Buffer currently shown
 int bufferToFillIndex = 0; // Buffer to send computations to
-/* pB btF
-*  0   0   Start, computation is triggered for buffer 0 and switches btF
-*  0   1   Buffer 0 is played, meanwhile buffer 1 gets filled. Playing through the buffer 0 switches pB and triggers computation for buffer 0
-*  1   0   Buffer 1 is played, meanwhile buffer 0 gets filled...
-* */
 
 void* dataBuffer = nullptr; // One variation local buffer
 void* particleBuffer = nullptr; // One step local buffer
 float* valuesOverride = nullptr; // For transferring end variable values to the next buffer
 void* axisBuffer = new float[3 * 6] {}; // 3 axis, 6 points
+void* gridBuffer = new float[11 * 5 * 3] {};
 int computedSteps = 0; // Step count for the current computation
 bool autofitAfterComputing = false; // Temporary flag to autofit computed data
 PostRanging rangingData[2]; // Data about variation variables and parameters (1 per buffer for stability)
@@ -43,7 +28,7 @@ bool executedOnLaunch = false; // Temporary flag to execute computations on laun
 float DEG2RAD = 3.141592f / 180.0f; // Multiplier for degrees to convert to radians
 bool enabledParticles = true; // Particles mode
 bool playingParticles = false; // Playing animation
-float particleSpeed = 2000.0f; // Steps per second
+float particleSpeed = 200.0f; // Steps per second
 float particlePhase = 0.0f; // Animation frame cooldown
 int particleStep = 0; // Current step of the computations to show
 bool continuousComputingEnabled = true; // Continuously compute next batch of steps via double buffering
@@ -103,9 +88,7 @@ int asyncComputation(void** dest, PostRanging* rangingData)
 {
     computedDataReady[bufferToFillIndex] = false;
 
-    //float* valuesOverride = nullptr;
     bool isFirstBatch = computedData[1 - bufferToFillIndex] == nullptr; // Is another buffer null, only true when computing for the first time
-
     if (isFirstBatch) rangingData->clear();
 
     printf("is first batch %i, total variations %i\n", isFirstBatch, rangingData->totalVariations);
@@ -146,6 +129,34 @@ void computing()
     computationFutures[bufferToFillIndex] = std::async(asyncComputation, &(computedData[bufferToFillIndex]), &(rangingData[bufferToFillIndex]));
 }
 
+void saveWindows()
+{
+    ofstream configFileStream((std::string(kernel::name) + ".config").c_str(), ios::out);
+
+    for (PlotWindow w : plotWindows)
+    {
+        string exportString = w.ExportAsString();
+        configFileStream.write(exportString.c_str(), exportString.length());
+    }
+
+    configFileStream.close();
+}
+
+void loadWindows()
+{
+    ifstream configFileStream((std::string(kernel::name) + ".config").c_str(), ios::in);
+
+    for (std::string line; getline(configFileStream, line); )
+    {
+        PlotWindow plotWindow = PlotWindow(uniqueIds++);
+        plotWindow.ImportAsString(line);
+
+        plotWindows.push_back(plotWindow);
+    }
+
+    configFileStream.close();
+}
+
 // Main code
 int imgui_main(int, char**)
 {
@@ -153,7 +164,7 @@ int imgui_main(int, char**)
     ImGui_ImplWin32_EnableDpiAwareness();
     WNDCLASSEXW wc = { sizeof(wc), CS_CLASSDC, WndProc, 0L, 0L, GetModuleHandle(nullptr), nullptr, nullptr, nullptr, nullptr, L"CUDAynamics", nullptr };
     ::RegisterClassExW(&wc);
-    HWND hwnd = ::CreateWindowW(wc.lpszClassName, L"CUDAynamics", WS_OVERLAPPEDWINDOW, 100, 100, 400, 50, nullptr, nullptr, wc.hInstance, nullptr);
+    HWND hwnd = ::CreateWindowW(wc.lpszClassName, L"CUDAynamics", WS_OVERLAPPEDWINDOW, 100, 100, 400, 100, nullptr, nullptr, wc.hInstance, nullptr);
 
     // Initialize Direct3D
     if (!CreateDeviceD3D(hwnd))
@@ -203,22 +214,26 @@ int imgui_main(int, char**)
 
     //io.Fonts->AddFontDefault();
     io.Fonts->AddFontFromFileTTF("UbuntuMono-R.ttf", 24.0f);
-    //io.Fonts->AddFontFromFileTTF("../../misc/fonts/DroidSans.ttf", 16.0f);
-    //io.Fonts->AddFontFromFileTTF("../../misc/fonts/Roboto-Medium.ttf", 16.0f);
-    //io.Fonts->AddFontFromFileTTF("../../misc/fonts/Cousine-Regular.ttf", 15.0f);
-    //ImFont* font = io.Fonts->AddFontFromFileTTF("c:\\Windows\\Fonts\\ArialUni.ttf", 18.0f, nullptr, io.Fonts->GetGlyphRangesJapanese());
     //IM_ASSERT(font != nullptr);
 
     // Main loop
     bool work = true;
 
-    std::vector<PlotWindow> plotWindows;
     char* plotNameBuffer = new char[64]();
     strcpy_s(plotNameBuffer, 5, "Plot");
 
     PlotType plotType = Series;
     int selectedPlotVars[3]; selectedPlotVars[0] = 0; for (int i = 1; i < 3; i++) selectedPlotVars[i] = -1;
     set<int> selectedPlotVarsSet;
+
+    try
+    {
+        loadWindows();
+    }
+    catch (exception e)
+    {
+        printf(e.what());
+    }
 
     while (work)
     {
@@ -614,6 +629,7 @@ int imgui_main(int, char**)
                 if (ImGui::Button("Create graph"))
                 {
                     PlotWindow plotWindow = PlotWindow(uniqueIds++, plotNameBuffer, true);
+                    plotWindow.xScale = plotWindow.yScale = plotWindow.zScale = 1.0f;
                     plotWindow.type = plotType;
 
                     if (plotType == Series) plotWindow.AssignVariables(selectedPlotVarsSet);
@@ -698,6 +714,7 @@ int imgui_main(int, char**)
                     }
                 }
 
+                ImPlot::EndPlot();
                 break;
 
             case Phase:
@@ -715,13 +732,13 @@ int imgui_main(int, char**)
                     ImGui::DragFloat("Yaw", &(window->yaw), 1.0f);
                     ImGui::DragFloat("Pitch", &(window->pitch), 1.0f);
 
-                    ImGui::DragFloat("x offset", &(window->xOffset), 1.0f);
-                    ImGui::DragFloat("y offset", &(window->yOffset), 1.0f);
-                    ImGui::DragFloat("z offset", &(window->zOffset), 1.0f);
+                    ImGui::DragFloat("x offset", &(window->xOffset), 0.1f);
+                    ImGui::DragFloat("y offset", &(window->yOffset), 0.1f);
+                    ImGui::DragFloat("z offset", &(window->zOffset), 0.1f);
 
-                    ImGui::DragFloat("x scale", &(window->xScale), 1.0f);
-                    ImGui::DragFloat("y scale", &(window->yScale), 1.0f);
-                    ImGui::DragFloat("z scale", &(window->zScale), 1.0f);
+                    ImGui::DragFloat("x scale", &(window->xScale), 0.1f);
+                    ImGui::DragFloat("y scale", &(window->yScale), 0.1f);
+                    ImGui::DragFloat("z scale", &(window->zScale), 0.1f);
 
                     axisFlags |= ImPlotAxisFlags_NoGridLines | ImPlotAxisFlags_NoTickMarks | ImPlotAxisFlags_NoTickLabels;
                 }
@@ -740,7 +757,10 @@ int imgui_main(int, char**)
                     int variationSize = kernel::VAR_COUNT * (computedSteps + 1);
 
                     populateAxisBuffer((float*)axisBuffer, plotRangeSize / 10, plotRangeSize / 10, plotRangeSize / 10);
-                    if (is3d) rotateOffsetBuffer((float*)axisBuffer, 6, 3, 0, 1, 2, window->pitch, window->yaw, 0, 0, 0);
+                    if (is3d)
+                    {
+                        rotateOffsetBuffer((float*)axisBuffer, 6, 3, 0, 1, 2, window->pitch, window->yaw, ImVec4(0, 0, 0, 0), ImVec4(1, 1, 1, 0));
+                    }
 
                     int xIndex = is3d ? 0 : window->variables[0];
                     int yIndex = is3d ? 1 : window->variables[1];
@@ -752,7 +772,7 @@ int imgui_main(int, char**)
 
                         if (is3d)
                             rotateOffsetBuffer((float*)dataBuffer, computedSteps + 1, kernel::VAR_COUNT, window->variables[0], window->variables[1], window->variables[2],
-                                window->pitch, window->yaw, window->xOffset, window->yOffset, window->zOffset);
+                                window->pitch, window->yaw, ImVec4(window->xOffset, window->yOffset, window->zOffset, 0), ImVec4(window->xScale, window->yScale, window->zScale, 0));
 
                         ImPlot::SetNextLineStyle(ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
                         ImPlot::PlotLine(plotName.c_str(), &(((float*)dataBuffer)[xIndex]), &(((float*)dataBuffer)[yIndex]), computedSteps + 1, 0, 0, sizeof(float) * kernel::VAR_COUNT);
@@ -767,7 +787,7 @@ int imgui_main(int, char**)
 
                         if (is3d)
                             rotateOffsetBuffer((float*)particleBuffer, rangingData[playedBufferIndex].totalVariations, kernel::VAR_COUNT, window->variables[0], window->variables[1], window->variables[2],
-                                window->pitch, window->yaw, window->xOffset, window->yOffset, window->zOffset);
+                                window->pitch, window->yaw, ImVec4(window->xOffset, window->yOffset, window->zOffset, 0), ImVec4(window->xScale, window->yScale, window->zScale, 0));
 
                         ImPlot::SetNextLineStyle(markerColor);
                         ImPlot::PushStyleVar(ImPlotStyleVar_MarkerWeight, markerOutlineSize);
@@ -802,12 +822,65 @@ int imgui_main(int, char**)
                         ImPlot::PlotText(kernel::VAR_NAMES[window->variables[2]], ((float*)axisBuffer)[12], ((float*)axisBuffer)[13], ImVec2(0.0f, 0.0f));
                         ImPlot::PopStyleColor();
                     }
+
+                    // Grid
+                    if (is3d)
+                    {
+                        ImVec4 scale(plotRangeSize/* * window->xScale*/, plotRangeSize/* * window->yScale*/, plotRangeSize/* * window->zScale*/, 0);
+                        ImVec4 scaleLog((int)floorf(log10f(scale.x)), (int)floorf(log10f(scale.y)), (int)floorf(log10f(scale.z)), 0);
+                        ImVec4 scale0(powf(10, scaleLog.x - 1), powf(10, scaleLog.y - 1), powf(10, scaleLog.z - 1), 0);
+                        ImVec4 scale1(powf(10, scaleLog.x), powf(10, scaleLog.y), powf(10, scaleLog.z), 0);
+                        ImVec4 scaleInterp(log10f(scale.x) - scaleLog.x, log10f(scale.y) - scaleLog.y, log10f(scale.z) - scaleLog.z, 0);
+
+                        const float gridAlpha = 0.15f;
+                        ImVec4 alpha0((1.0f - scaleInterp.x) * gridAlpha, (1.0f - scaleInterp.y) * gridAlpha, (1.0f - scaleInterp.z) * gridAlpha, 0);
+                        ImVec4 alpha1(scaleInterp.x * gridAlpha, scaleInterp.y * gridAlpha, scaleInterp.z * gridAlpha, 0);
+
+                        // x
+                        ImPlot::SetNextLineStyle(ImVec4(1.0f, 1.0f, 1.0f, alpha0.x));
+                        populateEggslicerBuffer((float*)gridBuffer);
+                        rotateOffsetBuffer((float*)gridBuffer, 11 * 5, 3, 0, 1, 2, window->pitch, window->yaw, ImVec4(0, 0, 0, 0), ImVec4(scale0.x* window->xScale, scale0.y* window->yScale, scale0.z* window->zScale, 0));
+                        ImPlot::PlotLine(plotName.c_str(), &(((float*)gridBuffer)[0]), &(((float*)gridBuffer)[1]), 11 * 5, 0, 0, sizeof(float) * 3);
+
+                        ImPlot::SetNextLineStyle(ImVec4(1.0f, 1.0f, 1.0f, alpha1.x));
+                        populateEggslicerBuffer((float*)gridBuffer);
+                        rotateOffsetBuffer((float*)gridBuffer, 11 * 5, 3, 0, 1, 2, window->pitch, window->yaw, ImVec4(0, 0, 0, 0), ImVec4(scale1.x * window->xScale, scale1.y * window->yScale, scale1.z * window->zScale, 0));
+                        ImPlot::PlotLine(plotName.c_str(), &(((float*)gridBuffer)[0]), &(((float*)gridBuffer)[1]), 11 * 5, 0, 0, sizeof(float) * 3);
+
+                        // y
+                        ImPlot::SetNextLineStyle(ImVec4(1.0f, 1.0f, 1.0f, alpha0.y));
+                        populateEggslicerBuffer((float*)gridBuffer);
+                        eggslicerX2Y((float*)gridBuffer);
+                        rotateOffsetBuffer((float*)gridBuffer, 11 * 5, 3, 0, 1, 2, window->pitch, window->yaw, ImVec4(0, 0, 0, 0), ImVec4(scale0.x * window->xScale, scale0.y * window->yScale, scale0.z * window->zScale, 0));
+                        ImPlot::PlotLine(plotName.c_str(), &(((float*)gridBuffer)[0]), &(((float*)gridBuffer)[1]), 11 * 5, 0, 0, sizeof(float) * 3);
+
+                        ImPlot::SetNextLineStyle(ImVec4(1.0f, 1.0f, 1.0f, alpha1.y));
+                        populateEggslicerBuffer((float*)gridBuffer);
+                        eggslicerX2Y((float*)gridBuffer);
+                        rotateOffsetBuffer((float*)gridBuffer, 11 * 5, 3, 0, 1, 2, window->pitch, window->yaw, ImVec4(0, 0, 0, 0), ImVec4(scale1.x * window->xScale, scale1.y * window->yScale, scale1.z * window->zScale, 0));
+                        ImPlot::PlotLine(plotName.c_str(), &(((float*)gridBuffer)[0]), &(((float*)gridBuffer)[1]), 11 * 5, 0, 0, sizeof(float) * 3);
+
+                        // z
+                        ImPlot::SetNextLineStyle(ImVec4(1.0f, 1.0f, 1.0f, alpha0.z));
+                        populateEggslicerBuffer((float*)gridBuffer);
+                        eggslicerX2Y((float*)gridBuffer);
+                        eggslicerY2Z((float*)gridBuffer);
+                        rotateOffsetBuffer((float*)gridBuffer, 11 * 5, 3, 0, 1, 2, window->pitch, window->yaw, ImVec4(0, 0, 0, 0), ImVec4(scale0.x * window->xScale, scale0.y * window->yScale, scale0.z * window->zScale, 0));
+                        ImPlot::PlotLine(plotName.c_str(), &(((float*)gridBuffer)[0]), &(((float*)gridBuffer)[1]), 11 * 5, 0, 0, sizeof(float) * 3);
+
+                        ImPlot::SetNextLineStyle(ImVec4(1.0f, 1.0f, 1.0f, alpha1.z));
+                        populateEggslicerBuffer((float*)gridBuffer);
+                        eggslicerX2Y((float*)gridBuffer);
+                        eggslicerY2Z((float*)gridBuffer);
+                        rotateOffsetBuffer((float*)gridBuffer, 11 * 5, 3, 0, 1, 2, window->pitch, window->yaw, ImVec4(0, 0, 0, 0), ImVec4(scale1.x* window->xScale, scale1.y* window->yScale, scale1.z* window->zScale, 0));
+                        ImPlot::PlotLine(plotName.c_str(), &(((float*)gridBuffer)[0]), &(((float*)gridBuffer)[1]), 11 * 5, 0, 0, sizeof(float) * 3);
+                    }
                 }
                 // PHASE DIAGRAM END
+                ImPlot::EndPlot();
                 break;
             }           
 
-            ImPlot::EndPlot();
             ImGui::End();
         }
 
@@ -833,6 +906,8 @@ int imgui_main(int, char**)
         //HRESULT hr = g_pSwapChain->Present(0, 0); // Present without vsync
         g_SwapChainOccluded = (hr == DXGI_STATUS_OCCLUDED);
     }
+
+    saveWindows();
 
     // Cleanup
     ImGui_ImplDX11_Shutdown();
