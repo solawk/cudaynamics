@@ -82,11 +82,18 @@
     <ClInclude Include="objects.h" />
     <ClInclude Include="imgui_utils.h" />
     <ClInclude Include="cuda_macros.h" />
+    <ClInclude Include="resource.h" />
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="main.cu" />
     <CudaCompile Include="kernels\lorenzExample.cu">
       <Filter>kernels</Filter>
     </CudaCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="CUDAynamics.rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="icon.ico" />
   </ItemGroup>
 </Project>

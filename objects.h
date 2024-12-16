@@ -3,6 +3,10 @@
 #include <vector>
 #include <set>
 
+#include "imgui/backends/imgui_impl_win32.h"
+#include "imgui/backends/imgui_impl_dx11.h"
+#include "implot/implot.h"
+
 using namespace std;
 
 #define calculateStepCount(_min, _max, _step) (int)((_max - _min) / _step) + 1
@@ -21,10 +25,9 @@ public:
 
 	// Plot rotation
 	bool is3d;
-	float yaw;
-	float pitch;
-	float xOffset, yOffset, zOffset;
-	float xScale, yScale, zScale;
+	ImVec2 rotation;
+	ImVec4 offset;
+	ImVec4 scale;
 
 	PlotWindow(int _id)
 	{
@@ -39,16 +42,10 @@ public:
 		name = _name;
 
 		is3d = _is3d;
-		yaw = 0.0f;
-		pitch = 0.0f;
+		rotation = ImVec2(0.0f, 0.0f);
 
-		xOffset = 0.0f;
-		yOffset = 0.0f;
-		zOffset = 0.0f;
-
-		xScale = 0.0f;
-		yScale = 0.0f;
-		zScale = 0.0f;
+		offset = ImVec4(0.0f, 0.0f, 0.0f, 0.0f);
+		scale = ImVec4(1.0f, 1.0f, 1.0f, 0.0f);
 	}
 
 	void AssignVariables(int* variablesArray)
@@ -82,9 +79,9 @@ public:
 		exportString += " " + to_string((int)type);
 
 		exportString += " " + to_string((int)is3d);
-		exportString += " " + to_string(yaw) + " " + to_string(pitch);
-		exportString += " " + to_string(xOffset) + " " + to_string(yOffset) + " " + to_string(zOffset);
-		exportString += " " + to_string(xScale) + " " + to_string(yScale) + " " + to_string(zScale);
+		exportString += " " + to_string(rotation.x) + " " + to_string(rotation.y);
+		exportString += " " + to_string(offset.x) + " " + to_string(offset.y) + " " + to_string(offset.z);
+		exportString += " " + to_string(scale.x) + " " + to_string(scale.y) + " " + to_string(scale.z);
 
 		exportString += " " + to_string(variableCount);
 		for (int v : variables)
@@ -116,16 +113,16 @@ public:
 		type = (PlotType)atoi(data[1].c_str());
 
 		is3d = (bool)atoi(data[2].c_str());
-		yaw = (float)atof(data[3].c_str());
-		pitch = (float)atof(data[4].c_str());
+		rotation.x = (float)atof(data[3].c_str());
+		rotation.y = (float)atof(data[4].c_str());
 
-		xOffset = (float)atof(data[5].c_str());
-		yOffset = (float)atof(data[6].c_str());
-		zOffset = (float)atof(data[7].c_str());
+		offset.x = (float)atof(data[5].c_str());
+		offset.y = (float)atof(data[6].c_str());
+		offset.z = (float)atof(data[7].c_str());
 
-		xScale = (float)atof(data[8].c_str());
-		yScale = (float)atof(data[9].c_str());
-		zScale = (float)atof(data[10].c_str());
+		scale.x = (float)atof(data[8].c_str());
+		scale.y = (float)atof(data[9].c_str());
+		scale.z = (float)atof(data[10].c_str());
 
 		variableCount = atoi(data[11].c_str());
 		variables.clear();
@@ -210,5 +207,26 @@ public:
 		stepCount.clear();
 		currentStep.clear();
 		currentValue.clear();
+	}
+};
+
+struct PlotGraphSettings
+{
+public:
+	bool isEnabled;
+	float markerSize;
+	float markerOutlineSize;
+	ImVec4 markerColor;
+	ImPlotMarker markerShape;
+	float gridAlpha;
+
+	PlotGraphSettings()
+	{
+		isEnabled = true;
+		markerSize = 1.0f;
+		markerOutlineSize = 0.0f;
+		markerColor = ImVec4(1.0f, 1.0f, 1.0f, 0.5f);
+		markerShape = ImPlotMarker_Circle;
+		gridAlpha = 0.15f;
 	}
 };

@@ -17,6 +17,7 @@
 #include <atomic>
 #include <set>
 #include <fstream>
+#include "resource.h"
 
 bool CreateDeviceD3D(HWND hWnd);
 void CleanupDeviceD3D();

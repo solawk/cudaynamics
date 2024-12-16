@@ -1,7 +1,5 @@
 #include "imgui_utils.h"
 
-const float DEG2RAD = 3.141592f / 180.0f;
-
 void populateAxisBuffer(float* buffer, float x, float y, float z)
 {
 	for (int i = 0; i < 18; i++) buffer[i] = 0;
@@ -33,41 +31,67 @@ void rotateOffsetBuffer(float* buffer, int pointCount, int varCount, int xdo, in
 	}
 }
 
-void populateEggslicerBuffer(float* buffer) // One axis of a grid
+void populateGridBuffer(float* buffer) // One axis of a grid
 {
-	// 11 ticks per axis, 4+1=5 vertices per tick, 3 coordinates per vertex
-	for (int i = 0; i < 11*5*3; i++) buffer[i] = 0;
+	// 10 ticks per axis, 4+1=5 vertices per tick, 3 coordinates per vertex, 2 directions
+	//for (int i = 0; i < 10*5*3*2; i++) buffer[i] = 0;
 
-	for (int x = -5; x <= 5; x++)
+	for (int x = -5; x < 5; x++)
 	{
 		float xf = x * 1.0f;
 		int i = x + 5;
 		
-		buffer[i * 5 * 3 + 0] = xf;
-		buffer[i * 5 * 3 + 1] = -5.0f;
+		buffer[i * 5 * 3 + 0] = 0.0f;
+		buffer[i * 5 * 3 + 1] = xf;
 		buffer[i * 5 * 3 + 2] = -5.0f;
 
-		buffer[i * 5 * 3 + 3] = xf;
-		buffer[i * 5 * 3 + 4] = 5.0f;
+		buffer[i * 5 * 3 + 3] = 0.0f;
+		buffer[i * 5 * 3 + 4] = xf + 1.0f;
 		buffer[i * 5 * 3 + 5] = -5.0f;
 
-		buffer[i * 5 * 3 + 6] = xf;
-		buffer[i * 5 * 3 + 7] = 5.0f;
+		buffer[i * 5 * 3 + 6] = 0.0f;
+		buffer[i * 5 * 3 + 7] = xf + 1.0f;
 		buffer[i * 5 * 3 + 8] = 5.0f;
 
-		buffer[i * 5 * 3 + 9] = xf;
-		buffer[i * 5 * 3 + 10] = -5.0f;
+		buffer[i * 5 * 3 + 9] = 0.0f;
+		buffer[i * 5 * 3 + 10] = xf;
 		buffer[i * 5 * 3 + 11] = 5.0f;
 
-		buffer[i * 5 * 3 + 12] = xf;
-		buffer[i * 5 * 3 + 13] = -5.0f;
+		buffer[i * 5 * 3 + 12] = 0.0f;
+		buffer[i * 5 * 3 + 13] = xf;
 		buffer[i * 5 * 3 + 14] = -5.0f;
+	}
+
+	for (int x = -5; x < 5; x++)
+	{
+		float xf = x * 1.0f;
+		int i = x + 5;
+
+		buffer[150 + i * 5 * 3 + 0] = 0.0f;
+		buffer[150 + i * 5 * 3 + 2] = xf;
+		buffer[150 + i * 5 * 3 + 1] = -5.0f;
+
+		buffer[150 + i * 5 * 3 + 3] = 0.0f;
+		buffer[150 + i * 5 * 3 + 5] = xf + 1.0f;
+		buffer[150 + i * 5 * 3 + 4] = -5.0f;
+
+		buffer[150 + i * 5 * 3 + 6] = 0.0f;
+		buffer[150 + i * 5 * 3 + 8] = xf + 1.0f;
+		buffer[150 + i * 5 * 3 + 7] = 5.0f;
+
+		buffer[150 + i * 5 * 3 + 9] = 0.0f;
+		buffer[150 + i * 5 * 3 + 11] = xf;
+		buffer[150 + i * 5 * 3 + 10] = 5.0f;
+
+		buffer[150 + i * 5 * 3 + 12] = 0.0f;
+		buffer[150 + i * 5 * 3 + 14] = xf;
+		buffer[150 + i * 5 * 3 + 13] = -5.0f;
 	}
 }
 
-void eggslicerX2Y(float* buffer)
+void gridX2Y(float* buffer)
 {
-	for (int i = 0; i < 11*5; i++)
+	for (int i = 0; i < 10 * 5 * 2; i++)
 	{
 		float z = buffer[i * 3 + 2];
 		buffer[i * 3 + 2] = buffer[i * 3 + 0];
@@ -75,9 +99,9 @@ void eggslicerX2Y(float* buffer)
 	}
 }
 
-void eggslicerY2Z(float* buffer)
+void gridY2Z(float* buffer)
 {
-	for (int i = 0; i < 11 * 5; i++)
+	for (int i = 0; i < 10 * 5 * 2; i++)
 	{
 		float z = buffer[i * 3 + 2];
 		buffer[i * 3 + 2] = buffer[i * 3 + 1];
