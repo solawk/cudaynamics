@@ -71,9 +71,9 @@ Error:
     cudaFree(cuda_data);
 
     postcompute = std::chrono::steady_clock::now();
-    printf("Precompute time: %i ms\n", std::chrono::duration_cast<std::chrono::milliseconds>(precompute - before).count());
-    printf("Incompute time: %i ms\n", std::chrono::duration_cast<std::chrono::milliseconds>(incompute - precompute).count());
-    printf("Postcompute time: %i ms\n", std::chrono::duration_cast<std::chrono::milliseconds>(postcompute - incompute).count());
+    printf("Precompute time: %Ii ms\n", std::chrono::duration_cast<std::chrono::milliseconds>(precompute - before).count());
+    printf("Incompute time: %Ii ms\n", std::chrono::duration_cast<std::chrono::milliseconds>(incompute - precompute).count());
+    printf("Postcompute time: %Ii ms\n", std::chrono::duration_cast<std::chrono::milliseconds>(postcompute - incompute).count());
 
     return cudaStatus;
 }
@@ -147,7 +147,7 @@ int compute(void** dest, float* previousData, PostRanging* rangingData)
 
     after = std::chrono::steady_clock::now();
     std::chrono::steady_clock::duration elapsed = after - before;
-    printf("CUDA ended in %i ms\n", std::chrono::duration_cast<std::chrono::milliseconds>(elapsed).count());
+    printf("CUDA ended in %Ii ms\n", std::chrono::duration_cast<std::chrono::milliseconds>(elapsed).count());
 
 #define WRITE 0
 #if WRITE

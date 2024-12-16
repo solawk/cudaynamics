@@ -116,16 +116,16 @@ public:
 		type = (PlotType)atoi(data[1].c_str());
 
 		is3d = (bool)atoi(data[2].c_str());
-		yaw = atof(data[3].c_str());
-		pitch = atof(data[4].c_str());
+		yaw = (float)atof(data[3].c_str());
+		pitch = (float)atof(data[4].c_str());
 
-		xOffset = atof(data[5].c_str());
-		yOffset = atof(data[6].c_str());
-		zOffset = atof(data[7].c_str());
+		xOffset = (float)atof(data[5].c_str());
+		yOffset = (float)atof(data[6].c_str());
+		zOffset = (float)atof(data[7].c_str());
 
-		xScale = atof(data[8].c_str());
-		yScale = atof(data[9].c_str());
-		zScale = atof(data[10].c_str());
+		xScale = (float)atof(data[8].c_str());
+		yScale = (float)atof(data[9].c_str());
+		zScale = (float)atof(data[10].c_str());
 
 		variableCount = atoi(data[11].c_str());
 		variables.clear();
