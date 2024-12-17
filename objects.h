@@ -11,7 +11,7 @@ using namespace std;
 
 #define calculateStepCount(_min, _max, _step) (int)((_max - _min) / _step) + 1
 
-enum PlotType { Series, Phase, Orbit, PlotType_COUNT };
+enum PlotType { Series, Phase, Orbit, Heatmap, PlotType_COUNT };
 
 struct PlotWindow
 {
@@ -21,7 +21,7 @@ public:
 	string name; // Name of the window
 	PlotType type;
 	int variableCount;
-	vector<int> variables;
+	vector<int> variables; // or map
 
 	// Plot rotation
 	bool is3d;
@@ -70,6 +70,12 @@ public:
 			variableCount++;
 			variables.push_back(v);
 		}
+	}
+
+	void AssignVariables(int singleVariable)
+	{
+		variableCount = 1;
+		variables.push_back(singleVariable);
 	}
 
 	string ExportAsString()

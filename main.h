@@ -5,4 +5,4 @@
 #include "kernels/lorenzExample.h"
 #include <objects.h>
 
-int compute(void**, float*, PostRanging*);
+int compute(void**, void**, float*, PostRanging*);

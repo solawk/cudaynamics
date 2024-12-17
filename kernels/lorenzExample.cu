@@ -31,13 +31,17 @@ namespace kernel
     float PARAM_MAX[]{ 19.0f, 40.0f, 0.0f };
     int PARAM_STEP_COUNTS[]{ 0, 0, 0 };
 
+    const char* MAP_NAMES[]{ "test" };
+    int MAP_X[]{ kernel::x };
+    int MAP_Y[]{ kernel::y };
+
     bool executeOnLaunch = true;
     int steps = 1000;
     float stepSize = 0.01f;
     bool onlyShowLast = false;
 }
 
-__global__ void kernelProgram(float* data, float* params, PreRanging* ranging, int steps, float h, int variationSize, float* previousData)
+__global__ void kernelProgram(float* data, float* params, float* maps, PreRanging* ranging, int steps, float h, int variationSize, float* previousData)
 {
     int b = blockIdx.x;                                     // Current block of THREADS_PER_BLOCK threads
     int t = threadIdx.x;                                    // Current thread in the block, from 0 to THREADS_PER_BLOCK-1
@@ -88,4 +92,6 @@ __global__ void kernelProgram(float* data, float* params, PreRanging* ranging, i
         V(y + NEXT) = V(y) + h * dy;
         V(z + NEXT) = V(z) + h * dz;
     }
+
+    maps[variation] = V0(x);
 }

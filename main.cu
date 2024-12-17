@@ -8,8 +8,10 @@
 #include "cuda_macros.h"
 #include <objects.h>
 
-cudaError_t execute(float* data, int rangingCount, int variationSize, int variations, unsigned long int size, float* previousData)
+cudaError_t execute(float* data, float* maps, int rangingCount, int variationSize, int variations, float* previousData)
 {
+    unsigned long int size = variationSize * variations;
+
     std::chrono::steady_clock::time_point before = std::chrono::steady_clock::now();
     std::chrono::steady_clock::time_point precompute, incompute, postcompute;
 
@@ -24,6 +26,7 @@ cudaError_t execute(float* data, int rangingCount, int variationSize, int variat
 
     float* cuda_data = 0;
     float* cuda_params = 0;
+    float* cuda_maps = 0;
     PreRanging* cuda_ranging = 0;
     float* cuda_prev_data = 0;
 
@@ -32,6 +35,7 @@ cudaError_t execute(float* data, int rangingCount, int variationSize, int variat
     CUDA_MALLOC((void**)&cuda_data, size * sizeof(float), "cudaMalloc data failed!");
     CUDA_MALLOC((void**)&cuda_prev_data, size * sizeof(float), "cudaMalloc prev data failed!");
     CUDA_MALLOC((void**)&cuda_params, kernel::PARAM_COUNT * sizeof(float), "cudaMalloc params failed!");
+    CUDA_MALLOC((void**)&cuda_maps, variations * kernel::MAP_COUNT * sizeof(float), "cudaMalloc maps failed!");
 
     // Parameters array structure (PreRanging):
     for (int i = 0; i < kernel::VAR_COUNT; i++)
@@ -54,11 +58,12 @@ cudaError_t execute(float* data, int rangingCount, int variationSize, int variat
     }
 
     CUDA_MEMCPY(cuda_params, kernel::PARAM_VALUES, cudaMemcpyHostToDevice, kernel::PARAM_COUNT * sizeof(float), "cudaMemcpy params failed!");
+    CUDA_MEMCPY(cuda_maps, maps, cudaMemcpyHostToDevice, variations * kernel::MAP_COUNT * sizeof(float), "cudaMemcpy maps failed!");
     CUDA_MEMCPY(cuda_ranging, &ranging, cudaMemcpyHostToDevice, sizeof(ranging), "cudaMemcpy ranging failed!");
 
     // Kernel execution
     precompute = std::chrono::steady_clock::now();
-    kernelProgram <<< blocks, threads >>> (cuda_data, cuda_params, cuda_ranging, kernel::steps, kernel::stepSize, variationSize, !ranging.continuation ? 0 : cuda_prev_data);
+    kernelProgram <<< blocks, threads >>> (cuda_data, cuda_params, cuda_maps, cuda_ranging, kernel::steps, kernel::stepSize, variationSize, !ranging.continuation ? 0 : cuda_prev_data);
 
     CUDA_LASTERROR;
 
@@ -66,9 +71,14 @@ cudaError_t execute(float* data, int rangingCount, int variationSize, int variat
     incompute = std::chrono::steady_clock::now();
 
     CUDA_MEMCPY(data, cuda_data, cudaMemcpyDeviceToHost, size * sizeof(float), "cudaMemcpy back failed!");
+    CUDA_MEMCPY(maps, cuda_maps, cudaMemcpyDeviceToHost, variations * kernel::MAP_COUNT * sizeof(float), "cudaMemcpy maps back failed!");
 
 Error:
     cudaFree(cuda_data);
+    cudaFree(cuda_prev_data);
+    cudaFree(cuda_params);
+    cudaFree(cuda_ranging);
+    cudaFree(cuda_maps);
 
     postcompute = std::chrono::steady_clock::now();
     printf("Precompute time: %Ii ms\n", std::chrono::duration_cast<std::chrono::milliseconds>(precompute - before).count());
@@ -78,7 +88,7 @@ Error:
     return cudaStatus;
 }
 
-int compute(void** dest, float* previousData, PostRanging* rangingData)
+int compute(void** dest, void** maps, float* previousData, PostRanging* rangingData)
 {
     std::chrono::steady_clock::time_point before = std::chrono::steady_clock::now();
     std::chrono::steady_clock::time_point after;
@@ -107,7 +117,7 @@ int compute(void** dest, float* previousData, PostRanging* rangingData)
             rangingCount++;
         }
         else
-            kernel::VAR_STEP_COUNTS[i] = 0;
+            kernel::VAR_STEP_COUNTS[i] = 1;
     }
 
     for (int i = 0; i < kernel::PARAM_COUNT; i++)
@@ -128,7 +138,7 @@ int compute(void** dest, float* previousData, PostRanging* rangingData)
             rangingCount++;
         }
         else
-            kernel::PARAM_STEP_COUNTS[i] = 0;
+            kernel::PARAM_STEP_COUNTS[i] = 1;
     }
 
     rangingData->rangingCount = rangingCount;
@@ -136,11 +146,13 @@ int compute(void** dest, float* previousData, PostRanging* rangingData)
     unsigned long int variationSize = kernel::VAR_COUNT * (kernel::steps + 1); // All steps for the current parameter/variable value combination
     unsigned long int size = variationSize * variations; // Entire data array size
     if (*dest == nullptr) *dest = (void*)(new float[size]);
+    if (*maps == nullptr) *maps = (void*)(new float[kernel::MAP_COUNT * variations]);
+
     bool hasFailed = false;
 
     // Execution
 
-    cudaError_t cudaStatus = execute((float*)(*dest), rangingCount, variationSize, variations, size, previousData);
+    cudaError_t cudaStatus = execute((float*)(*dest), (float*)(*maps), rangingCount, variationSize, variations, previousData);
     if (cudaStatus != cudaSuccess) { fprintf(stderr, "execute failed!\n"); hasFailed = true; }
 
     // Output

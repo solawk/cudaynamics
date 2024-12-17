@@ -22,6 +22,11 @@ namespace kernel
 	extern float PARAM_MAX[];
 	extern int PARAM_STEP_COUNTS[];
 
+	enum MAPS { test, MAP_COUNT };
+	extern const char* MAP_NAMES[];
+	extern int MAP_X[];
+	extern int MAP_Y[];
+
 	extern int steps;
 	extern bool executeOnLaunch;
 	extern float stepSize;
@@ -30,4 +35,8 @@ namespace kernel
 
 const int THREADS_PER_BLOCK = 64;
 
-__global__ void kernelProgram(float*, float*, PreRanging*, int, float, int, float*);
+//void preprocessing(float*);
+
+__global__ void kernelProgram(float*, float*, float*, PreRanging*, int, float, int, float*);
+
+//void postprocessing(float*);

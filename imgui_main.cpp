@@ -15,6 +15,8 @@ atomic_bool computedDataReady[2] = { false, false };
 int playedBufferIndex = 0; // Buffer currently shown
 int bufferToFillIndex = 0; // Buffer to send computations to
 
+void* mapBuffers = nullptr;
+
 void* dataBuffer = nullptr; // One variation local buffer
 void* particleBuffer = nullptr; // One step local buffer
 float* valuesOverride = nullptr; // For transferring end variable values to the next buffer
@@ -35,7 +37,7 @@ bool playingParticles = false; // Playing animation
 float particleSpeed = 500.0f; // Steps per second
 float particlePhase = 0.0f; // Animation frame cooldown
 int particleStep = 0; // Current step of the computations to show
-bool continuousComputingEnabled = true; // Continuously compute next batch of steps via double buffering
+bool continuousComputingEnabled = false; // Continuously compute next batch of steps via double buffering
 
 // Plot graph settings
 bool markerSettingsWindowEnabled = true;
@@ -98,7 +100,7 @@ int asyncComputation(void** dest, PostRanging* rangingData)
 
     printf("is first batch %i, total variations %i\n", isFirstBatch, rangingData->totalVariations);
 
-    int computationResult = compute(dest, isFirstBatch ? nullptr : (float*)(computedData[1 - bufferToFillIndex]), rangingData);
+    int computationResult = compute(dest, &mapBuffers, isFirstBatch ? nullptr : (float*)(computedData[1 - bufferToFillIndex]), rangingData);
 
     computedSteps = kernel::steps;
 
@@ -221,6 +223,7 @@ int imgui_main(int, char**)
     PlotType plotType = Series;
     int selectedPlotVars[3]; selectedPlotVars[0] = 0; for (int i = 1; i < 3; i++) selectedPlotVars[i] = -1;
     set<int> selectedPlotVarsSet;
+    int selectedPlotMap = 0;
 
     memcpy(tempParamMin, kernel::PARAM_VALUES, sizeof(float) * kernel::PARAM_COUNT);
     memcpy(tempParamMax, kernel::PARAM_MAX, sizeof(float) * kernel::PARAM_COUNT);
@@ -573,7 +576,7 @@ int imgui_main(int, char**)
                 //ImGui::PopItemWidth();
 
                 // Type
-                std::string plottypes[] = { "Time series", "Phase diagram", "Orbit diagram" };
+                std::string plottypes[] = { "Time series", "Phase diagram", "Orbit diagram", "Heatmap" };
                 ImGui::Text("Plot type ");
                 ImGui::SameLine();
                 ImGui::PushItemWidth(250.0f);
@@ -664,6 +667,30 @@ int imgui_main(int, char**)
                 case Orbit:
 
                     break;
+
+                case Heatmap:
+                    if (kernel::MAP_COUNT > 0)
+                    {
+                        ImGui::PushItemWidth(150.0f);
+
+                        ImGui::Text("Index");
+                        ImGui::SameLine();
+                        if (ImGui::BeginCombo("##Plot builder map index selection", kernel::MAP_NAMES[selectedPlotMap]))
+                        {
+                            for (int m = 0; m < kernel::MAP_COUNT; m++)
+                            {
+                                bool isSelected = selectedPlotMap == m;
+                                ImGuiSelectableFlags selectableFlags = 0;
+
+                                if (selectedPlotMap == m) selectableFlags = ImGuiSelectableFlags_Disabled;
+                                if (ImGui::Selectable(kernel::MAP_NAMES[m], isSelected, selectableFlags)) selectedPlotMap = m;
+                            }
+                            ImGui::EndCombo();
+                        }
+
+                        ImGui::PopItemWidth();
+                    }
+                    break;
                 }
 
                 if (ImGui::Button("Create graph"))
@@ -673,6 +700,7 @@ int imgui_main(int, char**)
 
                     if (plotType == Series) plotWindow.AssignVariables(selectedPlotVarsSet);
                     if (plotType == Phase) plotWindow.AssignVariables(selectedPlotVars);
+                    if (plotType == Heatmap) plotWindow.AssignVariables(selectedPlotMap);
 
                     plotWindows.push_back(plotWindow);
                 }
@@ -728,6 +756,9 @@ int imgui_main(int, char**)
             // Common variables
             ImPlotAxisFlags axisFlags = (autofitAfterComputing ? ImPlotAxisFlags_AutoFit : 0);
             ImPlotPlot* plot;
+            bool is3d;
+            int mapIndex;
+            ImPlotColormap heatmapColorMap = ImPlotColormap_Jet;
 
             switch (window->type)
             {
@@ -765,7 +796,7 @@ int imgui_main(int, char**)
 
             case Phase:
                 // PHASE DIAGRAM
-                bool is3d = window->variableCount == 3;
+                is3d = window->variableCount == 3;
 
                 if (is3d)
                 {
@@ -932,7 +963,34 @@ int imgui_main(int, char**)
                     ImPlot::EndPlot();
                 }
                 break;
-            }           
+
+                case Heatmap:
+
+                    //IMPLOT_TMP void PlotHeatmap(const char* label_id, const T* values, int rows, int cols, double scale_min=0, double scale_max=0, const char* label_fmt="%.1f", const ImPlotPoint& bounds_min=ImPlotPoint(0,0), const ImPlotPoint& bounds_max=ImPlotPoint(1,1), ImPlotHeatmapFlags flags=0);
+
+                    if (ImPlot::BeginPlot(plotName.c_str(), "", "", ImVec2(-1, -1), ImPlotFlags_NoTitle | ImPlotFlags_NoLegend, axisFlags, axisFlags))
+                    {
+                        plot = ImPlot::GetPlot(plotName.c_str());
+                        plot->is3d = false;
+
+                        ImPlot::PushColormap(heatmapColorMap);
+                        mapIndex = window->variables[0];
+                        if (mapBuffers)
+                        {
+                            ImPlot::PlotHeatmap((std::string(kernel::VAR_NAMES[mapIndex]) + "##" + plotName + std::to_string(0)).c_str(),
+                                ((float*)mapBuffers + mapIndex * rangingData->totalVariations),
+                                kernel::VAR_STEP_COUNTS[kernel::MAP_X[mapIndex]], kernel::VAR_STEP_COUNTS[kernel::MAP_Y[mapIndex]],
+                                0, 0, "", ImPlotPoint(0, 0), ImPlotPoint(kernel::VAR_STEP_COUNTS[kernel::MAP_X[mapIndex]], kernel::VAR_STEP_COUNTS[kernel::MAP_Y[mapIndex]]));
+                        }
+                        ImPlot::PopColormap();
+
+                        //printf("End series\n");
+                        ImPlot::EndPlot();
+                    }
+
+                    break;
+            }
+           
 
             ImGui::End();
         }
