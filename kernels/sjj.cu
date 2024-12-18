@@ -1,4 +1,5 @@
 ﻿#include "cuda_runtime.h"
+#include "cuda_macros.h"
 #include "device_launch_parameters.h"
 #include <stdio.h>
 #include <fstream>
@@ -8,11 +9,6 @@
 #include <chrono>
 #include <wtypes.h>
 
-#define V0(n) varValues[kernel::n]
-#define V(n) data[stepStart + kernel::n]
-#define P(n) paramValues[kernel::n]
-#define NEXT kernel::VAR_COUNT
-
 namespace kernel
 {
     const char* name = "Shunted Josephson Junction";
@@ -20,7 +16,7 @@ namespace kernel
     const char* VAR_NAMES[]{ "sin_x1", "x1", "x2", "x3" };
     float VAR_VALUES[]{ 0.0f, -0.31f, 3.3f, 0.76f };
     bool VAR_RANGING[]{ false, true, true, true };
-    float VAR_STEPS[]{ 0.0f, 0.1f, 0.1f, 0.1f };
+    float VAR_STEPS[]{ 0.0f, 0.02f, 0.1f, 0.1f };
     float VAR_MAX[]{ 0.0f, -0.01f, 4.3f, 1.76f };
     int VAR_STEP_COUNTS[]{ 0, 0, 0, 0 };
 
@@ -31,13 +27,17 @@ namespace kernel
     float PARAM_MAX[]{ 19.0f, 40.0f, 0.0f, 0.0f, 0.0f, 0.0f };
     int PARAM_STEP_COUNTS[]{ 0, 0, 0, 0, 0, 0 };
 
+    const char* MAP_NAMES[]{ "blank" };
+    int MAP_X[]{ 0 };
+    int MAP_Y[]{ 0 };
+
     bool executeOnLaunch = true;
-    int steps = 10000;
+    int steps = 50000;
     float stepSize = 0.01f;
     bool onlyShowLast = false;
 }
 
-__global__ void kernelProgram(float* data, float* params, PreRanging* ranging, int steps, float h, int variationSize, float* previousData)
+__global__ void kernelProgram(float* data, float* params, float* maps, PreRanging* ranging, int steps, float h, int variationSize, float* previousData)
 {
     int b = blockIdx.x;                                     // Current block of THREADS_PER_BLOCK threads
     int t = threadIdx.x;                                    // Current thread in the block, from 0 to THREADS_PER_BLOCK-1
@@ -95,6 +95,6 @@ __global__ void kernelProgram(float* data, float* params, PreRanging* ranging, i
                 - ((V(x1) > P(p3)) ? P(p4) : P(p5)) * V(x1)
                 - sinf(V(x0 + NEXT))
                 - V(x2 + NEXT)
-            );
+                );
     }
 }

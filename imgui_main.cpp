@@ -91,6 +91,23 @@ void resetTempBuffers(int totalVariations)
 
 void computing();
 
+void printResults(vector<Point>& points, int num_points)
+{
+    int i = 0;
+    printf("Number of points: %u\n"
+        " x     y     z     cluster_id\n"
+        "-----------------------------\n"
+        , num_points);
+    while (i < num_points)
+    {
+        printf("%5.2lf %5.2lf %5.2lf: %d\n",
+            points[i].x,
+            points[i].y, points[i].z,
+            points[i].clusterID);
+        ++i;
+    }
+}
+
 int asyncComputation(void** dest, PostRanging* rangingData)
 {
     computedDataReady[bufferToFillIndex] = false;
@@ -109,6 +126,22 @@ int asyncComputation(void** dest, PostRanging* rangingData)
         autofitAfterComputing = true;
         resetTempBuffers(rangingData->totalVariations);
         resetOverrideBuffer(rangingData->totalVariations);
+    }
+
+    // WIP dbscan
+    if (0)
+    {
+        vector<Point> dbPoints(rangingData->totalVariations);
+        int variationSize = kernel::VAR_COUNT * (computedSteps + 1);
+        for (int i = 0; i < rangingData->totalVariations; i++)
+        {
+            dbPoints[i].x = ((float*)(*dest))[(variationSize * i) + (kernel::VAR_COUNT * (computedSteps - 1)) + kernel::sin_x0];
+            dbPoints[i].y = ((float*)(*dest))[(variationSize * i) + (kernel::VAR_COUNT * (computedSteps - 1)) + kernel::x1];
+            dbPoints[i].z = ((float*)(*dest))[(variationSize * i) + (kernel::VAR_COUNT * (computedSteps - 1)) + kernel::x2];
+        }
+        DBSCAN ds(4, 10000.0f * 10000.0f, dbPoints);
+        ds.run();
+        printResults(ds.m_points, ds.getTotalPointSize());
     }
 
     computedDataReady[bufferToFillIndex] = true;

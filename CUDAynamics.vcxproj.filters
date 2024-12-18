@@ -31,6 +31,9 @@
       <Filter>implot</Filter>
     </ClCompile>
     <ClCompile Include="imgui_utils.cpp" />
+    <ClCompile Include="dbscan\dbscan.cpp">
+      <Filter>dbscan</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="imgui">
@@ -44,6 +47,9 @@
     </Filter>
     <Filter Include="implot">
       <UniqueIdentifier>{3e4da3fd-8489-4389-9886-e10bac652991}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="dbscan">
+      <UniqueIdentifier>{4461c4e3-1746-41e9-847c-27da9839fd03}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -83,13 +89,13 @@
     <ClInclude Include="imgui_utils.h" />
     <ClInclude Include="cuda_macros.h" />
     <ClInclude Include="resource.h" />
-    <ClInclude Include="kernels\lorenzExample.h">
-      <Filter>kernels</Filter>
+    <ClInclude Include="dbscan\dbscan.h">
+      <Filter>dbscan</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="main.cu" />
-    <CudaCompile Include="kernels\lorenzExample.cu">
+    <CudaCompile Include="kernels\sjj.cu">
       <Filter>kernels</Filter>
     </CudaCompile>
   </ItemGroup>

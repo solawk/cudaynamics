@@ -1,4 +1,5 @@
 ﻿#include "cuda_runtime.h"
+#include "cuda_macros.h"
 #include "device_launch_parameters.h"
 #include <stdio.h>
 #include <fstream>
@@ -7,11 +8,6 @@
 #include "lorenzExample.h"
 #include "cuda_macros.h"
 #include <objects.h>
-
-#define V0(n) varValues[kernel::n]
-#define V(n) data[stepStart + kernel::n]
-#define P(n) paramValues[kernel::n]
-#define NEXT kernel::VAR_COUNT
 
 namespace kernel
 {
@@ -93,5 +89,5 @@ __global__ void kernelProgram(float* data, float* params, float* maps, PreRangin
         V(z + NEXT) = V(z) + h * dz;
     }
 
-    maps[variation] = V0(x);
+    M(variation) = V0(x);
 }

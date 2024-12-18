@@ -42,7 +42,7 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>implot;$(ProjectDir);$(WindowsSDK_IncludePath);$(VC_IncludePath);$(IncludePath)</IncludePath>
+    <IncludePath>implot;dbscan;$(ProjectDir);$(WindowsSDK_IncludePath);$(VC_IncludePath);$(IncludePath)</IncludePath>
     <ReferencePath>$(VC_ReferencesPath_x64);$(WindowsSDK_IncludePath)</ReferencePath>
     <LibraryPath>$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);$(WindowsSDK_IncludePath)</LibraryPath>
     <LibraryWPath>$(WindowsSDK_MetadataPath);$(WindowsSDK_IncludePath);</LibraryWPath>
@@ -64,17 +64,17 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;WIN64;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <LanguageStandard>Default</LanguageStandard>
+      <LanguageStandard>stdcpp14</LanguageStandard>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Windows</SubSystem>
       <AdditionalDependencies>cudart_static.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories);implot;$(CudaToolkitLibDir)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories);implot;$(CudaToolkitLibDir);dbscan</AdditionalLibraryDirectories>
     </Link>
     <CudaCompile>
       <TargetMachinePlatform>64</TargetMachinePlatform>
-      <Include>imgui;imgui/backends;.;backends;kernels;implot</Include>
+      <Include>imgui;imgui/backends;.;backends;kernels;implot;dbscan</Include>
       <AdditionalCompilerOptions>
       </AdditionalCompilerOptions>
     </CudaCompile>
@@ -100,6 +100,7 @@
     </CudaCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="dbscan\dbscan.cpp" />
     <ClCompile Include="imgui\backends\imgui_impl_dx11.cpp" />
     <ClCompile Include="imgui\backends\imgui_impl_win32.cpp" />
     <ClCompile Include="imgui\imgui.cpp" />
@@ -115,6 +116,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="cuda_macros.h" />
+    <ClInclude Include="dbscan\dbscan.h" />
     <ClInclude Include="imgui\backends\imgui_impl_dx11.h" />
     <ClInclude Include="imgui\backends\imgui_impl_win32.h" />
     <ClInclude Include="imgui\imconfig.h" />
@@ -127,13 +129,12 @@
     <ClInclude Include="imgui_utils.h" />
     <ClInclude Include="implot\implot.h" />
     <ClInclude Include="implot\implot_internal.h" />
-    <ClInclude Include="kernels\lorenzExample.h" />
     <ClInclude Include="main.h" />
     <ClInclude Include="objects.h" />
     <ClInclude Include="resource.h" />
   </ItemGroup>
   <ItemGroup>
-    <CudaCompile Include="kernels\lorenzExample.cu" />
+    <CudaCompile Include="kernels\sjj.cu" />
     <CudaCompile Include="main.cu" />
   </ItemGroup>
   <ItemGroup>
