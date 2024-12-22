@@ -4,7 +4,7 @@
 #include <stdio.h>
 #include <fstream>
 
-#include "sjj.h"
+#include "RLC-sJJ.h"
 #include <objects.h>
 #include <chrono>
 #include <wtypes.h>
@@ -32,7 +32,7 @@ namespace kernel
     int MAP_Y[]{ 0 };
 
     bool executeOnLaunch = true;
-    int steps = 50000;
+    int steps = 5000;
     float stepSize = 0.01f;
     bool onlyShowLast = false;
 }

@@ -134,7 +134,7 @@
     <ClInclude Include="resource.h" />
   </ItemGroup>
   <ItemGroup>
-    <CudaCompile Include="kernels\sjj.cu" />
+    <CudaCompile Include="kernels\RLC-sJJ.cu" />
     <CudaCompile Include="main.cu" />
   </ItemGroup>
   <ItemGroup>

@@ -95,7 +95,7 @@
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="main.cu" />
-    <CudaCompile Include="kernels\sjj.cu">
+    <CudaCompile Include="kernels\RLC-sJJ.cu">
       <Filter>kernels</Filter>
     </CudaCompile>
   </ItemGroup>

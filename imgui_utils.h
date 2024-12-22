@@ -10,6 +10,8 @@
 
 const float DEG2RAD = 3.141592f / 180.0f;
 
+std::string memoryString(unsigned long int bytes);
+
 void populateAxisBuffer(float* buffer, float x, float y, float z);
 
 void rotateOffsetBuffer(float* buffer, int pointCount, int varCount, int xdo, int ydo, int zdo, float pitch, float yaw, ImVec4 offset, ImVec4 scale);

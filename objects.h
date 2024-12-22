@@ -195,16 +195,18 @@ public:
 
 	vector<float> currentValue;
 
+	float timeElapsed;
+
 	PostRanging()
 	{
-		rangingCount = 0;
-		totalVariations = 0;
+		clear();
 	}
 
 	void clear()
 	{
 		rangingCount = 0;
 		totalVariations = 0;
+		timeElapsed = 0.0f;
 
 		names.clear();
 		min.clear();

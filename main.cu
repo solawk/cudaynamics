@@ -159,7 +159,9 @@ int compute(void** dest, void** maps, float* previousData, PostRanging* rangingD
 
     after = std::chrono::steady_clock::now();
     std::chrono::steady_clock::duration elapsed = after - before;
-    printf("CUDA ended in %Ii ms\n", std::chrono::duration_cast<std::chrono::milliseconds>(elapsed).count());
+    float timeElapsed = std::chrono::duration_cast<std::chrono::milliseconds>(elapsed).count();
+    printf("CUDA ended in %Ii ms\n", timeElapsed);
+    rangingData->timeElapsed = timeElapsed;
 
 #define WRITE 0
 #if WRITE

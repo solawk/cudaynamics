@@ -1,5 +1,29 @@
 #include "imgui_utils.h"
 
+std::string memoryString(unsigned long int bytes)
+{
+	if (bytes < 1024)
+	{
+		// B
+		return to_string(bytes) + " B";
+	}
+	else if (bytes < 1024 * 1024)
+	{
+		// kB
+		return to_string((int)(bytes / 1024)) + " kB";
+	}
+	else if (bytes < 1024 * 1024 * 1024)
+	{
+		// MB
+		return to_string((int)(bytes / (1024 * 1024))) + " MB";
+	}
+	else
+	{
+		// GB
+		return to_string((int)(bytes / (1024 * 1024 * 1024))) + " GB";
+	}
+}
+
 void populateAxisBuffer(float* buffer, float x, float y, float z)
 {
 	for (int i = 0; i < 18; i++) buffer[i] = 0;
