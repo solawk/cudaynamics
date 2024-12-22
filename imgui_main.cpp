@@ -14,8 +14,7 @@ void* computedData[2] = { nullptr, nullptr }; // For double buffering the comput
 atomic_bool computedDataReady[2] = { false, false };
 int playedBufferIndex = 0; // Buffer currently shown
 int bufferToFillIndex = 0; // Buffer to send computations to
-
-void* mapBuffers = nullptr;
+void* mapBuffers[2] = { nullptr, nullptr };
 
 void* dataBuffer = nullptr; // One variation local buffer
 void* particleBuffer = nullptr; // One step local buffer
@@ -67,6 +66,9 @@ void deleteBothBuffers()
     if (computedData[0] != nullptr) { delete[] computedData[0]; computedData[0] = nullptr; }
     if (computedData[1] != nullptr) { delete[] computedData[1]; computedData[1] = nullptr; }
 
+    if (mapBuffers[0] != nullptr) { delete[] mapBuffers[0]; mapBuffers[0] = nullptr; }
+    if (mapBuffers[1] != nullptr) { delete[] mapBuffers[1]; mapBuffers[1] = nullptr; }
+
     computedDataReady[0] = false;
     computedDataReady[1] = false;
 
@@ -100,7 +102,7 @@ int asyncComputation(void** dest, PostRanging* rangingData)
 
     printf("is first batch %i, total variations %i\n", isFirstBatch, rangingData->totalVariations);
 
-    int computationResult = compute(dest, &mapBuffers, isFirstBatch ? nullptr : (float*)(computedData[1 - bufferToFillIndex]), rangingData);
+    int computationResult = compute(dest, &(mapBuffers[bufferToFillIndex]), isFirstBatch ? nullptr : (float*)(computedData[1 - bufferToFillIndex]), rangingData);
 
     computedSteps = kernel::steps;
 
@@ -224,6 +226,7 @@ int imgui_main(int, char**)
     int selectedPlotVars[3]; selectedPlotVars[0] = 0; for (int i = 1; i < 3; i++) selectedPlotVars[i] = -1;
     set<int> selectedPlotVarsSet;
     int selectedPlotMap = 0;
+    if (continuousComputingEnabled) { for (int p = 0; p < kernel::PARAM_COUNT; p++) kernel::PARAM_RANGING[p] = false; }
 
     try
     {
@@ -415,7 +418,19 @@ int imgui_main(int, char**)
             ImGui::Text(("Single buffer size: " + memoryString(singleBufferFloatSize)).c_str());
 
             ImGui::PushItemWidth(200.0f);
-            ImGui::InputInt("Steps", &(kernel::steps), 1, 1000);
+            if (playingParticles)
+            {
+                ImGui::PushStyleColor(ImGuiCol_FrameBg, disabledBackgroundColor);
+                ImGui::PushStyleColor(ImGuiCol_FrameBgActive, disabledBackgroundColor);
+                ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, disabledBackgroundColor);
+            }
+            ImGui::InputInt("Steps", &(kernel::steps), 1, 1000, playingParticles ? ImGuiInputTextFlags_ReadOnly : 0);
+            if (playingParticles)
+            {
+                ImGui::PopStyleColor();
+                ImGui::PopStyleColor();
+                ImGui::PopStyleColor();
+            }
             ImGui::InputFloat("Step size", &(kernel::stepSize), 0.0f, 0.0f, "%f");
             ImGui::PopItemWidth();
             
@@ -993,10 +1008,10 @@ int imgui_main(int, char**)
 
                         ImPlot::PushColormap(heatmapColorMap);
                         mapIndex = window->variables[0];
-                        if (mapBuffers)
+                        if (mapBuffers[playedBufferIndex])
                         {
                             ImPlot::PlotHeatmap((std::string(kernel::VAR_NAMES[mapIndex]) + "##" + plotName + std::to_string(0)).c_str(),
-                                ((float*)mapBuffers + mapIndex * rangingData->totalVariations),
+                                ((float*)(mapBuffers[playedBufferIndex]) + mapIndex * rangingData->totalVariations),
                                 kernel::VAR_STEP_COUNTS[kernel::MAP_X[mapIndex]], kernel::VAR_STEP_COUNTS[kernel::MAP_Y[mapIndex]],
                                 0, 0, "", ImPlotPoint(0, 0), ImPlotPoint(kernel::VAR_STEP_COUNTS[kernel::MAP_X[mapIndex]], kernel::VAR_STEP_COUNTS[kernel::MAP_Y[mapIndex]]));
                         }
