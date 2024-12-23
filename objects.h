@@ -7,6 +7,8 @@
 #include "imgui/backends/imgui_impl_dx11.h"
 #include "implot/implot.h"
 
+#define MAX_VARS_PARAMS 32
+
 using namespace std;
 
 #define calculateStepCount(_min, _max, _step) (int)((_max - _min) / _step) + 1
@@ -51,7 +53,7 @@ public:
 	void AssignVariables(int* variablesArray)
 	{
 		variableCount = 0;
-		for (int i = 0; i < 32; i++)
+		for (int i = 0; i < MAX_VARS_PARAMS; i++)
 		{
 			if (variablesArray[i] > -1)
 			{
@@ -162,7 +164,7 @@ public:
 	int varCount;
 	int paramCount;
 	int rangingCount;
-	SinglePreRangingInfo rangings[32]{ 0 };
+	SinglePreRangingInfo rangings[MAX_VARS_PARAMS]{ 0 };
 	int totalVariations;
 	bool continuation; // For first batch – false (forming initial values from ranging data), for next batches – true (initial values are pre-formed from previous final values)
 
@@ -236,5 +238,50 @@ public:
 		markerColor = ImVec4(1.0f, 1.0f, 1.0f, 0.5f);
 		markerShape = ImPlotMarker_Circle;
 		gridAlpha = 0.15f;
+	}
+};
+
+template<typename T> struct InputValuesBuffer
+{
+	T MIN[MAX_VARS_PARAMS];
+	T MAX[MAX_VARS_PARAMS];
+	T STEP[MAX_VARS_PARAMS];
+	int stepCount[MAX_VARS_PARAMS];
+
+	void load(T min, T max, T step, int index)
+	{
+		MIN[index] = min;
+		MAX[index] = max;
+		STEP[index] = step;
+
+		stepCount[index] = calculateStepCount(min, max, step);
+	}
+
+	void load(T* min, T* max, T* step, int size)
+	{
+		for (int i = 0; i < size; i++)
+		{
+			load(min[i], max[i], step[i], i);
+		}
+	}
+
+	void unload(T* min, T* max, T* step, int size)
+	{
+		for (int i = 0; i < size; i++)
+		{
+			min[i] = MIN[i];
+			max[i] = MAX[i];
+			step[i] = STEP[i];
+		}
+	}
+
+	void recountSteps(int i)
+	{
+		stepCount[i] = calculateStepCount(MIN[i], MAX[i], STEP[i]);
+	}
+
+	int stepsOf(int index)
+	{
+		return stepCount[index];
 	}
 };

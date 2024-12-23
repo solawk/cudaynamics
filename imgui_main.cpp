@@ -16,6 +16,9 @@ int playedBufferIndex = 0; // Buffer currently shown
 int bufferToFillIndex = 0; // Buffer to send computations to
 void* mapBuffers[2] = { nullptr, nullptr };
 
+bool autoLoadNewParams = false;
+InputValuesBuffer<float> paramNew;
+
 void* dataBuffer = nullptr; // One variation local buffer
 void* particleBuffer = nullptr; // One step local buffer
 float* valuesOverride = nullptr; // For transferring end variable values to the next buffer
@@ -29,7 +32,7 @@ bool executedOnLaunch = false; // Temporary flag to execute computations on laun
 
 bool enabledParticles = true; // Particles mode
 bool playingParticles = false; // Playing animation
-float particleSpeed = 15000.0f; // Steps per second
+float particleSpeed = 5000.0f; // Steps per second
 float particlePhase = 0.0f; // Animation frame cooldown
 int particleStep = 0; // Current step of the computations to show
 bool continuousComputingEnabled = true; // Continuously compute next batch of steps via double buffering
@@ -60,6 +63,16 @@ std::future<int> computationFutures[2];
 
 bool rangingWindowEnabled = true;
 bool graphBuilderWindowEnabled = true;
+
+// Repetitive stuff
+#define LOAD_PARAMNEW paramNew.load(kernel::PARAM_VALUES, kernel::PARAM_MAX, kernel::PARAM_STEPS, kernel::PARAM_COUNT)
+#define UNLOAD_PARAMNEW paramNew.unload(kernel::PARAM_VALUES, kernel::PARAM_MAX, kernel::PARAM_STEPS, kernel::PARAM_COUNT)
+#define PUSH_DISABLED_FRAME {ImGui::PushStyleColor(ImGuiCol_FrameBg, disabledBackgroundColor); \
+                            ImGui::PushStyleColor(ImGuiCol_FrameBgActive, disabledBackgroundColor); \
+                            ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, disabledBackgroundColor);}
+#define POP_DISABLED_FRAME  {ImGui::PopStyleColor(); \
+                            ImGui::PopStyleColor(); \
+                            ImGui::PopStyleColor();}
 
 void deleteBothBuffers()
 {
@@ -226,7 +239,7 @@ int imgui_main(int, char**)
     int selectedPlotVars[3]; selectedPlotVars[0] = 0; for (int i = 1; i < 3; i++) selectedPlotVars[i] = -1;
     set<int> selectedPlotVarsSet;
     int selectedPlotMap = 0;
-    if (continuousComputingEnabled) { for (int p = 0; p < kernel::PARAM_COUNT; p++) kernel::PARAM_RANGING[p] = false; }
+    //if (continuousComputingEnabled) { for (int p = 0; p < kernel::PARAM_COUNT; p++) kernel::PARAM_RANGING[p] = false; }
 
     try
     {
@@ -314,9 +327,7 @@ int imgui_main(int, char**)
                 if (playingParticles)
                 {
                     ImGui::PushStyleColor(ImGuiCol_Text, disabledTextColor);
-                    ImGui::PushStyleColor(ImGuiCol_FrameBg, disabledBackgroundColor);
-                    ImGui::PushStyleColor(ImGuiCol_FrameBgActive, disabledBackgroundColor);
-                    ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, disabledBackgroundColor);
+                    PUSH_DISABLED_FRAME;
                 }
                 ImGui::SameLine();
                 ImGui::PushItemWidth(150.0f);
@@ -346,67 +357,125 @@ int imgui_main(int, char**)
                 if (playingParticles)
                 {
                     ImGui::PopStyleColor();
-                    ImGui::PopStyleColor();
-                    ImGui::PopStyleColor();
-                    ImGui::PopStyleColor();
+                    POP_DISABLED_FRAME;
                 }
             }
 
             ImGui::SeparatorText("Parameters");
+
+            bool needOfParamBuffer = playingParticles && !autoLoadNewParams;
+            float* currentParamMin = needOfParamBuffer ? paramNew.MIN : kernel::PARAM_VALUES;
+            float* currentParamMax = needOfParamBuffer ? paramNew.MAX : kernel::PARAM_MAX;
+            float* currentParamSteps = needOfParamBuffer ? paramNew.STEP : kernel::PARAM_STEPS;
             bool anyChanged = false;
+            bool applicationProhibited = false;
 
             for (int i = 0; i < kernel::PARAM_COUNT; i++)
             {
+                bool isRanging = kernel::PARAM_RANGING[i];
+                bool changeAllowed = !isRanging || !playingParticles || !autoLoadNewParams;
+                bool thisChanged = false;
+
                 namePadded = kernel::PARAM_NAMES[i];
                 for (int j = (int)strlen(kernel::PARAM_NAMES[i]); j < maxNameLength; j++)
                     namePadded += ' ';
 
                 ImGui::Text(namePadded.c_str());
 
-                //if (playingParticles) ImGui::PushStyleColor(ImGuiCol_Text, disabledTextColor);
+                if (!changeAllowed) ImGui::PushStyleColor(ImGuiCol_Text, disabledTextColor); // disabledText push
+
                 ImGui::SameLine();
                 ImGui::PushItemWidth(150.0f);
-                ImGui::DragFloat(("##" + std::string(kernel::PARAM_NAMES[i])).c_str(), &(kernel::PARAM_VALUES[i]), 1.0f, 0.0f, 0.0f, "%f", 0);
+                if (!changeAllowed) PUSH_DISABLED_FRAME;
+                ImGui::DragFloat(("##" + std::string(kernel::PARAM_NAMES[i])).c_str(), &(currentParamMin[i]), 1.0f, 0.0f, 0.0f, "%f", changeAllowed ? 0 : ImGuiSliderFlags_ReadOnly);
+                if (!changeAllowed) POP_DISABLED_FRAME;
                 ImGui::PopItemWidth();
 
                 ImGui::SameLine();
-                bool isRanging = kernel::PARAM_RANGING[i];
 
-                if (continuousComputingEnabled)
-                {
-                    ImGui::PushStyleColor(ImGuiCol_FrameBg, disabledBackgroundColor);
-                    ImGui::PushStyleColor(ImGuiCol_FrameBgActive, disabledBackgroundColor);
-                    ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, disabledBackgroundColor);
-                }
-                if (ImGui::Checkbox(("##RANGING_" + std::string(kernel::PARAM_NAMES[i])).c_str(), &(isRanging)) && !playingParticles && !continuousComputingEnabled)
+                if (playingParticles) PUSH_DISABLED_FRAME;
+                if (ImGui::Checkbox(("##RANGING_" + std::string(kernel::PARAM_NAMES[i])).c_str(), &(isRanging)) && !playingParticles)
                 {
                     kernel::PARAM_RANGING[i] = !kernel::PARAM_RANGING[i];
                 }
-                if (continuousComputingEnabled)
+                if (playingParticles) POP_DISABLED_FRAME;
+
+                if (kernel::PARAM_RANGING[i])
                 {
-                    ImGui::PopStyleColor();
-                    ImGui::PopStyleColor();
-                    ImGui::PopStyleColor();
+                    if (!changeAllowed) PUSH_DISABLED_FRAME;
+                    ImGui::SameLine();
+                    ImGui::PushItemWidth(150.0f);
+                    ImGui::DragFloat(("##STEP_" + std::string(kernel::PARAM_NAMES[i])).c_str(), &(currentParamSteps[i]), 1.0f, 0.0f, 0.0f, "%f", changeAllowed ? 0 : ImGuiSliderFlags_ReadOnly);
+
+                    ImGui::SameLine();
+                    ImGui::DragFloat(("##MAX_" + std::string(kernel::PARAM_NAMES[i])).c_str(), &(currentParamMax[i]), 1.0f, 0.0f, 0.0f, "%f", changeAllowed ? 0 : ImGuiSliderFlags_ReadOnly);
+                    ImGui::PopItemWidth();
+                    if (!changeAllowed) POP_DISABLED_FRAME;
+                }
+
+                if (!changeAllowed) ImGui::PopStyleColor(); // disabledText pop
+
+                if (needOfParamBuffer)
+                {
+                    if (currentParamMin[i] != kernel::PARAM_VALUES[i]) { anyChanged = true; thisChanged = true; }
+                    if (currentParamMax[i] != kernel::PARAM_MAX[i]) { anyChanged = true; thisChanged = true; }
+                    if (currentParamSteps[i] != kernel::PARAM_STEPS[i]) { anyChanged = true; thisChanged = true; }
+
+                    if (thisChanged)
+                    {
+                        paramNew.recountSteps(i);
+                    }
                 }
 
                 if (kernel::PARAM_RANGING[i])
                 {
-                    ImGui::SameLine();
-                    ImGui::PushItemWidth(150.0f);
-                    ImGui::DragFloat(("##STEP_" + std::string(kernel::PARAM_NAMES[i])).c_str(), &(kernel::PARAM_STEPS[i]), 1.0f, 0.0f, 0.0f, "%f", 0);
-
-                    ImGui::SameLine();
-                    ImGui::DragFloat(("##MAX_" + std::string(kernel::PARAM_NAMES[i])).c_str(), &(kernel::PARAM_MAX[i]), 1.0f, 0.0f, 0.0f, "%f", 0);
-                    ImGui::PopItemWidth();
-
                     int stepCount = calculateStepCount(kernel::PARAM_VALUES[i], kernel::PARAM_MAX[i], kernel::PARAM_STEPS[i]);
                     if (stepCount > 0)
                     {
                         ImGui::SameLine();
                         ImGui::Text((std::to_string(stepCount) + " steps").c_str());
+
+                        if (needOfParamBuffer && thisChanged && stepCount != paramNew.stepsOf(i))
+                        {
+                            ImGui::SameLine();
+                            ImGui::Text(("(currently " + std::to_string(paramNew.stepsOf(i)) + " steps)").c_str());
+                            applicationProhibited = true;
+                        }
                     }
                 }
-                //if (playingParticles) ImGui::PopStyleColor();
+            }
+
+            if (enabledParticles)
+            {
+                bool tempAutoLoadNewParams = autoLoadNewParams;
+                if (ImGui::Checkbox("Apply parameter changes automatically", &(tempAutoLoadNewParams)))
+                {
+                    autoLoadNewParams = !autoLoadNewParams;
+                    if (autoLoadNewParams) LOAD_PARAMNEW;
+                    else UNLOAD_PARAMNEW;
+                }
+            }
+
+            if (!autoLoadNewParams && anyChanged)
+            {
+                if (applicationProhibited)
+                {
+                    ImGui::PushStyleColor(ImGuiCol_Text, disabledTextColor);
+                    ImGui::PushStyleColor(ImGuiCol_Button, disabledBackgroundColor);
+                    ImGui::PushStyleColor(ImGuiCol_ButtonActive, disabledBackgroundColor);
+                    ImGui::PushStyleColor(ImGuiCol_ButtonHovered, disabledBackgroundColor);
+                }
+                if (ImGui::Button("Apply") && !applicationProhibited)
+                {
+                    UNLOAD_PARAMNEW;
+                }
+                if (applicationProhibited)
+                {
+                    ImGui::PopStyleColor();
+                    ImGui::PopStyleColor();
+                    ImGui::PopStyleColor();
+                    ImGui::PopStyleColor();
+                }
             }
 
             // Simulation
@@ -469,6 +538,12 @@ int imgui_main(int, char**)
                     if (computedDataReady[0] || playingParticles)
                     {
                         playingParticles = !playingParticles;
+                        LOAD_PARAMNEW;
+                    }
+
+                    if (!playingParticles)
+                    {
+                        UNLOAD_PARAMNEW;
                     }
                 }
 
@@ -481,10 +556,10 @@ int imgui_main(int, char**)
                     if (noComputedData || noncont || cont)
                     {
                         continuousComputingEnabled = !continuousComputingEnabled;
-                        if (continuousComputingEnabled)
+                        /*if (continuousComputingEnabled)
                         {
                             for (int p = 0; p < kernel::PARAM_COUNT; p++) kernel::PARAM_RANGING[p] = false;
-                        }
+                        }*/
 
                         deleteBothBuffers();
                         playingParticles = false;
