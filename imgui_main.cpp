@@ -16,6 +16,7 @@ int playedBufferIndex = 0; // Buffer currently shown
 int bufferToFillIndex = 0; // Buffer to send computations to
 void* mapBuffers[2] = { nullptr, nullptr };
 
+InputValuesBuffer<float> varNew;
 bool autoLoadNewParams = false;
 InputValuesBuffer<float> paramNew;
 
@@ -49,9 +50,12 @@ float gridAlpha = 0.15f;
 int variation = 0;
 int stride = 1;
 float frameTime; // In seconds
-float timeElapsed = 0.0f; // Ditto
+float timeElapsed = 0.0f; // Total time elapsed, in seconds
 
 // Colors
+ImVec4 unsavedBackgroundColor = ImVec4(0.427f, 0.427f, 0.137f, 1.0f);
+ImVec4 unsavedBackgroundColorHovered = ImVec4(0.427f * 1.3f, 0.427f * 1.3f, 0.137f * 1.3f, 1.0f);
+ImVec4 unsavedBackgroundColorActive = ImVec4(0.427f * 1.5f, 0.427f * 1.5f, 0.137f * 1.5f, 1.0f);
 ImVec4 disabledColor = ImVec4(0.137f * 0.5f, 0.271f * 0.5f, 0.427f * 0.5f, 1.0f);
 ImVec4 disabledTextColor = ImVec4(1.0f, 1.0f, 1.0f, 0.5f);
 ImVec4 disabledBackgroundColor = ImVec4(0.137f * 0.35f, 0.271f * 0.35f, 0.427f * 0.35f, 1.0f);
@@ -65,14 +69,17 @@ bool rangingWindowEnabled = true;
 bool graphBuilderWindowEnabled = true;
 
 // Repetitive stuff
-#define LOAD_PARAMNEW paramNew.load(kernel::PARAM_VALUES, kernel::PARAM_MAX, kernel::PARAM_STEPS, kernel::PARAM_COUNT)
-#define UNLOAD_PARAMNEW paramNew.unload(kernel::PARAM_VALUES, kernel::PARAM_MAX, kernel::PARAM_STEPS, kernel::PARAM_COUNT)
+#define LOAD_VARNEW     varNew.load(kernel::VAR_VALUES, kernel::VAR_MAX, kernel::VAR_STEPS, kernel::VAR_RANGING, kernel::VAR_COUNT)
+#define UNLOAD_VARNEW   varNew.unload(kernel::VAR_VALUES, kernel::VAR_MAX, kernel::VAR_STEPS, kernel::VAR_RANGING, kernel::VAR_COUNT)
+#define LOAD_PARAMNEW   paramNew.load(kernel::PARAM_VALUES, kernel::PARAM_MAX, kernel::PARAM_STEPS, kernel::PARAM_RANGING, kernel::PARAM_COUNT)
+#define UNLOAD_PARAMNEW paramNew.unload(kernel::PARAM_VALUES, kernel::PARAM_MAX, kernel::PARAM_STEPS, kernel::PARAM_RANGING, kernel::PARAM_COUNT)
 #define PUSH_DISABLED_FRAME {ImGui::PushStyleColor(ImGuiCol_FrameBg, disabledBackgroundColor); \
                             ImGui::PushStyleColor(ImGuiCol_FrameBgActive, disabledBackgroundColor); \
                             ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, disabledBackgroundColor);}
-#define POP_DISABLED_FRAME  {ImGui::PopStyleColor(); \
-                            ImGui::PopStyleColor(); \
-                            ImGui::PopStyleColor();}
+#define PUSH_UNSAVED_FRAME  {ImGui::PushStyleColor(ImGuiCol_FrameBg, unsavedBackgroundColor); \
+                            ImGui::PushStyleColor(ImGuiCol_FrameBgActive, unsavedBackgroundColorActive); \
+                            ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, unsavedBackgroundColorHovered);}
+#define POP_FRAME(n)        {ImGui::PopStyleColor(n);}
 
 void deleteBothBuffers()
 {
@@ -173,13 +180,11 @@ void loadWindows()
 // Main code
 int imgui_main(int, char**)
 {
-    // Create application window
     ImGui_ImplWin32_EnableDpiAwareness();
     WNDCLASSEXW wc = { sizeof(wc), CS_CLASSDC, WndProc, 0L, 0L, GetModuleHandle(nullptr), LoadIcon(wc.hInstance, MAKEINTRESOURCE(IDI_ICON1)), nullptr, nullptr, nullptr, L"CUDAynamics", LoadIcon(wc.hInstance, MAKEINTRESOURCE(IDI_ICON1)) };
     ::RegisterClassExW(&wc);
     HWND hwnd = ::CreateWindowW(wc.lpszClassName, L"CUDAynamics", WS_OVERLAPPEDWINDOW, 100, 100, 400, 100, nullptr, nullptr, wc.hInstance, nullptr);
 
-    // Initialize Direct3D
     if (!CreateDeviceD3D(hwnd))
     {
         CleanupDeviceD3D();
@@ -187,12 +192,9 @@ int imgui_main(int, char**)
         return 1;
     }
 
-    // Show the window
     ::ShowWindow(hwnd, SW_SHOWDEFAULT);
-    //::ShowWindow(hwnd, SW_HIDE);
     ::UpdateWindow(hwnd);
 
-    // Setup Dear ImGui context
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
     ImPlot::CreateContext();
@@ -203,17 +205,8 @@ int imgui_main(int, char**)
     io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;       // Enable Multi-Viewport / Platform Windows
     io.ConfigViewportsNoAutoMerge = true;
     io.ConfigViewportsNoTaskBarIcon = true;
-    //io.ConfigViewportsNoDefaultParent = true;
-    //io.ConfigDockingAlwaysTabBar = true;
-    //io.ConfigDockingTransparentPayload = true;
-    //io.ConfigFlags |= ImGuiConfigFlags_DpiEnableScaleFonts;     // FIXME-DPI: Experimental. THIS CURRENTLY DOESN'T WORK AS EXPECTED. DON'T USE IN USER APP!
-    //io.ConfigFlags |= ImGuiConfigFlags_DpiEnableScaleViewports; // FIXME-DPI: Experimental.
 
-    // Setup Dear ImGui style
     ImGui::StyleColorsDark();
-    //ImGui::StyleColorsLight();
-
-    // When viewports are enabled we tweak WindowRounding/WindowBg so platform windows can look identical to regular ones.
     ImGuiStyle& style = ImGui::GetStyle();
     if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
     {
@@ -221,13 +214,10 @@ int imgui_main(int, char**)
         style.Colors[ImGuiCol_WindowBg].w = 1.0f;
     }
 
-    // Setup Platform/Renderer backends
     ImGui_ImplWin32_Init(hwnd);
     ImGui_ImplDX11_Init(g_pd3dDevice, g_pd3dDeviceContext);
 
-    //io.Fonts->AddFontDefault();
     io.Fonts->AddFontFromFileTTF("UbuntuMono-R.ttf", 24.0f);
-    //IM_ASSERT(font != nullptr);
 
     // Main loop
     bool work = true;
@@ -239,7 +229,8 @@ int imgui_main(int, char**)
     int selectedPlotVars[3]; selectedPlotVars[0] = 0; for (int i = 1; i < 3; i++) selectedPlotVars[i] = -1;
     set<int> selectedPlotVarsSet;
     int selectedPlotMap = 0;
-    //if (continuousComputingEnabled) { for (int p = 0; p < kernel::PARAM_COUNT; p++) kernel::PARAM_RANGING[p] = false; }
+    LOAD_VARNEW;
+    LOAD_PARAMNEW;
 
     try
     {
@@ -252,8 +243,6 @@ int imgui_main(int, char**)
 
     while (work)
     {
-        // Poll and handle messages (inputs, window resize, etc.)
-        // See the WndProc() function below for our to dispatch events to the Win32 backend.
         MSG msg;
         while (::PeekMessage(&msg, nullptr, 0U, 0U, PM_REMOVE))
         {
@@ -265,7 +254,6 @@ int imgui_main(int, char**)
         if (!work)
             break;
 
-        // Handle window being minimized or screen locked
         if (g_SwapChainOccluded && g_pSwapChain->Present(0, DXGI_PRESENT_TEST) == DXGI_STATUS_OCCLUDED)
         {
             ::Sleep(10);
@@ -273,7 +261,6 @@ int imgui_main(int, char**)
         }
         g_SwapChainOccluded = false;
 
-        // Handle window resize (we don't resize directly in the WM_SIZE handler)
         if (g_ResizeWidth != 0 && g_ResizeHeight != 0)
         {
             CleanupRenderTarget();
@@ -282,7 +269,6 @@ int imgui_main(int, char**)
             CreateRenderTarget();
         }
 
-        // Start the Dear ImGui frame
         ImGui_ImplDX11_NewFrame();
         ImGui_ImplWin32_NewFrame();
         ImGui::NewFrame();
@@ -314,10 +300,21 @@ int imgui_main(int, char**)
             for (int i = 0; i < kernel::PARAM_COUNT; i++) if (strlen(kernel::PARAM_NAMES[i]) > maxNameLength) maxNameLength = (int)strlen(kernel::PARAM_NAMES[i]);
             for (int i = 0; i < kernel::VAR_COUNT; i++) if (strlen(kernel::VAR_NAMES[i]) > maxNameLength) maxNameLength = (int)strlen(kernel::VAR_NAMES[i]);          
 
+            bool anyChanged = false;
+            bool thisChanged;
+            bool popStyle;
+
             ImGui::SeparatorText("Variables");
 
             for (int i = 0; i < kernel::VAR_COUNT; i++)
             {
+                thisChanged = false;
+                if (varNew.MIN[i] != kernel::VAR_VALUES[i]) { anyChanged = true; thisChanged = true; }
+                if (varNew.MAX[i] != kernel::VAR_MAX[i]) { anyChanged = true; thisChanged = true; }
+                if (varNew.STEP[i] != kernel::VAR_STEPS[i]) { anyChanged = true; thisChanged = true; }
+                if (varNew.IS_RANGING[i] != kernel::VAR_RANGING[i]) { anyChanged = true; thisChanged = true; }
+                if (thisChanged) varNew.recountSteps(i);
+
                 namePadded = kernel::VAR_NAMES[i];
                 for (int j = (int)strlen(kernel::VAR_NAMES[i]); j < maxNameLength; j++)
                     namePadded += ' ';
@@ -331,50 +328,76 @@ int imgui_main(int, char**)
                 }
                 ImGui::SameLine();
                 ImGui::PushItemWidth(150.0f);
-                ImGui::DragFloat(("##" + std::string(kernel::VAR_NAMES[i])).c_str(), &(kernel::VAR_VALUES[i]), 1.0f, 0.0f, 0.0f, "%f", dragFlag);
+                popStyle = false;
+                if (varNew.MIN[i] != kernel::VAR_VALUES[i])
+                {
+                    PUSH_UNSAVED_FRAME;
+                    popStyle = true;
+                }
+                ImGui::DragFloat(("##" + std::string(kernel::VAR_NAMES[i])).c_str(), &(varNew.MIN[i]), 1.0f, 0.0f, 0.0f, "%f", dragFlag);
+                if (popStyle) POP_FRAME(3);
                 ImGui::PopItemWidth();
 
                 ImGui::SameLine();
                 bool isRanging = kernel::VAR_RANGING[i];
-                if (ImGui::Checkbox(("##RANGING_" + std::string(kernel::VAR_NAMES[i])).c_str(), &(isRanging)) && !playingParticles)
+                popStyle = false;
+                if (varNew.IS_RANGING[i] != kernel::VAR_RANGING[i])
                 {
-                    kernel::VAR_RANGING[i] = !kernel::VAR_RANGING[i];
+                    PUSH_UNSAVED_FRAME;
+                    popStyle = true;
                 }
+                if (ImGui::Checkbox(("##RANGING_" + std::string(kernel::VAR_NAMES[i])).c_str(), &(isRanging)) && !playingParticles) kernel::VAR_RANGING[i] = !kernel::VAR_RANGING[i];
+                if (popStyle) POP_FRAME(3);
 
                 if (kernel::VAR_RANGING[i])
                 {
                     ImGui::SameLine();
                     ImGui::PushItemWidth(150.0f);
-                    ImGui::DragFloat(("##STEP_" + std::string(kernel::VAR_NAMES[i])).c_str(), &(kernel::VAR_STEPS[i]), 1.0f, 0.0f, 0.0f, "%f", dragFlag);
+                    popStyle = false;
+                    if (varNew.STEP[i] != kernel::VAR_STEPS[i])
+                    {
+                        PUSH_UNSAVED_FRAME;
+                        popStyle = true;
+                    }
+                    ImGui::DragFloat(("##STEP_" + std::string(kernel::VAR_NAMES[i])).c_str(), &(varNew.STEP[i]), 1.0f, 0.0f, 0.0f, "%f", dragFlag);
+                    if (popStyle) POP_FRAME(3);
 
                     ImGui::SameLine();
-                    ImGui::DragFloat(("##MAX_" + std::string(kernel::VAR_NAMES[i])).c_str(), &(kernel::VAR_MAX[i]), 1.0f, 0.0f, 0.0f, "%f", dragFlag);
+                    popStyle = false;
+                    if (varNew.MAX[i] != kernel::VAR_MAX[i])
+                    {
+                        PUSH_UNSAVED_FRAME;
+                        popStyle = true;
+                    }
+                    ImGui::DragFloat(("##MAX_" + std::string(kernel::VAR_NAMES[i])).c_str(), &(varNew.MAX[i]), 1.0f, 0.0f, 0.0f, "%f", dragFlag);
+                    if (popStyle) POP_FRAME(3);
                     ImGui::PopItemWidth();
 
                     ImGui::SameLine();
-                    ImGui::Text((std::to_string(calculateStepCount(kernel::VAR_VALUES[i], kernel::VAR_MAX[i], kernel::VAR_STEPS[i])) + " steps").c_str());
+                    ImGui::Text((std::to_string(calculateStepCount(varNew.MIN[i], varNew.MAX[i], varNew.STEP[i])) + " steps").c_str());
                 }
                 if (playingParticles)
                 {
                     ImGui::PopStyleColor();
-                    POP_DISABLED_FRAME;
+                    POP_FRAME(3);
                 }
             }
 
             ImGui::SeparatorText("Parameters");
 
-            bool needOfParamBuffer = playingParticles && !autoLoadNewParams;
-            float* currentParamMin = needOfParamBuffer ? paramNew.MIN : kernel::PARAM_VALUES;
-            float* currentParamMax = needOfParamBuffer ? paramNew.MAX : kernel::PARAM_MAX;
-            float* currentParamSteps = needOfParamBuffer ? paramNew.STEP : kernel::PARAM_STEPS;
-            bool anyChanged = false;
             bool applicationProhibited = false;
 
             for (int i = 0; i < kernel::PARAM_COUNT; i++)
             {
                 bool isRanging = kernel::PARAM_RANGING[i];
                 bool changeAllowed = !isRanging || !playingParticles || !autoLoadNewParams;
-                bool thisChanged = false;
+
+                thisChanged = false;
+                if (paramNew.MIN[i] != kernel::PARAM_VALUES[i]) { anyChanged = true; thisChanged = true; }
+                if (paramNew.MAX[i] != kernel::PARAM_MAX[i]) { anyChanged = true; thisChanged = true; }
+                if (paramNew.STEP[i] != kernel::PARAM_STEPS[i]) { anyChanged = true; thisChanged = true; }
+                if (paramNew.IS_RANGING[i] != kernel::PARAM_RANGING[i]) { anyChanged = true; thisChanged = true; }
+                if (thisChanged) paramNew.recountSteps(i);
 
                 namePadded = kernel::PARAM_NAMES[i];
                 for (int j = (int)strlen(kernel::PARAM_NAMES[i]); j < maxNameLength; j++)
@@ -382,50 +405,66 @@ int imgui_main(int, char**)
 
                 ImGui::Text(namePadded.c_str());
 
-                if (!changeAllowed) ImGui::PushStyleColor(ImGuiCol_Text, disabledTextColor); // disabledText push
+                if (!changeAllowed)
+                {
+                    ImGui::PushStyleColor(ImGuiCol_Text, disabledTextColor); // disabledText push
+                    PUSH_DISABLED_FRAME;
+                }
 
                 ImGui::SameLine();
                 ImGui::PushItemWidth(150.0f);
-                if (!changeAllowed) PUSH_DISABLED_FRAME;
-                ImGui::DragFloat(("##" + std::string(kernel::PARAM_NAMES[i])).c_str(), &(currentParamMin[i]), 1.0f, 0.0f, 0.0f, "%f", changeAllowed ? 0 : ImGuiSliderFlags_ReadOnly);
-                if (!changeAllowed) POP_DISABLED_FRAME;
+                popStyle = false;
+                if (paramNew.MIN[i] != kernel::PARAM_VALUES[i])
+                {
+                    PUSH_UNSAVED_FRAME;
+                    popStyle = true;
+                }
+                ImGui::DragFloat(("##" + std::string(kernel::PARAM_NAMES[i])).c_str(), &(paramNew.MIN[i]), 1.0f, 0.0f, 0.0f, "%f", changeAllowed ? 0 : ImGuiSliderFlags_ReadOnly);
+                if (popStyle) POP_FRAME(3);
                 ImGui::PopItemWidth();
 
                 ImGui::SameLine();
 
                 if (playingParticles) PUSH_DISABLED_FRAME;
+                popStyle = false;
+                if (paramNew.IS_RANGING[i] != kernel::PARAM_RANGING[i])
+                {
+                    PUSH_UNSAVED_FRAME;
+                    popStyle = true;
+                }
                 if (ImGui::Checkbox(("##RANGING_" + std::string(kernel::PARAM_NAMES[i])).c_str(), &(isRanging)) && !playingParticles)
                 {
                     kernel::PARAM_RANGING[i] = !kernel::PARAM_RANGING[i];
                 }
-                if (playingParticles) POP_DISABLED_FRAME;
+                if (popStyle) POP_FRAME(3);
+                if (playingParticles) POP_FRAME(3);
 
                 if (kernel::PARAM_RANGING[i])
                 {
-                    if (!changeAllowed) PUSH_DISABLED_FRAME;
                     ImGui::SameLine();
                     ImGui::PushItemWidth(150.0f);
-                    ImGui::DragFloat(("##STEP_" + std::string(kernel::PARAM_NAMES[i])).c_str(), &(currentParamSteps[i]), 1.0f, 0.0f, 0.0f, "%f", changeAllowed ? 0 : ImGuiSliderFlags_ReadOnly);
+                    popStyle = false;
+                    if (paramNew.STEP[i] != kernel::PARAM_STEPS[i])
+                    {
+                        PUSH_UNSAVED_FRAME;
+                        popStyle = true;
+                    }
+                    ImGui::DragFloat(("##STEP_" + std::string(kernel::PARAM_NAMES[i])).c_str(), &(paramNew.STEP[i]), 1.0f, 0.0f, 0.0f, "%f", changeAllowed ? 0 : ImGuiSliderFlags_ReadOnly);
+                    if (popStyle) POP_FRAME(3);
 
                     ImGui::SameLine();
-                    ImGui::DragFloat(("##MAX_" + std::string(kernel::PARAM_NAMES[i])).c_str(), &(currentParamMax[i]), 1.0f, 0.0f, 0.0f, "%f", changeAllowed ? 0 : ImGuiSliderFlags_ReadOnly);
-                    ImGui::PopItemWidth();
-                    if (!changeAllowed) POP_DISABLED_FRAME;
-                }
-
-                if (!changeAllowed) ImGui::PopStyleColor(); // disabledText pop
-
-                if (needOfParamBuffer)
-                {
-                    if (currentParamMin[i] != kernel::PARAM_VALUES[i]) { anyChanged = true; thisChanged = true; }
-                    if (currentParamMax[i] != kernel::PARAM_MAX[i]) { anyChanged = true; thisChanged = true; }
-                    if (currentParamSteps[i] != kernel::PARAM_STEPS[i]) { anyChanged = true; thisChanged = true; }
-
-                    if (thisChanged)
+                    popStyle = false;
+                    if (paramNew.MAX[i] != kernel::PARAM_MAX[i])
                     {
-                        paramNew.recountSteps(i);
+                        PUSH_UNSAVED_FRAME;
+                        popStyle = true;
                     }
+                    ImGui::DragFloat(("##MAX_" + std::string(kernel::PARAM_NAMES[i])).c_str(), &(paramNew.MAX[i]), 1.0f, 0.0f, 0.0f, "%f", changeAllowed ? 0 : ImGuiSliderFlags_ReadOnly);
+                    if (popStyle) POP_FRAME(3);
+                    ImGui::PopItemWidth();
                 }
+
+                if (!changeAllowed) POP_FRAME(4); // disabledText popped as well
 
                 if (kernel::PARAM_RANGING[i])
                 {
@@ -435,7 +474,7 @@ int imgui_main(int, char**)
                         ImGui::SameLine();
                         ImGui::Text((std::to_string(stepCount) + " steps").c_str());
 
-                        if (needOfParamBuffer && thisChanged && stepCount != paramNew.stepsOf(i))
+                        if (thisChanged && stepCount != paramNew.stepsOf(i))
                         {
                             ImGui::SameLine();
                             ImGui::Text(("(currently " + std::to_string(paramNew.stepsOf(i)) + " steps)").c_str());
@@ -443,6 +482,7 @@ int imgui_main(int, char**)
                         }
                     }
                 }
+
             }
 
             if (enabledParticles)
@@ -456,7 +496,11 @@ int imgui_main(int, char**)
                 }
             }
 
-            if (!autoLoadNewParams && anyChanged)
+            if (autoLoadNewParams)
+            {
+                UNLOAD_PARAMNEW;
+            }
+            else if (playingParticles && !autoLoadNewParams && anyChanged)
             {
                 if (applicationProhibited)
                 {
@@ -532,8 +576,13 @@ int imgui_main(int, char**)
                     particleStep = 0;
                 }
 
+                if (anyChanged)
+                {
+                    ImGui::PushStyleColor(ImGuiCol_Text, disabledTextColor);
+                    PUSH_DISABLED_FRAME;
+                }
                 bool tempPlayingParticles = playingParticles;
-                if (ImGui::Checkbox("Play", &(tempPlayingParticles)))
+                if (ImGui::Checkbox("Play", &(tempPlayingParticles)) && !anyChanged)
                 {
                     if (computedDataReady[0] || playingParticles)
                     {
@@ -546,6 +595,7 @@ int imgui_main(int, char**)
                         UNLOAD_PARAMNEW;
                     }
                 }
+                if (anyChanged) POP_FRAME(4);
 
                 bool tempContinuous = continuousComputingEnabled;
                 if (ImGui::Checkbox("Continuous computing", &(tempContinuous)))
@@ -616,7 +666,7 @@ int imgui_main(int, char**)
             }
 
             // default button color is 0.137 0.271 0.427
-            if (noComputedData) ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.137f * buttonBreathMult, 0.271f * buttonBreathMult, 0.427f * buttonBreathMult, 1.0f));
+            if (noComputedData || anyChanged) ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.137f * buttonBreathMult, 0.271f * buttonBreathMult, 0.427f * buttonBreathMult, 1.0f));
             if (ImGui::Button("= COMPUTE =") || (kernel::executeOnLaunch && !executedOnLaunch))
             {
                 executedOnLaunch = true;
@@ -624,9 +674,12 @@ int imgui_main(int, char**)
                 playedBufferIndex = 0;
                 deleteBothBuffers();
 
+                UNLOAD_VARNEW;
+                UNLOAD_PARAMNEW;
+
                 computing();
             }
-            if (noComputedData) ImGui::PopStyleColor();
+            if (noComputedData || anyChanged) ImGui::PopStyleColor();
 
             ImGui::End();
 

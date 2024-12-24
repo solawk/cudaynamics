@@ -11,7 +11,7 @@
 
 using namespace std;
 
-#define calculateStepCount(_min, _max, _step) (int)((_max - _min) / _step) + 1
+#define calculateStepCount(_min, _max, _step) (_step != 0 ? (int)((_max - _min) / _step) + 1 : 0)
 
 enum PlotType { Series, Phase, Orbit, Heatmap, PlotType_COUNT };
 
@@ -246,32 +246,35 @@ template<typename T> struct InputValuesBuffer
 	T MIN[MAX_VARS_PARAMS];
 	T MAX[MAX_VARS_PARAMS];
 	T STEP[MAX_VARS_PARAMS];
+	bool IS_RANGING[MAX_VARS_PARAMS];
 	int stepCount[MAX_VARS_PARAMS];
 
-	void load(T min, T max, T step, int index)
+	void load(T min, T max, T step, T isRanging, int index)
 	{
 		MIN[index] = min;
 		MAX[index] = max;
 		STEP[index] = step;
+		IS_RANGING[index] = isRanging;
 
 		stepCount[index] = calculateStepCount(min, max, step);
 	}
 
-	void load(T* min, T* max, T* step, int size)
+	void load(T* min, T* max, T* step, bool* isRanging, int size)
 	{
 		for (int i = 0; i < size; i++)
 		{
-			load(min[i], max[i], step[i], i);
+			load(min[i], max[i], step[i], isRanging[i], i);
 		}
 	}
 
-	void unload(T* min, T* max, T* step, int size)
+	void unload(T* min, T* max, T* step, bool* isRanging, int size)
 	{
 		for (int i = 0; i < size; i++)
 		{
 			min[i] = MIN[i];
 			max[i] = MAX[i];
 			step[i] = STEP[i];
+			isRanging[i] = IS_RANGING[i];
 		}
 	}
 

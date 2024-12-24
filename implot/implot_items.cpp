@@ -2359,6 +2359,11 @@ struct GetterHeatmapRowMaj {
     { }
     template <typename I> IMPLOT_INLINE RectC operator()(I idx) const {
         double val = (double)Values[idx];
+        if (isnan(val))
+        {
+            printf("Heatmap val is NaN\n");
+            val = 0.0; // to not crash on impossible stuff
+        }
         const int r = idx / Cols;
         const int c = idx % Cols;
         const ImPlotPoint p(XRef + HalfSize.x + c*Width, YRef + YDir * (HalfSize.y + r*Height));
