@@ -666,7 +666,8 @@ int imgui_main(int, char**)
             }
 
             // default button color is 0.137 0.271 0.427
-            if (noComputedData || anyChanged) ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.137f * buttonBreathMult, 0.271f * buttonBreathMult, 0.427f * buttonBreathMult, 1.0f));
+            if (noComputedData || (anyChanged && !playingParticles))
+                ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.137f * buttonBreathMult, 0.271f * buttonBreathMult, 0.427f * buttonBreathMult, 1.0f));
             if (ImGui::Button("= COMPUTE =") || (kernel::executeOnLaunch && !executedOnLaunch))
             {
                 executedOnLaunch = true;
