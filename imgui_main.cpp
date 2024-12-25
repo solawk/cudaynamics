@@ -39,12 +39,14 @@ int particleStep = 0; // Current step of the computations to show
 bool continuousComputingEnabled = true; // Continuously compute next batch of steps via double buffering
 
 // Plot graph settings
+/*
 bool markerSettingsWindowEnabled = true;
 float markerSize = 1.0f;
 float markerOutlineSize = 0.0f;
 ImVec4 markerColor = ImVec4(1.0f, 1.0f, 1.0f, 0.5f);
 ImPlotMarker markerShape = ImPlotMarker_Circle;
 float gridAlpha = 0.15f;
+*/
 
 // Temporary variables
 int variation = 0;
@@ -339,17 +341,17 @@ int imgui_main(int, char**)
                 ImGui::PopItemWidth();
 
                 ImGui::SameLine();
-                bool isRanging = kernel::VAR_RANGING[i];
+                bool isRanging = varNew.IS_RANGING[i];
                 popStyle = false;
                 if (varNew.IS_RANGING[i] != kernel::VAR_RANGING[i])
                 {
                     PUSH_UNSAVED_FRAME;
                     popStyle = true;
                 }
-                if (ImGui::Checkbox(("##RANGING_" + std::string(kernel::VAR_NAMES[i])).c_str(), &(isRanging)) && !playingParticles) kernel::VAR_RANGING[i] = !kernel::VAR_RANGING[i];
+                if (ImGui::Checkbox(("##RANGING_" + std::string(kernel::VAR_NAMES[i])).c_str(), &(isRanging)) && !playingParticles) varNew.IS_RANGING[i] = !varNew.IS_RANGING[i];
                 if (popStyle) POP_FRAME(3);
 
-                if (kernel::VAR_RANGING[i])
+                if (varNew.IS_RANGING[i])
                 {
                     ImGui::SameLine();
                     ImGui::PushItemWidth(150.0f);
@@ -389,8 +391,8 @@ int imgui_main(int, char**)
 
             for (int i = 0; i < kernel::PARAM_COUNT; i++)
             {
-                bool isRanging = kernel::PARAM_RANGING[i];
-                bool changeAllowed = !isRanging || !playingParticles || !autoLoadNewParams;
+                bool isRanging = paramNew.IS_RANGING[i];
+                bool changeAllowed = !paramNew.IS_RANGING[i] || !playingParticles || !autoLoadNewParams;
 
                 thisChanged = false;
                 if (paramNew.MIN[i] != kernel::PARAM_VALUES[i]) { anyChanged = true; thisChanged = true; }
@@ -434,12 +436,12 @@ int imgui_main(int, char**)
                 }
                 if (ImGui::Checkbox(("##RANGING_" + std::string(kernel::PARAM_NAMES[i])).c_str(), &(isRanging)) && !playingParticles)
                 {
-                    kernel::PARAM_RANGING[i] = !kernel::PARAM_RANGING[i];
+                    paramNew.IS_RANGING[i] = !paramNew.IS_RANGING[i];
                 }
                 if (popStyle) POP_FRAME(3);
                 if (playingParticles) POP_FRAME(3);
 
-                if (kernel::PARAM_RANGING[i])
+                if (paramNew.IS_RANGING[i])
                 {
                     ImGui::SameLine();
                     ImGui::PushItemWidth(150.0f);
@@ -466,7 +468,7 @@ int imgui_main(int, char**)
 
                 if (!changeAllowed) POP_FRAME(4); // disabledText popped as well
 
-                if (kernel::PARAM_RANGING[i])
+                if (paramNew.IS_RANGING[i])
                 {
                     int stepCount = calculateStepCount(kernel::PARAM_VALUES[i], kernel::PARAM_MAX[i], kernel::PARAM_STEPS[i]);
                     if (stepCount > 0)
@@ -615,12 +617,6 @@ int imgui_main(int, char**)
                         playingParticles = false;
                         particleStep = 0;
                     }
-                }
-
-                bool tempMarkerSettings = markerSettingsWindowEnabled;
-                if (ImGui::Checkbox("Plot graph settings", &(tempMarkerSettings)))
-                {
-                    markerSettingsWindowEnabled = !markerSettingsWindowEnabled;
                 }
             }
 
@@ -868,33 +864,6 @@ int imgui_main(int, char**)
             }
         }
 
-        // PLOT GRAPH SETTINGS WINDOW //
-
-        if (markerSettingsWindowEnabled)
-        {
-            ImGui::Begin("Plot graph settings", &markerSettingsWindowEnabled);
-
-            ImGui::DragFloat("Marker size", &markerSize, 0.1f);
-            ImGui::DragFloat("Marker outline size", &markerOutlineSize, 0.1f);
-            if (markerSize < 0.0f) markerSize = 0.0f;
-            ImGui::ColorEdit4("Marker color", (float*)(&markerColor));
-
-            std::string shapeNames[]{ "Circle", "Square", "Diamond", "Up", "Down", "Left", "Right", "Cross", "Plus", "Asterisk" };
-            if (ImGui::BeginCombo("Marker shape", shapeNames[markerShape].c_str()))
-            {
-                for (ImPlotMarker i = 0; i < ImPlotMarker_COUNT; i++)
-                {
-                    bool isSelected = markerShape == i;
-                    if (ImGui::Selectable(shapeNames[i].c_str(), isSelected)) markerShape = i;
-                }
-                ImGui::EndCombo();
-            }
-
-            ImGui::DragFloat("Grid alpha", &gridAlpha, 0.01f);
-
-            ImGui::End();
-        }
-
         // PLOT WINDOWS //
 
         for (int w = 0; w < plotWindows.size(); w++)
@@ -911,6 +880,30 @@ int imgui_main(int, char**)
             std::string windowName = window->name + std::to_string(window->id);
             std::string plotName = windowName + "_plot";
             ImGui::Begin(windowName.c_str(), &(window->active));
+
+            // Plot variables
+            if (ImGui::BeginCombo(("##" + windowName + "_plotSettings").c_str(), "Plot settings"))
+            {
+                ImGui::DragFloat(("##" + windowName + "_markerSize").c_str(), &(window->markerSize), 0.1f);                             ImGui::SameLine(); ImGui::Text("Marker size");
+                ImGui::DragFloat(("##" + windowName + "_markerOutlineSize").c_str(), &(window->markerOutlineSize), 0.1f);               ImGui::SameLine(); ImGui::Text("Marker outline size");
+                if (window->markerSize < 0.0f) window->markerSize = 0.0f;
+                ImGui::ColorEdit4(("##" + windowName + "_markerColor").c_str(), (float*)(&(window->markerColor)));                      ImGui::SameLine(); ImGui::Text("Marker color");
+
+                std::string shapeNames[]{ "Circle", "Square", "Diamond", "Up", "Down", "Left", "Right", "Cross", "Plus", "Asterisk" };
+                if (ImGui::BeginCombo(("##" + windowName + "_markerShape").c_str(), shapeNames[window->markerShape].c_str()))
+                {
+                    for (ImPlotMarker i = 0; i < ImPlotMarker_COUNT; i++)
+                    {
+                        bool isSelected = window->markerShape == i;
+                        if (ImGui::Selectable(shapeNames[i].c_str(), isSelected)) window->markerShape = i;
+                    }
+                    ImGui::EndCombo();                                                                                                  
+                }                                                                                                                       ImGui::SameLine(); ImGui::Text("Marker shape");
+                
+                ImGui::DragFloat(("##" + windowName + "_gridAlpha").c_str(), &(window->gridAlpha), 0.01f);                              ImGui::SameLine(); ImGui::Text("Grid alpha");
+
+                ImGui::EndCombo();
+            }
 
             // Common variables
             ImPlotAxisFlags axisFlags = (autofitAfterComputing ? ImPlotAxisFlags_AutoFit : 0);
@@ -1024,10 +1017,10 @@ int imgui_main(int, char**)
                                 rotateOffsetBuffer((float*)particleBuffer, rangingData[playedBufferIndex].totalVariations, kernel::VAR_COUNT, window->variables[0], window->variables[1], window->variables[2],
                                     window->rotation.y, window->rotation.x, window->offset, window->scale);
 
-                            ImPlot::SetNextLineStyle(markerColor);
-                            ImPlot::PushStyleVar(ImPlotStyleVar_MarkerWeight, markerOutlineSize);
+                            ImPlot::SetNextLineStyle(window->markerColor);
+                            ImPlot::PushStyleVar(ImPlotStyleVar_MarkerWeight, window->markerOutlineSize);
                             //ImPlot::PushStyleVar(ImPlotStyleVar_FillAlpha, 0.25f);
-                            ImPlot::SetNextMarkerStyle(markerShape, markerSize);
+                            ImPlot::SetNextMarkerStyle(window->markerShape, window->markerSize);
                             ImPlot::PlotScatter(plotName.c_str(), &(((float*)particleBuffer)[xIndex]), &(((float*)particleBuffer)[yIndex]), rangingData[playedBufferIndex].totalVariations, 0, 0, sizeof(float) * kernel::VAR_COUNT);
                         }
 
@@ -1067,8 +1060,8 @@ int imgui_main(int, char**)
                             ImVec4 scale1(powf(10, scaleLog.x), powf(10, scaleLog.y), powf(10, scaleLog.z), 0);
                             ImVec4 scaleInterp(log10f(scale.x) - scaleLog.x, log10f(scale.y) - scaleLog.y, log10f(scale.z) - scaleLog.z, 0);
 
-                            ImVec4 alpha0((1.0f - scaleInterp.x) * gridAlpha, (1.0f - scaleInterp.y) * gridAlpha, (1.0f - scaleInterp.z) * gridAlpha, 0);
-                            ImVec4 alpha1(scaleInterp.x * gridAlpha, scaleInterp.y * gridAlpha, scaleInterp.z * gridAlpha, 0);
+                            ImVec4 alpha0((1.0f - scaleInterp.x) * window->gridAlpha, (1.0f - scaleInterp.y) * window->gridAlpha, (1.0f - scaleInterp.z) * window->gridAlpha, 0);
+                            ImVec4 alpha1(scaleInterp.x * window->gridAlpha, scaleInterp.y * window->gridAlpha, scaleInterp.z * window->gridAlpha, 0);
 
                             // x
                             ImPlot::SetNextLineStyle(ImVec4(1.0f, 1.0f, 1.0f, alpha0.x));

@@ -129,6 +129,7 @@
     <ClInclude Include="imgui_utils.h" />
     <ClInclude Include="implot\implot.h" />
     <ClInclude Include="implot\implot_internal.h" />
+    <ClInclude Include="kernels\lorenzExample.h" />
     <ClInclude Include="main.h" />
     <ClInclude Include="objects.h" />
     <ClInclude Include="resource.h" />

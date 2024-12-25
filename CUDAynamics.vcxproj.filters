@@ -92,6 +92,9 @@
     <ClInclude Include="dbscan\dbscan.h">
       <Filter>dbscan</Filter>
     </ClInclude>
+    <ClInclude Include="kernels\lorenzExample.h">
+      <Filter>kernels</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="main.cu" />

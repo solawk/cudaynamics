@@ -14,6 +14,7 @@ using namespace std;
 #define calculateStepCount(_min, _max, _step) (_step != 0 ? (int)((_max - _min) / _step) + 1 : 0)
 
 enum PlotType { Series, Phase, Orbit, Heatmap, PlotType_COUNT };
+enum RangingType { None, Linear, UniformRandom, NormalRandom };
 
 struct PlotWindow
 {
@@ -31,10 +32,25 @@ public:
 	ImVec4 offset;
 	ImVec4 scale;
 
+	// Plot settings
+	bool settingsListEnabled;
+	float markerSize;
+	float markerOutlineSize;
+	ImVec4 markerColor;
+	ImPlotMarker markerShape;
+	float gridAlpha;
+
 	PlotWindow(int _id)
 	{
 		active = true;
 		id = _id;
+
+		settingsListEnabled = true;
+		markerSize = 1.0f;
+		markerOutlineSize = 0.0f;
+		markerColor = ImVec4(1.0f, 1.0f, 1.0f, 0.5f);
+		markerShape = ImPlotMarker_Circle;
+		gridAlpha = 0.15f;
 	}
 
 	PlotWindow(int _id, string _name, bool _is3d)
@@ -48,6 +64,13 @@ public:
 
 		offset = ImVec4(0.0f, 0.0f, 0.0f, 0.0f);
 		scale = ImVec4(1.0f, 1.0f, 1.0f, 0.0f);
+
+		settingsListEnabled = true;
+		markerSize = 1.0f;
+		markerOutlineSize = 0.0f;
+		markerColor = ImVec4(1.0f, 1.0f, 1.0f, 0.5f);
+		markerShape = ImPlotMarker_Circle;
+		gridAlpha = 0.15f;
 	}
 
 	void AssignVariables(int* variablesArray)
