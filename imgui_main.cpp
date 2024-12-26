@@ -676,7 +676,7 @@ int imgui_main(int, char**)
 
                 computing();
             }
-            if (noComputedData || anyChanged) ImGui::PopStyleColor();
+            if (noComputedData || (anyChanged && !playingParticles)) ImGui::PopStyleColor();
 
             ImGui::End();
 
