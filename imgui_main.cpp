@@ -19,6 +19,7 @@ void* mapBuffers[2] = { nullptr, nullptr };
 InputValuesBuffer<float> varNew;
 bool autoLoadNewParams = false;
 InputValuesBuffer<float> paramNew;
+int stepsNew = 0;
 
 void* dataBuffer = nullptr; // One variation local buffer
 void* particleBuffer = nullptr; // One step local buffer
@@ -37,6 +38,8 @@ float particleSpeed = 5000.0f; // Steps per second
 float particlePhase = 0.0f; // Animation frame cooldown
 int particleStep = 0; // Current step of the computations to show
 bool continuousComputingEnabled = true; // Continuously compute next batch of steps via double buffering
+float dragChangeSpeed = 1.0f;
+int bufferNo = 0;
 
 // Plot graph settings
 /*
@@ -233,6 +236,7 @@ int imgui_main(int, char**)
     int selectedPlotMap = 0;
     LOAD_VARNEW;
     LOAD_PARAMNEW;
+    stepsNew = kernel::steps;
 
     try
     {
@@ -289,8 +293,8 @@ int imgui_main(int, char**)
             ImGui::Text(kernel::name);
 
             int tempTotalVariations = 1;
-            for (int v = 0; v < kernel::VAR_COUNT; v++) if (kernel::VAR_RANGING[v]) tempTotalVariations *= (calculateStepCount(kernel::VAR_VALUES[v], kernel::VAR_MAX[v], kernel::VAR_STEPS[v]));
-            for (int p = 0; p < kernel::PARAM_COUNT; p++) if (kernel::PARAM_RANGING[p])  tempTotalVariations *= (calculateStepCount(kernel::PARAM_VALUES[p], kernel::PARAM_MAX[p], kernel::PARAM_STEPS[p]));
+            for (int v = 0; v < kernel::VAR_COUNT; v++) if (varNew.IS_RANGING[v]) tempTotalVariations *= (calculateStepCount(varNew.MIN[v], varNew.MAX[v], varNew.STEP[v]));
+            for (int p = 0; p < kernel::PARAM_COUNT; p++) if (paramNew.IS_RANGING[p])  tempTotalVariations *= (calculateStepCount(paramNew.MIN[p], paramNew.MAX[p], paramNew.STEP[p]));
 
             // Parameters & Variables
 
@@ -336,7 +340,7 @@ int imgui_main(int, char**)
                     PUSH_UNSAVED_FRAME;
                     popStyle = true;
                 }
-                ImGui::DragFloat(("##" + std::string(kernel::VAR_NAMES[i])).c_str(), &(varNew.MIN[i]), 1.0f, 0.0f, 0.0f, "%f", dragFlag);
+                ImGui::DragFloat(("##" + std::string(kernel::VAR_NAMES[i])).c_str(), &(varNew.MIN[i]), dragChangeSpeed, 0.0f, 0.0f, "%f", dragFlag);
                 if (popStyle) POP_FRAME(3);
                 ImGui::PopItemWidth();
 
@@ -361,7 +365,7 @@ int imgui_main(int, char**)
                         PUSH_UNSAVED_FRAME;
                         popStyle = true;
                     }
-                    ImGui::DragFloat(("##STEP_" + std::string(kernel::VAR_NAMES[i])).c_str(), &(varNew.STEP[i]), 1.0f, 0.0f, 0.0f, "%f", dragFlag);
+                    ImGui::DragFloat(("##STEP_" + std::string(kernel::VAR_NAMES[i])).c_str(), &(varNew.STEP[i]), dragChangeSpeed, 0.0f, 0.0f, "%f", dragFlag);
                     if (popStyle) POP_FRAME(3);
 
                     ImGui::SameLine();
@@ -371,7 +375,7 @@ int imgui_main(int, char**)
                         PUSH_UNSAVED_FRAME;
                         popStyle = true;
                     }
-                    ImGui::DragFloat(("##MAX_" + std::string(kernel::VAR_NAMES[i])).c_str(), &(varNew.MAX[i]), 1.0f, 0.0f, 0.0f, "%f", dragFlag);
+                    ImGui::DragFloat(("##MAX_" + std::string(kernel::VAR_NAMES[i])).c_str(), &(varNew.MAX[i]), dragChangeSpeed, 0.0f, 0.0f, "%f", dragFlag);
                     if (popStyle) POP_FRAME(3);
                     ImGui::PopItemWidth();
 
@@ -421,7 +425,7 @@ int imgui_main(int, char**)
                     PUSH_UNSAVED_FRAME;
                     popStyle = true;
                 }
-                ImGui::DragFloat(("##" + std::string(kernel::PARAM_NAMES[i])).c_str(), &(paramNew.MIN[i]), 1.0f, 0.0f, 0.0f, "%f", changeAllowed ? 0 : ImGuiSliderFlags_ReadOnly);
+                ImGui::DragFloat(("##" + std::string(kernel::PARAM_NAMES[i])).c_str(), &(paramNew.MIN[i]), dragChangeSpeed, 0.0f, 0.0f, "%f", changeAllowed ? 0 : ImGuiSliderFlags_ReadOnly);
                 if (popStyle) POP_FRAME(3);
                 ImGui::PopItemWidth();
 
@@ -451,7 +455,7 @@ int imgui_main(int, char**)
                         PUSH_UNSAVED_FRAME;
                         popStyle = true;
                     }
-                    ImGui::DragFloat(("##STEP_" + std::string(kernel::PARAM_NAMES[i])).c_str(), &(paramNew.STEP[i]), 1.0f, 0.0f, 0.0f, "%f", changeAllowed ? 0 : ImGuiSliderFlags_ReadOnly);
+                    ImGui::DragFloat(("##STEP_" + std::string(kernel::PARAM_NAMES[i])).c_str(), &(paramNew.STEP[i]), dragChangeSpeed, 0.0f, 0.0f, "%f", changeAllowed ? 0 : ImGuiSliderFlags_ReadOnly);
                     if (popStyle) POP_FRAME(3);
 
                     ImGui::SameLine();
@@ -461,7 +465,7 @@ int imgui_main(int, char**)
                         PUSH_UNSAVED_FRAME;
                         popStyle = true;
                     }
-                    ImGui::DragFloat(("##MAX_" + std::string(kernel::PARAM_NAMES[i])).c_str(), &(paramNew.MAX[i]), 1.0f, 0.0f, 0.0f, "%f", changeAllowed ? 0 : ImGuiSliderFlags_ReadOnly);
+                    ImGui::DragFloat(("##MAX_" + std::string(kernel::PARAM_NAMES[i])).c_str(), &(paramNew.MAX[i]), dragChangeSpeed, 0.0f, 0.0f, "%f", changeAllowed ? 0 : ImGuiSliderFlags_ReadOnly);
                     if (popStyle) POP_FRAME(3);
                     ImGui::PopItemWidth();
                 }
@@ -484,7 +488,6 @@ int imgui_main(int, char**)
                         }
                     }
                 }
-
             }
 
             if (enabledParticles)
@@ -496,6 +499,9 @@ int imgui_main(int, char**)
                     if (autoLoadNewParams) LOAD_PARAMNEW;
                     else UNLOAD_PARAMNEW;
                 }
+
+                ImGui::PushItemWidth(200.0f);
+                ImGui::InputFloat("Drag speed", &(dragChangeSpeed));
             }
 
             if (autoLoadNewParams)
@@ -528,7 +534,7 @@ int imgui_main(int, char**)
 
             ImGui::SeparatorText("Simulation");
 
-            unsigned long int singleBufferNumberCount = tempTotalVariations * kernel::VAR_COUNT * (kernel::steps + 1);
+            unsigned long int singleBufferNumberCount = tempTotalVariations * kernel::VAR_COUNT * (stepsNew + 1);
             unsigned long int singleBufferFloatSize = singleBufferNumberCount * sizeof(float);
             ImGui::Text(("Single buffer size: " + memoryString(singleBufferFloatSize)).c_str());
 
@@ -539,7 +545,15 @@ int imgui_main(int, char**)
                 ImGui::PushStyleColor(ImGuiCol_FrameBgActive, disabledBackgroundColor);
                 ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, disabledBackgroundColor);
             }
-            ImGui::InputInt("Steps", &(kernel::steps), 1, 1000, playingParticles ? ImGuiInputTextFlags_ReadOnly : 0);
+            popStyle = false;
+            if (stepsNew != kernel::steps)
+            {
+                anyChanged = true;
+                PUSH_UNSAVED_FRAME;
+                popStyle = true;
+            }
+            ImGui::InputInt("Steps", &(stepsNew), 1, 1000, playingParticles ? ImGuiInputTextFlags_ReadOnly : 0);
+            if (popStyle) POP_FRAME(3);
             if (playingParticles)
             {
                 ImGui::PopStyleColor();
@@ -571,7 +585,9 @@ int imgui_main(int, char**)
                     ImGui::Text(("(max " + to_string(stepsPerSecond) + " before stalling)").c_str());
                 }
 
-                ImGui::DragInt("Animation step", &(particleStep), 1.0f, 0, kernel::steps);
+                ImGui::DragInt("##Animation step", &(particleStep), 1.0f, 0, kernel::steps);
+                ImGui::SameLine();
+                ImGui::Text(("Animation step" + (continuousComputingEnabled ? " (total step " + to_string(bufferNo * kernel::steps + particleStep) + ")" : "")).c_str());
 
                 if (ImGui::Button("Reset to step 0"))
                 {
@@ -613,6 +629,7 @@ int imgui_main(int, char**)
                             for (int p = 0; p < kernel::PARAM_COUNT; p++) kernel::PARAM_RANGING[p] = false;
                         }*/
 
+                        bufferNo = 0;
                         deleteBothBuffers();
                         playingParticles = false;
                         particleStep = 0;
@@ -641,6 +658,7 @@ int imgui_main(int, char**)
                         {
                             playedBufferIndex = 1 - playedBufferIndex;
                             particleStep = 0;
+                            bufferNo++;
                             printf("Switch occured and starting playing %i\n", playedBufferIndex);
                             computing();
                         }
@@ -669,10 +687,12 @@ int imgui_main(int, char**)
                 executedOnLaunch = true;
                 bufferToFillIndex = 0;
                 playedBufferIndex = 0;
+                bufferNo = 0;
                 deleteBothBuffers();
 
                 UNLOAD_VARNEW;
                 UNLOAD_PARAMNEW;
+                kernel::steps = stepsNew;
 
                 computing();
             }
