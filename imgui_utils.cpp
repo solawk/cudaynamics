@@ -24,9 +24,41 @@ std::string memoryString(unsigned long int bytes)
 	}
 }
 
+std::string scaleString(float scale)
+{
+	if (scale > 0.5f && scale < 5.0f) return "1.0";
+
+	if (scale > 0.05f && scale < 0.5f) return "0.1";
+	if (scale > 0.005f && scale < 0.05f) return "0.01";
+	if (scale > 0.0005f && scale < 0.005f) return "0.001";
+
+	if (scale > 5.0f && scale < 50.0f) return "10.0";
+	if (scale > 50.0f && scale < 500.0f) return "100.0";
+	if (scale > 500.0f && scale < 5000.0f) return "1000.0";
+
+	if (scale < 1.0f)
+	{
+		for (int i = 4; i < 100; i++)
+		{
+			if (scale > powf(0.1f, i) * 0.5f && scale < powf(0.1f, i - 1) * 0.5f) return "10e-" + std::to_string(i);
+		}
+
+		return "<10e-100";
+	}
+	else
+	{
+		for (int i = 4; i < 100; i++)
+		{
+			if (scale > powf(10.0f, i) * 0.5f && scale < powf(10.0f, i + 1) * 0.5f) return "10e" + std::to_string(i);
+		}
+
+		return ">10e100";
+	}
+}
+
 void populateAxisBuffer(float* buffer, float x, float y, float z)
 {
-	for (int i = 0; i < 18; i++) buffer[i] = 0;
+	for (int i = 0; i < 18; i++) buffer[i] = 0.0f;
 
 	buffer[0] = x;
 	buffer[3] = -x * 0.5f;
@@ -52,6 +84,65 @@ void rotateOffsetBuffer(float* buffer, int pointCount, int varCount, int xdo, in
 		((float*)buffer)[i * varCount + 2] = zt = y * sinf(-pitch * DEG2RAD) + z * cosf(-pitch * DEG2RAD);
 
 		((float*)buffer)[i * varCount + 0] = x * cosf(yaw * DEG2RAD) + zt * sinf(yaw * DEG2RAD);
+	}
+}
+
+void populateRulerBuffer(float* buffer, float s, int dim)
+{
+	for (int i = 0; i < (51*3); i++) buffer[i] = 0.0f;
+
+	switch (dim)
+	{
+	case 0:
+		for (int i = 0; i < 10; i++)
+		{
+			buffer[3 + (i * 15) + 0] = (i + 1.0f) * 1.0f;
+
+			buffer[3 + (i * 15) + 3] = (i + 1.0f) * 1.0f;
+			buffer[3 + (i * 15) + 4] = 0.5f;
+
+			buffer[3 + (i * 15) + 6] = (i + 1.0f) * 1.0f;
+
+			buffer[3 + (i * 15) + 9] = (i + 1.0f) * 1.0f;
+			buffer[3 + (i * 15) + 11] = 0.5f;
+
+			buffer[3 + (i * 15) + 12] = (i + 1.0f) * 1.0f;
+		}
+		break;
+
+	case 1:
+		for (int i = 0; i < 10; i++)
+		{
+			buffer[3 + (i * 15) + 1] = (i + 1.0f) * 1.0f;
+
+			buffer[3 + (i * 15) + 4] = (i + 1.0f) * 1.0f;
+			buffer[3 + (i * 15) + 5] = 0.5f;
+
+			buffer[3 + (i * 15) + 7] = (i + 1.0f) * 1.0f;
+
+			buffer[3 + (i * 15) + 10] = (i + 1.0f) * 1.0f;
+			buffer[3 + (i * 15) + 9] = 0.5f;
+
+			buffer[3 + (i * 15) + 13] = (i + 1.0f) * 1.0f;
+		}
+		break;
+
+	case 2:
+		for (int i = 0; i < 10; i++)
+		{
+			buffer[3 + (i * 15) + 2] = (i + 1.0f) * 1.0f;
+
+			buffer[3 + (i * 15) + 5] = (i + 1.0f) * 1.0f;
+			buffer[3 + (i * 15) + 3] = 0.5f;
+
+			buffer[3 + (i * 15) + 8] = (i + 1.0f) * 1.0f;
+
+			buffer[3 + (i * 15) + 11] = (i + 1.0f) * 1.0f;
+			buffer[3 + (i * 15) + 10] = 0.5f;
+
+			buffer[3 + (i * 15) + 14] = (i + 1.0f) * 1.0f;
+		}
+		break;
 	}
 }
 
