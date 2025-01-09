@@ -32,9 +32,9 @@ std::string scaleString(float scale)
 	if (scale > 0.005f && scale < 0.05f) return "0.01";
 	if (scale > 0.0005f && scale < 0.005f) return "0.001";
 
-	if (scale > 5.0f && scale < 50.0f) return "10.0";
-	if (scale > 50.0f && scale < 500.0f) return "100.0";
-	if (scale > 500.0f && scale < 5000.0f) return "1000.0";
+	if (scale > 5.0f && scale < 50.0f) return "10";
+	if (scale > 50.0f && scale < 500.0f) return "100";
+	if (scale > 500.0f && scale < 5000.0f) return "1000";
 
 	if (scale < 1.0f)
 	{
