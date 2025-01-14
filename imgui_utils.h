@@ -14,10 +14,13 @@ std::string memoryString(unsigned long int bytes);
 std::string scaleString(float scale);
 
 void populateAxisBuffer(float* buffer, float x, float y, float z);
-void rotateOffsetBuffer(float* buffer, int pointCount, int varCount, int xdo, int ydo, int zdo, float pitch, float yaw, ImVec4 offset, ImVec4 scale);
+void rotateOffsetBuffer2(float* buffer, int pointCount, int varCount, int xdo, int ydo, int zdo, float pitch, float yaw, ImVec4 offset, ImVec4 scale);
+void rotateOffsetBuffer(float* buffer, int pointCount, int varCount, int xdo, int ydo, int zdo, ImVec4 rotation, ImVec4 offset, ImVec4 scale);
 
 void populateRulerBuffer(float* buffer, float s, int dim);
 
 void populateGridBuffer(float* buffer);
 void gridX2Y(float* buffer);
 void gridY2Z(float* buffer);
+
+ImVec4 ToEulerAngles(ImVec4 q);

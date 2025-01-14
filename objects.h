@@ -6,6 +6,7 @@
 #include "imgui/backends/imgui_impl_win32.h"
 #include "imgui/backends/imgui_impl_dx11.h"
 #include "implot/implot.h"
+#include "quaternion.h"
 
 #define MAX_VARS_PARAMS 32
 
@@ -29,8 +30,10 @@ public:
 	// Plot rotation
 	bool is3d;
 	ImVec2 rotation;
+	ImVec2 deltarotation;
 	ImVec4 offset;
 	ImVec4 scale;
+	ImVec4 quatRot;
 
 	// Plot settings
 	bool settingsListEnabled;
@@ -38,6 +41,7 @@ public:
 	float markerOutlineSize;
 	ImVec4 markerColor;
 	ImPlotMarker markerShape;
+	float rulerAlpha;
 	float gridAlpha;
 
 	PlotWindow(int _id)
@@ -45,11 +49,14 @@ public:
 		active = true;
 		id = _id;
 
+		quatRot = ImVec4(1.0f, 0.0f, 0.0f, 0.0f);
+
 		settingsListEnabled = true;
 		markerSize = 1.0f;
 		markerOutlineSize = 0.0f;
 		markerColor = ImVec4(1.0f, 1.0f, 1.0f, 0.5f);
 		markerShape = ImPlotMarker_Circle;
+		rulerAlpha = 0.5f;
 		gridAlpha = 0.15f;
 	}
 
@@ -61,6 +68,7 @@ public:
 
 		is3d = _is3d;
 		rotation = ImVec2(0.0f, 0.0f);
+		quatRot = ImVec4(1.0f, 0.0f, 0.0f, 0.0f);
 
 		offset = ImVec4(0.0f, 0.0f, 0.0f, 0.0f);
 		scale = ImVec4(1.0f, 1.0f, 1.0f, 0.0f);
@@ -70,6 +78,7 @@ public:
 		markerOutlineSize = 0.0f;
 		markerColor = ImVec4(1.0f, 1.0f, 1.0f, 0.5f);
 		markerShape = ImPlotMarker_Circle;
+		rulerAlpha = 0.5f;
 		gridAlpha = 0.15f;
 	}
 
@@ -146,6 +155,8 @@ public:
 		is3d = (bool)atoi(data[2].c_str());
 		rotation.x = (float)atof(data[3].c_str());
 		rotation.y = (float)atof(data[4].c_str());
+
+		quatRot = ImVec4(1.0f, 0.0f, 0.0f, 0.0f);
 
 		offset.x = (float)atof(data[5].c_str());
 		offset.y = (float)atof(data[6].c_str());

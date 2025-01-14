@@ -131,10 +131,11 @@
     <ClInclude Include="implot\implot_internal.h" />
     <ClInclude Include="main.h" />
     <ClInclude Include="objects.h" />
+    <ClInclude Include="quaternion.h" />
     <ClInclude Include="resource.h" />
   </ItemGroup>
   <ItemGroup>
-    <CudaCompile Include="kernels\lorenzExample.cu" />
+    <CudaCompile Include="kernels\RLC-sJJ.cu" />
     <CudaCompile Include="main.cu" />
   </ItemGroup>
   <ItemGroup>

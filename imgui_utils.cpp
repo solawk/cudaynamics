@@ -70,7 +70,7 @@ void populateAxisBuffer(float* buffer, float x, float y, float z)
 	buffer[17] = -z * 0.5f;
 }
 
-void rotateOffsetBuffer(float* buffer, int pointCount, int varCount, int xdo, int ydo, int zdo, float pitch, float yaw, ImVec4 offset, ImVec4 scale)
+void rotateOffsetBuffer2(float* buffer, int pointCount, int varCount, int xdo, int ydo, int zdo, float pitch, float yaw, ImVec4 offset, ImVec4 scale)
 {
 	float x, y, z, zt;
 
@@ -84,6 +84,26 @@ void rotateOffsetBuffer(float* buffer, int pointCount, int varCount, int xdo, in
 		((float*)buffer)[i * varCount + 2] = zt = y * sinf(-pitch * DEG2RAD) + z * cosf(-pitch * DEG2RAD);
 
 		((float*)buffer)[i * varCount + 0] = x * cosf(yaw * DEG2RAD) + zt * sinf(yaw * DEG2RAD);
+	}
+}
+
+void rotateOffsetBuffer(float* buffer, int pointCount, int varCount, int xdo, int ydo, int zdo, ImVec4 rotation, ImVec4 offset, ImVec4 scale)
+{
+	float x, y, z, zt;
+
+	for (int i = 0; i < pointCount; i++)
+	{
+		x = ((float*)buffer)[i * varCount + xdo] * scale.x + offset.x;
+		y = ((float*)buffer)[i * varCount + ydo] * scale.y + offset.y;
+		z = ((float*)buffer)[i * varCount + zdo] * scale.z + offset.z;
+
+		float alpha = rotation.x; // yaw
+		float beta = rotation.y; // pitch
+		float gamma = rotation.z; // roll
+
+		((float*)buffer)[i * varCount + 0] = (x * cosf(beta) * cosf(gamma)) + (y * (sin(alpha) * sin(beta) * cos(gamma) - (cos(alpha) * sin(gamma)))) + (z * (cos(alpha) * sin(beta) * cos(gamma) + sin(alpha) * sin(gamma)));
+		((float*)buffer)[i * varCount + 1] = (x * cosf(beta) * sin(gamma)) + (y * (sin(alpha) * sin(beta) * sin(gamma) + (cos(alpha) * cos(gamma)))) + (z * (cos(alpha) * sin(beta) * sin(gamma) - sin(alpha) * cos(gamma)));
+		((float*)buffer)[i * varCount + 2] = (x * -sinf(beta)) + (y * (sin(alpha) * cos(beta))) + (z * (cos(alpha) * cos(beta)));
 	}
 }
 
@@ -222,4 +242,26 @@ void gridY2Z(float* buffer)
 		buffer[i * 3 + 2] = buffer[i * 3 + 1];
 		buffer[i * 3 + 1] = z;
 	}
+}
+
+ImVec4 ToEulerAngles(ImVec4 q)
+{
+	ImVec4 angles;
+
+	// roll (x-axis rotation)
+	double sinr_cosp = 2 * (q.w * q.x + q.y * q.z);
+	double cosr_cosp = 1 - 2 * (q.x * q.x + q.y * q.y);
+	angles.x = std::atan2(sinr_cosp, cosr_cosp);
+
+	// pitch (y-axis rotation)
+	double sinp = std::sqrt(1 + 2 * (q.w * q.y - q.x * q.z));
+	double cosp = std::sqrt(1 - 2 * (q.w * q.y - q.x * q.z));
+	angles.y = 2.0f * std::atan2(sinp, cosp) - 3.141592f / 2.0f;
+
+	// yaw (z-axis rotation)
+	double siny_cosp = 2 * (q.w * q.z + q.x * q.y);
+	double cosy_cosp = 1 - 2 * (q.y * q.y + q.z * q.z);
+	angles.z = std::atan2(siny_cosp, cosy_cosp);
+
+	return angles;
 }

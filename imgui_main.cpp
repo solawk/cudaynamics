@@ -74,6 +74,9 @@ std::future<int> computationFutures[2];
 bool rangingWindowEnabled = true;
 bool graphBuilderWindowEnabled = true;
 
+// WIP: Quaternions
+ImVec4 quatRot(0.0f, 0.0f, 0.0f, 1.0f);
+
 // Repetitive stuff
 #define LOAD_VARNEW     varNew.load(kernel::VAR_VALUES, kernel::VAR_MAX, kernel::VAR_STEPS, kernel::VAR_RANGING, kernel::VAR_COUNT)
 #define UNLOAD_VARNEW   varNew.unload(kernel::VAR_VALUES, kernel::VAR_MAX, kernel::VAR_STEPS, kernel::VAR_RANGING, kernel::VAR_COUNT)
@@ -86,6 +89,7 @@ bool graphBuilderWindowEnabled = true;
                             ImGui::PushStyleColor(ImGuiCol_FrameBgActive, unsavedBackgroundColorActive); \
                             ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, unsavedBackgroundColorHovered);}
 #define POP_FRAME(n)        {ImGui::PopStyleColor(n);}
+#define CLAMP01(x)      if (x < 0.0f) x = 0.0f; if (x > 1.0f) x = 1.0f;
 
 void deleteBothBuffers()
 {
@@ -126,7 +130,7 @@ int asyncComputation(void** dest, PostRanging* rangingData)
     bool isFirstBatch = computedData[1 - bufferToFillIndex] == nullptr; // Is another buffer null, only true when computing for the first time
     if (isFirstBatch) rangingData->clear();
 
-    printf("is first batch %i, total variations %i\n", isFirstBatch, rangingData->totalVariations);
+    //printf("is first batch %i, total variations %i\n", isFirstBatch, rangingData->totalVariations);
 
     int computationResult = compute(dest, &(mapBuffers[bufferToFillIndex]), isFirstBatch ? nullptr : (float*)(computedData[1 - bufferToFillIndex]), rangingData);
 
@@ -657,7 +661,7 @@ int imgui_main(int, char**)
                             playedBufferIndex = 1 - playedBufferIndex;
                             particleStep = 0;
                             bufferNo++;
-                            printf("Switch occured and starting playing %i\n", playedBufferIndex);
+                            //printf("Switch occured and starting playing %i\n", playedBufferIndex);
                             computing();
                         }
                         else
@@ -678,7 +682,8 @@ int imgui_main(int, char**)
             }
 
             // default button color is 0.137 0.271 0.427
-            if (noComputedData || (anyChanged && !playingParticles))
+            bool playBreath = noComputedData || (anyChanged && (!playingParticles || !enabledParticles));
+            if (playBreath)
                 ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.137f * buttonBreathMult, 0.271f * buttonBreathMult, 0.427f * buttonBreathMult, 1.0f));
             if (ImGui::Button("= COMPUTE =") || (kernel::executeOnLaunch && !executedOnLaunch))
             {
@@ -694,7 +699,7 @@ int imgui_main(int, char**)
 
                 computing();
             }
-            if (noComputedData || (anyChanged && !playingParticles)) ImGui::PopStyleColor();
+            if (playBreath) ImGui::PopStyleColor();
 
             ImGui::End();
 
@@ -917,7 +922,10 @@ int imgui_main(int, char**)
                     }
                     ImGui::EndCombo();                                                                                                  
                 }                                                                                                                       ImGui::SameLine(); ImGui::Text("Marker shape");
-                
+
+                CLAMP01(window->rulerAlpha);
+                ImGui::DragFloat(("##" + windowName + "_rulerAlpha").c_str(), &(window->rulerAlpha), 0.01f);                            ImGui::SameLine(); ImGui::Text("Ruler alpha");
+                CLAMP01(window->gridAlpha);
                 ImGui::DragFloat(("##" + windowName + "_gridAlpha").c_str(), &(window->gridAlpha), 0.01f);                              ImGui::SameLine(); ImGui::Text("Grid alpha");
 
                 ImGui::EndCombo();
@@ -970,17 +978,20 @@ int imgui_main(int, char**)
 
                 if (is3d)
                 {
+#define QUATWIP 1
+#if !QUATWIP
                     if (window->rotation.x >= 360.0f) window->rotation.x -= 360.0f;
                     if (window->rotation.x < 0.0f) window->rotation.x += 360.0f;
 
                     if (window->rotation.y > 90.0f) window->rotation.y = 90.0f;
                     if (window->rotation.y < -90.0f) window->rotation.y = -90.0f;
+#endif
 
                     if (window->scale.x < 0.0f) window->scale.x = 0.0f;
                     if (window->scale.y < 0.0f) window->scale.y = 0.0f;
                     if (window->scale.z < 0.0f) window->scale.z = 0.0f;
 
-                    ImGui::DragFloat2("Rotation", (float*)&window->rotation, 1.0f);
+                    //ImGui::DragFloat4("Rotation", (float*)&window->quatRot, 1.0f); // TODO: Bring back after full switch
                     ImGui::DragFloat3("Offset", (float*)&window->offset, 0.01f);
                     ImGui::DragFloat3("Scale", (float*)&window->scale, 0.01f);
 
@@ -993,10 +1004,31 @@ int imgui_main(int, char**)
                     plot = ImPlot::GetPlot(plotName.c_str());
 
                     float plotRangeSize = (float)plot->Axes[ImAxis_X1].Range.Max - (float)plot->Axes[ImAxis_X1].Range.Min;
+#if QUATWIP
+                    float deltax = window->deltarotation.x;
+                    float deltay = window->deltarotation.y;
+
+                    window->rotation.x += deltax;
+                    window->rotation.y += deltay;
+
+                    window->deltarotation.x = 0;
+                    window->deltarotation.y = 0;
+#endif
 
                     plot->is3d = is3d;
-                    plot->deltax = &(window->rotation.x);
-                    plot->deltay = &(window->rotation.y);
+                    plot->deltax = &(window->deltarotation.x);
+                    plot->deltay = &(window->deltarotation.y);
+
+                    quaternion::Quaternion<float> quat(window->quatRot.w, window->quatRot.x, window->quatRot.y, window->quatRot.z);
+                    quaternion::Quaternion<float> quatY(cosf(deltax * 0.5f * DEG2RAD), 0.0f, sinf(deltax * 0.5f * DEG2RAD), 0.0f);
+                    quaternion::Quaternion<float> quatZ(cosf(deltay * 0.5f * DEG2RAD), sinf(deltay * 0.5f * DEG2RAD), 0.0f, 0.0f);
+                    quat = quatY * quatZ * quat;
+                    window->quatRot.x = quat.b();
+                    window->quatRot.y = quat.c();
+                    window->quatRot.z = quat.d();
+                    window->quatRot.w = quat.a();
+                    //printf("%f %f %f %f\n", window->quatRot.x, window->quatRot.y, window->quatRot.z, window->quatRot.w);
+                    ImVec4 rotationEuler = ToEulerAngles(window->quatRot);
 
                     if (computedDataReady[playedBufferIndex])
                     {
@@ -1005,7 +1037,7 @@ int imgui_main(int, char**)
                         populateAxisBuffer((float*)axisBuffer, plotRangeSize / 10, plotRangeSize / 10, plotRangeSize / 10);
                         if (is3d)
                         {
-                            rotateOffsetBuffer((float*)axisBuffer, 6, 3, 0, 1, 2, window->rotation.y, window->rotation.x, ImVec4(0, 0, 0, 0), ImVec4(1, 1, 1, 0));
+                            rotateOffsetBuffer((float*)axisBuffer, 6, 3, 0, 1, 2, rotationEuler, ImVec4(0, 0, 0, 0), ImVec4(1, 1, 1, 0));
                         }
 
                         int xIndex = is3d ? 0 : window->variables[0];
@@ -1016,9 +1048,20 @@ int imgui_main(int, char**)
                             void* computedVariation = (float*)(computedData[playedBufferIndex]) + (variationSize * variation);
                             memcpy(dataBuffer, computedVariation, variationSize * sizeof(float));
 
+#if QUATWIP
+                            // WIP
+                            
+
                             if (is3d)
                                 rotateOffsetBuffer((float*)dataBuffer, computedSteps + 1, kernel::VAR_COUNT, window->variables[0], window->variables[1], window->variables[2],
+                                    rotationEuler, window->offset, window->scale);
+#else
+                            
+                            if (is3d)
+                                rotateOffsetBuffer2((float*)dataBuffer, computedSteps + 1, kernel::VAR_COUNT, window->variables[0], window->variables[1], window->variables[2],
                                     window->rotation.y, window->rotation.x, window->offset, window->scale);
+#endif
+                            
 
                             ImPlot::SetNextLineStyle(ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
                             ImPlot::PlotLine(plotName.c_str(), &(((float*)dataBuffer)[xIndex]), &(((float*)dataBuffer)[yIndex]), computedSteps + 1, 0, 0, sizeof(float) * kernel::VAR_COUNT);
@@ -1033,7 +1076,7 @@ int imgui_main(int, char**)
 
                             if (is3d)
                                 rotateOffsetBuffer((float*)particleBuffer, rangingData[playedBufferIndex].totalVariations, kernel::VAR_COUNT, window->variables[0], window->variables[1], window->variables[2],
-                                    window->rotation.y, window->rotation.x, window->offset, window->scale);
+                                    rotationEuler, window->offset, window->scale);
 
                             ImPlot::SetNextLineStyle(window->markerColor);
                             ImPlot::PushStyleVar(ImPlotStyleVar_MarkerWeight, window->markerOutlineSize);
@@ -1078,65 +1121,65 @@ int imgui_main(int, char**)
                             ImVec4 scale1(powf(10, scaleLog.x), powf(10, scaleLog.y), powf(10, scaleLog.z), 0);
                             ImVec4 scaleInterp(log10f(scale.x) - scaleLog.x, log10f(scale.y) - scaleLog.y, log10f(scale.z) - scaleLog.z, 0);
 
-                            ImVec4 alpha0((1.0f - scaleInterp.x) * window->gridAlpha, (1.0f - scaleInterp.y) * window->gridAlpha, (1.0f - scaleInterp.z) * window->gridAlpha, 0);
-                            ImVec4 alpha1(scaleInterp.x * window->gridAlpha, scaleInterp.y * window->gridAlpha, scaleInterp.z * window->gridAlpha, 0);
+                            ImVec4 alpha0((1.0f - scaleInterp.x) * window->rulerAlpha, (1.0f - scaleInterp.y) * window->rulerAlpha, (1.0f - scaleInterp.z) * window->rulerAlpha, 0);
+                            ImVec4 alpha1(scaleInterp.x * window->rulerAlpha, scaleInterp.y * window->rulerAlpha, scaleInterp.z * window->rulerAlpha, 0);
 
                             // x
-                            ImPlot::SetNextLineStyle(ImVec4(1.0f, 0.0f, 0.0f, alpha0.x * 2.0f));
+                            ImPlot::SetNextLineStyle(ImVec4(1.0f, 0.0f, 0.0f, alpha0.x));
                             populateRulerBuffer((float*)rulerBuffer, scale0.x * window->scale.x, 0);
-                            rotateOffsetBuffer((float*)rulerBuffer, 51, 3, 0, 1, 2, window->rotation.y, window->rotation.x, ImVec4(0, 0, 0, 0), ImVec4(scale0.x * window->scale.x, scale0.x* window->scale.x, scale0.x* window->scale.x, 0));
+                            rotateOffsetBuffer((float*)rulerBuffer, 51, 3, 0, 1, 2, rotationEuler, ImVec4(0, 0, 0, 0), ImVec4(scale0.x * window->scale.x, scale0.x* window->scale.x, scale0.x* window->scale.x, 0));
                             ImPlot::PlotLine(plotName.c_str(), &(((float*)rulerBuffer)[0]), &(((float*)rulerBuffer)[1]), 51, 0, 0, sizeof(float) * 3);
-                            ImPlot::PushStyleColor(ImPlotCol_InlayText, ImVec4(1.0f, 0.0f, 0.0f, alpha0.x * 3.0f));
+                            ImPlot::PushStyleColor(ImPlotCol_InlayText, ImVec4(1.0f, 0.0f, 0.0f, alpha0.x));
                             ImPlot::PlotText(scaleString(scale0.x).c_str(), ((float*)rulerBuffer)[150 + 0], ((float*)rulerBuffer)[150 + 1], ImVec2(0.0f, 0.0f));
                             ImPlot::PopStyleColor();
                             //
-                            ImPlot::SetNextLineStyle(ImVec4(1.0f, 0.0f, 0.0f, alpha1.x * 2.0f));
+                            ImPlot::SetNextLineStyle(ImVec4(1.0f, 0.0f, 0.0f, alpha1.x));
                             populateRulerBuffer((float*)rulerBuffer, scale1.x * window->scale.x, 0);
-                            rotateOffsetBuffer((float*)rulerBuffer, 51, 3, 0, 1, 2, window->rotation.y, window->rotation.x, ImVec4(0, 0, 0, 0), ImVec4(scale1.x* window->scale.x, scale1.x * window->scale.x, scale1.x * window->scale.x, 0));
+                            rotateOffsetBuffer((float*)rulerBuffer, 51, 3, 0, 1, 2, rotationEuler, ImVec4(0, 0, 0, 0), ImVec4(scale1.x* window->scale.x, scale1.x * window->scale.x, scale1.x * window->scale.x, 0));
                             ImPlot::PlotLine(plotName.c_str(), &(((float*)rulerBuffer)[0]), &(((float*)rulerBuffer)[1]), 51, 0, 0, sizeof(float) * 3);
-                            ImPlot::PushStyleColor(ImPlotCol_InlayText, ImVec4(1.0f, 0.0f, 0.0f, alpha1.x * 3.0f));
+                            ImPlot::PushStyleColor(ImPlotCol_InlayText, ImVec4(1.0f, 0.0f, 0.0f, alpha1.x));
                             ImPlot::PlotText(scaleString(scale1.x).c_str(), ((float*)rulerBuffer)[150 + 0], ((float*)rulerBuffer)[150 + 1], ImVec2(0.0f, 0.0f));
                             ImPlot::PopStyleColor();
 
                             // y
-                            ImPlot::SetNextLineStyle(ImVec4(0.0f, 1.0f, 0.0f, alpha0.y * 2.0f));
+                            ImPlot::SetNextLineStyle(ImVec4(0.0f, 1.0f, 0.0f, alpha0.y));
                             populateRulerBuffer((float*)rulerBuffer, scale0.y * window->scale.y, 1);
-                            rotateOffsetBuffer((float*)rulerBuffer, 51, 3, 0, 1, 2, window->rotation.y, window->rotation.x, ImVec4(0, 0, 0, 0), ImVec4(scale0.y * window->scale.y, scale0.y * window->scale.y, scale0.y * window->scale.y, 0));
+                            rotateOffsetBuffer((float*)rulerBuffer, 51, 3, 0, 1, 2, rotationEuler, ImVec4(0, 0, 0, 0), ImVec4(scale0.y * window->scale.y, scale0.y * window->scale.y, scale0.y * window->scale.y, 0));
                             ImPlot::PlotLine(plotName.c_str(), &(((float*)rulerBuffer)[0]), &(((float*)rulerBuffer)[1]), 51, 0, 0, sizeof(float) * 3);
-                            ImPlot::PushStyleColor(ImPlotCol_InlayText, ImVec4(0.0f, 1.0f, 0.0f, alpha0.y * 3.0f));
+                            ImPlot::PushStyleColor(ImPlotCol_InlayText, ImVec4(0.0f, 1.0f, 0.0f, alpha0.y));
                             ImPlot::PlotText(scaleString(scale0.y).c_str(), ((float*)rulerBuffer)[150 + 0], ((float*)rulerBuffer)[150 + 1], ImVec2(0.0f, 0.0f));
                             ImPlot::PopStyleColor();
                             //
-                            ImPlot::SetNextLineStyle(ImVec4(0.0f, 1.0f, 0.0f, alpha1.y * 2.0f));
+                            ImPlot::SetNextLineStyle(ImVec4(0.0f, 1.0f, 0.0f, alpha1.y));
                             populateRulerBuffer((float*)rulerBuffer, scale1.y * window->scale.y, 1);
-                            rotateOffsetBuffer((float*)rulerBuffer, 51, 3, 0, 1, 2, window->rotation.y, window->rotation.x, ImVec4(0, 0, 0, 0), ImVec4(scale1.y * window->scale.y, scale1.y * window->scale.y, scale1.y * window->scale.y, 0));
+                            rotateOffsetBuffer((float*)rulerBuffer, 51, 3, 0, 1, 2, rotationEuler, ImVec4(0, 0, 0, 0), ImVec4(scale1.y * window->scale.y, scale1.y * window->scale.y, scale1.y * window->scale.y, 0));
                             ImPlot::PlotLine(plotName.c_str(), &(((float*)rulerBuffer)[0]), &(((float*)rulerBuffer)[1]), 51, 0, 0, sizeof(float) * 3);
-                            ImPlot::PushStyleColor(ImPlotCol_InlayText, ImVec4(0.0f, 1.0f, 0.0f, alpha1.y * 3.0f));
+                            ImPlot::PushStyleColor(ImPlotCol_InlayText, ImVec4(0.0f, 1.0f, 0.0f, alpha1.y));
                             ImPlot::PlotText(scaleString(scale1.y).c_str(), ((float*)rulerBuffer)[150 + 0], ((float*)rulerBuffer)[150 + 1], ImVec2(0.0f, 0.0f));
                             ImPlot::PopStyleColor();
 
                             // z
-                            ImPlot::SetNextLineStyle(ImVec4(0.0f, 0.0f, 1.0f, alpha0.z * 2.0f));
+                            ImPlot::SetNextLineStyle(ImVec4(0.0f, 0.0f, 1.0f, alpha0.z));
                             populateRulerBuffer((float*)rulerBuffer, scale0.z * window->scale.z, 2);
-                            rotateOffsetBuffer((float*)rulerBuffer, 51, 3, 0, 1, 2, window->rotation.y, window->rotation.x, ImVec4(0, 0, 0, 0), ImVec4(scale0.z* window->scale.z, scale0.z* window->scale.z, scale0.z * window->scale.z, 0));
+                            rotateOffsetBuffer((float*)rulerBuffer, 51, 3, 0, 1, 2, rotationEuler, ImVec4(0, 0, 0, 0), ImVec4(scale0.z* window->scale.z, scale0.z* window->scale.z, scale0.z * window->scale.z, 0));
                             ImPlot::PlotLine(plotName.c_str(), &(((float*)rulerBuffer)[0]), &(((float*)rulerBuffer)[1]), 51, 0, 0, sizeof(float) * 3);
-                            ImPlot::PushStyleColor(ImPlotCol_InlayText, ImVec4(0.0f, 0.0f, 1.0f, alpha0.z * 3.0f));
+                            ImPlot::PushStyleColor(ImPlotCol_InlayText, ImVec4(0.0f, 0.0f, 1.0f, alpha0.z));
                             ImPlot::PlotText(scaleString(scale0.z).c_str(), ((float*)rulerBuffer)[150 + 0], ((float*)rulerBuffer)[150 + 1], ImVec2(0.0f, 0.0f));
                             ImPlot::PopStyleColor();
                             //
-                            ImPlot::SetNextLineStyle(ImVec4(0.0f, 0.0f, 1.0f, alpha1.z * 2.0f));
+                            ImPlot::SetNextLineStyle(ImVec4(0.0f, 0.0f, 1.0f, alpha1.z));
                             populateRulerBuffer((float*)rulerBuffer, scale1.z * window->scale.z, 2);
-                            rotateOffsetBuffer((float*)rulerBuffer, 51, 3, 0, 1, 2, window->rotation.y, window->rotation.x, ImVec4(0, 0, 0, 0), ImVec4(scale1.z* window->scale.z, scale1.z* window->scale.z, scale1.z* window->scale.z, 0));
+                            rotateOffsetBuffer((float*)rulerBuffer, 51, 3, 0, 1, 2, rotationEuler, ImVec4(0, 0, 0, 0), ImVec4(scale1.z* window->scale.z, scale1.z* window->scale.z, scale1.z* window->scale.z, 0));
                             ImPlot::PlotLine(plotName.c_str(), &(((float*)rulerBuffer)[0]), &(((float*)rulerBuffer)[1]), 51, 0, 0, sizeof(float) * 3);
-                            ImPlot::PushStyleColor(ImPlotCol_InlayText, ImVec4(0.0f, 0.0f, 1.0f, alpha1.z * 3.0f));
+                            ImPlot::PushStyleColor(ImPlotCol_InlayText, ImVec4(0.0f, 0.0f, 1.0f, alpha1.z));
                             ImPlot::PlotText(scaleString(scale1.z).c_str(), ((float*)rulerBuffer)[150 + 0], ((float*)rulerBuffer)[150 + 1], ImVec2(0.0f, 0.0f));
                             ImPlot::PopStyleColor();
                         }
 
                         // Grid
-                        if (is3d && 0)
+                        if (is3d & 0)
                         {
-                            ImVec4 scale(plotRangeSize/* * window->xScale*/, plotRangeSize/* * window->yScale*/, plotRangeSize/* * window->zScale*/, 0);
+                            ImVec4 scale(plotRangeSize / window->scale.x, plotRangeSize / window->scale.y, plotRangeSize / window->scale.z, 0);
                             ImVec4 scaleLog(floorf(log10f(scale.x)), floorf(log10f(scale.y)), floorf(log10f(scale.z)), 0);
                             ImVec4 scale0(powf(10, scaleLog.x - 1), powf(10, scaleLog.y - 1), powf(10, scaleLog.z - 1), 0);
                             ImVec4 scale1(powf(10, scaleLog.x), powf(10, scaleLog.y), powf(10, scaleLog.z), 0);
@@ -1148,7 +1191,7 @@ int imgui_main(int, char**)
                             // x
                             ImPlot::SetNextLineStyle(ImVec4(1.0f, 1.0f, 1.0f, alpha0.x));
                             populateGridBuffer((float*)gridBuffer);
-                            rotateOffsetBuffer((float*)gridBuffer, 10 * 5 * 2, 3, 0, 1, 2, window->rotation.y, window->rotation.x, ImVec4(0, 0, 0, 0), ImVec4(scale0.x * window->scale.x, scale0.y * window->scale.y, scale0.z * window->scale.z, 0));
+                            rotateOffsetBuffer2((float*)gridBuffer, 10 * 5 * 2, 3, 0, 1, 2, window->rotation.y, window->rotation.x, ImVec4(0, 0, 0, 0), ImVec4(scale0.x * window->scale.x, scale0.y * window->scale.y, scale0.z * window->scale.z, 0));
                             ImPlot::PlotLine(plotName.c_str(), &(((float*)gridBuffer)[0]), &(((float*)gridBuffer)[1]), 10 * 5 * 2, 0, 0, sizeof(float) * 3);
                             /*ImPlot::PushStyleColor(ImPlotCol_InlayText, ImVec4(1.0f, 1.0f, 1.0f, alpha0.x));
                             ImPlot::PlotText(std::to_string(scale0.x).c_str(), ((float*)gridBuffer)[54 + 0], ((float*)gridBuffer)[54 + 1], ImVec2(0.0f, 0.0f));
@@ -1156,20 +1199,20 @@ int imgui_main(int, char**)
 
                             ImPlot::SetNextLineStyle(ImVec4(1.0f, 1.0f, 1.0f, alpha1.x));
                             populateGridBuffer((float*)gridBuffer);
-                            rotateOffsetBuffer((float*)gridBuffer, 10 * 5 * 2, 3, 0, 1, 2, window->rotation.y, window->rotation.x, ImVec4(0, 0, 0, 0), ImVec4(scale1.x * window->scale.x, scale1.y * window->scale.y, scale1.z * window->scale.z, 0));
+                            rotateOffsetBuffer2((float*)gridBuffer, 10 * 5 * 2, 3, 0, 1, 2, window->rotation.y, window->rotation.x, ImVec4(0, 0, 0, 0), ImVec4(scale1.x * window->scale.x, scale1.y * window->scale.y, scale1.z * window->scale.z, 0));
                             ImPlot::PlotLine(plotName.c_str(), &(((float*)gridBuffer)[0]), &(((float*)gridBuffer)[1]), 10 * 5 * 2, 0, 0, sizeof(float) * 3);
 
                             // y
                             ImPlot::SetNextLineStyle(ImVec4(1.0f, 1.0f, 1.0f, alpha0.y));
                             populateGridBuffer((float*)gridBuffer);
                             gridX2Y((float*)gridBuffer);
-                            rotateOffsetBuffer((float*)gridBuffer, 10 * 5 * 2, 3, 0, 1, 2, window->rotation.y, window->rotation.x, ImVec4(0, 0, 0, 0), ImVec4(scale0.x * window->scale.x, scale0.y * window->scale.y, scale0.z * window->scale.z, 0));
+                            rotateOffsetBuffer2((float*)gridBuffer, 10 * 5 * 2, 3, 0, 1, 2, window->rotation.y, window->rotation.x, ImVec4(0, 0, 0, 0), ImVec4(scale0.x * window->scale.x, scale0.y * window->scale.y, scale0.z * window->scale.z, 0));
                             ImPlot::PlotLine(plotName.c_str(), &(((float*)gridBuffer)[0]), &(((float*)gridBuffer)[1]), 10 * 5 * 2, 0, 0, sizeof(float) * 3);
 
                             ImPlot::SetNextLineStyle(ImVec4(1.0f, 1.0f, 1.0f, alpha1.y));
                             populateGridBuffer((float*)gridBuffer);
                             gridX2Y((float*)gridBuffer);
-                            rotateOffsetBuffer((float*)gridBuffer, 10 * 5 * 2, 3, 0, 1, 2, window->rotation.y, window->rotation.x, ImVec4(0, 0, 0, 0), ImVec4(scale1.x * window->scale.x, scale1.y * window->scale.y, scale1.z * window->scale.z, 0));
+                            rotateOffsetBuffer2((float*)gridBuffer, 10 * 5 * 2, 3, 0, 1, 2, window->rotation.y, window->rotation.x, ImVec4(0, 0, 0, 0), ImVec4(scale1.x * window->scale.x, scale1.y * window->scale.y, scale1.z * window->scale.z, 0));
                             ImPlot::PlotLine(plotName.c_str(), &(((float*)gridBuffer)[0]), &(((float*)gridBuffer)[1]), 10 * 5 * 2, 0, 0, sizeof(float) * 3);
 
                             // z
@@ -1177,14 +1220,14 @@ int imgui_main(int, char**)
                             populateGridBuffer((float*)gridBuffer);
                             gridX2Y((float*)gridBuffer);
                             gridY2Z((float*)gridBuffer);
-                            rotateOffsetBuffer((float*)gridBuffer, 10 * 5 * 2, 3, 0, 1, 2, window->rotation.y, window->rotation.x, ImVec4(0, 0, 0, 0), ImVec4(scale0.x * window->scale.x, scale0.y * window->scale.y, scale0.z * window->scale.z, 0));
+                            rotateOffsetBuffer2((float*)gridBuffer, 10 * 5 * 2, 3, 0, 1, 2, window->rotation.y, window->rotation.x, ImVec4(0, 0, 0, 0), ImVec4(scale0.x * window->scale.x, scale0.y * window->scale.y, scale0.z * window->scale.z, 0));
                             ImPlot::PlotLine(plotName.c_str(), &(((float*)gridBuffer)[0]), &(((float*)gridBuffer)[1]), 10 * 5 * 2, 0, 0, sizeof(float) * 3);
 
                             ImPlot::SetNextLineStyle(ImVec4(1.0f, 1.0f, 1.0f, alpha1.z));
                             populateGridBuffer((float*)gridBuffer);
                             gridX2Y((float*)gridBuffer);
                             gridY2Z((float*)gridBuffer);
-                            rotateOffsetBuffer((float*)gridBuffer, 10 * 5 * 2, 3, 0, 1, 2, window->rotation.y, window->rotation.x, ImVec4(0, 0, 0, 0), ImVec4(scale1.x * window->scale.x, scale1.y * window->scale.y, scale1.z * window->scale.z, 0));
+                            rotateOffsetBuffer2((float*)gridBuffer, 10 * 5 * 2, 3, 0, 1, 2, window->rotation.y, window->rotation.x, ImVec4(0, 0, 0, 0), ImVec4(scale1.x * window->scale.x, scale1.y * window->scale.y, scale1.z * window->scale.z, 0));
                             ImPlot::PlotLine(plotName.c_str(), &(((float*)gridBuffer)[0]), &(((float*)gridBuffer)[1]), 10 * 5 * 2, 0, 0, sizeof(float) * 3);
                         }
                     }

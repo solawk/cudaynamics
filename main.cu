@@ -81,9 +81,9 @@ Error:
     cudaFree(cuda_maps);
 
     postcompute = std::chrono::steady_clock::now();
-    printf("Precompute time: %Ii ms\n", std::chrono::duration_cast<std::chrono::milliseconds>(precompute - before).count());
-    printf("Incompute time: %Ii ms\n", std::chrono::duration_cast<std::chrono::milliseconds>(incompute - precompute).count());
-    printf("Postcompute time: %Ii ms\n", std::chrono::duration_cast<std::chrono::milliseconds>(postcompute - incompute).count());
+    //printf("Precompute time: %Ii ms\n", std::chrono::duration_cast<std::chrono::milliseconds>(precompute - before).count());
+    //printf("Incompute time: %Ii ms\n", std::chrono::duration_cast<std::chrono::milliseconds>(incompute - precompute).count());
+    //printf("Postcompute time: %Ii ms\n", std::chrono::duration_cast<std::chrono::milliseconds>(postcompute - incompute).count());
 
     return cudaStatus;
 }
@@ -160,7 +160,7 @@ int compute(void** dest, void** maps, float* previousData, PostRanging* rangingD
     after = std::chrono::steady_clock::now();
     std::chrono::steady_clock::duration elapsed = after - before;
     auto timeElapsed = std::chrono::duration_cast<std::chrono::milliseconds>(elapsed).count();
-    printf("CUDA ended in %Ii ms\n", timeElapsed);
+    //printf("CUDA ended in %Ii ms\n", timeElapsed);
     rangingData->timeElapsed = timeElapsed;
 
 #define WRITE 0

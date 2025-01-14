@@ -92,10 +92,11 @@
     <ClInclude Include="dbscan\dbscan.h">
       <Filter>dbscan</Filter>
     </ClInclude>
+    <ClInclude Include="quaternion.h" />
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="main.cu" />
-    <CudaCompile Include="kernels\lorenzExample.cu">
+    <CudaCompile Include="kernels\RLC-sJJ.cu">
       <Filter>kernels</Filter>
     </CudaCompile>
   </ItemGroup>

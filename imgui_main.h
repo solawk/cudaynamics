@@ -18,6 +18,7 @@
 #include <set>
 #include <fstream>
 #include "resource.h"
+#include "quaternion.h"
 
 bool CreateDeviceD3D(HWND hWnd);
 void CleanupDeviceD3D();
