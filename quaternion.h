@@ -30,6 +30,9 @@
 #ifndef QUATERNIONS_QUATERNION_H
 #define QUATERNIONS_QUATERNION_H
 
+#pragma warning( push )
+#pragma warning( disable : 4244)
+
 #include <cmath> // for atan2, which handles signs for us properly
 #include <cstdint>
 #include <limits>
@@ -744,7 +747,7 @@ inline Quaternion<T> from_euler(const std::array<T, 3>& x) {
  * TODO: is that useful??
  * TODO: provide lexicographic order on quaternions?
  */
-template <typename T>
+/*template <typename T>
 struct hash : public std::unary_function<Quaternion<T>, size_t> {
 
   inline size_t operator()(const Quaternion<T>& x) const {
@@ -771,13 +774,13 @@ struct hash : public std::unary_function<Quaternion<T>, size_t> {
 
     return mix(h);
   }
-};
+};*/
 
 /**
  * Lexicographic order on quaternions, which is a total order, but not compatible
  * with the field structure.
  */
-template <typename T>
+/*template <typename T>
 struct lexicographic_order : std::binary_function<Quaternion<T>, Quaternion<T>, bool> {
   inline constexpr bool operator()(const Quaternion<T>& x, const Quaternion<T>& y) const {
     return x.a() < y.a()
@@ -785,7 +788,7 @@ struct lexicographic_order : std::binary_function<Quaternion<T>, Quaternion<T>, 
     || (x.a() == y.a() && x.b() == y.b() && x.c() < y.c())
     || (x.a() == y.a() && x.b() == y.b() && x.c() == y.c() && x.d() < y.d());
   }
-};
+};*/
 
 /** +
  * Returns the conjugate of x, as a new Quaternion (x is unchanged).
@@ -1370,5 +1373,7 @@ inline Quaternion<T> axby(K k1, const Quaternion<T>& x, K k2, const Quaternion<T
 
 // TODO: operator<< and operator>>
 } // end namespace quaternion
+
+#pragma warning( pop ) 
 
 #endif //QUATERNIONS_QUATERNION_H

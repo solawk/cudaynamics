@@ -12,8 +12,8 @@ cudaError_t execute(float* data, float* maps, int rangingCount, int variationSiz
 {
     unsigned long int size = variationSize * variations;
 
-    std::chrono::steady_clock::time_point before = std::chrono::steady_clock::now();
-    std::chrono::steady_clock::time_point precompute, incompute, postcompute;
+    //std::chrono::steady_clock::time_point before = std::chrono::steady_clock::now();
+    //std::chrono::steady_clock::time_point precompute, incompute, postcompute;
 
     cudaError_t cudaStatus;
 
@@ -62,13 +62,13 @@ cudaError_t execute(float* data, float* maps, int rangingCount, int variationSiz
     CUDA_MEMCPY(cuda_ranging, &ranging, cudaMemcpyHostToDevice, sizeof(ranging), "cudaMemcpy ranging failed!");
 
     // Kernel execution
-    precompute = std::chrono::steady_clock::now();
+    //precompute = std::chrono::steady_clock::now();
     kernelProgram <<< blocks, threads >>> (cuda_data, cuda_params, cuda_maps, cuda_ranging, kernel::steps, kernel::stepSize, variationSize, !ranging.continuation ? 0 : cuda_prev_data);
 
     CUDA_LASTERROR;
 
     CUDA_SYNCHRONIZE;
-    incompute = std::chrono::steady_clock::now();
+    //incompute = std::chrono::steady_clock::now();
 
     CUDA_MEMCPY(data, cuda_data, cudaMemcpyDeviceToHost, size * sizeof(float), "cudaMemcpy back failed!");
     CUDA_MEMCPY(maps, cuda_maps, cudaMemcpyDeviceToHost, variations * kernel::MAP_COUNT * sizeof(float), "cudaMemcpy maps back failed!");
@@ -80,7 +80,7 @@ Error:
     cudaFree(cuda_ranging);
     cudaFree(cuda_maps);
 
-    postcompute = std::chrono::steady_clock::now();
+    //postcompute = std::chrono::steady_clock::now();
     //printf("Precompute time: %Ii ms\n", std::chrono::duration_cast<std::chrono::milliseconds>(precompute - before).count());
     //printf("Incompute time: %Ii ms\n", std::chrono::duration_cast<std::chrono::milliseconds>(incompute - precompute).count());
     //printf("Postcompute time: %Ii ms\n", std::chrono::duration_cast<std::chrono::milliseconds>(postcompute - incompute).count());
@@ -161,7 +161,7 @@ int compute(void** dest, void** maps, float* previousData, PostRanging* rangingD
     std::chrono::steady_clock::duration elapsed = after - before;
     auto timeElapsed = std::chrono::duration_cast<std::chrono::milliseconds>(elapsed).count();
     //printf("CUDA ended in %Ii ms\n", timeElapsed);
-    rangingData->timeElapsed = timeElapsed;
+    rangingData->timeElapsed = (float)timeElapsed;
 
 #define WRITE 0
 #if WRITE

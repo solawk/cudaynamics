@@ -40,7 +40,7 @@ std::string scaleString(float scale)
 	{
 		for (int i = 4; i < 100; i++)
 		{
-			if (scale > powf(0.1f, i) * 0.5f && scale < powf(0.1f, i - 1) * 0.5f) return "10e-" + std::to_string(i);
+			if (scale > powf(0.1f, (float)i) * 0.5f && scale < powf(0.1f, i - 1.0f) * 0.5f) return "10e-" + std::to_string(i);
 		}
 
 		return "<10e-100";
@@ -49,7 +49,7 @@ std::string scaleString(float scale)
 	{
 		for (int i = 4; i < 100; i++)
 		{
-			if (scale > powf(10.0f, i) * 0.5f && scale < powf(10.0f, i + 1) * 0.5f) return "10e" + std::to_string(i);
+			if (scale > powf(10.0f, (float)i) * 0.5f && scale < powf(10.0f, i + 1.0f) * 0.5f) return "10e" + std::to_string(i);
 		}
 
 		return ">10e100";
@@ -89,7 +89,7 @@ void rotateOffsetBuffer2(float* buffer, int pointCount, int varCount, int xdo, i
 
 void rotateOffsetBuffer(float* buffer, int pointCount, int varCount, int xdo, int ydo, int zdo, ImVec4 rotation, ImVec4 offset, ImVec4 scale)
 {
-	float x, y, z, zt;
+	float x, y, z;
 
 	for (int i = 0; i < pointCount; i++)
 	{
@@ -249,19 +249,19 @@ ImVec4 ToEulerAngles(ImVec4 q)
 	ImVec4 angles;
 
 	// roll (x-axis rotation)
-	double sinr_cosp = 2 * (q.w * q.x + q.y * q.z);
-	double cosr_cosp = 1 - 2 * (q.x * q.x + q.y * q.y);
-	angles.x = std::atan2(sinr_cosp, cosr_cosp);
+	float sinr_cosp = 2.0f * (q.w * q.x + q.y * q.z);
+	float cosr_cosp = 1.0f - 2.0f * (q.x * q.x + q.y * q.y);
+	angles.x = std::atan2f(sinr_cosp, cosr_cosp);
 
 	// pitch (y-axis rotation)
-	double sinp = std::sqrt(1 + 2 * (q.w * q.y - q.x * q.z));
-	double cosp = std::sqrt(1 - 2 * (q.w * q.y - q.x * q.z));
-	angles.y = 2.0f * std::atan2(sinp, cosp) - 3.141592f / 2.0f;
+	float sinp = std::sqrt(1 + 2 * (q.w * q.y - q.x * q.z));
+	float cosp = std::sqrt(1 - 2 * (q.w * q.y - q.x * q.z));
+	angles.y = 2.0f * std::atan2f(sinp, cosp) - 3.141592f / 2.0f;
 
 	// yaw (z-axis rotation)
-	double siny_cosp = 2 * (q.w * q.z + q.x * q.y);
-	double cosy_cosp = 1 - 2 * (q.y * q.y + q.z * q.z);
-	angles.z = std::atan2(siny_cosp, cosy_cosp);
+	float siny_cosp = 2.0f * (q.w * q.z + q.x * q.y);
+	float cosy_cosp = 1.0f - 2.0f * (q.y * q.y + q.z * q.z);
+	angles.z = std::atan2f(siny_cosp, cosy_cosp);
 
 	return angles;
 }
