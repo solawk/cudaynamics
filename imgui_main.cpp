@@ -937,6 +937,7 @@ int imgui_main(int, char**)
             bool is3d;
             int mapIndex;
             ImPlotColormap heatmapColorMap = ImPlotColormap_Jet;
+            ImVec4 rotationEuler;
 
             switch (window->type)
             {
@@ -975,25 +976,52 @@ int imgui_main(int, char**)
             case Phase:
                 // PHASE DIAGRAM
                 is3d = window->variableCount == 3;
+                rotationEuler = ToEulerAngles(window->quatRot);
 
                 if (is3d)
                 {
-#define QUATWIP 1
-#if !QUATWIP
-                    if (window->rotation.x >= 360.0f) window->rotation.x -= 360.0f;
-                    if (window->rotation.x < 0.0f) window->rotation.x += 360.0f;
+                    ImVec4 rotationEulerEditable(rotationEuler);                 
+                    rotationEulerEditable.x /= DEG2RAD;
+                    rotationEulerEditable.y /= DEG2RAD;
+                    rotationEulerEditable.z /= DEG2RAD;
+                    ImVec4 rotationEulerBeforeEdit(rotationEulerEditable);
 
-                    if (window->rotation.y > 90.0f) window->rotation.y = 90.0f;
-                    if (window->rotation.y < -90.0f) window->rotation.y = -90.0f;
-#endif
+                    rotationEulerEditable.x += window->autorotate.x * frameTime;
+                    rotationEulerEditable.y += window->autorotate.y * frameTime;
+                    rotationEulerEditable.z += window->autorotate.z * frameTime;
+                    
+                    ImGui::DragFloat3("Rotation", (float*)&rotationEulerEditable, 1.0f);
+                    ImGui::DragFloat3("Automatic rotation", (float*)&window->autorotate, 0.1f);
+                    ImGui::DragFloat3("Offset", (float*)&window->offset, 0.01f);
+                    ImGui::DragFloat3("Scale", (float*)&window->scale, 0.01f);
 
                     if (window->scale.x < 0.0f) window->scale.x = 0.0f;
                     if (window->scale.y < 0.0f) window->scale.y = 0.0f;
                     if (window->scale.z < 0.0f) window->scale.z = 0.0f;
 
-                    //ImGui::DragFloat4("Rotation", (float*)&window->quatRot, 1.0f); // TODO: Bring back after full switch
-                    ImGui::DragFloat3("Offset", (float*)&window->offset, 0.01f);
-                    ImGui::DragFloat3("Scale", (float*)&window->scale, 0.01f);
+                    if (rotationEulerBeforeEdit != rotationEulerEditable)
+                    {
+                        // Rotate quaternion by euler drag
+
+                        ImVec4 deltaEuler = rotationEulerEditable - rotationEulerBeforeEdit;
+
+                        quaternion::Quaternion<float> quatEditable(1.0f, 0.0f, 0.0f, 0.0f);
+                        quaternion::Quaternion<float> quatRot(window->quatRot.w, window->quatRot.x, window->quatRot.y, window->quatRot.z);
+                        quaternion::Quaternion<float> quatZ(cosf(deltaEuler.z * 0.5f * DEG2RAD), 0.0f, 0.0f, sinf(deltaEuler.z * 0.5f * DEG2RAD));
+                        quaternion::Quaternion<float> quatY(cosf(deltaEuler.y * 0.5f * DEG2RAD), 0.0f, sinf(deltaEuler.y * 0.5f * DEG2RAD), 0.0f);
+                        quaternion::Quaternion<float> quatX(cosf(deltaEuler.x * 0.5f * DEG2RAD), sinf(deltaEuler.x * 0.5f * DEG2RAD), 0.0f, 0.0f);
+
+                        if (deltaEuler.x != 0.0f) quatEditable = quatX * quatEditable;
+                        if (deltaEuler.y != 0.0f) quatEditable = quatY * quatEditable;
+                        if (deltaEuler.z != 0.0f) quatEditable = quatZ * quatEditable;
+
+                        quatEditable = quatRot * quatEditable;
+
+                        window->quatRot.w = quatEditable.a();
+                        window->quatRot.x = quatEditable.b();
+                        window->quatRot.y = quatEditable.c();
+                        window->quatRot.z = quatEditable.d();
+                    }
 
                     axisFlags |= ImPlotAxisFlags_NoGridLines | ImPlotAxisFlags_NoTickMarks | ImPlotAxisFlags_NoTickLabels;
                 }
@@ -1004,31 +1032,31 @@ int imgui_main(int, char**)
                     plot = ImPlot::GetPlot(plotName.c_str());
 
                     float plotRangeSize = (float)plot->Axes[ImAxis_X1].Range.Max - (float)plot->Axes[ImAxis_X1].Range.Min;
-#if QUATWIP
+
                     float deltax = window->deltarotation.x;
                     float deltay = window->deltarotation.y;
 
-                    window->rotation.x += deltax;
-                    window->rotation.y += deltay;
-
                     window->deltarotation.x = 0;
                     window->deltarotation.y = 0;
-#endif
 
                     plot->is3d = is3d;
                     plot->deltax = &(window->deltarotation.x);
                     plot->deltay = &(window->deltarotation.y);
 
-                    quaternion::Quaternion<float> quat(window->quatRot.w, window->quatRot.x, window->quatRot.y, window->quatRot.z);
-                    quaternion::Quaternion<float> quatY(cosf(deltax * 0.5f * DEG2RAD), 0.0f, sinf(deltax * 0.5f * DEG2RAD), 0.0f);
-                    quaternion::Quaternion<float> quatZ(cosf(deltay * 0.5f * DEG2RAD), sinf(deltay * 0.5f * DEG2RAD), 0.0f, 0.0f);
-                    quat = quatY * quatZ * quat;
-                    window->quatRot.x = quat.b();
-                    window->quatRot.y = quat.c();
-                    window->quatRot.z = quat.d();
-                    window->quatRot.w = quat.a();
+                    if (deltax != 0.0f || deltay != 0.0f)
+                    {
+                        quaternion::Quaternion<float> quat(window->quatRot.w, window->quatRot.x, window->quatRot.y, window->quatRot.z);
+                        quaternion::Quaternion<float> quatY(cosf(deltax * 0.5f * DEG2RAD), 0.0f, sinf(deltax * 0.5f * DEG2RAD), 0.0f);
+                        quaternion::Quaternion<float> quatX(cosf(deltay * 0.5f * DEG2RAD), sinf(deltay * 0.5f * DEG2RAD), 0.0f, 0.0f);
+                        quat = quatY * quatX * quat;
+                        quat = quaternion::normalize(quat);
+                        window->quatRot.w = quat.a();
+                        window->quatRot.x = quat.b();
+                        window->quatRot.y = quat.c();
+                        window->quatRot.z = quat.d();
+                    }
                     //printf("%f %f %f %f\n", window->quatRot.x, window->quatRot.y, window->quatRot.z, window->quatRot.w);
-                    ImVec4 rotationEuler = ToEulerAngles(window->quatRot);
+                    rotationEuler = ToEulerAngles(window->quatRot);
 
                     if (computedDataReady[playedBufferIndex])
                     {
@@ -1048,19 +1076,9 @@ int imgui_main(int, char**)
                             void* computedVariation = (float*)(computedData[playedBufferIndex]) + (variationSize * variation);
                             memcpy(dataBuffer, computedVariation, variationSize * sizeof(float));
 
-#if QUATWIP
-                            // WIP
-                            
-
                             if (is3d)
                                 rotateOffsetBuffer((float*)dataBuffer, computedSteps + 1, kernel::VAR_COUNT, window->variables[0], window->variables[1], window->variables[2],
                                     rotationEuler, window->offset, window->scale);
-#else
-                            
-                            if (is3d)
-                                rotateOffsetBuffer2((float*)dataBuffer, computedSteps + 1, kernel::VAR_COUNT, window->variables[0], window->variables[1], window->variables[2],
-                                    window->rotation.y, window->rotation.x, window->offset, window->scale);
-#endif
                             
 
                             ImPlot::SetNextLineStyle(ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
@@ -1177,6 +1195,7 @@ int imgui_main(int, char**)
                         }
 
                         // Grid
+#if 0
                         if (is3d & 0)
                         {
                             ImVec4 scale(plotRangeSize / window->scale.x, plotRangeSize / window->scale.y, plotRangeSize / window->scale.z, 0);
@@ -1230,6 +1249,7 @@ int imgui_main(int, char**)
                             rotateOffsetBuffer2((float*)gridBuffer, 10 * 5 * 2, 3, 0, 1, 2, window->rotation.y, window->rotation.x, ImVec4(0, 0, 0, 0), ImVec4(scale1.x * window->scale.x, scale1.y * window->scale.y, scale1.z * window->scale.z, 0));
                             ImPlot::PlotLine(plotName.c_str(), &(((float*)gridBuffer)[0]), &(((float*)gridBuffer)[1]), 10 * 5 * 2, 0, 0, sizeof(float) * 3);
                         }
+#endif
                     }
 
                     // PHASE DIAGRAM END

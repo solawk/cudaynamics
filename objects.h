@@ -29,11 +29,11 @@ public:
 
 	// Plot rotation
 	bool is3d;
-	ImVec2 rotation;
-	ImVec2 deltarotation;
 	ImVec4 offset;
 	ImVec4 scale;
 	ImVec4 quatRot;
+	ImVec4 autorotate; // euler angles
+	ImVec2 deltarotation; // euler angles
 
 	// Plot settings
 	bool settingsListEnabled;
@@ -50,6 +50,7 @@ public:
 		id = _id;
 
 		quatRot = ImVec4(1.0f, 0.0f, 0.0f, 0.0f);
+		autorotate = ImVec4(0.0f, 0.0f, 0.0f, 0.0f);
 
 		settingsListEnabled = true;
 		markerSize = 1.0f;
@@ -67,8 +68,8 @@ public:
 		name = _name;
 
 		is3d = _is3d;
-		rotation = ImVec2(0.0f, 0.0f);
 		quatRot = ImVec4(1.0f, 0.0f, 0.0f, 0.0f);
+		autorotate = ImVec4(0.0f, 0.0f, 0.0f, 0.0f);
 
 		offset = ImVec4(0.0f, 0.0f, 0.0f, 0.0f);
 		scale = ImVec4(1.0f, 1.0f, 1.0f, 0.0f);
@@ -119,7 +120,8 @@ public:
 		exportString += " " + to_string((int)type);
 
 		exportString += " " + to_string((int)is3d);
-		exportString += " " + to_string(rotation.x) + " " + to_string(rotation.y);
+		exportString += " " + to_string(quatRot.x) + " " + to_string(quatRot.y) + " " + to_string(quatRot.z) + " " + to_string(quatRot.w);
+		exportString += " " + to_string(autorotate.x) + " " + to_string(autorotate.y) + " " + to_string(autorotate.z);
 		exportString += " " + to_string(offset.x) + " " + to_string(offset.y) + " " + to_string(offset.z);
 		exportString += " " + to_string(scale.x) + " " + to_string(scale.y) + " " + to_string(scale.z);
 
@@ -149,27 +151,34 @@ public:
 
 		//vector<string> data = split(input, " ");
 
-		name = data[0];
-		type = (PlotType)atoi(data[1].c_str());
+		int d = 0;
 
-		is3d = (bool)atoi(data[2].c_str());
-		rotation.x = (float)atof(data[3].c_str());
-		rotation.y = (float)atof(data[4].c_str());
+		name = data[d++];
+		type = (PlotType)atoi(data[d++].c_str());
 
-		quatRot = ImVec4(1.0f, 0.0f, 0.0f, 0.0f);
+		is3d = (bool)atoi(data[d++].c_str());
 
-		offset.x = (float)atof(data[5].c_str());
-		offset.y = (float)atof(data[6].c_str());
-		offset.z = (float)atof(data[7].c_str());
+		quatRot.x = (float)atof(data[d++].c_str());
+		quatRot.y = (float)atof(data[d++].c_str());
+		quatRot.z = (float)atof(data[d++].c_str());
+		quatRot.w = (float)atof(data[d++].c_str());
 
-		scale.x = (float)atof(data[8].c_str());
-		scale.y = (float)atof(data[9].c_str());
-		scale.z = (float)atof(data[10].c_str());
+		autorotate.x = (float)atof(data[d++].c_str());
+		autorotate.y = (float)atof(data[d++].c_str());
+		autorotate.z = (float)atof(data[d++].c_str());
 
-		variableCount = atoi(data[11].c_str());
+		offset.x = (float)atof(data[d++].c_str());
+		offset.y = (float)atof(data[d++].c_str());
+		offset.z = (float)atof(data[d++].c_str());
+
+		scale.x = (float)atof(data[d++].c_str());
+		scale.y = (float)atof(data[d++].c_str());
+		scale.z = (float)atof(data[d++].c_str());
+
+		variableCount = atoi(data[d++].c_str());
 		variables.clear();
 		for (int i = 0; i < variableCount; i++)
-			variables.push_back(atoi(data[12 + i].c_str()));
+			variables.push_back(atoi(data[d++].c_str()));
 	}
 };
 
