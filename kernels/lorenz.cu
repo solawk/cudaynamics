@@ -4,31 +4,31 @@
 #include <stdio.h>
 #include <fstream>
 
-#include "RLC-sJJ.h"
+#include "lorenz.h"
 #include <objects.h>
 #include <chrono>
 #include <wtypes.h>
 
 namespace kernel
 {
-    const char* name = "Shunted Josephson Junction";
+    const char* name = "Lorenz system";
 
-    const char* VAR_NAMES[]{ "sin_x1", "x1", "x2", "x3" };
-    float VAR_VALUES[]{ 0.0f, -0.31f, 3.3f, 0.76f };
-    bool VAR_RANGING[]{ false, false, false, false };
-    float VAR_STEPS[]{ 0.0f, 0.02f, 0.1f, 0.1f };
-    float VAR_MAX[]{ 0.0f, -0.01f, 4.3f, 1.76f };
-    int VAR_STEP_COUNTS[]{ 0, 0, 0, 0 };
+    const char* VAR_NAMES[]{ "x", "y", "z" };
+    float VAR_VALUES[]{ 10.0f, 10.0f, 10.0f };
+    bool VAR_RANGING[]{ false, false, false };
+    float VAR_STEPS[]{ 3.0f, 3.0f, 3.0f };
+    float VAR_MAX[]{ 29.0f, 29.0f, 29.0f };
+    int VAR_STEP_COUNTS[]{ 0, 0, 0 };
 
-    const char* PARAM_NAMES[]{ "betaL", "betaC", "i", "Vg/IcRs", "Rn", "Rsg" };
-    float PARAM_VALUES[]{ 2.0f, 0.5f, 1.25f, 6.9f, 0.367f, 0.0478f }; // 29.215f, 0.707f, 1.25f, 6.9f, 0.367f, 0.0478f
-    bool PARAM_RANGING[]{ true, true, false, false, false, false };
-    float PARAM_STEPS[]{ 0.01f, 0.01f, 0.0f, 0.0f, 0.0f, 0.0f };
-    float PARAM_MAX[]{ 3.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f };
-    int PARAM_STEP_COUNTS[]{ 0, 0, 0, 0, 0, 0 };
+    const char* PARAM_NAMES[]{ "sigma", "rho", "beta" };
+    float PARAM_VALUES[]{ 0.0f, 20.0f, (8.0f / 3.0f) };
+    bool PARAM_RANGING[]{ true, true, false };
+    float PARAM_STEPS[]{ 1.0f, 1.0f, 0.0f };
+    float PARAM_MAX[]{ 100.0f, 100.0f, 0.0f };
+    int PARAM_STEP_COUNTS[]{ 0, 0, 0 };
 
     const char* MAP_NAMES[]{ "LLE" };
-    MapData MAP_DATA[]{ { 0, 0, 0, kernel::p0, MapDimensionType::PARAMETER, kernel::p1, MapDimensionType::PARAMETER } };
+    MapData MAP_DATA[]{ { 0, 0, 0, kernel::sigma, MapDimensionType::PARAMETER, kernel::rho, MapDimensionType::PARAMETER } };
 
     const char* ANALYSIS_FEATURES[]{ "LLE" };
     bool ANALYSIS_ENABLED[]{ true };
@@ -86,16 +86,15 @@ __global__ void kernelProgram(float* data, float* params, float* maps, MapData* 
     // Custom area (usually) starts here
     
     // Copying initial state to other variations
-    initV(x0);
-    dataV(sin_x0) = sinf(dataV(x0));
-    initV(x1);
-    initV(x2);
+    initV(x);
+    initV(y);
+    initV(z);
 
     LLE_INIT(float);
     LLE_FILL;
-    float deflection = 0.0001f;
-    int L = 10;
-    LLE_DEFLECT(x2, deflection);
+    float deflection = 0.1f;
+    int L = 50;
+    LLE_DEFLECT(z, deflection);
 
     for (int s = 0; s < steps; s++)
     {
@@ -111,13 +110,13 @@ __global__ void kernelProgram(float* data, float* params, float* maps, MapData* 
         LLE_IF_MOD(s, L)
         {
             // Calculate local LLE
-            float norm = NORM_3D(LLE_V(sin_x0), dataV(sin_x0 NEXT), LLE_V(x1), dataV(x1 NEXT), LLE_V(x2), dataV(x2 NEXT));
+            float norm = NORM_3D(LLE_V(x), dataV(x NEXT), LLE_V(y), dataV(y NEXT), LLE_V(z), dataV(z NEXT));
             LLE_ADD(log(norm / deflection));
 
             // Reset
-            LLE_RETRACT(x0, (norm / deflection));
-            LLE_RETRACT(x1, (norm / deflection));
-            LLE_RETRACT(x2, (norm / deflection));
+            LLE_RETRACT(x, (norm / deflection));
+            LLE_RETRACT(y, (norm / deflection));
+            LLE_RETRACT(z, (norm / deflection));
         }
 
         int LLEx = mapData->typeX == STEP ? s : mapData->typeX == VARIABLE ? varStep[mapData->indexX] : paramStep[mapData->indexX];
@@ -128,14 +127,11 @@ __global__ void kernelProgram(float* data, float* params, float* maps, MapData* 
 
 __device__ void finiteDifferenceScheme(float* currentV, float* nextV, float* parameters, float h)
 {
-    Vnext(x0) = fmodf(V(x0) + h * V(x1), 2.0f * 3.141592f);
-    Vnext(sin_x0) = sinf(Vnext(x0));
-    Vnext(x2) = V(x2) + h * (1.0f / P(p0)) * (V(x1) - V(x2));
-    Vnext(x1) = V(x1) + h * (1.0f / P(p1)) *
-        (
-            P(p2)
-            - ((V(x1) > P(p3)) ? P(p4) : P(p5)) * V(x1)
-            - sinf(Vnext(x0))
-            - Vnext(x2)
-            );
+    float dx = P(sigma) * (V(y) - V(x));
+    float dy = V(x) * (P(rho) - V(z)) - V(y);
+    float dz = V(x) * V(y) - P(beta) * V(z);
+
+    Vnext(x) = V(x) + h * dx;
+    Vnext(y) = V(y) + h * dy;
+    Vnext(z) = V(z) + h * dz;
 }

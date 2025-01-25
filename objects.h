@@ -43,6 +43,12 @@ public:
 	ImPlotMarker markerShape;
 	float rulerAlpha;
 	float gridAlpha;
+	int stride;
+
+	bool showAxis;
+	bool showAxisNames;
+	bool showRuler;
+	bool showGrid;
 
 	PlotWindow(int _id)
 	{
@@ -59,6 +65,12 @@ public:
 		markerShape = ImPlotMarker_Circle;
 		rulerAlpha = 0.5f;
 		gridAlpha = 0.15f;
+		stride = 4;
+
+		showAxis = true;
+		showAxisNames = true;
+		showRuler = true;
+		showGrid = true;
 	}
 
 	PlotWindow(int _id, string _name, bool _is3d)
@@ -81,6 +93,12 @@ public:
 		markerShape = ImPlotMarker_Circle;
 		rulerAlpha = 0.5f;
 		gridAlpha = 0.15f;
+		stride = 4;
+
+		showAxis = true;
+		showAxisNames = true;
+		showRuler = true;
+		showGrid = true;
 	}
 
 	void AssignVariables(int* variablesArray)
@@ -124,6 +142,7 @@ public:
 		exportString += " " + to_string(autorotate.x) + " " + to_string(autorotate.y) + " " + to_string(autorotate.z);
 		exportString += " " + to_string(offset.x) + " " + to_string(offset.y) + " " + to_string(offset.z);
 		exportString += " " + to_string(scale.x) + " " + to_string(scale.y) + " " + to_string(scale.z);
+		exportString += " " + to_string((int)showAxis) + " " + to_string((int)showAxisNames) + " " + to_string((int)showRuler) + " " + to_string((int)showGrid);
 
 		exportString += " " + to_string(variableCount);
 		for (int v : variables)
@@ -174,6 +193,11 @@ public:
 		scale.x = (float)atof(data[d++].c_str());
 		scale.y = (float)atof(data[d++].c_str());
 		scale.z = (float)atof(data[d++].c_str());
+
+		showAxis = (bool)atoi(data[d++].c_str());
+		showAxisNames = (bool)atoi(data[d++].c_str());
+		showRuler = (bool)atoi(data[d++].c_str());
+		showGrid = (bool)atoi(data[d++].c_str());
 
 		variableCount = atoi(data[d++].c_str());
 		variables.clear();
@@ -330,4 +354,19 @@ template<typename T> struct InputValuesBuffer
 	{
 		return stepCount[index];
 	}
+};
+
+enum MapDimensionType { VARIABLE, PARAMETER, STEP };
+
+struct MapData
+{
+	unsigned long int xSize;
+	unsigned long int ySize;
+	unsigned long int offset;
+
+	int indexX;
+	MapDimensionType typeX;
+
+	int indexY;
+	MapDimensionType typeY;
 };

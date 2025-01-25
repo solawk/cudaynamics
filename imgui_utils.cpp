@@ -265,3 +265,25 @@ ImVec4 ToEulerAngles(ImVec4 q)
 
 	return angles;
 }
+
+void compress2D(float* data, float* dst, int width, int height, int stride)
+{
+	int dstWidth = (int)ceil((float)width / stride);
+	int dstHeight = (int)ceil((float)height / stride);
+
+	int dstI = 0;
+	int dstJ = 0;
+
+	for (int i = 0; i < dstHeight; i++)
+		for (int j = 0; j < dstWidth; j++)
+			dst[i * dstWidth + j] = 1.0f;
+
+	for (int i = 0; i < height; i++)
+		for (int j = 0; j < width; j++)
+		{
+			dstI = i / stride;
+			dstJ = j / stride;
+
+			dst[dstI * dstWidth + dstJ] += data[i * width + j] / (stride * stride); //dstI * dstWidth + dstJ
+		}
+}

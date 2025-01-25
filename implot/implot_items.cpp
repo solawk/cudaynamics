@@ -2361,7 +2361,7 @@ struct GetterHeatmapRowMaj {
         double val = (double)Values[idx];
         if (isnan(val))
         {
-            printf("Heatmap val is NaN\n");
+            //printf("Heatmap val is NaN\n");
             val = 0.0; // to not crash on impossible stuff
         }
         const int r = idx / Cols;

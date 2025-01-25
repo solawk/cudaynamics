@@ -24,3 +24,5 @@ void gridX2Y(float* buffer);
 void gridY2Z(float* buffer);
 
 ImVec4 ToEulerAngles(ImVec4 q);
+
+void compress2D(float* data, float* dst, int width, int height, int stride);

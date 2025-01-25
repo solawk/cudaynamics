@@ -15,6 +15,7 @@ atomic_bool computedDataReady[2] = { false, false };
 int playedBufferIndex = 0; // Buffer currently shown
 int bufferToFillIndex = 0; // Buffer to send computations to
 void* mapBuffers[2] = { nullptr, nullptr };
+void* compressedHeatmap = nullptr;
 
 InputValuesBuffer<float> varNew;
 bool autoLoadNewParams = false;
@@ -74,9 +75,6 @@ std::future<int> computationFutures[2];
 bool rangingWindowEnabled = true;
 bool graphBuilderWindowEnabled = true;
 
-// WIP: Quaternions
-ImVec4 quatRot(0.0f, 0.0f, 0.0f, 1.0f);
-
 // Repetitive stuff
 #define LOAD_VARNEW     varNew.load(kernel::VAR_VALUES, kernel::VAR_MAX, kernel::VAR_STEPS, kernel::VAR_RANGING, kernel::VAR_COUNT)
 #define UNLOAD_VARNEW   varNew.unload(kernel::VAR_VALUES, kernel::VAR_MAX, kernel::VAR_STEPS, kernel::VAR_RANGING, kernel::VAR_COUNT)
@@ -98,6 +96,7 @@ void deleteBothBuffers()
 
     if (mapBuffers[0] != nullptr) { delete[] mapBuffers[0]; mapBuffers[0] = nullptr; }
     if (mapBuffers[1] != nullptr) { delete[] mapBuffers[1]; mapBuffers[1] = nullptr; }
+    //if (compressedHeatmap != nullptr) { delete[] compressedHeatmap; compressedHeatmap = nullptr; }
 
     computedDataReady[0] = false;
     computedDataReady[1] = false;
@@ -541,7 +540,7 @@ int imgui_main(int, char**)
 
             unsigned long int singleBufferNumberCount = tempTotalVariations * kernel::VAR_COUNT * (stepsNew + 1);
             unsigned long int singleBufferFloatSize = singleBufferNumberCount * sizeof(float);
-            ImGui::Text(("Single buffer size: " + memoryString(singleBufferFloatSize)).c_str());
+            ImGui::Text(("Single buffer size: " + memoryString(singleBufferFloatSize) + " (" + to_string(singleBufferFloatSize) + " bytes)").c_str());
 
             ImGui::PushItemWidth(200.0f);
             if (playingParticles)
@@ -911,8 +910,10 @@ int imgui_main(int, char**)
                 ImGui::DragFloat(("##" + windowName + "_markerOutlineSize").c_str(), &(window->markerOutlineSize), 0.1f);               ImGui::SameLine(); ImGui::Text("Marker outline size");
                 if (window->markerSize < 0.0f) window->markerSize = 0.0f;
                 ImGui::ColorEdit4(("##" + windowName + "_markerColor").c_str(), (float*)(&(window->markerColor)));                      ImGui::SameLine(); ImGui::Text("Marker color");
+                ImGui::DragInt(("##" + windowName + "_stride").c_str(), (int*)(&(window->stride)), 1.0f);                               ImGui::SameLine(); ImGui::Text("Stride");
+                if (window->stride < 1) window->stride = 1;
 
-                std::string shapeNames[]{ "Circle", "Square", "Diamond", "Up", "Down", "Left", "Right", "Cross", "Plus", "Asterisk" };
+                /*std::string shapeNames[]{ "Circle", "Square", "Diamond", "Up", "Down", "Left", "Right", "Cross", "Plus", "Asterisk" };
                 if (ImGui::BeginCombo(("##" + windowName + "_markerShape").c_str(), shapeNames[window->markerShape].c_str()))
                 {
                     for (ImPlotMarker i = 0; i < ImPlotMarker_COUNT; i++)
@@ -921,12 +922,21 @@ int imgui_main(int, char**)
                         if (ImGui::Selectable(shapeNames[i].c_str(), isSelected)) window->markerShape = i;
                     }
                     ImGui::EndCombo();                                                                                                  
-                }                                                                                                                       ImGui::SameLine(); ImGui::Text("Marker shape");
+                }                                                                                                               ImGui::SameLine(); ImGui::Text("Marker shape");*/  
 
+                bool tempShowAxis = window->showAxis; if (ImGui::Checkbox(("##" + windowName + "showAxis").c_str(), &tempShowAxis)) window->showAxis = !window->showAxis;
+                ImGui::SameLine(); ImGui::Text("Show axis"); ImGui::SameLine();
+                bool tempShowAxisNames = window->showAxisNames; if (ImGui::Checkbox(("##" + windowName + "showAxisNames").c_str(), &tempShowAxisNames)) window->showAxisNames = !window->showAxisNames;
+                ImGui::SameLine(); ImGui::Text("Show axis names");
+
+                ImGui::DragFloat(("##" + windowName + "_rulerAlpha").c_str(), &(window->rulerAlpha), 0.01f);
+                bool tempShowRuler = window->showRuler; ImGui::SameLine(); if (ImGui::Checkbox(("##" + windowName + "showRuler").c_str(), &tempShowRuler)) window->showRuler = !window->showRuler;
+                ImGui::SameLine(); ImGui::Text("Ruler alpha");
                 CLAMP01(window->rulerAlpha);
-                ImGui::DragFloat(("##" + windowName + "_rulerAlpha").c_str(), &(window->rulerAlpha), 0.01f);                            ImGui::SameLine(); ImGui::Text("Ruler alpha");
+                ImGui::DragFloat(("##" + windowName + "_gridAlpha").c_str(), &(window->gridAlpha), 0.01f);
+                bool tempShowGrid = window->showGrid; ImGui::SameLine(); if (ImGui::Checkbox(("##" + windowName + "showGrid").c_str(), &tempShowGrid)) window->showGrid = !window->showGrid;
+                ImGui::SameLine(); ImGui::Text("Grid alpha");
                 CLAMP01(window->gridAlpha);
-                ImGui::DragFloat(("##" + windowName + "_gridAlpha").c_str(), &(window->gridAlpha), 0.01f);                              ImGui::SameLine(); ImGui::Text("Grid alpha");
 
                 ImGui::EndCombo();
             }
@@ -1104,34 +1114,40 @@ int imgui_main(int, char**)
                         }
 
                         // Axis
-                        ImPlot::SetNextLineStyle(ImVec4(1.0f, 0.0f, 0.0f, 1.0f));
-                        ImPlot::PlotLine(plotName.c_str(), &(((float*)axisBuffer)[0]), &(((float*)axisBuffer)[1]), 2, 0, 0, sizeof(float) * 3);
-                        ImPlot::SetNextLineStyle(ImVec4(0.0f, 1.0f, 0.0f, 1.0f));
-                        ImPlot::PlotLine(plotName.c_str(), &(((float*)axisBuffer)[6]), &(((float*)axisBuffer)[7]), 2, 0, 0, sizeof(float) * 3);
-
-                        if (is3d)
+                        if (window->showAxis)
                         {
-                            ImPlot::SetNextLineStyle(ImVec4(0.0f, 0.0f, 1.0f, 1.0f));
-                            ImPlot::PlotLine(plotName.c_str(), &(((float*)axisBuffer)[12]), &(((float*)axisBuffer)[13]), 2, 0, 0, sizeof(float) * 3);
+                            ImPlot::SetNextLineStyle(ImVec4(1.0f, 0.0f, 0.0f, 1.0f));
+                            ImPlot::PlotLine(plotName.c_str(), &(((float*)axisBuffer)[0]), &(((float*)axisBuffer)[1]), 2, 0, 0, sizeof(float) * 3);
+                            ImPlot::SetNextLineStyle(ImVec4(0.0f, 1.0f, 0.0f, 1.0f));
+                            ImPlot::PlotLine(plotName.c_str(), &(((float*)axisBuffer)[6]), &(((float*)axisBuffer)[7]), 2, 0, 0, sizeof(float) * 3);
+
+                            if (is3d)
+                            {
+                                ImPlot::SetNextLineStyle(ImVec4(0.0f, 0.0f, 1.0f, 1.0f));
+                                ImPlot::PlotLine(plotName.c_str(), &(((float*)axisBuffer)[12]), &(((float*)axisBuffer)[13]), 2, 0, 0, sizeof(float) * 3);
+                            }
                         }
 
                         // Axis names
-                        ImPlot::PushStyleColor(ImPlotCol_InlayText, ImVec4(1.0f, 0.2f, 0.2f, 1.0f));
-                        ImPlot::PlotText(kernel::VAR_NAMES[window->variables[0]], ((float*)axisBuffer)[0], ((float*)axisBuffer)[1], ImVec2(0.0f, 0.0f));
-                        ImPlot::PopStyleColor();
-                        ImPlot::PushStyleColor(ImPlotCol_InlayText, ImVec4(0.2f, 1.0f, 0.2f, 1.0f));
-                        ImPlot::PlotText(kernel::VAR_NAMES[window->variables[1]], ((float*)axisBuffer)[6], ((float*)axisBuffer)[7], ImVec2(0.0f, 0.0f));
-                        ImPlot::PopStyleColor();
-
-                        if (is3d)
+                        if (window->showAxisNames)
                         {
-                            ImPlot::PushStyleColor(ImPlotCol_InlayText, ImVec4(0.2f, 0.2f, 1.0f, 1.0f));
-                            ImPlot::PlotText(kernel::VAR_NAMES[window->variables[2]], ((float*)axisBuffer)[12], ((float*)axisBuffer)[13], ImVec2(0.0f, 0.0f));
+                            ImPlot::PushStyleColor(ImPlotCol_InlayText, ImVec4(1.0f, 0.2f, 0.2f, 1.0f));
+                            ImPlot::PlotText(kernel::VAR_NAMES[window->variables[0]], ((float*)axisBuffer)[0], ((float*)axisBuffer)[1], ImVec2(0.0f, 0.0f));
                             ImPlot::PopStyleColor();
+                            ImPlot::PushStyleColor(ImPlotCol_InlayText, ImVec4(0.2f, 1.0f, 0.2f, 1.0f));
+                            ImPlot::PlotText(kernel::VAR_NAMES[window->variables[1]], ((float*)axisBuffer)[6], ((float*)axisBuffer)[7], ImVec2(0.0f, 0.0f));
+                            ImPlot::PopStyleColor();
+
+                            if (is3d)
+                            {
+                                ImPlot::PushStyleColor(ImPlotCol_InlayText, ImVec4(0.2f, 0.2f, 1.0f, 1.0f));
+                                ImPlot::PlotText(kernel::VAR_NAMES[window->variables[2]], ((float*)axisBuffer)[12], ((float*)axisBuffer)[13], ImVec2(0.0f, 0.0f));
+                                ImPlot::PopStyleColor();
+                            }
                         }
 
                         // Ruler
-                        if (is3d)
+                        if (is3d && window->showRuler)
                         {
                             ImVec4 scale(plotRangeSize / window->scale.x, plotRangeSize / window->scale.y, plotRangeSize / window->scale.z, 0);
                             ImVec4 scaleLog(floorf(log10f(scale.x)), floorf(log10f(scale.y)), floorf(log10f(scale.z)), 0);
@@ -1142,61 +1158,28 @@ int imgui_main(int, char**)
                             ImVec4 alpha0((1.0f - scaleInterp.x) * window->rulerAlpha, (1.0f - scaleInterp.y) * window->rulerAlpha, (1.0f - scaleInterp.z) * window->rulerAlpha, 0);
                             ImVec4 alpha1(scaleInterp.x * window->rulerAlpha, scaleInterp.y * window->rulerAlpha, scaleInterp.z * window->rulerAlpha, 0);
 
-                            // x
-                            ImPlot::SetNextLineStyle(ImVec4(1.0f, 0.0f, 0.0f, alpha0.x));
-                            populateRulerBuffer((float*)rulerBuffer, scale0.x * window->scale.x, 0);
-                            rotateOffsetBuffer((float*)rulerBuffer, 51, 3, 0, 1, 2, rotationEuler, ImVec4(0, 0, 0, 0), ImVec4(scale0.x * window->scale.x, scale0.x* window->scale.x, scale0.x* window->scale.x, 0));
-                            ImPlot::PlotLine(plotName.c_str(), &(((float*)rulerBuffer)[0]), &(((float*)rulerBuffer)[1]), 51, 0, 0, sizeof(float) * 3);
-                            ImPlot::PushStyleColor(ImPlotCol_InlayText, ImVec4(1.0f, 0.0f, 0.0f, alpha0.x));
-                            ImPlot::PlotText(scaleString(scale0.x).c_str(), ((float*)rulerBuffer)[150 + 0], ((float*)rulerBuffer)[150 + 1], ImVec2(0.0f, 0.0f));
-                            ImPlot::PopStyleColor();
-                            //
-                            ImPlot::SetNextLineStyle(ImVec4(1.0f, 0.0f, 0.0f, alpha1.x));
-                            populateRulerBuffer((float*)rulerBuffer, scale1.x * window->scale.x, 0);
-                            rotateOffsetBuffer((float*)rulerBuffer, 51, 3, 0, 1, 2, rotationEuler, ImVec4(0, 0, 0, 0), ImVec4(scale1.x* window->scale.x, scale1.x * window->scale.x, scale1.x * window->scale.x, 0));
-                            ImPlot::PlotLine(plotName.c_str(), &(((float*)rulerBuffer)[0]), &(((float*)rulerBuffer)[1]), 51, 0, 0, sizeof(float) * 3);
-                            ImPlot::PushStyleColor(ImPlotCol_InlayText, ImVec4(1.0f, 0.0f, 0.0f, alpha1.x));
-                            ImPlot::PlotText(scaleString(scale1.x).c_str(), ((float*)rulerBuffer)[150 + 0], ((float*)rulerBuffer)[150 + 1], ImVec2(0.0f, 0.0f));
+#define DRAW_RULER_PART(colorR, colorG, colorB, alpha, scale, scaleStr, dim) ImPlot::SetNextLineStyle(ImVec4(colorR, colorG, colorB, alpha)); \
+                            populateRulerBuffer((float*)rulerBuffer, scale, dim); \
+                            rotateOffsetBuffer((float*)rulerBuffer, 51, 3, 0, 1, 2, rotationEuler, \
+                                ImVec4(0, 0, 0, 0), ImVec4(scale, scale, scale, 0)); \
+                            ImPlot::PlotLine(plotName.c_str(), &(((float*)rulerBuffer)[0]), &(((float*)rulerBuffer)[1]), 51, 0, 0, sizeof(float) * 3); \
+                            ImPlot::PushStyleColor(ImPlotCol_InlayText, ImVec4(colorR, colorG, colorB, alpha)); \
+                            ImPlot::PlotText(scaleString(scaleStr).c_str(), ((float*)rulerBuffer)[150 + 0], ((float*)rulerBuffer)[150 + 1], ImVec2(0.0f, 0.0f)); \
                             ImPlot::PopStyleColor();
 
-                            // y
-                            ImPlot::SetNextLineStyle(ImVec4(0.0f, 1.0f, 0.0f, alpha0.y));
-                            populateRulerBuffer((float*)rulerBuffer, scale0.y * window->scale.y, 1);
-                            rotateOffsetBuffer((float*)rulerBuffer, 51, 3, 0, 1, 2, rotationEuler, ImVec4(0, 0, 0, 0), ImVec4(scale0.y * window->scale.y, scale0.y * window->scale.y, scale0.y * window->scale.y, 0));
-                            ImPlot::PlotLine(plotName.c_str(), &(((float*)rulerBuffer)[0]), &(((float*)rulerBuffer)[1]), 51, 0, 0, sizeof(float) * 3);
-                            ImPlot::PushStyleColor(ImPlotCol_InlayText, ImVec4(0.0f, 1.0f, 0.0f, alpha0.y));
-                            ImPlot::PlotText(scaleString(scale0.y).c_str(), ((float*)rulerBuffer)[150 + 0], ((float*)rulerBuffer)[150 + 1], ImVec2(0.0f, 0.0f));
-                            ImPlot::PopStyleColor();
-                            //
-                            ImPlot::SetNextLineStyle(ImVec4(0.0f, 1.0f, 0.0f, alpha1.y));
-                            populateRulerBuffer((float*)rulerBuffer, scale1.y * window->scale.y, 1);
-                            rotateOffsetBuffer((float*)rulerBuffer, 51, 3, 0, 1, 2, rotationEuler, ImVec4(0, 0, 0, 0), ImVec4(scale1.y * window->scale.y, scale1.y * window->scale.y, scale1.y * window->scale.y, 0));
-                            ImPlot::PlotLine(plotName.c_str(), &(((float*)rulerBuffer)[0]), &(((float*)rulerBuffer)[1]), 51, 0, 0, sizeof(float) * 3);
-                            ImPlot::PushStyleColor(ImPlotCol_InlayText, ImVec4(0.0f, 1.0f, 0.0f, alpha1.y));
-                            ImPlot::PlotText(scaleString(scale1.y).c_str(), ((float*)rulerBuffer)[150 + 0], ((float*)rulerBuffer)[150 + 1], ImVec2(0.0f, 0.0f));
-                            ImPlot::PopStyleColor();
+                            DRAW_RULER_PART(1.0f, 0.0f, 0.0f, alpha0.x, scale0.x * window->scale.x, scale0.x, 0);
+                            DRAW_RULER_PART(1.0f, 0.0f, 0.0f, alpha1.x, scale1.x* window->scale.x, scale1.x, 0);
 
-                            // z
-                            ImPlot::SetNextLineStyle(ImVec4(0.0f, 0.0f, 1.0f, alpha0.z));
-                            populateRulerBuffer((float*)rulerBuffer, scale0.z * window->scale.z, 2);
-                            rotateOffsetBuffer((float*)rulerBuffer, 51, 3, 0, 1, 2, rotationEuler, ImVec4(0, 0, 0, 0), ImVec4(scale0.z* window->scale.z, scale0.z* window->scale.z, scale0.z * window->scale.z, 0));
-                            ImPlot::PlotLine(plotName.c_str(), &(((float*)rulerBuffer)[0]), &(((float*)rulerBuffer)[1]), 51, 0, 0, sizeof(float) * 3);
-                            ImPlot::PushStyleColor(ImPlotCol_InlayText, ImVec4(0.0f, 0.0f, 1.0f, alpha0.z));
-                            ImPlot::PlotText(scaleString(scale0.z).c_str(), ((float*)rulerBuffer)[150 + 0], ((float*)rulerBuffer)[150 + 1], ImVec2(0.0f, 0.0f));
-                            ImPlot::PopStyleColor();
-                            //
-                            ImPlot::SetNextLineStyle(ImVec4(0.0f, 0.0f, 1.0f, alpha1.z));
-                            populateRulerBuffer((float*)rulerBuffer, scale1.z * window->scale.z, 2);
-                            rotateOffsetBuffer((float*)rulerBuffer, 51, 3, 0, 1, 2, rotationEuler, ImVec4(0, 0, 0, 0), ImVec4(scale1.z* window->scale.z, scale1.z* window->scale.z, scale1.z* window->scale.z, 0));
-                            ImPlot::PlotLine(plotName.c_str(), &(((float*)rulerBuffer)[0]), &(((float*)rulerBuffer)[1]), 51, 0, 0, sizeof(float) * 3);
-                            ImPlot::PushStyleColor(ImPlotCol_InlayText, ImVec4(0.0f, 0.0f, 1.0f, alpha1.z));
-                            ImPlot::PlotText(scaleString(scale1.z).c_str(), ((float*)rulerBuffer)[150 + 0], ((float*)rulerBuffer)[150 + 1], ImVec2(0.0f, 0.0f));
-                            ImPlot::PopStyleColor();
+                            DRAW_RULER_PART(0.0f, 1.0f, 0.0f, alpha0.y, scale0.y* window->scale.y, scale0.y, 1);
+                            DRAW_RULER_PART(0.0f, 1.0f, 0.0f, alpha1.y, scale1.y* window->scale.y, scale1.y, 1);
+
+                            DRAW_RULER_PART(0.2f, 0.2f, 1.0f, alpha0.z, scale0.z * window->scale.z, scale0.z, 2);
+                            DRAW_RULER_PART(0.2f, 0.2f, 1.0f, alpha1.z, scale1.z * window->scale.z, scale1.z, 2);
                         }
 
                         // Grid
 #if 0
-                        if (is3d & 0)
+                        if (is3d && window->showGrid)
                         {
                             ImVec4 scale(plotRangeSize / window->scale.x, plotRangeSize / window->scale.y, plotRangeSize / window->scale.z, 0);
                             ImVec4 scaleLog(floorf(log10f(scale.x)), floorf(log10f(scale.y)), floorf(log10f(scale.z)), 0);
@@ -1261,6 +1244,8 @@ int imgui_main(int, char**)
                 case Heatmap:
 
                     //IMPLOT_TMP void PlotHeatmap(const char* label_id, const T* values, int rows, int cols, double scale_min=0, double scale_max=0, const char* label_fmt="%.1f", const ImPlotPoint& bounds_min=ImPlotPoint(0,0), const ImPlotPoint& bounds_max=ImPlotPoint(1,1), ImPlotHeatmapFlags flags=0);
+                    
+                    int heatStride = window->stride;
 
                     if (ImPlot::BeginPlot(plotName.c_str(), "", "", ImVec2(-1, -1), ImPlotFlags_NoTitle | ImPlotFlags_NoLegend, axisFlags, axisFlags))
                     {
@@ -1271,10 +1256,19 @@ int imgui_main(int, char**)
                         mapIndex = window->variables[0];
                         if (mapBuffers[playedBufferIndex])
                         {
+                            int xSize = kernel::MAP_DATA[mapIndex].xSize;
+                            int ySize = kernel::MAP_DATA[mapIndex].ySize;
+
+                            if (compressedHeatmap != nullptr) { delete[] compressedHeatmap; compressedHeatmap = nullptr; }
+                            compressedHeatmap = new float[(int)ceil((float)xSize / heatStride) * (int)ceil((float)ySize / heatStride)];
+
+                            compress2D((float*)(mapBuffers[playedBufferIndex]) + kernel::MAP_DATA[mapIndex].offset, (float*)compressedHeatmap,
+                                xSize, ySize, heatStride);
+
                             ImPlot::PlotHeatmap((std::string(kernel::VAR_NAMES[mapIndex]) + "##" + plotName + std::to_string(0)).c_str(),
-                                ((float*)(mapBuffers[playedBufferIndex]) + mapIndex * rangingData->totalVariations),
-                                kernel::VAR_STEP_COUNTS[kernel::MAP_X[mapIndex]], kernel::VAR_STEP_COUNTS[kernel::MAP_Y[mapIndex]],
-                                0, 0, "", ImPlotPoint(0, 0), ImPlotPoint(kernel::VAR_STEP_COUNTS[kernel::MAP_X[mapIndex]], kernel::VAR_STEP_COUNTS[kernel::MAP_Y[mapIndex]]));
+                                (float*)compressedHeatmap, // ((float*)(mapBuffers[playedBufferIndex]) + kernel::MAP_DATA[mapIndex].offset)
+                                (int)ceil((float)ySize / heatStride), (int)ceil((float)xSize / heatStride),
+                                0, 0, nullptr, ImPlotPoint(0, 0), ImPlotPoint(xSize, ySize)); // %3f
                         }
                         ImPlot::PopColormap();
 
