@@ -132,6 +132,7 @@
     <ClInclude Include="kernels\lorenz.h" />
     <ClInclude Include="main.h" />
     <ClInclude Include="objects.h" />
+    <ClInclude Include="plotWindow.h" />
     <ClInclude Include="quaternion.h" />
     <ClInclude Include="resource.h" />
   </ItemGroup>

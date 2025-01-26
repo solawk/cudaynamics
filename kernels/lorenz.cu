@@ -15,14 +15,14 @@ namespace kernel
 
     const char* VAR_NAMES[]{ "x", "y", "z" };
     float VAR_VALUES[]{ 10.0f, 10.0f, 10.0f };
-    bool VAR_RANGING[]{ false, false, false };
+    RangingType VAR_RANGING[]{ None, None, None };
     float VAR_STEPS[]{ 3.0f, 3.0f, 3.0f };
     float VAR_MAX[]{ 29.0f, 29.0f, 29.0f };
     int VAR_STEP_COUNTS[]{ 0, 0, 0 };
 
     const char* PARAM_NAMES[]{ "sigma", "rho", "beta" };
     float PARAM_VALUES[]{ 0.0f, 20.0f, (8.0f / 3.0f) };
-    bool PARAM_RANGING[]{ true, true, false };
+    RangingType PARAM_RANGING[]{ Linear, Linear, None };
     float PARAM_STEPS[]{ 1.0f, 1.0f, 0.0f };
     float PARAM_MAX[]{ 100.0f, 100.0f, 0.0f };
     int PARAM_STEP_COUNTS[]{ 0, 0, 0 };
@@ -34,7 +34,7 @@ namespace kernel
     bool ANALYSIS_ENABLED[]{ true };
 
     bool executeOnLaunch = true;
-    int steps = 400;
+    int steps = 5000;
     float stepSize = 0.01f;
     bool onlyShowLast = false;
 }
@@ -57,6 +57,7 @@ __global__ void kernelProgram(float* data, float* params, float* maps, MapData* 
     float varValues[kernel::VAR_COUNT];
     float paramValues[kernel::PARAM_COUNT];
 
+    // Copying initial values into the beginning of the 0th variation
     for (int i = 0; i < kernel::VAR_COUNT; i++) varValues[i] = !ranging->continuation ? data[i] : previousData[variationStart + (steps * kernel::VAR_COUNT) + i];
     for (int i = 0; i < kernel::PARAM_COUNT; i++) paramValues[i] = params[i];
 

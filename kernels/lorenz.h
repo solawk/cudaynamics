@@ -9,7 +9,7 @@ namespace kernel
 	enum VARIABLES { x, y, z, VAR_COUNT };
 	extern const char* VAR_NAMES[];
 	extern float VAR_VALUES[];
-	extern bool VAR_RANGING[];
+	extern RangingType VAR_RANGING[];
 	extern float VAR_STEPS[];
 	extern float VAR_MAX[];
 	extern int VAR_STEP_COUNTS[];
@@ -17,7 +17,7 @@ namespace kernel
 	enum PARAMETERS { sigma, rho, beta, PARAM_COUNT };
 	extern const char* PARAM_NAMES[];
 	extern float PARAM_VALUES[];
-	extern bool PARAM_RANGING[];
+	extern RangingType PARAM_RANGING[];
 	extern float PARAM_STEPS[];
 	extern float PARAM_MAX[];
 	extern int PARAM_STEP_COUNTS[];

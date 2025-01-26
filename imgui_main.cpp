@@ -10,12 +10,16 @@ static ID3D11RenderTargetView* g_mainRenderTargetView = nullptr;
 std::vector<PlotWindow> plotWindows;
 int uniqueIds = 0; // Unique window IDs
 
+void** initialValues = nullptr; // Array of all initial values of variables and parameters, can be not regenerated at will (e.g., user wants the same random values)
+// When changes are applied to initial values, nullified automatically
+// Not regenerated when hot-swapping (since there is no point to it anyway)
+// Is generated before every launch, unless disabled
+
 void* computedData[2] = { nullptr, nullptr }; // For double buffering the computations, aren't null when computed
 atomic_bool computedDataReady[2] = { false, false };
 int playedBufferIndex = 0; // Buffer currently shown
 int bufferToFillIndex = 0; // Buffer to send computations to
 void* mapBuffers[2] = { nullptr, nullptr };
-void* compressedHeatmap = nullptr;
 
 InputValuesBuffer<float> varNew;
 bool autoLoadNewParams = false;
@@ -25,9 +29,11 @@ int stepsNew = 0;
 void* dataBuffer = nullptr; // One variation local buffer
 void* particleBuffer = nullptr; // One step local buffer
 float* valuesOverride = nullptr; // For transferring end variable values to the next buffer
+
 void* axisBuffer = new float[3 * 2 * 3] {}; // 3 axis, 2 points
 void* rulerBuffer = new float[51 * 3] {}; // 1 axis, 5 * 10 + 1 points
 void* gridBuffer = new float[10 * 5 * 3 * 2] {};
+
 int computedSteps = 0; // Step count for the current computation
 bool autofitAfterComputing = false; // Temporary flag to autofit computed data
 PostRanging rangingData[2]; // Data about variation variables and parameters (1 per buffer for stability)
@@ -69,6 +75,8 @@ ImVec4 disabledBackgroundColor = ImVec4(0.137f * 0.35f, 0.271f * 0.35f, 0.427f *
 /*ImVec4 xAxisBackgroundColor = ImVec4(0.5f, 0.25f, 0.25f, 1.0f);
 ImVec4 yAxisBackgroundColor = ImVec4(0.25f, 0.5f, 0.25f, 1.0f);
 ImVec4 zAxisBackgroundColor = ImVec4(0.25f, 0.25f, 0.5f, 1.0f);*/
+
+std::string rangingTypes[] = { "Fixed", "Linear", "Random", "Normal" };
 
 std::future<int> computationFutures[2];
 
@@ -297,8 +305,8 @@ int imgui_main(int, char**)
             ImGui::Text(kernel::name);
 
             int tempTotalVariations = 1;
-            for (int v = 0; v < kernel::VAR_COUNT; v++) if (varNew.IS_RANGING[v]) tempTotalVariations *= (calculateStepCount(varNew.MIN[v], varNew.MAX[v], varNew.STEP[v]));
-            for (int p = 0; p < kernel::PARAM_COUNT; p++) if (paramNew.IS_RANGING[p])  tempTotalVariations *= (calculateStepCount(paramNew.MIN[p], paramNew.MAX[p], paramNew.STEP[p]));
+            for (int v = 0; v < kernel::VAR_COUNT; v++) if (varNew.RANGING[v]) tempTotalVariations *= (calculateStepCount(varNew.MIN[v], varNew.MAX[v], varNew.STEP[v]));
+            for (int p = 0; p < kernel::PARAM_COUNT; p++) if (paramNew.RANGING[p])  tempTotalVariations *= (calculateStepCount(paramNew.MIN[p], paramNew.MAX[p], paramNew.STEP[p]));
 
             // Parameters & Variables
 
@@ -322,7 +330,7 @@ int imgui_main(int, char**)
                 if (varNew.MIN[i] != kernel::VAR_VALUES[i]) { anyChanged = true; thisChanged = true; }
                 if (varNew.MAX[i] != kernel::VAR_MAX[i]) { anyChanged = true; thisChanged = true; }
                 if (varNew.STEP[i] != kernel::VAR_STEPS[i]) { anyChanged = true; thisChanged = true; }
-                if (varNew.IS_RANGING[i] != kernel::VAR_RANGING[i]) { anyChanged = true; thisChanged = true; }
+                if (varNew.RANGING[i] != kernel::VAR_RANGING[i]) { anyChanged = true; thisChanged = true; }
                 if (thisChanged) varNew.recountSteps(i);
 
                 namePadded = kernel::VAR_NAMES[i];
@@ -336,6 +344,31 @@ int imgui_main(int, char**)
                     ImGui::PushStyleColor(ImGuiCol_Text, disabledTextColor);
                     PUSH_DISABLED_FRAME;
                 }
+
+                // Ranging
+                ImGui::SameLine();
+                popStyle = false;
+                if (varNew.RANGING[i] != kernel::VAR_RANGING[i])
+                {
+                    PUSH_UNSAVED_FRAME;
+                    popStyle = true;
+                }
+                ImGui::PushItemWidth(120.0f);
+                if (ImGui::BeginCombo(("##RANGING_" + std::string(kernel::VAR_NAMES[i])).c_str(), (rangingTypes[varNew.RANGING[i]]).c_str()))
+                {
+                    for (int r = 0; r < 4; r++)
+                    {
+                        bool isSelected = varNew.RANGING[i] == r;
+                        ImGuiSelectableFlags selectableFlags = 0;
+                        if (ImGui::Selectable(rangingTypes[r].c_str(), isSelected, selectableFlags)) varNew.RANGING[i] = (RangingType)r;
+                    }
+
+                    ImGui::EndCombo();
+                }
+                ImGui::PopItemWidth();
+                if (popStyle) POP_FRAME(3);
+
+                // Min
                 ImGui::SameLine();
                 ImGui::PushItemWidth(150.0f);
                 popStyle = false;
@@ -348,19 +381,10 @@ int imgui_main(int, char**)
                 if (popStyle) POP_FRAME(3);
                 ImGui::PopItemWidth();
 
-                ImGui::SameLine();
-                bool isRanging = varNew.IS_RANGING[i];
-                popStyle = false;
-                if (varNew.IS_RANGING[i] != kernel::VAR_RANGING[i])
+                // If ranging
+                if (varNew.RANGING[i])
                 {
-                    PUSH_UNSAVED_FRAME;
-                    popStyle = true;
-                }
-                if (ImGui::Checkbox(("##RANGING_" + std::string(kernel::VAR_NAMES[i])).c_str(), &(isRanging)) && !playingParticles) varNew.IS_RANGING[i] = !varNew.IS_RANGING[i];
-                if (popStyle) POP_FRAME(3);
-
-                if (varNew.IS_RANGING[i])
-                {
+                    // Step
                     ImGui::SameLine();
                     ImGui::PushItemWidth(150.0f);
                     popStyle = false;
@@ -372,6 +396,7 @@ int imgui_main(int, char**)
                     ImGui::DragFloat(("##STEP_" + std::string(kernel::VAR_NAMES[i])).c_str(), &(varNew.STEP[i]), dragChangeSpeed, 0.0f, 0.0f, "%f", dragFlag);
                     if (popStyle) POP_FRAME(3);
 
+                    // Max
                     ImGui::SameLine();
                     popStyle = false;
                     if (varNew.MAX[i] != kernel::VAR_MAX[i])
@@ -383,9 +408,11 @@ int imgui_main(int, char**)
                     if (popStyle) POP_FRAME(3);
                     ImGui::PopItemWidth();
 
+                    // Step count
                     ImGui::SameLine();
                     ImGui::Text((std::to_string(calculateStepCount(varNew.MIN[i], varNew.MAX[i], varNew.STEP[i])) + " steps").c_str());
                 }
+
                 if (playingParticles)
                 {
                     ImGui::PopStyleColor();
@@ -399,14 +426,14 @@ int imgui_main(int, char**)
 
             for (int i = 0; i < kernel::PARAM_COUNT; i++)
             {
-                bool isRanging = paramNew.IS_RANGING[i];
-                bool changeAllowed = !paramNew.IS_RANGING[i] || !playingParticles || !autoLoadNewParams;
+                bool isRanging = paramNew.RANGING[i];
+                bool changeAllowed = !paramNew.RANGING[i] || !playingParticles || !autoLoadNewParams;
 
                 thisChanged = false;
                 if (paramNew.MIN[i] != kernel::PARAM_VALUES[i]) { anyChanged = true; thisChanged = true; }
                 if (paramNew.MAX[i] != kernel::PARAM_MAX[i]) { anyChanged = true; thisChanged = true; }
                 if (paramNew.STEP[i] != kernel::PARAM_STEPS[i]) { anyChanged = true; thisChanged = true; }
-                if (paramNew.IS_RANGING[i] != kernel::PARAM_RANGING[i]) { anyChanged = true; thisChanged = true; }
+                if (paramNew.RANGING[i] != kernel::PARAM_RANGING[i]) { anyChanged = true; thisChanged = true; }
                 if (thisChanged) paramNew.recountSteps(i);
 
                 namePadded = kernel::PARAM_NAMES[i];
@@ -421,6 +448,32 @@ int imgui_main(int, char**)
                     PUSH_DISABLED_FRAME;
                 }
 
+                // Ranging
+                ImGui::SameLine();
+                if (playingParticles) PUSH_DISABLED_FRAME;
+                popStyle = false;
+                if (paramNew.RANGING[i] != kernel::PARAM_RANGING[i])
+                {
+                    PUSH_UNSAVED_FRAME;
+                    popStyle = true;
+                }
+                ImGui::PushItemWidth(120.0f);
+                if (ImGui::BeginCombo(("##RANGING_" + std::string(kernel::PARAM_NAMES[i])).c_str(), (rangingTypes[paramNew.RANGING[i]]).c_str()))
+                {
+                    for (int r = 0; r < 4; r++)
+                    {
+                        bool isSelected = paramNew.RANGING[i] == r;
+                        ImGuiSelectableFlags selectableFlags = 0;
+                        if (ImGui::Selectable(rangingTypes[r].c_str(), isSelected, selectableFlags)) paramNew.RANGING[i] = (RangingType)r;
+                    }
+
+                    ImGui::EndCombo();
+                }
+                ImGui::PopItemWidth();
+                if (popStyle) POP_FRAME(3);
+                if (playingParticles) POP_FRAME(3);
+
+                // Min
                 ImGui::SameLine();
                 ImGui::PushItemWidth(150.0f);
                 popStyle = false;
@@ -433,24 +486,10 @@ int imgui_main(int, char**)
                 if (popStyle) POP_FRAME(3);
                 ImGui::PopItemWidth();
 
-                ImGui::SameLine();
-
-                if (playingParticles) PUSH_DISABLED_FRAME;
-                popStyle = false;
-                if (paramNew.IS_RANGING[i] != kernel::PARAM_RANGING[i])
+                // If ranging
+                if (paramNew.RANGING[i])
                 {
-                    PUSH_UNSAVED_FRAME;
-                    popStyle = true;
-                }
-                if (ImGui::Checkbox(("##RANGING_" + std::string(kernel::PARAM_NAMES[i])).c_str(), &(isRanging)) && !playingParticles)
-                {
-                    paramNew.IS_RANGING[i] = !paramNew.IS_RANGING[i];
-                }
-                if (popStyle) POP_FRAME(3);
-                if (playingParticles) POP_FRAME(3);
-
-                if (paramNew.IS_RANGING[i])
-                {
+                    // Step
                     ImGui::SameLine();
                     ImGui::PushItemWidth(150.0f);
                     popStyle = false;
@@ -462,6 +501,7 @@ int imgui_main(int, char**)
                     ImGui::DragFloat(("##STEP_" + std::string(kernel::PARAM_NAMES[i])).c_str(), &(paramNew.STEP[i]), dragChangeSpeed, 0.0f, 0.0f, "%f", changeAllowed ? 0 : ImGuiSliderFlags_ReadOnly);
                     if (popStyle) POP_FRAME(3);
 
+                    // Max
                     ImGui::SameLine();
                     popStyle = false;
                     if (paramNew.MAX[i] != kernel::PARAM_MAX[i])
@@ -476,7 +516,8 @@ int imgui_main(int, char**)
 
                 if (!changeAllowed) POP_FRAME(4); // disabledText popped as well
 
-                if (paramNew.IS_RANGING[i])
+                // Step count
+                if (paramNew.RANGING[i])
                 {
                     int stepCount = calculateStepCount(kernel::PARAM_VALUES[i], kernel::PARAM_MAX[i], kernel::PARAM_STEPS[i]);
                     if (stepCount > 0)
@@ -1259,8 +1300,7 @@ int imgui_main(int, char**)
                             int xSize = kernel::MAP_DATA[mapIndex].xSize;
                             int ySize = kernel::MAP_DATA[mapIndex].ySize;
 
-                            if (compressedHeatmap != nullptr) { delete[] compressedHeatmap; compressedHeatmap = nullptr; }
-                            compressedHeatmap = new float[(int)ceil((float)xSize / heatStride) * (int)ceil((float)ySize / heatStride)];
+                            void* compressedHeatmap = new float[(int)ceil((float)xSize / heatStride) * (int)ceil((float)ySize / heatStride)];
 
                             compress2D((float*)(mapBuffers[playedBufferIndex]) + kernel::MAP_DATA[mapIndex].offset, (float*)compressedHeatmap,
                                 xSize, ySize, heatStride);
