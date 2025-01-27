@@ -93,14 +93,14 @@
       <Filter>dbscan</Filter>
     </ClInclude>
     <ClInclude Include="quaternion.h" />
-    <ClInclude Include="kernels\lorenz.h">
-      <Filter>kernels</Filter>
-    </ClInclude>
     <ClInclude Include="plotWindow.h" />
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="main.cu" />
     <CudaCompile Include="kernels\lorenz.cu">
+      <Filter>kernels</Filter>
+    </CudaCompile>
+    <CudaCompile Include="kernels\RLC-sJJ.cu">
       <Filter>kernels</Filter>
     </CudaCompile>
   </ItemGroup>

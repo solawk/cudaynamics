@@ -129,7 +129,6 @@
     <ClInclude Include="imgui_utils.h" />
     <ClInclude Include="implot\implot.h" />
     <ClInclude Include="implot\implot_internal.h" />
-    <ClInclude Include="kernels\lorenz.h" />
     <ClInclude Include="main.h" />
     <ClInclude Include="objects.h" />
     <ClInclude Include="plotWindow.h" />
@@ -138,6 +137,7 @@
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="kernels\lorenz.cu" />
+    <CudaCompile Include="kernels\RLC-sJJ.cu" />
     <CudaCompile Include="main.cu" />
   </ItemGroup>
   <ItemGroup>

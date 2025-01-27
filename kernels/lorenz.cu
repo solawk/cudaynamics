@@ -1,4 +1,7 @@
-﻿#include "cuda_runtime.h"
+﻿#include "main.h"
+#ifdef SEL_LORENZ
+
+#include "cuda_runtime.h"
 #include "cuda_macros.h"
 #include "device_launch_parameters.h"
 #include <stdio.h>
@@ -136,3 +139,5 @@ __device__ void finiteDifferenceScheme(float* currentV, float* nextV, float* par
     Vnext(y) = V(y) + h * dy;
     Vnext(z) = V(z) + h * dz;
 }
+
+#endif
