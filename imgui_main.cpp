@@ -528,7 +528,7 @@ int imgui_main(int, char**)
                         if (thisChanged && stepCount != paramNew.stepsOf(i))
                         {
                             ImGui::SameLine();
-                            ImGui::Text(("(currently " + std::to_string(paramNew.stepsOf(i)) + " steps)").c_str());
+                            ImGui::Text(("(new – " + std::to_string(paramNew.stepsOf(i)) + " steps)").c_str());
                             applicationProhibited = true;
                         }
                     }
@@ -579,8 +579,11 @@ int imgui_main(int, char**)
 
             ImGui::SeparatorText("Simulation");
 
-            unsigned long int singleBufferNumberCount = tempTotalVariations * kernel::VAR_COUNT * (stepsNew + 1);
-            unsigned long int singleBufferFloatSize = singleBufferNumberCount * sizeof(float);
+            unsigned long long tempTotalVariationsLL = tempTotalVariations;
+            unsigned long long varCountLL = kernel::VAR_COUNT;
+            unsigned long long stepsNewLL = stepsNew + 1;
+            unsigned long long singleBufferNumberCount = ((tempTotalVariationsLL * varCountLL) * stepsNewLL);
+            unsigned long long singleBufferFloatSize = singleBufferNumberCount * sizeof(float);
             ImGui::Text(("Single buffer size: " + memoryString(singleBufferFloatSize) + " (" + to_string(singleBufferFloatSize) + " bytes)").c_str());
 
             ImGui::PushItemWidth(200.0f);
@@ -1297,8 +1300,20 @@ int imgui_main(int, char**)
                         mapIndex = window->variables[0];
                         if (mapBuffers[playedBufferIndex])
                         {
+                            float minX = kernel::MAP_DATA->typeX == PARAMETER ? kernel::PARAM_VALUES[kernel::MAP_DATA->indexX] :
+                                kernel::MAP_DATA->typeX == VARIABLE ? kernel::VAR_VALUES[kernel::MAP_DATA->indexX] : kernel::steps + 1;
+                            float maxX = kernel::MAP_DATA->typeX == PARAMETER ? kernel::PARAM_MAX[kernel::MAP_DATA->indexX] :
+                                kernel::MAP_DATA->typeX == VARIABLE ? kernel::VAR_MAX[kernel::MAP_DATA->indexX] : kernel::steps + 1;
+                            float minY = kernel::MAP_DATA->typeY == PARAMETER ? kernel::PARAM_VALUES[kernel::MAP_DATA->indexY] :
+                                kernel::MAP_DATA->typeX == VARIABLE ? kernel::VAR_VALUES[kernel::MAP_DATA->indexY] : kernel::steps + 1;
+                            float maxY = kernel::MAP_DATA->typeY == PARAMETER ? kernel::PARAM_MAX[kernel::MAP_DATA->indexY] :
+                                kernel::MAP_DATA->typeX == VARIABLE ? kernel::VAR_MAX[kernel::MAP_DATA->indexY] : kernel::steps + 1;
+
                             int xSize = kernel::MAP_DATA[mapIndex].xSize;
                             int ySize = kernel::MAP_DATA[mapIndex].ySize;
+
+                            int rows = heatStride > 1 ? (int)ceil((float)ySize / heatStride) : ySize;
+                            int cols = heatStride > 1 ? (int)ceil((float)xSize / heatStride) : xSize;
 
                             void* compressedHeatmap = new float[(int)ceil((float)xSize / heatStride) * (int)ceil((float)ySize / heatStride)];
 
@@ -1306,9 +1321,7 @@ int imgui_main(int, char**)
                                 xSize, ySize, heatStride);
 
                             ImPlot::PlotHeatmap((std::string(kernel::VAR_NAMES[mapIndex]) + "##" + plotName + std::to_string(0)).c_str(),
-                                (float*)compressedHeatmap, // ((float*)(mapBuffers[playedBufferIndex]) + kernel::MAP_DATA[mapIndex].offset)
-                                (int)ceil((float)ySize / heatStride), (int)ceil((float)xSize / heatStride),
-                                0, 0, nullptr, ImPlotPoint(0, 0), ImPlotPoint(xSize, ySize)); // %3f
+                                (float*)compressedHeatmap, rows, cols, 0, 0, nullptr, ImPlotPoint(minX, maxY), ImPlotPoint(maxX, minY)); // %3f
                         }
                         ImPlot::PopColormap();
 

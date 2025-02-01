@@ -10,7 +10,7 @@
 
 const float DEG2RAD = 3.141592f / 180.0f;
 
-std::string memoryString(unsigned long int bytes);
+std::string memoryString(unsigned long long bytes);
 std::string scaleString(float scale);
 
 void populateAxisBuffer(float* buffer, float x, float y, float z);

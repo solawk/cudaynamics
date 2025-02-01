@@ -413,7 +413,8 @@ struct ImPlotColormapData {
         if (isnan(t))
         {
             //printf("t is NaN\n");
-            t = 0.0;
+            //t = 0.0;
+            return 0;
         }
         int off = TableOffsets[cmap];
         int siz = TableSizes[cmap];

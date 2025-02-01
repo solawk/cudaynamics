@@ -1,6 +1,6 @@
 #include "imgui_utils.h"
 
-std::string memoryString(unsigned long int bytes)
+std::string memoryString(unsigned long long bytes)
 {
 	if (bytes < 1024)
 	{
@@ -10,17 +10,17 @@ std::string memoryString(unsigned long int bytes)
 	else if (bytes < 1024 * 1024)
 	{
 		// kB
-		return to_string((int)(bytes / 1024)) + " kB";
+		return to_string((int)(bytes / 1024.0)) + " kB";
 	}
 	else if (bytes < 1024 * 1024 * 1024)
 	{
 		// MB
-		return to_string((int)(bytes / (1024 * 1024))) + " MB";
+		return to_string((int)(bytes / (1024.0 * 1024))) + " MB";
 	}
 	else
 	{
 		// GB
-		return to_string((int)(bytes / (1024 * 1024 * 1024))) + " GB";
+		return to_string((int)(bytes / (1024.0 * 1024 * 1024))) + " GB";
 	}
 }
 
@@ -91,19 +91,27 @@ void rotateOffsetBuffer(float* buffer, int pointCount, int varCount, int xdo, in
 {
 	float x, y, z;
 
+	float alpha = rotation.x; // yaw
+	float beta = rotation.y; // pitch
+	float gamma = rotation.z; // roll
+
+	float ac = cosf(alpha);
+	float bc = cosf(beta);
+	float gc = cosf(gamma);
+
+	float as = sinf(alpha);
+	float bs = sinf(beta);
+	float gs = sinf(gamma);
+
 	for (int i = 0; i < pointCount; i++)
 	{
 		x = ((float*)buffer)[i * varCount + xdo] * scale.x + offset.x;
 		y = ((float*)buffer)[i * varCount + ydo] * scale.y + offset.y;
 		z = ((float*)buffer)[i * varCount + zdo] * scale.z + offset.z;
 
-		float alpha = rotation.x; // yaw
-		float beta = rotation.y; // pitch
-		float gamma = rotation.z; // roll
-
-		((float*)buffer)[i * varCount + 0] = (x * cosf(beta) * cosf(gamma)) + (y * (sin(alpha) * sin(beta) * cos(gamma) - (cos(alpha) * sin(gamma)))) + (z * (cos(alpha) * sin(beta) * cos(gamma) + sin(alpha) * sin(gamma)));
-		((float*)buffer)[i * varCount + 1] = (x * cosf(beta) * sin(gamma)) + (y * (sin(alpha) * sin(beta) * sin(gamma) + (cos(alpha) * cos(gamma)))) + (z * (cos(alpha) * sin(beta) * sin(gamma) - sin(alpha) * cos(gamma)));
-		((float*)buffer)[i * varCount + 2] = (x * -sinf(beta)) + (y * (sin(alpha) * cos(beta))) + (z * (cos(alpha) * cos(beta)));
+		((float*)buffer)[i * varCount + 0] = (x * bc * gc) + (y * (as * bs * gc - (ac * gs))) + (z * (ac * bs * gc + as * gs));
+		((float*)buffer)[i * varCount + 1] = (x * bc * gs) + (y * (as * bs * gs + (ac * gc))) + (z * (ac * bs * gs - as * gc));
+		((float*)buffer)[i * varCount + 2] = (x * -bs) + (y * (as * bc)) + (z * (ac * bc));
 	}
 }
 
@@ -268,6 +276,12 @@ ImVec4 ToEulerAngles(ImVec4 q)
 
 void compress2D(float* data, float* dst, int width, int height, int stride)
 {
+	if (stride == 1)
+	{
+		memcpy(dst, data, width * height * sizeof(float));
+		return;
+	}
+
 	int dstWidth = (int)ceil((float)width / stride);
 	int dstHeight = (int)ceil((float)height / stride);
 

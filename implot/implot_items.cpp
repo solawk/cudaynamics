@@ -2359,20 +2359,20 @@ struct GetterHeatmapRowMaj {
     { }
     template <typename I> IMPLOT_INLINE RectC operator()(I idx) const {
         double val = (double)Values[idx];
-        if (isnan(val))
+        /*if (isnan(val))
         {
             //printf("Heatmap val is NaN\n");
             val = 0.0; // to not crash on impossible stuff
-        }
+        }*/
         const int r = idx / Cols;
         const int c = idx % Cols;
         const ImPlotPoint p(XRef + HalfSize.x + c*Width, YRef + YDir * (HalfSize.y + r*Height));
         RectC rect;
         rect.Pos = p;
         rect.HalfSize = HalfSize;
-        const float t = ImClamp((float)ImRemap01(val, ScaleMin, ScaleMax),0.0f,1.0f);
+        //const float t = ImClamp((float)ImRemap01(val, ScaleMin, ScaleMax),0.0f,1.0f);
         ImPlotContext& gp = *GImPlot;
-        rect.Color = gp.ColormapData.LerpTable(gp.Style.Colormap, t);
+        rect.Color = isnan(val) ? 0 : gp.ColormapData.LerpTable(gp.Style.Colormap, ImClamp((float)ImRemap01(val, ScaleMin, ScaleMax), 0.0f, 1.0f));
         return rect;
     }
     const T* const Values;
