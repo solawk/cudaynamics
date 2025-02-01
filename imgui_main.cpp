@@ -1087,8 +1087,8 @@ int imgui_main(int, char**)
 
                     float plotRangeSize = (float)plot->Axes[ImAxis_X1].Range.Max - (float)plot->Axes[ImAxis_X1].Range.Min;
 
-                    float deltax = window->deltarotation.x;
-                    float deltay = window->deltarotation.y;
+                    float deltax = -window->deltarotation.x;
+                    float deltay = -window->deltarotation.y;
 
                     window->deltarotation.x = 0;
                     window->deltarotation.y = 0;

@@ -26,7 +26,7 @@ namespace kernel
     const char* PARAM_NAMES[]{ "sigma", "rho", "beta" };
     float PARAM_VALUES[]{ 0.0f, 20.0f, (8.0f / 3.0f) };
     RangingType PARAM_RANGING[]{ Linear, Linear, None };
-    float PARAM_STEPS[]{ 0.2f, 0.2f, 0.0f };
+    float PARAM_STEPS[]{ 0.8f, 0.8f, 0.0f };
     float PARAM_MAX[]{ 100.0f, 100.0f, 0.0f };
     int PARAM_STEP_COUNTS[]{ 0, 0, 0 };
 
