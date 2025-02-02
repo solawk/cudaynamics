@@ -26,7 +26,7 @@ namespace kernel
     const char* PARAM_NAMES[]{ "sigma", "rho", "beta" };
     float PARAM_VALUES[]{ 0.0f, 20.0f, (8.0f / 3.0f) };
     RangingType PARAM_RANGING[]{ Linear, Linear, None };
-    float PARAM_STEPS[]{ 0.8f, 0.8f, 0.0f };
+    float PARAM_STEPS[]{ 0.2f, 0.2f, 0.0f };
     float PARAM_MAX[]{ 100.0f, 100.0f, 0.0f };
     int PARAM_STEP_COUNTS[]{ 0, 0, 0 };
 
@@ -115,12 +115,14 @@ __global__ void kernelProgram(float* data, float* params, float* maps, MapData* 
         {
             // Calculate local LLE
             float norm = NORM_3D(LLE_V(x), dataV(x NEXT), LLE_V(y), dataV(y NEXT), LLE_V(z), dataV(z NEXT));
-            LLE_ADD(log(norm / deflection));
+            float growth = norm / deflection;
+            if (deflection == 0.0f) growth = 0.0f;
+            LLE_ADD(log(growth));
 
             // Reset
-            LLE_RETRACT(x, (norm / deflection));
-            LLE_RETRACT(y, (norm / deflection));
-            LLE_RETRACT(z, (norm / deflection));
+            LLE_RETRACT(x, growth);
+            LLE_RETRACT(y, growth);
+            LLE_RETRACT(z, growth);
         }
 
         int LLEx = mapData->typeX == STEP ? s : mapData->typeX == VARIABLE ? varStep[mapData->indexX] : paramStep[mapData->indexX];

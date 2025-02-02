@@ -528,7 +528,7 @@ int imgui_main(int, char**)
                         if (thisChanged && stepCount != paramNew.stepsOf(i))
                         {
                             ImGui::SameLine();
-                            ImGui::Text(("(new – " + std::to_string(paramNew.stepsOf(i)) + " steps)").c_str());
+                            ImGui::Text(("(new - " + std::to_string(paramNew.stepsOf(i)) + " steps)").c_str());
                             applicationProhibited = true;
                         }
                     }
@@ -767,7 +767,7 @@ int imgui_main(int, char**)
 
                     for (int r = 0; r < rangingData[playedBufferIndex].rangingCount; r++)
                     {
-                        float currentValue = rangingData[playedBufferIndex].min[r] + rangingData[playedBufferIndex].step[r] * rangingData[playedBufferIndex].currentStep[r];
+                        float currentValue = calculateValue(rangingData[playedBufferIndex].min[r], rangingData[playedBufferIndex].step[r], rangingData[playedBufferIndex].currentStep[r]);
                         rangingData[playedBufferIndex].currentValue[r] = currentValue;
 
                         ImGui::PushItemWidth(150.0f);
@@ -947,40 +947,58 @@ int imgui_main(int, char**)
             std::string plotName = windowName + "_plot";
             ImGui::Begin(windowName.c_str(), &(window->active));
 
+            bool autofitHeatmap = false;
+
             // Plot variables
             if (ImGui::BeginCombo(("##" + windowName + "_plotSettings").c_str(), "Plot settings"))
             {
-                ImGui::DragFloat(("##" + windowName + "_markerSize").c_str(), &(window->markerSize), 0.1f);                             ImGui::SameLine(); ImGui::Text("Marker size");
-                ImGui::DragFloat(("##" + windowName + "_markerOutlineSize").c_str(), &(window->markerOutlineSize), 0.1f);               ImGui::SameLine(); ImGui::Text("Marker outline size");
-                if (window->markerSize < 0.0f) window->markerSize = 0.0f;
-                ImGui::ColorEdit4(("##" + windowName + "_markerColor").c_str(), (float*)(&(window->markerColor)));                      ImGui::SameLine(); ImGui::Text("Marker color");
-                ImGui::DragInt(("##" + windowName + "_stride").c_str(), (int*)(&(window->stride)), 1.0f);                               ImGui::SameLine(); ImGui::Text("Stride");
-                if (window->stride < 1) window->stride = 1;
-
-                /*std::string shapeNames[]{ "Circle", "Square", "Diamond", "Up", "Down", "Left", "Right", "Cross", "Plus", "Asterisk" };
-                if (ImGui::BeginCombo(("##" + windowName + "_markerShape").c_str(), shapeNames[window->markerShape].c_str()))
+                if (window->type == Phase || window->type == Series)
                 {
-                    for (ImPlotMarker i = 0; i < ImPlotMarker_COUNT; i++)
+                    ImGui::DragFloat(("##" + windowName + "_markerSize").c_str(), &(window->markerSize), 0.1f);                             ImGui::SameLine(); ImGui::Text("Marker size");
+                    ImGui::DragFloat(("##" + windowName + "_markerOutlineSize").c_str(), &(window->markerOutlineSize), 0.1f);               ImGui::SameLine(); ImGui::Text("Marker outline size");
+                    if (window->markerSize < 0.0f) window->markerSize = 0.0f;
+                    ImGui::ColorEdit4(("##" + windowName + "_markerColor").c_str(), (float*)(&(window->markerColor)));                      ImGui::SameLine(); ImGui::Text("Marker color");
+
+                    /*std::string shapeNames[]{ "Circle", "Square", "Diamond", "Up", "Down", "Left", "Right", "Cross", "Plus", "Asterisk" };
+                    if (ImGui::BeginCombo(("##" + windowName + "_markerShape").c_str(), shapeNames[window->markerShape].c_str()))
                     {
-                        bool isSelected = window->markerShape == i;
-                        if (ImGui::Selectable(shapeNames[i].c_str(), isSelected)) window->markerShape = i;
+                        for (ImPlotMarker i = 0; i < ImPlotMarker_COUNT; i++)
+                        {
+                            bool isSelected = window->markerShape == i;
+                            if (ImGui::Selectable(shapeNames[i].c_str(), isSelected)) window->markerShape = i;
+                        }
+                        ImGui::EndCombo();
+                    }                                                                                                               ImGui::SameLine(); ImGui::Text("Marker shape");*/
+
+                    bool tempShowAxis = window->showAxis; if (ImGui::Checkbox(("##" + windowName + "showAxis").c_str(), &tempShowAxis)) window->showAxis = !window->showAxis;
+                    ImGui::SameLine(); ImGui::Text("Show axis"); ImGui::SameLine();
+                    bool tempShowAxisNames = window->showAxisNames; if (ImGui::Checkbox(("##" + windowName + "showAxisNames").c_str(), &tempShowAxisNames)) window->showAxisNames = !window->showAxisNames;
+                    ImGui::SameLine(); ImGui::Text("Show axis names");
+
+                    ImGui::DragFloat(("##" + windowName + "_rulerAlpha").c_str(), &(window->rulerAlpha), 0.01f);
+                    bool tempShowRuler = window->showRuler; ImGui::SameLine(); if (ImGui::Checkbox(("##" + windowName + "showRuler").c_str(), &tempShowRuler)) window->showRuler = !window->showRuler;
+                    ImGui::SameLine(); ImGui::Text("Ruler alpha");
+                    CLAMP01(window->rulerAlpha);
+                    ImGui::DragFloat(("##" + windowName + "_gridAlpha").c_str(), &(window->gridAlpha), 0.01f);
+                    bool tempShowGrid = window->showGrid; ImGui::SameLine(); if (ImGui::Checkbox(("##" + windowName + "showGrid").c_str(), &tempShowGrid)) window->showGrid = !window->showGrid;
+                    ImGui::SameLine(); ImGui::Text("Grid alpha");
+                    CLAMP01(window->gridAlpha);
+                }
+
+                if (window->type == Heatmap)
+                {
+                    ImGui::DragInt(("##" + windowName + "_stride").c_str(), (int*)(&(window->stride)), 1.0f); ImGui::SameLine(); ImGui::Text("Stride");
+                    if (window->stride < 1) window->stride = 1;
+
+                    bool tempShowHeatmapValues = window->showHeatmapValues; if (ImGui::Checkbox(("##" + windowName + "showHeatmapValues").c_str(), &tempShowHeatmapValues)) window->showHeatmapValues = !window->showHeatmapValues;
+                    ImGui::SameLine(); ImGui::Text("Show values");
+                    bool tempShowActualDiapasons = window->showActualDiapasons; if (ImGui::Checkbox(("##" + windowName + "showActualDiapasons").c_str(), &tempShowActualDiapasons))
+                    {
+                        window->showActualDiapasons = !window->showActualDiapasons;
+                        autofitHeatmap = true;
                     }
-                    ImGui::EndCombo();                                                                                                  
-                }                                                                                                               ImGui::SameLine(); ImGui::Text("Marker shape");*/  
-
-                bool tempShowAxis = window->showAxis; if (ImGui::Checkbox(("##" + windowName + "showAxis").c_str(), &tempShowAxis)) window->showAxis = !window->showAxis;
-                ImGui::SameLine(); ImGui::Text("Show axis"); ImGui::SameLine();
-                bool tempShowAxisNames = window->showAxisNames; if (ImGui::Checkbox(("##" + windowName + "showAxisNames").c_str(), &tempShowAxisNames)) window->showAxisNames = !window->showAxisNames;
-                ImGui::SameLine(); ImGui::Text("Show axis names");
-
-                ImGui::DragFloat(("##" + windowName + "_rulerAlpha").c_str(), &(window->rulerAlpha), 0.01f);
-                bool tempShowRuler = window->showRuler; ImGui::SameLine(); if (ImGui::Checkbox(("##" + windowName + "showRuler").c_str(), &tempShowRuler)) window->showRuler = !window->showRuler;
-                ImGui::SameLine(); ImGui::Text("Ruler alpha");
-                CLAMP01(window->rulerAlpha);
-                ImGui::DragFloat(("##" + windowName + "_gridAlpha").c_str(), &(window->gridAlpha), 0.01f);
-                bool tempShowGrid = window->showGrid; ImGui::SameLine(); if (ImGui::Checkbox(("##" + windowName + "showGrid").c_str(), &tempShowGrid)) window->showGrid = !window->showGrid;
-                ImGui::SameLine(); ImGui::Text("Grid alpha");
-                CLAMP01(window->gridAlpha);
+                    ImGui::SameLine(); ImGui::Text("Value diapasons");
+                }
 
                 ImGui::EndCombo();
             }
@@ -1290,40 +1308,105 @@ int imgui_main(int, char**)
                     //IMPLOT_TMP void PlotHeatmap(const char* label_id, const T* values, int rows, int cols, double scale_min=0, double scale_max=0, const char* label_fmt="%.1f", const ImPlotPoint& bounds_min=ImPlotPoint(0,0), const ImPlotPoint& bounds_max=ImPlotPoint(1,1), ImPlotHeatmapFlags flags=0);
                     
                     int heatStride = window->stride;
+                    if (autofitHeatmap) axisFlags |= ImPlotAxisFlags_AutoFit;
 
                     if (ImPlot::BeginPlot(plotName.c_str(), "", "", ImVec2(-1, -1), ImPlotFlags_NoTitle | ImPlotFlags_NoLegend, axisFlags, axisFlags))
                     {
                         plot = ImPlot::GetPlot(plotName.c_str());
                         plot->is3d = false;
 
-                        ImPlot::PushColormap(heatmapColorMap);
-                        mapIndex = window->variables[0];
                         if (mapBuffers[playedBufferIndex])
                         {
-                            float minX = kernel::MAP_DATA->typeX == PARAMETER ? kernel::PARAM_VALUES[kernel::MAP_DATA->indexX] :
-                                kernel::MAP_DATA->typeX == VARIABLE ? kernel::VAR_VALUES[kernel::MAP_DATA->indexX] : kernel::steps + 1;
-                            float maxX = kernel::MAP_DATA->typeX == PARAMETER ? kernel::PARAM_MAX[kernel::MAP_DATA->indexX] :
-                                kernel::MAP_DATA->typeX == VARIABLE ? kernel::VAR_MAX[kernel::MAP_DATA->indexX] : kernel::steps + 1;
-                            float minY = kernel::MAP_DATA->typeY == PARAMETER ? kernel::PARAM_VALUES[kernel::MAP_DATA->indexY] :
-                                kernel::MAP_DATA->typeX == VARIABLE ? kernel::VAR_VALUES[kernel::MAP_DATA->indexY] : kernel::steps + 1;
-                            float maxY = kernel::MAP_DATA->typeY == PARAMETER ? kernel::PARAM_MAX[kernel::MAP_DATA->indexY] :
-                                kernel::MAP_DATA->typeX == VARIABLE ? kernel::VAR_MAX[kernel::MAP_DATA->indexY] : kernel::steps + 1;
-
+                            ImPlot::PushColormap(heatmapColorMap);
+                            mapIndex = window->variables[0];
                             int xSize = kernel::MAP_DATA[mapIndex].xSize;
                             int ySize = kernel::MAP_DATA[mapIndex].ySize;
 
-                            int rows = heatStride > 1 ? (int)ceil((float)ySize / heatStride) : ySize;
-                            int cols = heatStride > 1 ? (int)ceil((float)xSize / heatStride) : xSize;
+                            if (autofitHeatmap || autofitAfterComputing)
+                            {
+                                plot->Axes[plot->CurrentX].Range.Min = 0;
+                                plot->Axes[plot->CurrentY].Range.Min = 0;
+                                plot->Axes[plot->CurrentX].Range.Max = xSize - 1;
+                                plot->Axes[plot->CurrentY].Range.Max = ySize - 1;
+                            }
 
-                            void* compressedHeatmap = new float[(int)ceil((float)xSize / heatStride) * (int)ceil((float)ySize / heatStride)];
+                            ImVec4 plotRect = ImVec4((float)plot->Axes[plot->CurrentX].Range.Min, (float)plot->Axes[plot->CurrentY].Range.Min,
+                                (float)plot->Axes[plot->CurrentX].Range.Max, (float)plot->Axes[plot->CurrentY].Range.Max); // minX, minY, maxX, maxY
+                            //printf("%f %f %f %f\n", plotRect.x, plotRect.y, plotRect.z, plotRect.w);
 
-                            compress2D((float*)(mapBuffers[playedBufferIndex]) + kernel::MAP_DATA[mapIndex].offset, (float*)compressedHeatmap,
-                                xSize, ySize, heatStride);
+                            int cutoffWidth;
+                            int cutoffHeight;
+                            int cutoffMinX;
+                            int cutoffMinY;
+                            int cutoffMaxX;
+                            int cutoffMaxY;
+                            float valueMinX;
+                            float valueMinY;
+                            float valueMaxX;
+                            float valueMaxY;
 
-                            ImPlot::PlotHeatmap((std::string(kernel::VAR_NAMES[mapIndex]) + "##" + plotName + std::to_string(0)).c_str(),
-                                (float*)compressedHeatmap, rows, cols, 0, 0, nullptr, ImPlotPoint(minX, maxY), ImPlotPoint(maxX, minY)); // %3f
+                            if (!window->showActualDiapasons)
+                            {
+                                // Step diapasons
+                                cutoffMinX = (int)floor(plotRect.x) - 1;    if (cutoffMinX < 0) cutoffMinX = 0;
+                                cutoffMinY = (int)floor(plotRect.y) - 1;    if (cutoffMinY < 0) cutoffMinY = 0;
+                                cutoffMaxX = (int)ceil(plotRect.z);         if (cutoffMaxX > xSize - 1) cutoffMaxX = xSize - 1;
+                                cutoffMaxY = (int)ceil(plotRect.w);         if (cutoffMaxY > ySize - 1) cutoffMaxY = ySize - 1;
+                            }
+                            else
+                            {
+                                // Value diapasons
+                                float valuesX = kernel::MAP_DATA->typeX == PARAMETER ? kernel::PARAM_VALUES[kernel::MAP_DATA->indexX] : kernel::MAP_DATA->typeX == VARIABLE ? kernel::VAR_VALUES[kernel::MAP_DATA->indexX] : 0;
+                                float valuesY = kernel::MAP_DATA->typeY == PARAMETER ? kernel::PARAM_VALUES[kernel::MAP_DATA->indexY] : kernel::MAP_DATA->typeY == VARIABLE ? kernel::VAR_VALUES[kernel::MAP_DATA->indexY] : 0;
+                                float stepsX = kernel::MAP_DATA->typeX == PARAMETER ? kernel::PARAM_STEPS[kernel::MAP_DATA->indexX] : kernel::MAP_DATA->typeX == VARIABLE ? kernel::VAR_STEPS[kernel::MAP_DATA->indexX] : 0;
+                                float stepsY = kernel::MAP_DATA->typeY == PARAMETER ? kernel::PARAM_STEPS[kernel::MAP_DATA->indexY] : kernel::MAP_DATA->typeY == VARIABLE ? kernel::VAR_STEPS[kernel::MAP_DATA->indexY] : 0;
+                                float maxX = kernel::MAP_DATA->typeX == PARAMETER ? kernel::PARAM_MAX[kernel::MAP_DATA->indexX] : kernel::MAP_DATA->typeX == VARIABLE ? kernel::VAR_MAX[kernel::MAP_DATA->indexX] : 0;
+                                float maxY = kernel::MAP_DATA->typeY == PARAMETER ? kernel::PARAM_MAX[kernel::MAP_DATA->indexY] : kernel::MAP_DATA->typeY == VARIABLE ? kernel::VAR_MAX[kernel::MAP_DATA->indexY] : 0;
+                                int stepCountX = calculateStepCount(valuesX, maxX, stepsX);
+                                int stepCountY = calculateStepCount(valuesY, maxY, stepsY);
+
+                                cutoffMinX = stepFromValue(valuesX, stepsX, plotRect.x);    if (cutoffMinX < 0) cutoffMinX = 0;
+                                cutoffMinY = stepFromValue(valuesY, stepsY, plotRect.y);    if (cutoffMinY < 0) cutoffMinY = 0;
+                                cutoffMaxX = stepFromValue(valuesX, stepsX, plotRect.z);    if (cutoffMaxX > stepCountX - 1) cutoffMaxX = stepCountX - 1;
+                                cutoffMaxY = stepFromValue(valuesY, stepsY, plotRect.w);    if (cutoffMaxY > stepCountY - 1) cutoffMaxY = stepCountY - 1;
+
+                                valueMinX = calculateValue(valuesX, stepsX, cutoffMinX);
+                                valueMinY = calculateValue(valuesY, stepsY, cutoffMinY);
+                                valueMaxX = calculateValue(valuesX, stepsX, cutoffMaxX + 1);
+                                valueMaxY = calculateValue(valuesY, stepsY, cutoffMaxY + 1);
+                            }
+
+                            //printf("Cutoff: %i %i %i %i\n", cutoffMinX, cutoffMinY, cutoffMaxX, cutoffMaxY);
+
+                            cutoffWidth = cutoffMaxX - cutoffMinX + 1;
+                            cutoffHeight = cutoffMaxY - cutoffMinY + 1;
+
+                            if (cutoffWidth > 0 && cutoffHeight > 0)
+                            {
+                                void* cutoffHeatmap = new float[cutoffHeight * cutoffWidth];
+
+                                cutoff2D((float*)(mapBuffers[playedBufferIndex]) + kernel::MAP_DATA[mapIndex].offset, (float*)cutoffHeatmap,
+                                    xSize, ySize, cutoffMinX, cutoffMinY, cutoffMaxX, cutoffMaxY);
+
+                                int rows = heatStride > 1 ? (int)ceil((float)cutoffHeight / heatStride) : cutoffHeight;
+                                int cols = heatStride > 1 ? (int)ceil((float)cutoffWidth / heatStride) : cutoffWidth;
+
+                                void* compressedHeatmap = new float[(int)ceil((float)cutoffWidth / heatStride) * (int)ceil((float)cutoffHeight / heatStride)];
+
+                                compress2D((float*)cutoffHeatmap, (float*)compressedHeatmap,
+                                    cutoffWidth, cutoffHeight, heatStride);
+
+                                ImPlot::PlotHeatmap((std::string(kernel::VAR_NAMES[mapIndex]) + "##" + plotName + std::to_string(0)).c_str(),
+                                    (float*)compressedHeatmap, rows, cols, 0, 0, window->showHeatmapValues ? "%.3f" : nullptr,
+                                    ImPlotPoint(window->showActualDiapasons ? valueMinX : cutoffMinX, window->showActualDiapasons ? valueMaxY : cutoffMaxY + 1),
+                                    ImPlotPoint(window->showActualDiapasons ? valueMaxX : cutoffMaxX + 1, window->showActualDiapasons ? valueMinY : cutoffMinY)); // %3f
+
+                                delete[] cutoffHeatmap;
+                                delete[] compressedHeatmap;
+                            }
+
+                            ImPlot::PopColormap();
                         }
-                        ImPlot::PopColormap();
 
                         //printf("End series\n");
                         ImPlot::EndPlot();

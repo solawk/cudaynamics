@@ -1961,7 +1961,6 @@ bool UpdateInput(ImPlotPlot& plot) {
                     }
                     
                     changed = true;
-
                 }
             }
         }

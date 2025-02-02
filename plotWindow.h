@@ -41,30 +41,10 @@ public:
 	bool showRuler;
 	bool showGrid;
 
-	PlotWindow(int _id)
-	{
-		active = true;
-		id = _id;
+	bool showHeatmapValues;
+	bool showActualDiapasons;
 
-		quatRot = ImVec4(1.0f, 0.0f, 0.0f, 0.0f);
-		autorotate = ImVec4(0.0f, 0.0f, 0.0f, 0.0f);
-
-		settingsListEnabled = true;
-		markerSize = 1.0f;
-		markerOutlineSize = 0.0f;
-		markerColor = ImVec4(1.0f, 1.0f, 1.0f, 0.5f);
-		markerShape = ImPlotMarker_Circle;
-		rulerAlpha = 0.5f;
-		gridAlpha = 0.15f;
-		stride = 1;
-
-		showAxis = true;
-		showAxisNames = true;
-		showRuler = true;
-		showGrid = true;
-	}
-
-	PlotWindow(int _id, string _name, bool _is3d)
+	PlotWindow(int _id, string _name = "plot", bool _is3d = false)
 	{
 		active = true;
 		id = _id;
@@ -90,6 +70,9 @@ public:
 		showAxisNames = true;
 		showRuler = true;
 		showGrid = true;
+
+		showHeatmapValues = false;
+		showActualDiapasons = true;
 	}
 
 	void AssignVariables(int* variablesArray)

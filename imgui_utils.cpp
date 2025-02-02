@@ -274,6 +274,24 @@ ImVec4 ToEulerAngles(ImVec4 q)
 	return angles;
 }
 
+// Cut everything that is outside the cutoff rectangle (minX, minY, maxX, maxY)
+// The rectangle is inclusive
+void cutoff2D(float* data, float* dst, int width, int height, int minX, int minY, int maxX, int maxY)
+{
+	if (minX == 0 && minY == 0 && maxX == (width - 1) && maxY == (height - 1))
+	{
+		memcpy(dst, data, width * height * sizeof(float));
+		return;
+	}
+
+	int newWidthInclusive = maxX - minX + 1;
+	int newHeightInclusive = maxY - minY + 1;
+
+	for (int y = 0; y < newHeightInclusive; y++)
+		for (int x = 0; x < newWidthInclusive; x++)
+			dst[y * newWidthInclusive + x] = data[(minY + y) * width + minX + x];
+}
+
 void compress2D(float* data, float* dst, int width, int height, int stride)
 {
 	if (stride == 1)
