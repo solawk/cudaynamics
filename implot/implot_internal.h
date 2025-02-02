@@ -410,7 +410,7 @@ struct ImPlotColormapData {
     inline ImU32          GetTableColor(ImPlotColormap cmap, int idx) const      { return Tables[TableOffsets[cmap]+idx];                             }
 
     inline ImU32 LerpTable(ImPlotColormap cmap, float t) const {
-        if (isnan(t))
+        if (isnan(t) || isinf(t))
         {
             //printf("t is NaN\n");
             //t = 0.0;

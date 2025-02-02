@@ -2372,7 +2372,7 @@ struct GetterHeatmapRowMaj {
         rect.HalfSize = HalfSize;
         //const float t = ImClamp((float)ImRemap01(val, ScaleMin, ScaleMax),0.0f,1.0f);
         ImPlotContext& gp = *GImPlot;
-        rect.Color = isnan(val) ? 0 : gp.ColormapData.LerpTable(gp.Style.Colormap, ImClamp((float)ImRemap01(val, ScaleMin, ScaleMax), 0.0f, 1.0f));
+        rect.Color = isnan(val) || isinf(val) ? 0 : gp.ColormapData.LerpTable(gp.Style.Colormap, ImClamp((float)ImRemap01(val, ScaleMin, ScaleMax), 0.0f, 1.0f));
         return rect;
     }
     const T* const Values;
