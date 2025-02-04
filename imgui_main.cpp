@@ -1383,21 +1383,26 @@ int imgui_main(int, char**)
 
                             if (cutoffWidth > 0 && cutoffHeight > 0)
                             {
+                                float* mapData = (float*)(mapBuffers[playedBufferIndex]) + kernel::MAP_DATA[mapIndex].offset;
+
+                                float min, max;
+                                getMinMax(mapData, xSize * ySize, &min, &max);
+
                                 void* cutoffHeatmap = new float[cutoffHeight * cutoffWidth];
 
-                                cutoff2D((float*)(mapBuffers[playedBufferIndex]) + kernel::MAP_DATA[mapIndex].offset, (float*)cutoffHeatmap,
+                                cutoff2D(mapData, (float*)cutoffHeatmap,
                                     xSize, ySize, cutoffMinX, cutoffMinY, cutoffMaxX, cutoffMaxY);
-
-                                int rows = heatStride > 1 ? (int)ceil((float)cutoffHeight / heatStride) : cutoffHeight;
-                                int cols = heatStride > 1 ? (int)ceil((float)cutoffWidth / heatStride) : cutoffWidth;
 
                                 void* compressedHeatmap = new float[(int)ceil((float)cutoffWidth / heatStride) * (int)ceil((float)cutoffHeight / heatStride)];
 
                                 compress2D((float*)cutoffHeatmap, (float*)compressedHeatmap,
                                     cutoffWidth, cutoffHeight, heatStride);
 
+                                int rows = heatStride > 1 ? (int)ceil((float)cutoffHeight / heatStride) : cutoffHeight;
+                                int cols = heatStride > 1 ? (int)ceil((float)cutoffWidth / heatStride) : cutoffWidth;
+
                                 ImPlot::PlotHeatmap((std::string(kernel::VAR_NAMES[mapIndex]) + "##" + plotName + std::to_string(0)).c_str(),
-                                    (float*)compressedHeatmap, rows, cols, 0, 0, window->showHeatmapValues ? "%.3f" : nullptr,
+                                    (float*)compressedHeatmap, rows, cols, (double)min, (double)max, window->showHeatmapValues ? "%.3f" : nullptr,
                                     ImPlotPoint(window->showActualDiapasons ? valueMinX : cutoffMinX, window->showActualDiapasons ? valueMaxY : cutoffMaxY + 1),
                                     ImPlotPoint(window->showActualDiapasons ? valueMaxX : cutoffMaxX + 1, window->showActualDiapasons ? valueMinY : cutoffMinY)); // %3f
 
@@ -1408,7 +1413,6 @@ int imgui_main(int, char**)
                             ImPlot::PopColormap();
                         }
 
-                        //printf("End series\n");
                         ImPlot::EndPlot();
                     }
 

@@ -319,3 +319,17 @@ void compress2D(float* data, float* dst, int width, int height, int stride)
 			dst[dstI * dstWidth + dstJ] += data[i * width + j] / (stride * stride); //dstI * dstWidth + dstJ
 		}
 }
+
+void getMinMax(float* data, int size, float* min, float* max)
+{
+	*min = data[0];
+	*max = data[0];
+
+	for (int i = 1; i < size; i++)
+	{
+		if (isnan(data[i]) || isinf(data[i])) continue;
+
+		if (data[i] < *min) *min = data[i];
+		if (data[i] > *max) *max = data[i];
+	}
+}
