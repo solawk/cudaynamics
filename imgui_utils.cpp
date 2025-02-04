@@ -308,7 +308,7 @@ void compress2D(float* data, float* dst, int width, int height, int stride)
 
 	for (int i = 0; i < dstHeight; i++)
 		for (int j = 0; j < dstWidth; j++)
-			dst[i * dstWidth + j] = 1.0f;
+			dst[i * dstWidth + j] = 0.0f;
 
 	for (int i = 0; i < height; i++)
 		for (int j = 0; j < width; j++)

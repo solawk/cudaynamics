@@ -930,6 +930,9 @@ int imgui_main(int, char**)
             }
         }
 
+        bool toAutofit = autofitAfterComputing;
+        autofitAfterComputing = false;
+
         // PLOT WINDOWS //
 
         for (int w = 0; w < plotWindows.size(); w++)
@@ -1004,7 +1007,7 @@ int imgui_main(int, char**)
             }
 
             // Common variables
-            ImPlotAxisFlags axisFlags = (autofitAfterComputing ? ImPlotAxisFlags_AutoFit : 0);
+            ImPlotAxisFlags axisFlags = (toAutofit ? ImPlotAxisFlags_AutoFit : 0);
             ImPlotPlot* plot;
             bool is3d;
             int mapIndex;
@@ -1306,114 +1309,171 @@ int imgui_main(int, char**)
                 case Heatmap:
 
                     //IMPLOT_TMP void PlotHeatmap(const char* label_id, const T* values, int rows, int cols, double scale_min=0, double scale_max=0, const char* label_fmt="%.1f", const ImPlotPoint& bounds_min=ImPlotPoint(0,0), const ImPlotPoint& bounds_max=ImPlotPoint(1,1), ImPlotHeatmapFlags flags=0);
-                    
-                    int heatStride = window->stride;
-                    if (autofitHeatmap) axisFlags |= ImPlotAxisFlags_AutoFit;
-
-                    if (ImPlot::BeginPlot(plotName.c_str(), "", "", ImVec2(-1, -1), ImPlotFlags_NoTitle | ImPlotFlags_NoLegend, axisFlags, axisFlags))
+                    static ImGuiTableFlags tableFlags = ImGuiTableFlags_Reorderable;
+                    if (ImGui::BeginTable((plotName + "_table").c_str(), 2, tableFlags, ImVec2(-1, 0)))
                     {
-                        plot = ImPlot::GetPlot(plotName.c_str());
-                        plot->is3d = false;
+                        int heatStride = window->stride;
+                        if (autofitHeatmap) axisFlags |= ImPlotAxisFlags_AutoFit;
 
-                        if (mapBuffers[playedBufferIndex])
+                        ImGui::TableSetupColumn(nullptr);
+                        ImGui::TableSetupColumn(nullptr, ImGuiTableColumnFlags_WidthFixed, 40.0f);
+                        ImGui::TableNextRow();
+
+                        float min = 0.0f;
+                        float max = 0.0f;
+
+                        ImGui::TableSetColumnIndex(0);
+
+                        if (ImPlot::BeginPlot(plotName.c_str(), "", "", ImVec2(-1, -1), ImPlotFlags_NoTitle | ImPlotFlags_NoLegend, axisFlags, axisFlags))
                         {
-                            ImPlot::PushColormap(heatmapColorMap);
-                            mapIndex = window->variables[0];
-                            int xSize = kernel::MAP_DATA[mapIndex].xSize;
-                            int ySize = kernel::MAP_DATA[mapIndex].ySize;
+                            plot = ImPlot::GetPlot(plotName.c_str());
+                            plot->is3d = false;
 
-                            if (autofitHeatmap || autofitAfterComputing)
+                            if (mapBuffers[playedBufferIndex])
                             {
-                                plot->Axes[plot->CurrentX].Range.Min = 0;
-                                plot->Axes[plot->CurrentY].Range.Min = 0;
-                                plot->Axes[plot->CurrentX].Range.Max = xSize - 1;
-                                plot->Axes[plot->CurrentY].Range.Max = ySize - 1;
+                                ImPlot::PushColormap(heatmapColorMap);
+                                mapIndex = window->variables[0];
+                                int xSize = kernel::MAP_DATA[mapIndex].xSize;
+                                int ySize = kernel::MAP_DATA[mapIndex].ySize;
+
+                                if (autofitHeatmap || toAutofit)
+                                {
+                                    plot->Axes[plot->CurrentX].Range.Min = 0;
+                                    plot->Axes[plot->CurrentY].Range.Min = 0;
+                                    plot->Axes[plot->CurrentX].Range.Max = xSize - 1;
+                                    plot->Axes[plot->CurrentY].Range.Max = ySize - 1;
+                                }
+
+                                ImVec4 plotRect = ImVec4((float)plot->Axes[plot->CurrentX].Range.Min, (float)plot->Axes[plot->CurrentY].Range.Min,
+                                    (float)plot->Axes[plot->CurrentX].Range.Max, (float)plot->Axes[plot->CurrentY].Range.Max); // minX, minY, maxX, maxY
+                                //printf("%f %f %f %f\n", plotRect.x, plotRect.y, plotRect.z, plotRect.w);
+
+                                int cutoffWidth;
+                                int cutoffHeight;
+                                int cutoffMinX;
+                                int cutoffMinY;
+                                int cutoffMaxX;
+                                int cutoffMaxY;
+                                float valueMinX;
+                                float valueMinY;
+                                float valueMaxX;
+                                float valueMaxY;
+
+                                if (!window->showActualDiapasons)
+                                {
+                                    // Step diapasons
+                                    cutoffMinX = (int)floor(plotRect.x) - 1;    if (cutoffMinX < 0) cutoffMinX = 0;
+                                    cutoffMinY = (int)floor(plotRect.y) - 1;    if (cutoffMinY < 0) cutoffMinY = 0;
+                                    cutoffMaxX = (int)ceil(plotRect.z);         if (cutoffMaxX > xSize - 1) cutoffMaxX = xSize - 1;
+                                    cutoffMaxY = (int)ceil(plotRect.w);         if (cutoffMaxY > ySize - 1) cutoffMaxY = ySize - 1;
+                                }
+                                else
+                                {
+                                    // Value diapasons
+                                    float valuesX = kernel::MAP_DATA->typeX == PARAMETER ? kernel::PARAM_VALUES[kernel::MAP_DATA->indexX] : kernel::MAP_DATA->typeX == VARIABLE ? kernel::VAR_VALUES[kernel::MAP_DATA->indexX] : 0;
+                                    float valuesY = kernel::MAP_DATA->typeY == PARAMETER ? kernel::PARAM_VALUES[kernel::MAP_DATA->indexY] : kernel::MAP_DATA->typeY == VARIABLE ? kernel::VAR_VALUES[kernel::MAP_DATA->indexY] : 0;
+                                    float stepsX = kernel::MAP_DATA->typeX == PARAMETER ? kernel::PARAM_STEPS[kernel::MAP_DATA->indexX] : kernel::MAP_DATA->typeX == VARIABLE ? kernel::VAR_STEPS[kernel::MAP_DATA->indexX] : 0;
+                                    float stepsY = kernel::MAP_DATA->typeY == PARAMETER ? kernel::PARAM_STEPS[kernel::MAP_DATA->indexY] : kernel::MAP_DATA->typeY == VARIABLE ? kernel::VAR_STEPS[kernel::MAP_DATA->indexY] : 0;
+                                    float maxX = kernel::MAP_DATA->typeX == PARAMETER ? kernel::PARAM_MAX[kernel::MAP_DATA->indexX] : kernel::MAP_DATA->typeX == VARIABLE ? kernel::VAR_MAX[kernel::MAP_DATA->indexX] : 0;
+                                    float maxY = kernel::MAP_DATA->typeY == PARAMETER ? kernel::PARAM_MAX[kernel::MAP_DATA->indexY] : kernel::MAP_DATA->typeY == VARIABLE ? kernel::VAR_MAX[kernel::MAP_DATA->indexY] : 0;
+                                    int stepCountX = calculateStepCount(valuesX, maxX, stepsX);
+                                    int stepCountY = calculateStepCount(valuesY, maxY, stepsY);
+
+                                    cutoffMinX = stepFromValue(valuesX, stepsX, plotRect.x);    if (cutoffMinX < 0) cutoffMinX = 0;
+                                    cutoffMinY = stepFromValue(valuesY, stepsY, plotRect.y);    if (cutoffMinY < 0) cutoffMinY = 0;
+                                    cutoffMaxX = stepFromValue(valuesX, stepsX, plotRect.z);    if (cutoffMaxX > stepCountX - 1) cutoffMaxX = stepCountX - 1;
+                                    cutoffMaxY = stepFromValue(valuesY, stepsY, plotRect.w);    if (cutoffMaxY > stepCountY - 1) cutoffMaxY = stepCountY - 1;
+
+                                    valueMinX = calculateValue(valuesX, stepsX, cutoffMinX);
+                                    valueMinY = calculateValue(valuesY, stepsY, cutoffMinY);
+                                    valueMaxX = calculateValue(valuesX, stepsX, cutoffMaxX + 1);
+                                    valueMaxY = calculateValue(valuesY, stepsY, cutoffMaxY + 1);
+                                }
+
+                                //printf("Cutoff: %i %i %i %i\n", cutoffMinX, cutoffMinY, cutoffMaxX, cutoffMaxY);
+
+                                cutoffWidth = cutoffMaxX - cutoffMinX + 1;
+                                cutoffHeight = cutoffMaxY - cutoffMinY + 1;
+
+                                if (cutoffWidth > 0 && cutoffHeight > 0)
+                                {
+                                    float* mapData = (float*)(mapBuffers[playedBufferIndex]) + kernel::MAP_DATA[mapIndex].offset;
+
+                                    getMinMax(mapData, xSize * ySize, &min, &max);
+
+                                    void* cutoffHeatmap = new float[cutoffHeight * cutoffWidth];
+
+                                    cutoff2D(mapData, (float*)cutoffHeatmap,
+                                        xSize, ySize, cutoffMinX, cutoffMinY, cutoffMaxX, cutoffMaxY);
+
+                                    void* compressedHeatmap = new float[(int)ceil((float)cutoffWidth / heatStride) * (int)ceil((float)cutoffHeight / heatStride)];
+
+                                    compress2D((float*)cutoffHeatmap, (float*)compressedHeatmap,
+                                        cutoffWidth, cutoffHeight, heatStride);
+
+                                    int rows = heatStride > 1 ? (int)ceil((float)cutoffHeight / heatStride) : cutoffHeight;
+                                    int cols = heatStride > 1 ? (int)ceil((float)cutoffWidth / heatStride) : cutoffWidth;
+
+                                    ImPlot::PlotHeatmap((std::string(kernel::VAR_NAMES[mapIndex]) + "##" + plotName + std::to_string(0)).c_str(),
+                                        (float*)compressedHeatmap, rows, cols, (double)min, (double)max, window->showHeatmapValues ? "%.3f" : nullptr,
+                                        ImPlotPoint(window->showActualDiapasons ? valueMinX : cutoffMinX, window->showActualDiapasons ? valueMaxY : cutoffMaxY + 1),
+                                        ImPlotPoint(window->showActualDiapasons ? valueMaxX : cutoffMaxX + 1, window->showActualDiapasons ? valueMinY : cutoffMinY)); // %3f
+
+                                    delete[] cutoffHeatmap;
+                                    delete[] compressedHeatmap;
+                                }
+
+                                ImPlot::PopColormap();
                             }
 
-                            ImVec4 plotRect = ImVec4((float)plot->Axes[plot->CurrentX].Range.Min, (float)plot->Axes[plot->CurrentY].Range.Min,
-                                (float)plot->Axes[plot->CurrentX].Range.Max, (float)plot->Axes[plot->CurrentY].Range.Max); // minX, minY, maxX, maxY
-                            //printf("%f %f %f %f\n", plotRect.x, plotRect.y, plotRect.z, plotRect.w);
-
-                            int cutoffWidth;
-                            int cutoffHeight;
-                            int cutoffMinX;
-                            int cutoffMinY;
-                            int cutoffMaxX;
-                            int cutoffMaxY;
-                            float valueMinX;
-                            float valueMinY;
-                            float valueMaxX;
-                            float valueMaxY;
-
-                            if (!window->showActualDiapasons)
-                            {
-                                // Step diapasons
-                                cutoffMinX = (int)floor(plotRect.x) - 1;    if (cutoffMinX < 0) cutoffMinX = 0;
-                                cutoffMinY = (int)floor(plotRect.y) - 1;    if (cutoffMinY < 0) cutoffMinY = 0;
-                                cutoffMaxX = (int)ceil(plotRect.z);         if (cutoffMaxX > xSize - 1) cutoffMaxX = xSize - 1;
-                                cutoffMaxY = (int)ceil(plotRect.w);         if (cutoffMaxY > ySize - 1) cutoffMaxY = ySize - 1;
-                            }
-                            else
-                            {
-                                // Value diapasons
-                                float valuesX = kernel::MAP_DATA->typeX == PARAMETER ? kernel::PARAM_VALUES[kernel::MAP_DATA->indexX] : kernel::MAP_DATA->typeX == VARIABLE ? kernel::VAR_VALUES[kernel::MAP_DATA->indexX] : 0;
-                                float valuesY = kernel::MAP_DATA->typeY == PARAMETER ? kernel::PARAM_VALUES[kernel::MAP_DATA->indexY] : kernel::MAP_DATA->typeY == VARIABLE ? kernel::VAR_VALUES[kernel::MAP_DATA->indexY] : 0;
-                                float stepsX = kernel::MAP_DATA->typeX == PARAMETER ? kernel::PARAM_STEPS[kernel::MAP_DATA->indexX] : kernel::MAP_DATA->typeX == VARIABLE ? kernel::VAR_STEPS[kernel::MAP_DATA->indexX] : 0;
-                                float stepsY = kernel::MAP_DATA->typeY == PARAMETER ? kernel::PARAM_STEPS[kernel::MAP_DATA->indexY] : kernel::MAP_DATA->typeY == VARIABLE ? kernel::VAR_STEPS[kernel::MAP_DATA->indexY] : 0;
-                                float maxX = kernel::MAP_DATA->typeX == PARAMETER ? kernel::PARAM_MAX[kernel::MAP_DATA->indexX] : kernel::MAP_DATA->typeX == VARIABLE ? kernel::VAR_MAX[kernel::MAP_DATA->indexX] : 0;
-                                float maxY = kernel::MAP_DATA->typeY == PARAMETER ? kernel::PARAM_MAX[kernel::MAP_DATA->indexY] : kernel::MAP_DATA->typeY == VARIABLE ? kernel::VAR_MAX[kernel::MAP_DATA->indexY] : 0;
-                                int stepCountX = calculateStepCount(valuesX, maxX, stepsX);
-                                int stepCountY = calculateStepCount(valuesY, maxY, stepsY);
-
-                                cutoffMinX = stepFromValue(valuesX, stepsX, plotRect.x);    if (cutoffMinX < 0) cutoffMinX = 0;
-                                cutoffMinY = stepFromValue(valuesY, stepsY, plotRect.y);    if (cutoffMinY < 0) cutoffMinY = 0;
-                                cutoffMaxX = stepFromValue(valuesX, stepsX, plotRect.z);    if (cutoffMaxX > stepCountX - 1) cutoffMaxX = stepCountX - 1;
-                                cutoffMaxY = stepFromValue(valuesY, stepsY, plotRect.w);    if (cutoffMaxY > stepCountY - 1) cutoffMaxY = stepCountY - 1;
-
-                                valueMinX = calculateValue(valuesX, stepsX, cutoffMinX);
-                                valueMinY = calculateValue(valuesY, stepsY, cutoffMinY);
-                                valueMaxX = calculateValue(valuesX, stepsX, cutoffMaxX + 1);
-                                valueMaxY = calculateValue(valuesY, stepsY, cutoffMaxY + 1);
-                            }
-
-                            //printf("Cutoff: %i %i %i %i\n", cutoffMinX, cutoffMinY, cutoffMaxX, cutoffMaxY);
-
-                            cutoffWidth = cutoffMaxX - cutoffMinX + 1;
-                            cutoffHeight = cutoffMaxY - cutoffMinY + 1;
-
-                            if (cutoffWidth > 0 && cutoffHeight > 0)
-                            {
-                                float* mapData = (float*)(mapBuffers[playedBufferIndex]) + kernel::MAP_DATA[mapIndex].offset;
-
-                                float min, max;
-                                getMinMax(mapData, xSize * ySize, &min, &max);
-
-                                void* cutoffHeatmap = new float[cutoffHeight * cutoffWidth];
-
-                                cutoff2D(mapData, (float*)cutoffHeatmap,
-                                    xSize, ySize, cutoffMinX, cutoffMinY, cutoffMaxX, cutoffMaxY);
-
-                                void* compressedHeatmap = new float[(int)ceil((float)cutoffWidth / heatStride) * (int)ceil((float)cutoffHeight / heatStride)];
-
-                                compress2D((float*)cutoffHeatmap, (float*)compressedHeatmap,
-                                    cutoffWidth, cutoffHeight, heatStride);
-
-                                int rows = heatStride > 1 ? (int)ceil((float)cutoffHeight / heatStride) : cutoffHeight;
-                                int cols = heatStride > 1 ? (int)ceil((float)cutoffWidth / heatStride) : cutoffWidth;
-
-                                ImPlot::PlotHeatmap((std::string(kernel::VAR_NAMES[mapIndex]) + "##" + plotName + std::to_string(0)).c_str(),
-                                    (float*)compressedHeatmap, rows, cols, (double)min, (double)max, window->showHeatmapValues ? "%.3f" : nullptr,
-                                    ImPlotPoint(window->showActualDiapasons ? valueMinX : cutoffMinX, window->showActualDiapasons ? valueMaxY : cutoffMaxY + 1),
-                                    ImPlotPoint(window->showActualDiapasons ? valueMaxX : cutoffMaxX + 1, window->showActualDiapasons ? valueMinY : cutoffMinY)); // %3f
-
-                                delete[] cutoffHeatmap;
-                                delete[] compressedHeatmap;
-                            }
-
-                            ImPlot::PopColormap();
+                            ImPlot::EndPlot();
                         }
 
-                        ImPlot::EndPlot();
+                        // Legend
+
+                        ImGui::TableSetColumnIndex(1);
+
+                        axisFlags |= ImPlotAxisFlags_NoDecorations;
+
+                        if (ImPlot::BeginPlot((plotName + "_legend").c_str(), "", "", ImVec2(-1, -1), ImPlotFlags_CanvasOnly | ImPlotFlags_NoFrame, axisFlags, axisFlags))
+                        {
+                            plot = ImPlot::GetPlot((plotName + "_legend").c_str());
+                            plot->is3d = false;
+
+                            if (mapBuffers[playedBufferIndex])
+                            {
+                                float* legendData = new float[1000];
+                                for (int i = 0; i < 1000; i++) legendData[i] = i;
+
+                                ImPlot::PushColormap(heatmapColorMap);
+                                mapIndex = window->variables[0];
+                                int xSize = kernel::MAP_DATA[mapIndex].xSize;
+                                int ySize = kernel::MAP_DATA[mapIndex].ySize;
+
+                                plot->Axes[plot->CurrentX].Range.Min = 0;
+                                plot->Axes[plot->CurrentY].Range.Min = 0;
+                                plot->Axes[plot->CurrentX].Range.Max = 1;
+                                plot->Axes[plot->CurrentY].Range.Max = 1000;
+
+                                float* mapData = (float*)(mapBuffers[playedBufferIndex]) + kernel::MAP_DATA[mapIndex].offset;
+
+                                ImPlot::PlotHeatmap((std::string(kernel::VAR_NAMES[mapIndex]) + "_legend##" + plotName + std::to_string(0) + "_legend").c_str(),
+                                    legendData, 1000, 1, 0, 999, nullptr,
+                                    ImPlotPoint(0.0f, 1000.0f),
+                                    ImPlotPoint(1.0f, 0.0f)); // %3f
+
+                                ImPlot::PlotText(to_string(min).c_str(), 0.0f, 0.0f, ImVec2(10, -40), ImPlotTextFlags_Vertical);
+                                ImPlot::PlotText(to_string(max).c_str(), 0.0f, 1000.0f, ImVec2(10, 80), ImPlotTextFlags_Vertical);
+
+                                ImPlot::PopColormap();
+
+                                delete[] legendData;
+                            }
+
+                            ImPlot::EndPlot();
+                        }
+
+                        ImGui::EndTable();
                     }
 
                     break;
@@ -1423,7 +1483,7 @@ int imgui_main(int, char**)
             ImGui::End();
         }
 
-        autofitAfterComputing = false;
+        //autofitAfterComputing = false;
 
         // Rendering
         ImGui::Render();
