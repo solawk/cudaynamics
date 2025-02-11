@@ -1050,6 +1050,10 @@ struct ImPlotPlot
     bool is3d;
     float* deltax;
     float* deltay;
+    bool isHeatmapSelectionModeOn;
+
+    bool doubleClicked;
+    ImVec2 doubleClickLocation;
 
     ImPlotPlot() {
         Flags             = PreviousFlags = ImPlotFlags_None;

@@ -1845,11 +1845,13 @@ bool UpdateInput(ImPlotPlot& plot) {
                                              | ImGuiButtonFlags_MouseButtonMiddle;
     const ImGuiButtonFlags axis_button_flags = ImGuiButtonFlags_FlattenChildren
                                              | plot_button_flags;
-
+    
     const bool plot_clicked = ImGui::ButtonBehavior(plot.PlotRect,plot.ID,&plot.Hovered,&plot.Held,plot_button_flags); // PLOT CLICK DETECTION
 #if (IMGUI_VERSION_NUM < 18966)
     ImGui::SetItemAllowOverlap(); // Handled by ButtonBehavior()
 #endif
+
+    plot.doubleClicked = false;
 
     if (plot_clicked) {
         if (!ImHasFlag(plot.Flags, ImPlotFlags_NoBoxSelect) && IO.MouseClicked[gp.InputMap.Select] && ImHasFlag(IO.KeyMods, gp.InputMap.SelectMod)) {
@@ -1857,11 +1859,28 @@ bool UpdateInput(ImPlotPlot& plot) {
             plot.SelectStart = IO.MousePos;
             plot.SelectRect  = ImRect(0,0,0,0);
         }
+
         if (IO.MouseDoubleClicked[gp.InputMap.Fit])
         {
-            plot.FitThisFrame = true;
-            for (int i = 0; i < ImAxis_COUNT; ++i)
-                plot.Axes[i].FitThisFrame = true;
+            if (!plot.isHeatmapSelectionModeOn)
+            {
+                // Autofit
+                
+                plot.FitThisFrame = true;
+                for (int i = 0; i < ImAxis_COUNT; ++i)
+                    plot.Axes[i].FitThisFrame = true;
+            }
+            else
+            {
+                plot.doubleClicked = true;
+
+                ImPlotAxis& x_axis = plot.XAxis(0);
+                double vx = x_axis.PixelsToPlot(IO.MousePos.x);
+                ImPlotAxis& y_axis = plot.YAxis(0);
+                double vy = y_axis.PixelsToPlot(IO.MousePos.y);
+
+                plot.doubleClickLocation = ImVec2((float)vx, (float)vy);
+            }
         }
     }
 

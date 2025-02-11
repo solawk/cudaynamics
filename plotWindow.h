@@ -35,6 +35,7 @@ public:
 	float rulerAlpha;
 	float gridAlpha;
 	int stride;
+	bool isHeatmapSelectionModeOn;
 
 	bool showAxis;
 	bool showAxisNames;
@@ -65,6 +66,7 @@ public:
 		rulerAlpha = 0.5f;
 		gridAlpha = 0.15f;
 		stride = 1;
+		isHeatmapSelectionModeOn = false;
 
 		showAxis = true;
 		showAxisNames = true;

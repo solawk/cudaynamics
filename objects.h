@@ -12,6 +12,7 @@
 using namespace std;
 
 #define calculateStepCount(_min, _max, _step) (_step != 0 ? (int)((_max - _min) / _step) + 1 : 0)
+#define stepFromStepCount(_min, _max, _stepCount) ((_max - _min) / (float)(_stepCount - 1))
 #define calculateValue(_min, _step, _currentStep) ((_min) + (_step) * (_currentStep))
 // Calculate step from value, floored int
 #define stepFromValue(_min, _step, _value) (int)((_value - _min) / _step)
@@ -101,6 +102,16 @@ public:
 		currentStep.clear();
 		currentValue.clear();
 	}
+
+	int indexOfRangingEntity(string name)
+	{
+		for (int i = 0; i < rangingCount; i++)
+		{
+			if (names[i] == name) return i;
+		}
+
+		return -1;
+	}
 };
 
 struct PlotGraphSettings
@@ -142,6 +153,7 @@ template<typename T> struct InputValuesBuffer
 		stepCount[index] = calculateStepCount(min, max, step);
 	}
 
+	// Import into struct
 	void load(T* min, T* max, T* step, RangingType* isRanging, int size)
 	{
 		for (int i = 0; i < size; i++)
@@ -150,6 +162,7 @@ template<typename T> struct InputValuesBuffer
 		}
 	}
 
+	// Export from struct
 	void unload(T* min, T* max, T* step, RangingType* isRanging, int size)
 	{
 		for (int i = 0; i < size; i++)

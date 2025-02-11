@@ -995,12 +995,16 @@ int imgui_main(int, char**)
 
                     bool tempShowHeatmapValues = window->showHeatmapValues; if (ImGui::Checkbox(("##" + windowName + "showHeatmapValues").c_str(), &tempShowHeatmapValues)) window->showHeatmapValues = !window->showHeatmapValues;
                     ImGui::SameLine(); ImGui::Text("Show values");
+
                     bool tempShowActualDiapasons = window->showActualDiapasons; if (ImGui::Checkbox(("##" + windowName + "showActualDiapasons").c_str(), &tempShowActualDiapasons))
                     {
                         window->showActualDiapasons = !window->showActualDiapasons;
                         autofitHeatmap = true;
                     }
                     ImGui::SameLine(); ImGui::Text("Value diapasons");
+
+                    bool tempHeatmapSelectionMode = window->isHeatmapSelectionModeOn; if (ImGui::Checkbox(("##" + windowName + "heatmapSelectionMode").c_str(), &tempHeatmapSelectionMode)) window->isHeatmapSelectionModeOn = !window->isHeatmapSelectionModeOn;
+                    ImGui::SameLine(); ImGui::Text("Selection mode");
                 }
 
                 ImGui::EndCombo();
@@ -1161,6 +1165,8 @@ int imgui_main(int, char**)
                         }
                         else // Particles - all variations, one certain step
                         {
+                            if (particleStep > kernel::steps) particleStep = kernel::steps;
+
                             for (int v = 0; v < rangingData[playedBufferIndex].totalVariations; v++)
                             {
                                 for (int var = 0; var < kernel::VAR_COUNT; var++)
@@ -1307,10 +1313,7 @@ int imgui_main(int, char**)
                 break;
 
                 case Heatmap:
-
-                    //IMPLOT_TMP void PlotHeatmap(const char* label_id, const T* values, int rows, int cols, double scale_min=0, double scale_max=0, const char* label_fmt="%.1f", const ImPlotPoint& bounds_min=ImPlotPoint(0,0), const ImPlotPoint& bounds_max=ImPlotPoint(1,1), ImPlotHeatmapFlags flags=0);
-                    static ImGuiTableFlags tableFlags = ImGuiTableFlags_Reorderable;
-                    if (ImGui::BeginTable((plotName + "_table").c_str(), 2, tableFlags, ImVec2(-1, 0)))
+                    if (ImGui::BeginTable((plotName + "_table").c_str(), 2, ImGuiTableFlags_Reorderable, ImVec2(-1, 0)))
                     {
                         int heatStride = window->stride;
                         if (autofitHeatmap) axisFlags |= ImPlotAxisFlags_AutoFit;
@@ -1328,6 +1331,7 @@ int imgui_main(int, char**)
                         {
                             plot = ImPlot::GetPlot(plotName.c_str());
                             plot->is3d = false;
+                            plot->isHeatmapSelectionModeOn = window->isHeatmapSelectionModeOn;
 
                             if (mapBuffers[playedBufferIndex])
                             {
@@ -1347,6 +1351,13 @@ int imgui_main(int, char**)
                                 ImVec4 plotRect = ImVec4((float)plot->Axes[plot->CurrentX].Range.Min, (float)plot->Axes[plot->CurrentY].Range.Min,
                                     (float)plot->Axes[plot->CurrentX].Range.Max, (float)plot->Axes[plot->CurrentY].Range.Max); // minX, minY, maxX, maxY
                                 //printf("%f %f %f %f\n", plotRect.x, plotRect.y, plotRect.z, plotRect.w);
+
+                                float valuesX = kernel::MAP_DATA[mapIndex].typeX == PARAMETER ? kernel::PARAM_VALUES[kernel::MAP_DATA[mapIndex].indexX] : kernel::MAP_DATA[mapIndex].typeX == VARIABLE ? kernel::VAR_VALUES[kernel::MAP_DATA[mapIndex].indexX] : 0;
+                                float valuesY = kernel::MAP_DATA[mapIndex].typeY == PARAMETER ? kernel::PARAM_VALUES[kernel::MAP_DATA[mapIndex].indexY] : kernel::MAP_DATA[mapIndex].typeY == VARIABLE ? kernel::VAR_VALUES[kernel::MAP_DATA[mapIndex].indexY] : 0;
+                                float stepsX = kernel::MAP_DATA[mapIndex].typeX == PARAMETER ? kernel::PARAM_STEPS[kernel::MAP_DATA[mapIndex].indexX] : kernel::MAP_DATA[mapIndex].typeX == VARIABLE ? kernel::VAR_STEPS[kernel::MAP_DATA[mapIndex].indexX] : 0;
+                                float stepsY = kernel::MAP_DATA[mapIndex].typeY == PARAMETER ? kernel::PARAM_STEPS[kernel::MAP_DATA[mapIndex].indexY] : kernel::MAP_DATA[mapIndex].typeY == VARIABLE ? kernel::VAR_STEPS[kernel::MAP_DATA[mapIndex].indexY] : 0;
+                                float maxX = kernel::MAP_DATA[mapIndex].typeX == PARAMETER ? kernel::PARAM_MAX[kernel::MAP_DATA[mapIndex].indexX] : kernel::MAP_DATA[mapIndex].typeX == VARIABLE ? kernel::VAR_MAX[kernel::MAP_DATA[mapIndex].indexX] : 0;
+                                float maxY = kernel::MAP_DATA[mapIndex].typeY == PARAMETER ? kernel::PARAM_MAX[kernel::MAP_DATA[mapIndex].indexY] : kernel::MAP_DATA[mapIndex].typeY == VARIABLE ? kernel::VAR_MAX[kernel::MAP_DATA[mapIndex].indexY] : 0;
 
                                 int cutoffWidth;
                                 int cutoffHeight;
@@ -1370,12 +1381,6 @@ int imgui_main(int, char**)
                                 else
                                 {
                                     // Value diapasons
-                                    float valuesX = kernel::MAP_DATA->typeX == PARAMETER ? kernel::PARAM_VALUES[kernel::MAP_DATA->indexX] : kernel::MAP_DATA->typeX == VARIABLE ? kernel::VAR_VALUES[kernel::MAP_DATA->indexX] : 0;
-                                    float valuesY = kernel::MAP_DATA->typeY == PARAMETER ? kernel::PARAM_VALUES[kernel::MAP_DATA->indexY] : kernel::MAP_DATA->typeY == VARIABLE ? kernel::VAR_VALUES[kernel::MAP_DATA->indexY] : 0;
-                                    float stepsX = kernel::MAP_DATA->typeX == PARAMETER ? kernel::PARAM_STEPS[kernel::MAP_DATA->indexX] : kernel::MAP_DATA->typeX == VARIABLE ? kernel::VAR_STEPS[kernel::MAP_DATA->indexX] : 0;
-                                    float stepsY = kernel::MAP_DATA->typeY == PARAMETER ? kernel::PARAM_STEPS[kernel::MAP_DATA->indexY] : kernel::MAP_DATA->typeY == VARIABLE ? kernel::VAR_STEPS[kernel::MAP_DATA->indexY] : 0;
-                                    float maxX = kernel::MAP_DATA->typeX == PARAMETER ? kernel::PARAM_MAX[kernel::MAP_DATA->indexX] : kernel::MAP_DATA->typeX == VARIABLE ? kernel::VAR_MAX[kernel::MAP_DATA->indexX] : 0;
-                                    float maxY = kernel::MAP_DATA->typeY == PARAMETER ? kernel::PARAM_MAX[kernel::MAP_DATA->indexY] : kernel::MAP_DATA->typeY == VARIABLE ? kernel::VAR_MAX[kernel::MAP_DATA->indexY] : 0;
                                     int stepCountX = calculateStepCount(valuesX, maxX, stepsX);
                                     int stepCountY = calculateStepCount(valuesY, maxY, stepsY);
 
@@ -1394,6 +1399,51 @@ int imgui_main(int, char**)
 
                                 cutoffWidth = cutoffMaxX - cutoffMinX + 1;
                                 cutoffHeight = cutoffMaxY - cutoffMinY + 1;
+
+                                // Choosing configuration
+                                if (plot->doubleClicked && plot->doubleClickLocation.x > 0.0)
+                                {
+                                    int stepX = 0;
+                                    int stepY = 0;
+
+                                    if (window->showActualDiapasons)
+                                    {
+                                        // Values
+                                        stepX = stepFromValue(valuesX, stepsX, plot->doubleClickLocation.x);
+                                        stepY = stepFromValue(valuesY, stepsY, plot->doubleClickLocation.y);
+                                    }
+                                    else
+                                    {
+                                        // Steps
+                                        stepX = (int)floor(plot->doubleClickLocation.x);
+                                        stepY = (int)floor(plot->doubleClickLocation.y);
+                                    }
+
+                                    enabledParticles = false;
+                                    playingParticles = false;
+
+                                    int rangingIndexX = rangingData[playedBufferIndex].indexOfRangingEntity(kernel::MAP_DATA[mapIndex].typeX == PARAMETER ? kernel::PARAM_NAMES[kernel::MAP_DATA[mapIndex].indexX] : kernel::MAP_DATA[mapIndex].typeX == VARIABLE ? kernel::VAR_NAMES[kernel::MAP_DATA[mapIndex].indexX] : "");
+                                    int rangingIndexY = rangingData[playedBufferIndex].indexOfRangingEntity(kernel::MAP_DATA[mapIndex].typeY == PARAMETER ? kernel::PARAM_NAMES[kernel::MAP_DATA[mapIndex].indexY] : kernel::MAP_DATA[mapIndex].typeY == VARIABLE ? kernel::VAR_NAMES[kernel::MAP_DATA[mapIndex].indexY] : "");
+
+                                    // If inside the heatmap
+                                    if (stepX >= 0 && stepX < rangingData[playedBufferIndex].stepCount[rangingIndexX] && stepY >= 0 && stepY < rangingData[playedBufferIndex].stepCount[rangingIndexY])
+                                    {
+                                        if (rangingIndexX > -1)
+                                        {
+                                            rangingData[playedBufferIndex].currentStep[rangingIndexX] = stepX;
+                                        }
+                                        else
+                                        {
+                                            // TODO: if step is the ranging entity (not var or param)
+                                            // ditto for y
+                                        }
+
+                                        if (rangingIndexY > -1)
+                                        {
+                                            rangingData[playedBufferIndex].currentStep[rangingIndexY] = stepY;
+                                        }
+                                    }
+                                }
 
                                 if (cutoffWidth > 0 && cutoffHeight > 0)
                                 {
@@ -1443,7 +1493,7 @@ int imgui_main(int, char**)
                             if (mapBuffers[playedBufferIndex])
                             {
                                 float* legendData = new float[1000];
-                                for (int i = 0; i < 1000; i++) legendData[i] = i;
+                                for (int i = 0; i < 1000; i++) legendData[i] = (float)i;
 
                                 ImPlot::PushColormap(heatmapColorMap);
                                 mapIndex = window->variables[0];
