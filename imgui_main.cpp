@@ -75,9 +75,9 @@ ImVec4 disabledBackgroundColor = ImVec4(0.137f * 0.35f, 0.271f * 0.35f, 0.427f *
 /*ImVec4 xAxisBackgroundColor = ImVec4(0.5f, 0.25f, 0.25f, 1.0f);
 ImVec4 yAxisBackgroundColor = ImVec4(0.25f, 0.5f, 0.25f, 1.0f);
 ImVec4 zAxisBackgroundColor = ImVec4(0.25f, 0.25f, 0.5f, 1.0f);*/
-ImVec4 xAxisColor = ImVec4(0.9f, 0.3f, 0.2f, 1.0f);
-ImVec4 yAxisColor = ImVec4(0.8f, 0.5f, 0.1f, 1.0f);
-ImVec4 zAxisColor = ImVec4(0.1f, 0.5f, 0.8f, 1.0f);
+ImVec4 xAxisColor = ImVec4(0.75f, 0.3f, 0.3f, 1.0f);
+ImVec4 yAxisColor = ImVec4(0.33f, 0.67f, 0.4f, 1.0f);
+ImVec4 zAxisColor = ImVec4(0.3f, 0.45f, 0.7f, 1.0f);
 
 std::string rangingTypes[] = { "Fixed", "Linear", "Random", "Normal" };
 
@@ -982,6 +982,9 @@ int imgui_main(int, char**)
             // Plot variables
             if (ImGui::BeginCombo(("##" + windowName + "_plotSettings").c_str(), "Plot settings"))
             {
+                bool tempWhiteBg = window->whiteBg; ImGui::SameLine(); if (ImGui::Checkbox(("##" + windowName + "whiteBG").c_str(), &tempWhiteBg)) window->whiteBg = !window->whiteBg;
+                ImGui::SameLine(); ImGui::Text("White background");
+
                 if (window->type == Phase || window->type == Series)
                 {
                     ImGui::DragFloat(("##" + windowName + "_markerSize").c_str(), &(window->markerSize), 0.1f);                             ImGui::SameLine(); ImGui::Text("Marker size");
@@ -1050,6 +1053,7 @@ int imgui_main(int, char**)
             case Series:
 
                 //printf("Begin series\n");
+                if (window->whiteBg) ImPlot::PushStyleColor(ImPlotCol_PlotBg, ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
                 if (ImPlot::BeginPlot(plotName.c_str(), "", "", ImVec2(-1, -1), ImPlotFlags_NoTitle, axisFlags, axisFlags))
                 {
                     plot = ImPlot::GetPlot(plotName.c_str());
@@ -1076,6 +1080,7 @@ int imgui_main(int, char**)
                     //printf("End series\n");
                     ImPlot::EndPlot();
                 }
+                if (window->whiteBg) ImPlot::PopStyleColor();
 
                 break;
 
@@ -1133,6 +1138,7 @@ int imgui_main(int, char**)
                 }
 
                 //printf("Begin phase\n");
+                if (window->whiteBg) ImPlot::PushStyleColor(ImPlotCol_PlotBg, ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
                 if (ImPlot::BeginPlot(plotName.c_str(), "", "", ImVec2(-1, -1), ImPlotFlags_NoLegend | ImPlotFlags_NoTitle, axisFlags, axisFlags))
                 {
                     plot = ImPlot::GetPlot(plotName.c_str());
@@ -1337,6 +1343,7 @@ int imgui_main(int, char**)
                     //printf("End phase\n");
                     ImPlot::EndPlot();
                 }
+                if (window->whiteBg) ImPlot::PopStyleColor();
                 break;
 
                 case Heatmap:
@@ -1354,6 +1361,7 @@ int imgui_main(int, char**)
 
                         ImGui::TableSetColumnIndex(0);
 
+                        if (window->whiteBg) ImPlot::PushStyleColor(ImPlotCol_PlotBg, ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
                         if (ImPlot::BeginPlot(plotName.c_str(), "", "", ImVec2(-1, -1), ImPlotFlags_NoTitle | ImPlotFlags_NoLegend, axisFlags, axisFlags))
                         {
                             plot = ImPlot::GetPlot(plotName.c_str());
@@ -1505,6 +1513,7 @@ int imgui_main(int, char**)
 
                             ImPlot::EndPlot();
                         }
+                        if (window->whiteBg) ImPlot::PopStyleColor();
 
                         // Legend
 

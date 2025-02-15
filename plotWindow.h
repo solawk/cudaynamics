@@ -34,6 +34,7 @@ public:
 	ImPlotMarker markerShape;
 	float rulerAlpha;
 	float gridAlpha;
+	bool whiteBg;
 	int stride;
 	bool isHeatmapSelectionModeOn;
 
@@ -65,6 +66,7 @@ public:
 		markerShape = ImPlotMarker_Circle;
 		rulerAlpha = 0.5f;
 		gridAlpha = 0.15f;
+		whiteBg = false;
 		stride = 1;
 		isHeatmapSelectionModeOn = false;
 
