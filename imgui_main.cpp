@@ -1138,7 +1138,7 @@ int imgui_main(int, char**)
                 }
 
                 //printf("Begin phase\n");
-                if (window->whiteBg) ImPlot::PushStyleColor(ImPlotCol_PlotBg, ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
+                if (window->whiteBg) { ImPlot::PushStyleColor(ImPlotCol_PlotBg, ImVec4(1.0f, 1.0f, 1.0f, 1.0f)); ImPlot::PushStyleColor(ImPlotCol_AxisGrid, ImVec4(0.2f, 0.2f, 0.2f, 1.0f)); }
                 if (ImPlot::BeginPlot(plotName.c_str(), "", "", ImVec2(-1, -1), ImPlotFlags_NoLegend | ImPlotFlags_NoTitle, axisFlags, axisFlags))
                 {
                     plot = ImPlot::GetPlot(plotName.c_str());
@@ -1343,7 +1343,7 @@ int imgui_main(int, char**)
                     //printf("End phase\n");
                     ImPlot::EndPlot();
                 }
-                if (window->whiteBg) ImPlot::PopStyleColor();
+                if (window->whiteBg) ImPlot::PopStyleColor(2);
                 break;
 
                 case Heatmap:
@@ -1361,7 +1361,7 @@ int imgui_main(int, char**)
 
                         ImGui::TableSetColumnIndex(0);
 
-                        if (window->whiteBg) ImPlot::PushStyleColor(ImPlotCol_PlotBg, ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
+                        if (window->whiteBg) { ImPlot::PushStyleColor(ImPlotCol_PlotBg, ImVec4(1.0f, 1.0f, 1.0f, 1.0f)); ImPlot::PushStyleColor(ImPlotCol_AxisGrid, ImVec4(0.2f, 0.2f, 0.2f, 1.0f)); }
                         if (ImPlot::BeginPlot(plotName.c_str(), "", "", ImVec2(-1, -1), ImPlotFlags_NoTitle | ImPlotFlags_NoLegend, axisFlags, axisFlags))
                         {
                             plot = ImPlot::GetPlot(plotName.c_str());
@@ -1513,7 +1513,7 @@ int imgui_main(int, char**)
 
                             ImPlot::EndPlot();
                         }
-                        if (window->whiteBg) ImPlot::PopStyleColor();
+                        if (window->whiteBg) ImPlot::PopStyleColor(2);
 
                         // Legend
 
