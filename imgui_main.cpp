@@ -75,6 +75,9 @@ ImVec4 disabledBackgroundColor = ImVec4(0.137f * 0.35f, 0.271f * 0.35f, 0.427f *
 /*ImVec4 xAxisBackgroundColor = ImVec4(0.5f, 0.25f, 0.25f, 1.0f);
 ImVec4 yAxisBackgroundColor = ImVec4(0.25f, 0.5f, 0.25f, 1.0f);
 ImVec4 zAxisBackgroundColor = ImVec4(0.25f, 0.25f, 0.5f, 1.0f);*/
+ImVec4 xAxisColor = ImVec4(0.9f, 0.3f, 0.2f, 1.0f);
+ImVec4 yAxisColor = ImVec4(0.8f, 0.5f, 0.1f, 1.0f);
+ImVec4 zAxisColor = ImVec4(0.1f, 0.5f, 0.8f, 1.0f);
 
 std::string rangingTypes[] = { "Fixed", "Linear", "Random", "Normal" };
 
@@ -1211,14 +1214,14 @@ int imgui_main(int, char**)
                         // Axis
                         if (window->showAxis)
                         {
-                            ImPlot::SetNextLineStyle(ImVec4(1.0f, 0.0f, 0.0f, 1.0f));
+                            ImPlot::SetNextLineStyle(xAxisColor);
                             ImPlot::PlotLine(plotName.c_str(), &(((float*)axisBuffer)[0]), &(((float*)axisBuffer)[1]), 2, 0, 0, sizeof(float) * 3);
-                            ImPlot::SetNextLineStyle(ImVec4(0.0f, 1.0f, 0.0f, 1.0f));
+                            ImPlot::SetNextLineStyle(yAxisColor);
                             ImPlot::PlotLine(plotName.c_str(), &(((float*)axisBuffer)[6]), &(((float*)axisBuffer)[7]), 2, 0, 0, sizeof(float) * 3);
 
                             if (is3d)
                             {
-                                ImPlot::SetNextLineStyle(ImVec4(0.0f, 0.0f, 1.0f, 1.0f));
+                                ImPlot::SetNextLineStyle(zAxisColor);
                                 ImPlot::PlotLine(plotName.c_str(), &(((float*)axisBuffer)[12]), &(((float*)axisBuffer)[13]), 2, 0, 0, sizeof(float) * 3);
                             }
                         }
@@ -1226,16 +1229,16 @@ int imgui_main(int, char**)
                         // Axis names
                         if (window->showAxisNames)
                         {
-                            ImPlot::PushStyleColor(ImPlotCol_InlayText, ImVec4(1.0f, 0.2f, 0.2f, 1.0f));
+                            ImPlot::PushStyleColor(ImPlotCol_InlayText, xAxisColor);
                             ImPlot::PlotText(kernel::VAR_NAMES[window->variables[0]], ((float*)axisBuffer)[0], ((float*)axisBuffer)[1], ImVec2(0.0f, 0.0f));
                             ImPlot::PopStyleColor();
-                            ImPlot::PushStyleColor(ImPlotCol_InlayText, ImVec4(0.2f, 1.0f, 0.2f, 1.0f));
+                            ImPlot::PushStyleColor(ImPlotCol_InlayText, yAxisColor);
                             ImPlot::PlotText(kernel::VAR_NAMES[window->variables[1]], ((float*)axisBuffer)[6], ((float*)axisBuffer)[7], ImVec2(0.0f, 0.0f));
                             ImPlot::PopStyleColor();
 
                             if (is3d)
                             {
-                                ImPlot::PushStyleColor(ImPlotCol_InlayText, ImVec4(0.2f, 0.2f, 1.0f, 1.0f));
+                                ImPlot::PushStyleColor(ImPlotCol_InlayText, zAxisColor);
                                 ImPlot::PlotText(kernel::VAR_NAMES[window->variables[2]], ((float*)axisBuffer)[12], ((float*)axisBuffer)[13], ImVec2(0.0f, 0.0f));
                                 ImPlot::PopStyleColor();
                             }
@@ -1262,14 +1265,14 @@ int imgui_main(int, char**)
                             ImPlot::PlotText(scaleString(scaleStr).c_str(), ((float*)rulerBuffer)[150 + 0], ((float*)rulerBuffer)[150 + 1], ImVec2(0.0f, 0.0f)); \
                             ImPlot::PopStyleColor();
 
-                            DRAW_RULER_PART(1.0f, 0.0f, 0.0f, alpha0.x, scale0.x * window->scale.x, scale0.x, 0);
-                            DRAW_RULER_PART(1.0f, 0.0f, 0.0f, alpha1.x, scale1.x* window->scale.x, scale1.x, 0);
+                            DRAW_RULER_PART(xAxisColor.x, xAxisColor.y, xAxisColor.z, alpha0.x, scale0.x * window->scale.x, scale0.x, 0);
+                            DRAW_RULER_PART(xAxisColor.x, xAxisColor.y, xAxisColor.z, alpha1.x, scale1.x* window->scale.x, scale1.x, 0);
 
-                            DRAW_RULER_PART(0.0f, 1.0f, 0.0f, alpha0.y, scale0.y* window->scale.y, scale0.y, 1);
-                            DRAW_RULER_PART(0.0f, 1.0f, 0.0f, alpha1.y, scale1.y* window->scale.y, scale1.y, 1);
+                            DRAW_RULER_PART(yAxisColor.x, yAxisColor.y, yAxisColor.z, alpha0.y, scale0.y* window->scale.y, scale0.y, 1);
+                            DRAW_RULER_PART(yAxisColor.x, yAxisColor.y, yAxisColor.z, alpha1.y, scale1.y* window->scale.y, scale1.y, 1);
 
-                            DRAW_RULER_PART(0.2f, 0.2f, 1.0f, alpha0.z, scale0.z * window->scale.z, scale0.z, 2);
-                            DRAW_RULER_PART(0.2f, 0.2f, 1.0f, alpha1.z, scale1.z * window->scale.z, scale1.z, 2);
+                            DRAW_RULER_PART(zAxisColor.x, zAxisColor.y, zAxisColor.z, alpha0.z, scale0.z * window->scale.z, scale0.z, 2);
+                            DRAW_RULER_PART(zAxisColor.x, zAxisColor.y, zAxisColor.z, alpha1.z, scale1.z * window->scale.z, scale1.z, 2);
                         }
 
                         // Grid

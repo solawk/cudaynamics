@@ -99,7 +99,7 @@ public:
 		step.clear();
 		max.clear();
 		stepCount.clear();
-		currentStep.clear();
+		//currentStep.clear();
 		currentValue.clear();
 	}
 
