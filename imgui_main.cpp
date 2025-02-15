@@ -746,7 +746,7 @@ int imgui_main(int, char**)
 
             ImGui::End();
 
-            // Ranging
+            // RANGING
 
             variation = 0;
             stride = 1;
@@ -778,6 +778,30 @@ int imgui_main(int, char**)
                     }
 
                     ImGui::Text(("Current variations: " + std::to_string(currentTotalVariations)).c_str());
+
+                    // Apply ranging configuration as fixed values
+                    if (ImGui::Button("Apply fixed values"))
+                    {
+                        for (int r = 0; r < rangingData[playedBufferIndex].rangingCount; r++)
+                        {
+                            bool isParam = false;
+                            int entityIndex = -1;
+                            rangingData[playedBufferIndex].getIndexOfVarOrParam(&isParam, &entityIndex, kernel::VAR_COUNT, kernel::PARAM_COUNT, &(kernel::VAR_NAMES[0]), &(kernel::PARAM_NAMES[0]), r);
+
+                            if (entityIndex == -1) continue;
+
+                            if (!isParam)
+                            {
+                                varNew.RANGING[entityIndex] = RangingType::None;
+                                varNew.MIN[entityIndex] = rangingData[playedBufferIndex].currentValue[r];
+                            }
+                            else
+                            {
+                                paramNew.RANGING[entityIndex] = RangingType::None;
+                                paramNew.MIN[entityIndex] = rangingData[playedBufferIndex].currentValue[r];
+                            }
+                        }
+                    }
 
                     ImGui::End();
                 }
@@ -1527,8 +1551,7 @@ int imgui_main(int, char**)
                     }
 
                     break;
-            }
-           
+            }          
 
             ImGui::End();
         }

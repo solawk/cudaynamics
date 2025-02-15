@@ -2075,7 +2075,8 @@ bool UpdateInput(ImPlotPlot& plot) {
         const bool x_can_change = !ImHasFlag(IO.KeyMods,gp.InputMap.SelectHorzMod) && ImFabs(d.x) > 2;
         const bool y_can_change = !ImHasFlag(IO.KeyMods,gp.InputMap.SelectVertMod) && ImFabs(d.y) > 2;
         // confirm
-        if (IO.MouseReleased[gp.InputMap.Select]) {
+        if (IO.MouseReleased[gp.InputMap.Select])
+        {
             for (int i = 0; i < IMPLOT_NUM_X_AXES; i++) {
                 ImPlotAxis& x_axis = plot.XAxis(i);
                 if (!x_axis.IsInputLocked() && x_can_change) {

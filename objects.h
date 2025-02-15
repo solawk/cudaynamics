@@ -112,6 +112,29 @@ public:
 
 		return -1;
 	}
+
+	void getIndexOfVarOrParam(bool* isParam, int* entityIndex, int varCount, int paramCount, const char** varNames, const char** paramNames, int rangingIndex)
+	{
+		for (int i = 0; i < varCount; i++)
+		{
+			if (string(varNames[i]) == names[rangingIndex])
+			{
+				*isParam = false;
+				*entityIndex = i;
+				return;
+			}
+		}
+
+		for (int i = 0; i < paramCount; i++)
+		{
+			if (string(paramNames[i]) == names[rangingIndex])
+			{
+				*isParam = true;
+				*entityIndex = i;
+				return;
+			}
+		}
+	}
 };
 
 struct PlotGraphSettings
