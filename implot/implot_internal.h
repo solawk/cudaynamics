@@ -1052,8 +1052,11 @@ struct ImPlotPlot
     float* deltay;
     bool isHeatmapSelectionModeOn;
 
-    bool doubleClicked;
-    ImVec2 doubleClickLocation;
+    bool shiftClicked;
+    bool shiftSelected;
+    ImVec2 shiftClickLocation;
+    ImVec2 shiftSelect1Location;
+    ImVec2 shiftSelect2Location;
 
     ImPlotPlot() {
         Flags             = PreviousFlags = ImPlotFlags_None;

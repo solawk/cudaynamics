@@ -35,6 +35,7 @@ public:
 	float rulerAlpha;
 	float gridAlpha;
 	bool whiteBg;
+	bool grayscaleHeatmap;
 	int stride;
 	bool isHeatmapSelectionModeOn;
 
@@ -67,6 +68,7 @@ public:
 		rulerAlpha = 0.5f;
 		gridAlpha = 0.15f;
 		whiteBg = false;
+		grayscaleHeatmap = false;
 		stride = 1;
 		isHeatmapSelectionModeOn = false;
 

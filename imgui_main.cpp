@@ -747,6 +747,15 @@ int imgui_main(int, char**)
             }
             if (playBreath) ImGui::PopStyleColor();
 
+            if (anyChanged)
+            {
+                if (ImGui::Button("Reset changed values"))
+                {
+                    LOAD_VARNEW;
+                    LOAD_PARAMNEW;
+                }
+            }
+
             ImGui::End();
 
             // RANGING
@@ -985,6 +994,9 @@ int imgui_main(int, char**)
                 bool tempWhiteBg = window->whiteBg; ImGui::SameLine(); if (ImGui::Checkbox(("##" + windowName + "whiteBG").c_str(), &tempWhiteBg)) window->whiteBg = !window->whiteBg;
                 ImGui::SameLine(); ImGui::Text("White background");
 
+                bool tempGrayscale = window->grayscaleHeatmap; ImGui::SameLine(); if (ImGui::Checkbox(("##" + windowName + "grayscale").c_str(), &tempGrayscale)) window->grayscaleHeatmap = !window->grayscaleHeatmap;
+                ImGui::SameLine(); ImGui::Text("Grayscale");
+
                 if (window->type == Phase || window->type == Series)
                 {
                     ImGui::DragFloat(("##" + windowName + "_markerSize").c_str(), &(window->markerSize), 0.1f);                             ImGui::SameLine(); ImGui::Text("Marker size");
@@ -1045,7 +1057,7 @@ int imgui_main(int, char**)
             ImPlotPlot* plot;
             bool is3d;
             int mapIndex;
-            ImPlotColormap heatmapColorMap = ImPlotColormap_Jet;
+            ImPlotColormap heatmapColorMap = !window->grayscaleHeatmap ? ImPlotColormap_Jet : ImPlotColormap_Greys;
             ImVec4 rotationEuler;
 
             switch (window->type)
@@ -1350,7 +1362,7 @@ int imgui_main(int, char**)
                     if (ImGui::BeginTable((plotName + "_table").c_str(), 2, ImGuiTableFlags_Reorderable, ImVec2(-1, 0)))
                     {
                         int heatStride = window->stride;
-                        if (autofitHeatmap) axisFlags |= ImPlotAxisFlags_AutoFit;
+                        //if (autofitHeatmap) axisFlags |= ImPlotAxisFlags_AutoFit;
 
                         ImGui::TableSetupColumn(nullptr);
                         ImGui::TableSetupColumn(nullptr, ImGuiTableColumnFlags_WidthFixed, 40.0f);
@@ -1375,14 +1387,6 @@ int imgui_main(int, char**)
                                 int xSize = kernel::MAP_DATA[mapIndex].xSize;
                                 int ySize = kernel::MAP_DATA[mapIndex].ySize;
 
-                                if (autofitHeatmap || toAutofit)
-                                {
-                                    plot->Axes[plot->CurrentX].Range.Min = 0;
-                                    plot->Axes[plot->CurrentY].Range.Min = 0;
-                                    plot->Axes[plot->CurrentX].Range.Max = xSize - 1;
-                                    plot->Axes[plot->CurrentY].Range.Max = ySize - 1;
-                                }
-
                                 ImVec4 plotRect = ImVec4((float)plot->Axes[plot->CurrentX].Range.Min, (float)plot->Axes[plot->CurrentY].Range.Min,
                                     (float)plot->Axes[plot->CurrentX].Range.Max, (float)plot->Axes[plot->CurrentY].Range.Max); // minX, minY, maxX, maxY
                                 //printf("%f %f %f %f\n", plotRect.x, plotRect.y, plotRect.z, plotRect.w);
@@ -1404,6 +1408,8 @@ int imgui_main(int, char**)
                                 float valueMinY;
                                 float valueMaxX;
                                 float valueMaxY;
+                                int stepCountX;
+                                int stepCountY;
 
                                 if (!window->showActualDiapasons)
                                 {
@@ -1416,8 +1422,8 @@ int imgui_main(int, char**)
                                 else
                                 {
                                     // Value diapasons
-                                    int stepCountX = calculateStepCount(valuesX, maxX, stepsX);
-                                    int stepCountY = calculateStepCount(valuesY, maxY, stepsY);
+                                    stepCountX = calculateStepCount(valuesX, maxX, stepsX);
+                                    stepCountY = calculateStepCount(valuesY, maxY, stepsY);
 
                                     cutoffMinX = stepFromValue(valuesX, stepsX, plotRect.x);    if (cutoffMinX < 0) cutoffMinX = 0;
                                     cutoffMinY = stepFromValue(valuesY, stepsY, plotRect.y);    if (cutoffMinY < 0) cutoffMinY = 0;
@@ -1435,8 +1441,18 @@ int imgui_main(int, char**)
                                 cutoffWidth = cutoffMaxX - cutoffMinX + 1;
                                 cutoffHeight = cutoffMaxY - cutoffMinY + 1;
 
+                                float heatmapX1 = window->showActualDiapasons ? valuesX : 0;
+                                float heatmapX2 = window->showActualDiapasons ? maxX + stepsX : xSize;
+                                float heatmapY1 = window->showActualDiapasons ? valuesY : 0;
+                                float heatmapY2 = window->showActualDiapasons ? maxY + stepsY : ySize;
+
+                                float heatmapX1Cutoff = window->showActualDiapasons ? valueMinX : cutoffMinX;
+                                float heatmapX2Cutoff = window->showActualDiapasons ? valueMaxX : cutoffMaxX + 1;
+                                float heatmapY1Cutoff = window->showActualDiapasons ? valueMaxY : cutoffMaxY + 1;
+                                float heatmapY2Cutoff = window->showActualDiapasons ? valueMinY : cutoffMinY;
+
                                 // Choosing configuration
-                                if (plot->doubleClicked && plot->doubleClickLocation.x > 0.0)
+                                if (plot->shiftClicked && plot->shiftClickLocation.x > 0.0)
                                 {
                                     int stepX = 0;
                                     int stepY = 0;
@@ -1444,14 +1460,14 @@ int imgui_main(int, char**)
                                     if (window->showActualDiapasons)
                                     {
                                         // Values
-                                        stepX = stepFromValue(valuesX, stepsX, plot->doubleClickLocation.x);
-                                        stepY = stepFromValue(valuesY, stepsY, plot->doubleClickLocation.y);
+                                        stepX = stepFromValue(valuesX, stepsX, plot->shiftClickLocation.x);
+                                        stepY = stepFromValue(valuesY, stepsY, plot->shiftClickLocation.y);
                                     }
                                     else
                                     {
                                         // Steps
-                                        stepX = (int)floor(plot->doubleClickLocation.x);
-                                        stepY = (int)floor(plot->doubleClickLocation.y);
+                                        stepX = (int)floor(plot->shiftClickLocation.x);
+                                        stepY = (int)floor(plot->shiftClickLocation.y);
                                     }
 
                                     enabledParticles = false;
@@ -1480,6 +1496,83 @@ int imgui_main(int, char**)
                                     }
                                 }
 
+                                // Selecting new ranging
+                                if (plot->shiftSelected)
+                                {
+                                    int stepX1 = 0;
+                                    int stepY1 = 0;
+                                    int stepX2 = 0;
+                                    int stepY2 = 0;
+
+                                    if (window->showActualDiapasons)
+                                    {
+                                        // Values
+                                        stepX1 = stepFromValue(valuesX, stepsX, plot->shiftSelect1Location.x);
+                                        stepY1 = stepFromValue(valuesY, stepsY, plot->shiftSelect1Location.y);
+                                        stepX2 = stepFromValue(valuesX, stepsX, plot->shiftSelect2Location.x);
+                                        stepY2 = stepFromValue(valuesY, stepsY, plot->shiftSelect2Location.y);
+                                    }
+                                    else
+                                    {
+                                        // Steps
+                                        stepX1 = (int)floor(plot->shiftSelect1Location.x);
+                                        stepY1 = (int)floor(plot->shiftSelect1Location.y);
+                                        stepX2 = (int)floor(plot->shiftSelect2Location.x);
+                                        stepY2 = (int)floor(plot->shiftSelect2Location.y);
+                                    }
+
+                                    enabledParticles = false;
+                                    playingParticles = false;
+
+                                    int rangingIndexX = rangingData[playedBufferIndex].indexOfRangingEntity(kernel::MAP_DATA[mapIndex].typeX == PARAMETER ? kernel::PARAM_NAMES[kernel::MAP_DATA[mapIndex].indexX] : kernel::MAP_DATA[mapIndex].typeX == VARIABLE ? kernel::VAR_NAMES[kernel::MAP_DATA[mapIndex].indexX] : "");
+                                    int rangingIndexY = rangingData[playedBufferIndex].indexOfRangingEntity(kernel::MAP_DATA[mapIndex].typeY == PARAMETER ? kernel::PARAM_NAMES[kernel::MAP_DATA[mapIndex].indexY] : kernel::MAP_DATA[mapIndex].typeY == VARIABLE ? kernel::VAR_NAMES[kernel::MAP_DATA[mapIndex].indexY] : "");
+
+                                    // If inside the heatmap
+                                    if (stepX1 >= 0 && stepX1 < rangingData[playedBufferIndex].stepCount[rangingIndexX] && stepY1 >= 0 && stepY1 < rangingData[playedBufferIndex].stepCount[rangingIndexY]
+                                        && stepX2 >= 0 && stepX2 < rangingData[playedBufferIndex].stepCount[rangingIndexX] && stepY2 >= 0 && stepY2 < rangingData[playedBufferIndex].stepCount[rangingIndexY])
+                                    {
+                                        //printf("%i:%i - %i:%i\n", stepX1, stepY1, stepX2, stepY2);
+
+                                        int indexX = kernel::MAP_DATA[mapIndex].indexX;
+                                        int indexY = kernel::MAP_DATA[mapIndex].indexY;
+
+                                        if (kernel::MAP_DATA[mapIndex].typeX == VARIABLE)
+                                        {
+                                            varNew.MIN[indexX] = calculateValue(kernel::VAR_VALUES[indexX], kernel::VAR_STEPS[indexX], stepX1);
+                                            varNew.MAX[indexX] = calculateValue(kernel::VAR_VALUES[indexX], kernel::VAR_STEPS[indexX], stepX2);
+                                            varNew.RANGING[indexX] = Linear;
+                                        }
+                                        else
+                                        {
+                                            paramNew.MIN[indexX] = calculateValue(kernel::PARAM_VALUES[indexX], kernel::PARAM_STEPS[indexX], stepX1);
+                                            paramNew.MAX[indexX] = calculateValue(kernel::PARAM_VALUES[indexX], kernel::PARAM_STEPS[indexX], stepX2);
+                                            paramNew.RANGING[indexX] = Linear;
+                                        }
+
+                                        if (kernel::MAP_DATA[mapIndex].typeY == VARIABLE)
+                                        {
+                                            varNew.MIN[indexY] = calculateValue(kernel::VAR_VALUES[indexY], kernel::VAR_STEPS[indexY], stepY1);
+                                            varNew.MAX[indexY] = calculateValue(kernel::VAR_VALUES[indexY], kernel::VAR_STEPS[indexY], stepY2);
+                                            varNew.RANGING[indexY] = Linear;
+                                        }
+                                        else
+                                        {
+                                            paramNew.MIN[indexY] = calculateValue(kernel::PARAM_VALUES[indexY], kernel::PARAM_STEPS[indexY], stepY1);
+                                            paramNew.MAX[indexY] = calculateValue(kernel::PARAM_VALUES[indexY], kernel::PARAM_STEPS[indexY], stepY2);
+                                            paramNew.RANGING[indexY] = Linear;
+                                        }
+                                    }
+                                }
+
+                                if (autofitHeatmap || toAutofit)
+                                {
+                                    plot->Axes[plot->CurrentX].Range.Min = heatmapX1;
+                                    plot->Axes[plot->CurrentX].Range.Max = heatmapX2;
+                                    plot->Axes[plot->CurrentY].Range.Min = heatmapY1;
+                                    plot->Axes[plot->CurrentY].Range.Max = heatmapY2;
+                                }
+
+                                // Actual drawing of the heatmap
                                 if (cutoffWidth > 0 && cutoffHeight > 0)
                                 {
                                     float* mapData = (float*)(mapBuffers[playedBufferIndex]) + kernel::MAP_DATA[mapIndex].offset;
@@ -1501,8 +1594,7 @@ int imgui_main(int, char**)
 
                                     ImPlot::PlotHeatmap((std::string(kernel::VAR_NAMES[mapIndex]) + "##" + plotName + std::to_string(0)).c_str(),
                                         (float*)compressedHeatmap, rows, cols, (double)min, (double)max, window->showHeatmapValues ? "%.3f" : nullptr,
-                                        ImPlotPoint(window->showActualDiapasons ? valueMinX : cutoffMinX, window->showActualDiapasons ? valueMaxY : cutoffMaxY + 1),
-                                        ImPlotPoint(window->showActualDiapasons ? valueMaxX : cutoffMaxX + 1, window->showActualDiapasons ? valueMinY : cutoffMinY)); // %3f
+                                        ImPlotPoint(heatmapX1Cutoff, heatmapY1Cutoff), ImPlotPoint(heatmapX2Cutoff, heatmapY2Cutoff)); // %3f
 
                                     delete[] cutoffHeatmap;
                                     delete[] compressedHeatmap;

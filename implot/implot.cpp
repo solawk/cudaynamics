@@ -1851,36 +1851,37 @@ bool UpdateInput(ImPlotPlot& plot) {
     ImGui::SetItemAllowOverlap(); // Handled by ButtonBehavior()
 #endif
 
-    plot.doubleClicked = false;
+    plot.shiftClicked = false;
 
-    if (plot_clicked) {
-        if (!ImHasFlag(plot.Flags, ImPlotFlags_NoBoxSelect) && IO.MouseClicked[gp.InputMap.Select] && ImHasFlag(IO.KeyMods, gp.InputMap.SelectMod)) {
-            plot.Selecting   = true;
+    if (plot_clicked)
+    {
+        if (ImGui::IsKeyDown(ImGuiKey_LeftShift) && IO.MouseClicked[gp.InputMap.Fit])
+        {
+            // Configuration click
+            plot.shiftClicked = true;
+
+            ImPlotAxis& x_axis = plot.XAxis(0);
+            double vx = x_axis.PixelsToPlot(IO.MousePos.x);
+            ImPlotAxis& y_axis = plot.YAxis(0);
+            double vy = y_axis.PixelsToPlot(IO.MousePos.y);
+
+            plot.shiftClickLocation = ImVec2((float)vx, (float)vy);
+        }
+        
+        if (!ImHasFlag(plot.Flags, ImPlotFlags_NoBoxSelect) && IO.MouseClicked[gp.InputMap.Select] && ImHasFlag(IO.KeyMods, gp.InputMap.SelectMod))
+        {
+            plot.Selecting = true;
             plot.SelectStart = IO.MousePos;
-            plot.SelectRect  = ImRect(0,0,0,0);
+            plot.SelectRect = ImRect(0, 0, 0, 0);
         }
 
         if (IO.MouseDoubleClicked[gp.InputMap.Fit])
         {
-            if (!plot.isHeatmapSelectionModeOn)
-            {
-                // Autofit
-                
-                plot.FitThisFrame = true;
-                for (int i = 0; i < ImAxis_COUNT; ++i)
-                    plot.Axes[i].FitThisFrame = true;
-            }
-            else
-            {
-                plot.doubleClicked = true;
+            // Autofit
 
-                ImPlotAxis& x_axis = plot.XAxis(0);
-                double vx = x_axis.PixelsToPlot(IO.MousePos.x);
-                ImPlotAxis& y_axis = plot.YAxis(0);
-                double vy = y_axis.PixelsToPlot(IO.MousePos.y);
-
-                plot.doubleClickLocation = ImVec2((float)vx, (float)vy);
-            }
+            plot.FitThisFrame = true;
+            for (int i = 0; i < ImAxis_COUNT; ++i)
+                plot.Axes[i].FitThisFrame = true;
         }
     }
 
@@ -1956,7 +1957,7 @@ bool UpdateInput(ImPlotPlot& plot) {
 
     // DRAG INPUT -------------------------------------------------------------
 
-    if (any_held && !plot.Selecting) {
+    if (any_held && !plot.Selecting && !ImGui::IsKeyDown(ImGuiKey_LeftShift)) {
         int drag_direction = 0;
         for (int i = 0; i < IMPLOT_NUM_X_AXES; i++) {
             ImPlotAxis& x_axis = plot.XAxis(i);
@@ -2070,10 +2071,12 @@ bool UpdateInput(ImPlotPlot& plot) {
 
     // BOX-SELECTION ----------------------------------------------------------
 
+    plot.shiftSelected = false;
+
     if (plot.Selecting) {
         const ImVec2 d = plot.SelectStart - IO.MousePos;
-        const bool x_can_change = !ImHasFlag(IO.KeyMods,gp.InputMap.SelectHorzMod) && ImFabs(d.x) > 2;
-        const bool y_can_change = !ImHasFlag(IO.KeyMods,gp.InputMap.SelectVertMod) && ImFabs(d.y) > 2;
+        const bool x_can_change = true;// !ImHasFlag(IO.KeyMods, gp.InputMap.SelectHorzMod) && ImFabs(d.x) > 2;
+        const bool y_can_change = true;// !ImHasFlag(IO.KeyMods, gp.InputMap.SelectVertMod) && ImFabs(d.y) > 2;
         // confirm
         if (IO.MouseReleased[gp.InputMap.Select])
         {
@@ -2082,8 +2085,19 @@ bool UpdateInput(ImPlotPlot& plot) {
                 if (!x_axis.IsInputLocked() && x_can_change) {
                     const double p1 = x_axis.PixelsToPlot(plot.SelectStart.x);
                     const double p2 = x_axis.PixelsToPlot(IO.MousePos.x);
-                    x_axis.SetMin(ImMin(p1, p2));
-                    x_axis.SetMax(ImMax(p1, p2));
+
+                    if (!ImGui::IsKeyDown(ImGuiKey_LeftShift))
+                    {
+                        x_axis.SetMin(ImMin(p1, p2));
+                        x_axis.SetMax(ImMax(p1, p2));
+                    }
+                    else
+                    {
+                        plot.shiftSelected = true;
+                        plot.shiftSelect1Location.x = (float)ImMin(p1, p2);
+                        plot.shiftSelect2Location.x = (float)ImMax(p1, p2);
+                    }
+
                     changed = true;
                 }
             }
@@ -2092,12 +2106,24 @@ bool UpdateInput(ImPlotPlot& plot) {
                 if (!y_axis.IsInputLocked() && y_can_change) {
                     const double p1 = y_axis.PixelsToPlot(plot.SelectStart.y);
                     const double p2 = y_axis.PixelsToPlot(IO.MousePos.y);
-                    y_axis.SetMin(ImMin(p1, p2));
-                    y_axis.SetMax(ImMax(p1, p2));
+
+                    if (!ImGui::IsKeyDown(ImGuiKey_LeftShift))
+                    {
+                        y_axis.SetMin(ImMin(p1, p2));
+                        y_axis.SetMax(ImMax(p1, p2));
+                    }
+                    else
+                    {
+                        plot.shiftSelected = true;
+                        plot.shiftSelect1Location.y = (float)ImMin(p1, p2);
+                        plot.shiftSelect2Location.y = (float)ImMax(p1, p2);
+                    }
+
                     changed = true;
                 }
             }
-            if (x_can_change || y_can_change || (ImHasFlag(IO.KeyMods,gp.InputMap.SelectHorzMod) && ImHasFlag(IO.KeyMods,gp.InputMap.SelectVertMod)))
+
+            if (x_can_change || y_can_change || (ImHasFlag(IO.KeyMods, gp.InputMap.SelectHorzMod) && ImHasFlag(IO.KeyMods, gp.InputMap.SelectVertMod)))
                 gp.OpenContextThisFrame = false;
             plot.Selected = plot.Selecting = false;
         }
@@ -2115,8 +2141,8 @@ bool UpdateInput(ImPlotPlot& plot) {
             }
             else {
                 // TODO: Handle only min or max locked cases
-                const bool full_width  = ImHasFlag(IO.KeyMods, gp.InputMap.SelectHorzMod) || AllAxesInputLocked(&plot.Axes[ImAxis_X1], IMPLOT_NUM_X_AXES);
-                const bool full_height = ImHasFlag(IO.KeyMods, gp.InputMap.SelectVertMod) || AllAxesInputLocked(&plot.Axes[ImAxis_Y1], IMPLOT_NUM_Y_AXES);
+                const bool full_width = false;// ImHasFlag(IO.KeyMods, gp.InputMap.SelectHorzMod) || AllAxesInputLocked(&plot.Axes[ImAxis_X1], IMPLOT_NUM_X_AXES);
+                const bool full_height = false;// ImHasFlag(IO.KeyMods, gp.InputMap.SelectVertMod) || AllAxesInputLocked(&plot.Axes[ImAxis_Y1], IMPLOT_NUM_Y_AXES);
                 plot.SelectRect.Min.x = full_width  ? plot.PlotRect.Min.x : ImMin(plot.SelectStart.x, IO.MousePos.x);
                 plot.SelectRect.Max.x = full_width  ? plot.PlotRect.Max.x : ImMax(plot.SelectStart.x, IO.MousePos.x);
                 plot.SelectRect.Min.y = full_height ? plot.PlotRect.Min.y : ImMin(plot.SelectStart.y, IO.MousePos.y);
