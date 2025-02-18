@@ -1957,7 +1957,7 @@ bool UpdateInput(ImPlotPlot& plot) {
 
     // DRAG INPUT -------------------------------------------------------------
 
-    if (any_held && !plot.Selecting && !ImGui::IsKeyDown(ImGuiKey_LeftShift)) {
+    if (any_held && !plot.Selecting && (!ImGui::IsKeyDown(ImGuiKey_LeftShift) || plot.is3d)) {
         int drag_direction = 0;
         for (int i = 0; i < IMPLOT_NUM_X_AXES; i++) {
             ImPlotAxis& x_axis = plot.XAxis(i);
@@ -1966,7 +1966,7 @@ bool UpdateInput(ImPlotPlot& plot) {
                 bool increasing = x_axis.IsInverted() ? IO.MouseDelta.x > 0 : IO.MouseDelta.x < 0;
                 if (IO.MouseDelta.x != 0 && !x_axis.IsPanLocked(increasing))
                 {
-                    if (plot.is3d)
+                    if (plot.is3d && !ImGui::IsKeyDown(ImGuiKey_LeftShift))
                     {
                         *plot.deltax -= -IO.MouseDelta.x;
                     }
@@ -1991,7 +1991,7 @@ bool UpdateInput(ImPlotPlot& plot) {
                 bool increasing = y_axis.IsInverted() ? IO.MouseDelta.y < 0 : IO.MouseDelta.y > 0;
                 if (IO.MouseDelta.y != 0 && !y_axis.IsPanLocked(increasing))
                 {
-                    if (plot.is3d)
+                    if (plot.is3d && !ImGui::IsKeyDown(ImGuiKey_LeftShift))
                     {
                         *plot.deltay -= -IO.MouseDelta.y;
                     }
