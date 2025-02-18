@@ -1203,7 +1203,9 @@ int imgui_main(int, char**)
                             if (is3d)
                                 rotateOffsetBuffer((float*)dataBuffer, computedSteps + 1, kernel::VAR_COUNT, window->variables[0], window->variables[1], window->variables[2],
                                     rotationEuler, window->offset, window->scale);
-                            
+
+                            getMinMax2D((float*)dataBuffer, computedSteps + 1, &(plot->dataMin), &(plot->dataMax));
+                            //printf("%f:%f %f:%f\n", plot->dataMin.x, plot->dataMin.y, plot->dataMax.x, plot->dataMax.y);
 
                             ImPlot::SetNextLineStyle(ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
                             ImPlot::PlotLine(plotName.c_str(), &(((float*)dataBuffer)[xIndex]), &(((float*)dataBuffer)[yIndex]), computedSteps + 1, 0, 0, sizeof(float) * kernel::VAR_COUNT);

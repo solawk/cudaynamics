@@ -3218,7 +3218,8 @@ void EndPlot() {
     {
         for (int i = 0; i < IMPLOT_NUM_X_AXES; i++) {
             ImPlotAxis& x_axis = plot.XAxis(i);
-            if (x_axis.FitThisFrame) {
+            if (x_axis.FitThisFrame)
+            {
                 x_axis.ApplyFit(gp.Style.FitPadding.x);
                 if (axis_equal && x_axis.OrthoAxis != nullptr) {
                     double aspect = x_axis.GetAspect();
@@ -3235,7 +3236,8 @@ void EndPlot() {
         }
         for (int i = 0; i < IMPLOT_NUM_Y_AXES; i++) {
             ImPlotAxis& y_axis = plot.YAxis(i);
-            if (y_axis.FitThisFrame) {
+            if (y_axis.FitThisFrame)
+            {
                 y_axis.ApplyFit(gp.Style.FitPadding.y);
                 if (axis_equal && y_axis.OrthoAxis != nullptr) {
                     double aspect = y_axis.GetAspect();
@@ -3254,13 +3256,27 @@ void EndPlot() {
 
         if (plot.is3d)
         {
-            float minRange = (float)plot.Axes[ImAxis_X1].Range.Min;
-            if ((float)plot.Axes[ImAxis_Y1].Range.Min < minRange) minRange = (float)plot.Axes[ImAxis_Y1].Range.Min;
-            float maxRange = (float)plot.Axes[ImAxis_X1].Range.Max;
-            if ((float)plot.Axes[ImAxis_Y1].Range.Max < maxRange) maxRange = (float)plot.Axes[ImAxis_Y1].Range.Max;
+            float rangeX = plot.dataMax.x - plot.dataMin.x;
+            float rangeY = plot.dataMax.y - plot.dataMin.y;
+            float deltaRange;
+            
+            if (rangeX > rangeY)
+            {
+                deltaRange = rangeX - rangeY;
+                plot.dataMax.y += deltaRange / 2.0f;
+                plot.dataMin.y -= deltaRange / 2.0f;
+            }
+            else
+            {
+                deltaRange = rangeY - rangeX;
+                plot.dataMax.x += deltaRange / 2.0f;
+                plot.dataMin.x -= deltaRange / 2.0f;
+            }
 
-            plot.Axes[ImAxis_X1].Range.Min = plot.Axes[ImAxis_Y1].Range.Min = minRange;
-            plot.Axes[ImAxis_X1].Range.Max = plot.Axes[ImAxis_Y1].Range.Max = maxRange;
+            plot.Axes[ImAxis_X1].Range.Min = plot.dataMin.x;
+            plot.Axes[ImAxis_Y1].Range.Min = plot.dataMin.y;
+            plot.Axes[ImAxis_X1].Range.Max = plot.dataMax.x;
+            plot.Axes[ImAxis_Y1].Range.Max = plot.dataMax.y;
         }
     }
 

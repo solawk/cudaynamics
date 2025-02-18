@@ -333,3 +333,26 @@ void getMinMax(float* data, int size, float* min, float* max)
 		if (data[i] > *max) *max = data[i];
 	}
 }
+
+void getMinMax2D(float* data, int size, ImVec2* min, ImVec2* max)
+{
+	(*min).x = data[0];
+	(*min).y = data[1];
+	(*max).x = data[0];
+	(*max).y = data[1];
+
+	int x, y;
+
+	for (int i = 1; i < size; i++)
+	{
+		x = i * 3;
+		y = i * 3 + 1;
+
+		if (isnan(data[x]) || isinf(data[x]) || isnan(data[y]) || isinf(data[y])) continue;
+
+		if (data[x] < (*min).x) (*min).x = data[x];
+		if (data[y] < (*min).y) (*min).y = data[y];
+		if (data[x] > (*max).x) (*max).x = data[x];
+		if (data[y] > (*max).y) (*max).y = data[y];
+	}
+}

@@ -29,3 +29,4 @@ void cutoff2D(float* data, float* dst, int width, int height, int minX, int minY
 void compress2D(float* data, float* dst, int width, int height, int stride);
 
 void getMinMax(float* data, int size, float* min, float* max);
+void getMinMax2D(float* data, int size, ImVec2* min, ImVec2* max);

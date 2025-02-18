@@ -1058,6 +1058,9 @@ struct ImPlotPlot
     ImVec2 shiftSelect1Location;
     ImVec2 shiftSelect2Location;
 
+    ImVec2 dataMin;
+    ImVec2 dataMax;
+
     ImPlotPlot() {
         Flags             = PreviousFlags = ImPlotFlags_None;
         for (int i = 0; i < IMPLOT_NUM_X_AXES; ++i)
