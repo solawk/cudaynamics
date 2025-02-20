@@ -56,7 +56,7 @@ std::string scaleString(float scale)
 	}
 }
 
-void populateAxisBuffer(float* buffer, float x, float y, float z)
+void populateAxisBuffer(numb* buffer, float x, float y, float z)
 {
 	for (int i = 0; i < 18; i++) buffer[i] = 0.0f;
 
@@ -70,26 +70,26 @@ void populateAxisBuffer(float* buffer, float x, float y, float z)
 	buffer[17] = -z * 0.5f;
 }
 
-void rotateOffsetBuffer2(float* buffer, int pointCount, int varCount, int xdo, int ydo, int zdo, float pitch, float yaw, ImVec4 offset, ImVec4 scale)
+void rotateOffsetBuffer2(numb* buffer, int pointCount, int varCount, int xdo, int ydo, int zdo, float pitch, float yaw, ImVec4 offset, ImVec4 scale)
 {
 	float x, y, z, zt;
 
 	for (int i = 0; i < pointCount; i++)
 	{
-		x = ((float*)buffer)[i * varCount + xdo] * scale.x + offset.x;
-		y = ((float*)buffer)[i * varCount + ydo] * scale.y + offset.y;
-		z = ((float*)buffer)[i * varCount + zdo] * scale.z + offset.z;
+		x = ((numb*)buffer)[i * varCount + xdo] * scale.x + offset.x;
+		y = ((numb*)buffer)[i * varCount + ydo] * scale.y + offset.y;
+		z = ((numb*)buffer)[i * varCount + zdo] * scale.z + offset.z;
 
-		((float*)buffer)[i * varCount + 1] = y * cosf(-pitch * DEG2RAD) - z * sinf(-pitch * DEG2RAD);
-		((float*)buffer)[i * varCount + 2] = zt = y * sinf(-pitch * DEG2RAD) + z * cosf(-pitch * DEG2RAD);
+		((numb*)buffer)[i * varCount + 1] = y * cosf(-pitch * DEG2RAD) - z * sinf(-pitch * DEG2RAD);
+		((numb*)buffer)[i * varCount + 2] = zt = y * sinf(-pitch * DEG2RAD) + z * cosf(-pitch * DEG2RAD);
 
-		((float*)buffer)[i * varCount + 0] = x * cosf(yaw * DEG2RAD) + zt * sinf(yaw * DEG2RAD);
+		((numb*)buffer)[i * varCount + 0] = x * cosf(yaw * DEG2RAD) + zt * sinf(yaw * DEG2RAD);
 	}
 }
 
-void rotateOffsetBuffer(float* buffer, int pointCount, int varCount, int xdo, int ydo, int zdo, ImVec4 rotation, ImVec4 offset, ImVec4 scale)
+void rotateOffsetBuffer(numb* buffer, int pointCount, int varCount, int xdo, int ydo, int zdo, ImVec4 rotation, ImVec4 offset, ImVec4 scale)
 {
-	float x, y, z;
+	numb x, y, z;
 
 	float alpha = rotation.x; // yaw
 	float beta = rotation.y; // pitch
@@ -105,17 +105,17 @@ void rotateOffsetBuffer(float* buffer, int pointCount, int varCount, int xdo, in
 
 	for (int i = 0; i < pointCount; i++)
 	{
-		x = ((float*)buffer)[i * varCount + xdo] * scale.x + offset.x;
-		y = ((float*)buffer)[i * varCount + ydo] * scale.y + offset.y;
-		z = ((float*)buffer)[i * varCount + zdo] * scale.z + offset.z;
+		x = ((numb*)buffer)[i * varCount + xdo] * scale.x + offset.x;
+		y = ((numb*)buffer)[i * varCount + ydo] * scale.y + offset.y;
+		z = ((numb*)buffer)[i * varCount + zdo] * scale.z + offset.z;
 
-		((float*)buffer)[i * varCount + 0] = (x * bc * gc) + (y * (as * bs * gc - (ac * gs))) + (z * (ac * bs * gc + as * gs));
-		((float*)buffer)[i * varCount + 1] = (x * bc * gs) + (y * (as * bs * gs + (ac * gc))) + (z * (ac * bs * gs - as * gc));
-		((float*)buffer)[i * varCount + 2] = (x * -bs) + (y * (as * bc)) + (z * (ac * bc));
+		((numb*)buffer)[i * varCount + 0] = (x * bc * gc) + (y * (as * bs * gc - (ac * gs))) + (z * (ac * bs * gc + as * gs));
+		((numb*)buffer)[i * varCount + 1] = (x * bc * gs) + (y * (as * bs * gs + (ac * gc))) + (z * (ac * bs * gs - as * gc));
+		((numb*)buffer)[i * varCount + 2] = (x * -bs) + (y * (as * bc)) + (z * (ac * bc));
 	}
 }
 
-void populateRulerBuffer(float* buffer, float s, int dim)
+void populateRulerBuffer(numb* buffer, float s, int dim)
 {
 	for (int i = 0; i < (51*3); i++) buffer[i] = 0.0f;
 
@@ -174,7 +174,7 @@ void populateRulerBuffer(float* buffer, float s, int dim)
 	}
 }
 
-void populateGridBuffer(float* buffer) // One axis of a grid
+void populateGridBuffer(numb* buffer) // One axis of a grid
 {
 	// 10 ticks per axis, 4+1=5 vertices per tick, 3 coordinates per vertex, 2 directions
 	//for (int i = 0; i < 10*5*3*2; i++) buffer[i] = 0;
@@ -232,7 +232,7 @@ void populateGridBuffer(float* buffer) // One axis of a grid
 	}
 }
 
-void gridX2Y(float* buffer)
+void gridX2Y(numb* buffer)
 {
 	for (int i = 0; i < 10 * 5 * 2; i++)
 	{
@@ -242,7 +242,7 @@ void gridX2Y(float* buffer)
 	}
 }
 
-void gridY2Z(float* buffer)
+void gridY2Z(numb* buffer)
 {
 	for (int i = 0; i < 10 * 5 * 2; i++)
 	{
@@ -276,11 +276,11 @@ ImVec4 ToEulerAngles(ImVec4 q)
 
 // Cut everything that is outside the cutoff rectangle (minX, minY, maxX, maxY)
 // The rectangle is inclusive
-void cutoff2D(float* data, float* dst, int width, int height, int minX, int minY, int maxX, int maxY)
+void cutoff2D(numb* data, numb* dst, int width, int height, int minX, int minY, int maxX, int maxY)
 {
 	if (minX == 0 && minY == 0 && maxX == (width - 1) && maxY == (height - 1))
 	{
-		memcpy(dst, data, width * height * sizeof(float));
+		memcpy(dst, data, width * height * sizeof(numb));
 		return;
 	}
 
@@ -292,11 +292,11 @@ void cutoff2D(float* data, float* dst, int width, int height, int minX, int minY
 			dst[y * newWidthInclusive + x] = data[(minY + y) * width + minX + x];
 }
 
-void compress2D(float* data, float* dst, int width, int height, int stride)
+void compress2D(numb* data, numb* dst, int width, int height, int stride)
 {
 	if (stride == 1)
 	{
-		memcpy(dst, data, width * height * sizeof(float));
+		memcpy(dst, data, width * height * sizeof(numb));
 		return;
 	}
 
@@ -320,7 +320,7 @@ void compress2D(float* data, float* dst, int width, int height, int stride)
 		}
 }
 
-void getMinMax(float* data, int size, float* min, float* max)
+void getMinMax(numb* data, int size, numb* min, numb* max)
 {
 	*min = data[0];
 	*max = data[0];
@@ -334,7 +334,7 @@ void getMinMax(float* data, int size, float* min, float* max)
 	}
 }
 
-void getMinMax2D(float* data, int size, ImVec2* min, ImVec2* max)
+void getMinMax2D(numb* data, int size, ImVec2* min, ImVec2* max)
 {
 	(*min).x = data[0];
 	(*min).y = data[1];

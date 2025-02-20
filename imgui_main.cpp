@@ -21,18 +21,18 @@ int playedBufferIndex = 0; // Buffer currently shown
 int bufferToFillIndex = 0; // Buffer to send computations to
 void* mapBuffers[2] = { nullptr, nullptr };
 
-InputValuesBuffer<float> varNew;
+InputValuesBuffer<numb> varNew;
 bool autoLoadNewParams = false;
-InputValuesBuffer<float> paramNew;
+InputValuesBuffer<numb> paramNew;
 int stepsNew = 0;
 
 void* dataBuffer = nullptr; // One variation local buffer
 void* particleBuffer = nullptr; // One step local buffer
-float* valuesOverride = nullptr; // For transferring end variable values to the next buffer
+numb* valuesOverride = nullptr; // For transferring end variable values to the next buffer
 
-void* axisBuffer = new float[3 * 2 * 3] {}; // 3 axis, 2 points
-void* rulerBuffer = new float[51 * 3] {}; // 1 axis, 5 * 10 + 1 points
-void* gridBuffer = new float[10 * 5 * 3 * 2] {};
+void* axisBuffer = new numb[3 * 2 * 3] {}; // 3 axis, 2 points
+void* rulerBuffer = new numb[51 * 3] {}; // 1 axis, 5 * 10 + 1 points
+void* gridBuffer = new numb[10 * 5 * 3 * 2] {};
 
 int computedSteps = 0; // Step count for the current computation
 bool autofitAfterComputing = false; // Temporary flag to autofit computed data
@@ -119,16 +119,16 @@ void deleteBothBuffers()
 void resetOverrideBuffer(int totalVariations)
 {
     if (valuesOverride) delete[] valuesOverride;
-    valuesOverride = new float[kernel::VAR_COUNT * totalVariations];
+    valuesOverride = new numb[kernel::VAR_COUNT * totalVariations];
 }
 
 void resetTempBuffers(int totalVariations)
 {
     if (dataBuffer) delete[] dataBuffer;
-    dataBuffer = new float[(computedSteps + 1) * kernel::VAR_COUNT];
+    dataBuffer = new numb[(computedSteps + 1) * kernel::VAR_COUNT];
 
     if (particleBuffer) delete[] particleBuffer;
-    particleBuffer = new float[totalVariations * kernel::VAR_COUNT];
+    particleBuffer = new numb[totalVariations * kernel::VAR_COUNT];
 }
 
 void computing();
@@ -142,7 +142,7 @@ int asyncComputation(void** dest, PostRanging* rangingData)
 
     //printf("is first batch %i, total variations %i\n", isFirstBatch, rangingData->totalVariations);
 
-    int computationResult = compute(dest, &(mapBuffers[bufferToFillIndex]), isFirstBatch ? nullptr : (float*)(computedData[1 - bufferToFillIndex]), rangingData);
+    int computationResult = compute(dest, &(mapBuffers[bufferToFillIndex]), isFirstBatch ? nullptr : (numb*)(computedData[1 - bufferToFillIndex]), rangingData);
 
     computedSteps = kernel::steps;
 
@@ -380,7 +380,9 @@ int imgui_main(int, char**)
                     PUSH_UNSAVED_FRAME;
                     popStyle = true;
                 }
-                ImGui::DragFloat(("##" + std::string(kernel::VAR_NAMES[i])).c_str(), &(varNew.MIN[i]), dragChangeSpeed, 0.0f, 0.0f, "%f", dragFlag);
+                float varNewMin = (float)varNew.MIN[i];
+                ImGui::DragFloat(("##" + std::string(kernel::VAR_NAMES[i])).c_str(), &varNewMin, dragChangeSpeed, 0.0f, 0.0f, "%f", dragFlag);
+                varNew.MIN[i] = (double)varNewMin;
                 if (popStyle) POP_FRAME(3);
                 ImGui::PopItemWidth();
 
@@ -396,7 +398,9 @@ int imgui_main(int, char**)
                         PUSH_UNSAVED_FRAME;
                         popStyle = true;
                     }
-                    ImGui::DragFloat(("##STEP_" + std::string(kernel::VAR_NAMES[i])).c_str(), &(varNew.STEP[i]), dragChangeSpeed, 0.0f, 0.0f, "%f", dragFlag);
+                    float varNewStep = (float)varNew.STEP[i];
+                    ImGui::DragFloat(("##STEP_" + std::string(kernel::VAR_NAMES[i])).c_str(), &varNewStep, dragChangeSpeed, 0.0f, 0.0f, "%f", dragFlag);
+                    varNew.STEP[i] = (double)varNewStep;
                     if (popStyle) POP_FRAME(3);
 
                     // Max
@@ -407,7 +411,9 @@ int imgui_main(int, char**)
                         PUSH_UNSAVED_FRAME;
                         popStyle = true;
                     }
-                    ImGui::DragFloat(("##MAX_" + std::string(kernel::VAR_NAMES[i])).c_str(), &(varNew.MAX[i]), dragChangeSpeed, 0.0f, 0.0f, "%f", dragFlag);
+                    float varNewMax = (float)varNew.MAX[i];
+                    ImGui::DragFloat(("##MAX_" + std::string(kernel::VAR_NAMES[i])).c_str(), &varNewMax, dragChangeSpeed, 0.0f, 0.0f, "%f", dragFlag);
+                    varNew.MAX[i] = (double)varNewMax;
                     if (popStyle) POP_FRAME(3);
                     ImGui::PopItemWidth();
 
@@ -485,7 +491,9 @@ int imgui_main(int, char**)
                     PUSH_UNSAVED_FRAME;
                     popStyle = true;
                 }
-                ImGui::DragFloat(("##" + std::string(kernel::PARAM_NAMES[i])).c_str(), &(paramNew.MIN[i]), dragChangeSpeed, 0.0f, 0.0f, "%f", changeAllowed ? 0 : ImGuiSliderFlags_ReadOnly);
+                float paramNewMin = (float)paramNew.MIN[i];
+                ImGui::DragFloat(("##" + std::string(kernel::PARAM_NAMES[i])).c_str(), &paramNewMin, dragChangeSpeed, 0.0f, 0.0f, "%f", changeAllowed ? 0 : ImGuiSliderFlags_ReadOnly);
+                paramNew.MIN[i] = (double)paramNewMin;
                 if (popStyle) POP_FRAME(3);
                 ImGui::PopItemWidth();
 
@@ -501,7 +509,9 @@ int imgui_main(int, char**)
                         PUSH_UNSAVED_FRAME;
                         popStyle = true;
                     }
-                    ImGui::DragFloat(("##STEP_" + std::string(kernel::PARAM_NAMES[i])).c_str(), &(paramNew.STEP[i]), dragChangeSpeed, 0.0f, 0.0f, "%f", changeAllowed ? 0 : ImGuiSliderFlags_ReadOnly);
+                    float paramNewStep = (float)paramNew.STEP[i];
+                    ImGui::DragFloat(("##STEP_" + std::string(kernel::PARAM_NAMES[i])).c_str(), &paramNewStep, dragChangeSpeed, 0.0f, 0.0f, "%f", changeAllowed ? 0 : ImGuiSliderFlags_ReadOnly);
+                    paramNew.STEP[i] = (double)paramNewStep;
                     if (popStyle) POP_FRAME(3);
 
                     // Max
@@ -512,7 +522,9 @@ int imgui_main(int, char**)
                         PUSH_UNSAVED_FRAME;
                         popStyle = true;
                     }
-                    ImGui::DragFloat(("##MAX_" + std::string(kernel::PARAM_NAMES[i])).c_str(), &(paramNew.MAX[i]), dragChangeSpeed, 0.0f, 0.0f, "%f", changeAllowed ? 0 : ImGuiSliderFlags_ReadOnly);
+                    float paramNewMax = (float)paramNew.MAX[i];
+                    ImGui::DragFloat(("##MAX_" + std::string(kernel::PARAM_NAMES[i])).c_str(), &paramNewMax, dragChangeSpeed, 0.0f, 0.0f, "%f", changeAllowed ? 0 : ImGuiSliderFlags_ReadOnly);
+                    paramNew.MAX[i] = (double)paramNewMax;
                     if (popStyle) POP_FRAME(3);
                     ImGui::PopItemWidth();
                 }
@@ -586,8 +598,8 @@ int imgui_main(int, char**)
             unsigned long long varCountLL = kernel::VAR_COUNT;
             unsigned long long stepsNewLL = stepsNew + 1;
             unsigned long long singleBufferNumberCount = ((tempTotalVariationsLL * varCountLL) * stepsNewLL);
-            unsigned long long singleBufferFloatSize = singleBufferNumberCount * sizeof(float);
-            ImGui::Text(("Single buffer size: " + memoryString(singleBufferFloatSize) + " (" + to_string(singleBufferFloatSize) + " bytes)").c_str());
+            unsigned long long singleBufferNumbSize = singleBufferNumberCount * sizeof(numb);
+            ImGui::Text(("Single buffer size: " + memoryString(singleBufferNumbSize) + " (" + to_string(singleBufferNumbSize) + " bytes)").c_str());
 
             ImGui::PushItemWidth(200.0f);
             if (playingParticles)
@@ -611,7 +623,9 @@ int imgui_main(int, char**)
                 ImGui::PopStyleColor();
                 ImGui::PopStyleColor();
             }
-            ImGui::InputFloat("Step size", &(kernel::stepSize), 0.0f, 0.0f, "%f");
+            float tempStepSize = (float)kernel::stepSize;
+            ImGui::InputFloat("Step size", &tempStepSize, 0.0f, 0.0f, "%f");
+            kernel::stepSize = (double)tempStepSize;
             ImGui::PopItemWidth();
             
             bool tempEnabledParticles = enabledParticles;
@@ -779,7 +793,7 @@ int imgui_main(int, char**)
 
                     for (int r = 0; r < rangingData[playedBufferIndex].rangingCount; r++)
                     {
-                        float currentValue = calculateValue(rangingData[playedBufferIndex].min[r], rangingData[playedBufferIndex].step[r], rangingData[playedBufferIndex].currentStep[r]);
+                        numb currentValue = calculateValue(rangingData[playedBufferIndex].min[r], rangingData[playedBufferIndex].step[r], rangingData[playedBufferIndex].currentStep[r]);
                         rangingData[playedBufferIndex].currentValue[r] = currentValue;
 
                         ImGui::PushItemWidth(150.0f);
@@ -1076,8 +1090,8 @@ int imgui_main(int, char**)
                     {
                         int variationSize = kernel::VAR_COUNT * (computedSteps + 1);
 
-                        void* computedVariation = (float*)(computedData[playedBufferIndex]) + (variationSize * variation);
-                        memcpy(dataBuffer, computedVariation, variationSize * sizeof(float));
+                        void* computedVariation = (numb*)(computedData[playedBufferIndex]) + (variationSize * variation);
+                        memcpy(dataBuffer, computedVariation, variationSize * sizeof(numb));
 
                         //void PlotLine(const char* label_id, const T* values, int count, double xscale, double x0, ImPlotLineFlags flags, int offset, int stride)
 
@@ -1085,7 +1099,7 @@ int imgui_main(int, char**)
                         {
                             //ImPlot::SetNextLineStyle(ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
                             ImPlot::PlotLine((std::string(kernel::VAR_NAMES[window->variables[v]]) + "##" + plotName + std::to_string(v)).c_str(),
-                                &(((float*)dataBuffer)[window->variables[v]]), computedSteps + 1, 1.0f, 0.0f, ImPlotLineFlags_None, 0, sizeof(float) * kernel::VAR_COUNT);
+                                &(((numb*)dataBuffer)[window->variables[v]]), computedSteps + 1, 1.0f, 0.0f, ImPlotLineFlags_None, 0, sizeof(numb) * kernel::VAR_COUNT);
                         }
                     }
 
@@ -1186,10 +1200,10 @@ int imgui_main(int, char**)
                     {
                         int variationSize = kernel::VAR_COUNT * (computedSteps + 1);
 
-                        populateAxisBuffer((float*)axisBuffer, plotRangeSize / 10, plotRangeSize / 10, plotRangeSize / 10);
+                        populateAxisBuffer((numb*)axisBuffer, plotRangeSize / 10, plotRangeSize / 10, plotRangeSize / 10);
                         if (is3d)
                         {
-                            rotateOffsetBuffer((float*)axisBuffer, 6, 3, 0, 1, 2, rotationEuler, ImVec4(0, 0, 0, 0), ImVec4(1, 1, 1, 0));
+                            rotateOffsetBuffer((numb*)axisBuffer, 6, 3, 0, 1, 2, rotationEuler, ImVec4(0, 0, 0, 0), ImVec4(1, 1, 1, 0));
                         }
 
                         int xIndex = is3d ? 0 : window->variables[0];
@@ -1197,18 +1211,18 @@ int imgui_main(int, char**)
 
                         if (!enabledParticles) // Trajectory - one variation, all steps
                         {
-                            void* computedVariation = (float*)(computedData[playedBufferIndex]) + (variationSize * variation);
-                            memcpy(dataBuffer, computedVariation, variationSize * sizeof(float));
+                            void* computedVariation = (numb*)(computedData[playedBufferIndex]) + (variationSize * variation);
+                            memcpy(dataBuffer, computedVariation, variationSize * sizeof(numb));
 
                             if (is3d)
-                                rotateOffsetBuffer((float*)dataBuffer, computedSteps + 1, kernel::VAR_COUNT, window->variables[0], window->variables[1], window->variables[2],
+                                rotateOffsetBuffer((numb*)dataBuffer, computedSteps + 1, kernel::VAR_COUNT, window->variables[0], window->variables[1], window->variables[2],
                                     rotationEuler, window->offset, window->scale);
 
-                            getMinMax2D((float*)dataBuffer, computedSteps + 1, &(plot->dataMin), &(plot->dataMax));
+                            getMinMax2D((numb*)dataBuffer, computedSteps + 1, &(plot->dataMin), &(plot->dataMax));
                             //printf("%f:%f %f:%f\n", plot->dataMin.x, plot->dataMin.y, plot->dataMax.x, plot->dataMax.y);
 
                             ImPlot::SetNextLineStyle(ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
-                            ImPlot::PlotLine(plotName.c_str(), &(((float*)dataBuffer)[xIndex]), &(((float*)dataBuffer)[yIndex]), computedSteps + 1, 0, 0, sizeof(float) * kernel::VAR_COUNT);
+                            ImPlot::PlotLine(plotName.c_str(), &(((numb*)dataBuffer)[xIndex]), &(((numb*)dataBuffer)[yIndex]), computedSteps + 1, 0, 0, sizeof(numb) * kernel::VAR_COUNT);
                         }
                         else // Particles - all variations, one certain step
                         {
@@ -1217,32 +1231,32 @@ int imgui_main(int, char**)
                             for (int v = 0; v < rangingData[playedBufferIndex].totalVariations; v++)
                             {
                                 for (int var = 0; var < kernel::VAR_COUNT; var++)
-                                    ((float*)particleBuffer)[v * kernel::VAR_COUNT + var] = ((float*)(computedData[playedBufferIndex]))[(variationSize * v) + (kernel::VAR_COUNT * particleStep) + var];
+                                    ((numb*)particleBuffer)[v * kernel::VAR_COUNT + var] = ((numb*)(computedData[playedBufferIndex]))[(variationSize * v) + (kernel::VAR_COUNT * particleStep) + var];
                             }
 
                             if (is3d)
-                                rotateOffsetBuffer((float*)particleBuffer, rangingData[playedBufferIndex].totalVariations, kernel::VAR_COUNT, window->variables[0], window->variables[1], window->variables[2],
+                                rotateOffsetBuffer((numb*)particleBuffer, rangingData[playedBufferIndex].totalVariations, kernel::VAR_COUNT, window->variables[0], window->variables[1], window->variables[2],
                                     rotationEuler, window->offset, window->scale);
 
                             ImPlot::SetNextLineStyle(window->markerColor);
                             ImPlot::PushStyleVar(ImPlotStyleVar_MarkerWeight, window->markerOutlineSize);
                             //ImPlot::PushStyleVar(ImPlotStyleVar_FillAlpha, 0.25f);
                             ImPlot::SetNextMarkerStyle(window->markerShape, window->markerSize);
-                            ImPlot::PlotScatter(plotName.c_str(), &(((float*)particleBuffer)[xIndex]), &(((float*)particleBuffer)[yIndex]), rangingData[playedBufferIndex].totalVariations, 0, 0, sizeof(float) * kernel::VAR_COUNT);
+                            ImPlot::PlotScatter(plotName.c_str(), &(((numb*)particleBuffer)[xIndex]), &(((numb*)particleBuffer)[yIndex]), rangingData[playedBufferIndex].totalVariations, 0, 0, sizeof(numb) * kernel::VAR_COUNT);
                         }
 
                         // Axis
                         if (window->showAxis)
                         {
                             ImPlot::SetNextLineStyle(xAxisColor);
-                            ImPlot::PlotLine(plotName.c_str(), &(((float*)axisBuffer)[0]), &(((float*)axisBuffer)[1]), 2, 0, 0, sizeof(float) * 3);
+                            ImPlot::PlotLine(plotName.c_str(), &(((numb*)axisBuffer)[0]), &(((numb*)axisBuffer)[1]), 2, 0, 0, sizeof(numb) * 3);
                             ImPlot::SetNextLineStyle(yAxisColor);
-                            ImPlot::PlotLine(plotName.c_str(), &(((float*)axisBuffer)[6]), &(((float*)axisBuffer)[7]), 2, 0, 0, sizeof(float) * 3);
+                            ImPlot::PlotLine(plotName.c_str(), &(((numb*)axisBuffer)[6]), &(((numb*)axisBuffer)[7]), 2, 0, 0, sizeof(numb) * 3);
 
                             if (is3d)
                             {
                                 ImPlot::SetNextLineStyle(zAxisColor);
-                                ImPlot::PlotLine(plotName.c_str(), &(((float*)axisBuffer)[12]), &(((float*)axisBuffer)[13]), 2, 0, 0, sizeof(float) * 3);
+                                ImPlot::PlotLine(plotName.c_str(), &(((numb*)axisBuffer)[12]), &(((numb*)axisBuffer)[13]), 2, 0, 0, sizeof(numb) * 3);
                             }
                         }
 
@@ -1250,16 +1264,16 @@ int imgui_main(int, char**)
                         if (window->showAxisNames)
                         {
                             ImPlot::PushStyleColor(ImPlotCol_InlayText, xAxisColor);
-                            ImPlot::PlotText(kernel::VAR_NAMES[window->variables[0]], ((float*)axisBuffer)[0], ((float*)axisBuffer)[1], ImVec2(0.0f, 0.0f));
+                            ImPlot::PlotText(kernel::VAR_NAMES[window->variables[0]], ((numb*)axisBuffer)[0], ((numb*)axisBuffer)[1], ImVec2(0.0f, 0.0f));
                             ImPlot::PopStyleColor();
                             ImPlot::PushStyleColor(ImPlotCol_InlayText, yAxisColor);
-                            ImPlot::PlotText(kernel::VAR_NAMES[window->variables[1]], ((float*)axisBuffer)[6], ((float*)axisBuffer)[7], ImVec2(0.0f, 0.0f));
+                            ImPlot::PlotText(kernel::VAR_NAMES[window->variables[1]], ((numb*)axisBuffer)[6], ((numb*)axisBuffer)[7], ImVec2(0.0f, 0.0f));
                             ImPlot::PopStyleColor();
 
                             if (is3d)
                             {
                                 ImPlot::PushStyleColor(ImPlotCol_InlayText, zAxisColor);
-                                ImPlot::PlotText(kernel::VAR_NAMES[window->variables[2]], ((float*)axisBuffer)[12], ((float*)axisBuffer)[13], ImVec2(0.0f, 0.0f));
+                                ImPlot::PlotText(kernel::VAR_NAMES[window->variables[2]], ((numb*)axisBuffer)[12], ((numb*)axisBuffer)[13], ImVec2(0.0f, 0.0f));
                                 ImPlot::PopStyleColor();
                             }
                         }
@@ -1277,12 +1291,12 @@ int imgui_main(int, char**)
                             ImVec4 alpha1(scaleInterp.x * window->rulerAlpha, scaleInterp.y * window->rulerAlpha, scaleInterp.z * window->rulerAlpha, 0);
 
 #define DRAW_RULER_PART(colorR, colorG, colorB, alpha, scale, scaleStr, dim) ImPlot::SetNextLineStyle(ImVec4(colorR, colorG, colorB, alpha)); \
-                            populateRulerBuffer((float*)rulerBuffer, scale, dim); \
-                            rotateOffsetBuffer((float*)rulerBuffer, 51, 3, 0, 1, 2, rotationEuler, \
+                            populateRulerBuffer((numb*)rulerBuffer, scale, dim); \
+                            rotateOffsetBuffer((numb*)rulerBuffer, 51, 3, 0, 1, 2, rotationEuler, \
                                 ImVec4(0, 0, 0, 0), ImVec4(scale, scale, scale, 0)); \
-                            ImPlot::PlotLine(plotName.c_str(), &(((float*)rulerBuffer)[0]), &(((float*)rulerBuffer)[1]), 51, 0, 0, sizeof(float) * 3); \
+                            ImPlot::PlotLine(plotName.c_str(), &(((numb*)rulerBuffer)[0]), &(((numb*)rulerBuffer)[1]), 51, 0, 0, sizeof(numb) * 3); \
                             ImPlot::PushStyleColor(ImPlotCol_InlayText, ImVec4(colorR, colorG, colorB, alpha)); \
-                            ImPlot::PlotText(scaleString(scaleStr).c_str(), ((float*)rulerBuffer)[150 + 0], ((float*)rulerBuffer)[150 + 1], ImVec2(0.0f, 0.0f)); \
+                            ImPlot::PlotText(scaleString(scaleStr).c_str(), ((numb*)rulerBuffer)[150 + 0], ((numb*)rulerBuffer)[150 + 1], ImVec2(0.0f, 0.0f)); \
                             ImPlot::PopStyleColor();
 
                             DRAW_RULER_PART(xAxisColor.x, xAxisColor.y, xAxisColor.z, alpha0.x, scale0.x * window->scale.x, scale0.x, 0);
@@ -1370,8 +1384,8 @@ int imgui_main(int, char**)
                         ImGui::TableSetupColumn(nullptr, ImGuiTableColumnFlags_WidthFixed, 40.0f);
                         ImGui::TableNextRow();
 
-                        float min = 0.0f;
-                        float max = 0.0f;
+                        numb min = 0.0f;
+                        numb max = 0.0f;
 
                         ImGui::TableSetColumnIndex(0);
 
@@ -1393,12 +1407,12 @@ int imgui_main(int, char**)
                                     (float)plot->Axes[plot->CurrentX].Range.Max, (float)plot->Axes[plot->CurrentY].Range.Max); // minX, minY, maxX, maxY
                                 //printf("%f %f %f %f\n", plotRect.x, plotRect.y, plotRect.z, plotRect.w);
 
-                                float valuesX = kernel::MAP_DATA[mapIndex].typeX == PARAMETER ? kernel::PARAM_VALUES[kernel::MAP_DATA[mapIndex].indexX] : kernel::MAP_DATA[mapIndex].typeX == VARIABLE ? kernel::VAR_VALUES[kernel::MAP_DATA[mapIndex].indexX] : 0;
-                                float valuesY = kernel::MAP_DATA[mapIndex].typeY == PARAMETER ? kernel::PARAM_VALUES[kernel::MAP_DATA[mapIndex].indexY] : kernel::MAP_DATA[mapIndex].typeY == VARIABLE ? kernel::VAR_VALUES[kernel::MAP_DATA[mapIndex].indexY] : 0;
-                                float stepsX = kernel::MAP_DATA[mapIndex].typeX == PARAMETER ? kernel::PARAM_STEPS[kernel::MAP_DATA[mapIndex].indexX] : kernel::MAP_DATA[mapIndex].typeX == VARIABLE ? kernel::VAR_STEPS[kernel::MAP_DATA[mapIndex].indexX] : 0;
-                                float stepsY = kernel::MAP_DATA[mapIndex].typeY == PARAMETER ? kernel::PARAM_STEPS[kernel::MAP_DATA[mapIndex].indexY] : kernel::MAP_DATA[mapIndex].typeY == VARIABLE ? kernel::VAR_STEPS[kernel::MAP_DATA[mapIndex].indexY] : 0;
-                                float maxX = kernel::MAP_DATA[mapIndex].typeX == PARAMETER ? kernel::PARAM_MAX[kernel::MAP_DATA[mapIndex].indexX] : kernel::MAP_DATA[mapIndex].typeX == VARIABLE ? kernel::VAR_MAX[kernel::MAP_DATA[mapIndex].indexX] : 0;
-                                float maxY = kernel::MAP_DATA[mapIndex].typeY == PARAMETER ? kernel::PARAM_MAX[kernel::MAP_DATA[mapIndex].indexY] : kernel::MAP_DATA[mapIndex].typeY == VARIABLE ? kernel::VAR_MAX[kernel::MAP_DATA[mapIndex].indexY] : 0;
+                                numb valuesX = kernel::MAP_DATA[mapIndex].typeX == PARAMETER ? kernel::PARAM_VALUES[kernel::MAP_DATA[mapIndex].indexX] : kernel::MAP_DATA[mapIndex].typeX == VARIABLE ? kernel::VAR_VALUES[kernel::MAP_DATA[mapIndex].indexX] : 0;
+                                numb valuesY = kernel::MAP_DATA[mapIndex].typeY == PARAMETER ? kernel::PARAM_VALUES[kernel::MAP_DATA[mapIndex].indexY] : kernel::MAP_DATA[mapIndex].typeY == VARIABLE ? kernel::VAR_VALUES[kernel::MAP_DATA[mapIndex].indexY] : 0;
+                                numb stepsX = kernel::MAP_DATA[mapIndex].typeX == PARAMETER ? kernel::PARAM_STEPS[kernel::MAP_DATA[mapIndex].indexX] : kernel::MAP_DATA[mapIndex].typeX == VARIABLE ? kernel::VAR_STEPS[kernel::MAP_DATA[mapIndex].indexX] : 0;
+                                numb stepsY = kernel::MAP_DATA[mapIndex].typeY == PARAMETER ? kernel::PARAM_STEPS[kernel::MAP_DATA[mapIndex].indexY] : kernel::MAP_DATA[mapIndex].typeY == VARIABLE ? kernel::VAR_STEPS[kernel::MAP_DATA[mapIndex].indexY] : 0;
+                                numb maxX = kernel::MAP_DATA[mapIndex].typeX == PARAMETER ? kernel::PARAM_MAX[kernel::MAP_DATA[mapIndex].indexX] : kernel::MAP_DATA[mapIndex].typeX == VARIABLE ? kernel::VAR_MAX[kernel::MAP_DATA[mapIndex].indexX] : 0;
+                                numb maxY = kernel::MAP_DATA[mapIndex].typeY == PARAMETER ? kernel::PARAM_MAX[kernel::MAP_DATA[mapIndex].indexY] : kernel::MAP_DATA[mapIndex].typeY == VARIABLE ? kernel::VAR_MAX[kernel::MAP_DATA[mapIndex].indexY] : 0;
 
                                 int cutoffWidth;
                                 int cutoffHeight;
@@ -1406,10 +1420,10 @@ int imgui_main(int, char**)
                                 int cutoffMinY;
                                 int cutoffMaxX;
                                 int cutoffMaxY;
-                                float valueMinX;
-                                float valueMinY;
-                                float valueMaxX;
-                                float valueMaxY;
+                                numb valueMinX;
+                                numb valueMinY;
+                                numb valueMaxX;
+                                numb valueMaxY;
                                 int stepCountX;
                                 int stepCountY;
 
@@ -1443,15 +1457,15 @@ int imgui_main(int, char**)
                                 cutoffWidth = cutoffMaxX - cutoffMinX + 1;
                                 cutoffHeight = cutoffMaxY - cutoffMinY + 1;
 
-                                float heatmapX1 = window->showActualDiapasons ? valuesX : 0;
-                                float heatmapX2 = window->showActualDiapasons ? maxX + stepsX : xSize;
-                                float heatmapY1 = window->showActualDiapasons ? valuesY : 0;
-                                float heatmapY2 = window->showActualDiapasons ? maxY + stepsY : ySize;
+                                numb heatmapX1 = window->showActualDiapasons ? valuesX : 0;
+                                numb heatmapX2 = window->showActualDiapasons ? maxX + stepsX : xSize;
+                                numb heatmapY1 = window->showActualDiapasons ? valuesY : 0;
+                                numb heatmapY2 = window->showActualDiapasons ? maxY + stepsY : ySize;
 
-                                float heatmapX1Cutoff = window->showActualDiapasons ? valueMinX : cutoffMinX;
-                                float heatmapX2Cutoff = window->showActualDiapasons ? valueMaxX : cutoffMaxX + 1;
-                                float heatmapY1Cutoff = window->showActualDiapasons ? valueMaxY : cutoffMaxY + 1;
-                                float heatmapY2Cutoff = window->showActualDiapasons ? valueMinY : cutoffMinY;
+                                numb heatmapX1Cutoff = window->showActualDiapasons ? valueMinX : cutoffMinX;
+                                numb heatmapX2Cutoff = window->showActualDiapasons ? valueMaxX : cutoffMaxX + 1;
+                                numb heatmapY1Cutoff = window->showActualDiapasons ? valueMaxY : cutoffMaxY + 1;
+                                numb heatmapY2Cutoff = window->showActualDiapasons ? valueMinY : cutoffMinY;
 
                                 // Choosing configuration
                                 if (plot->shiftClicked && plot->shiftClickLocation.x > 0.0)
@@ -1577,25 +1591,25 @@ int imgui_main(int, char**)
                                 // Actual drawing of the heatmap
                                 if (cutoffWidth > 0 && cutoffHeight > 0)
                                 {
-                                    float* mapData = (float*)(mapBuffers[playedBufferIndex]) + kernel::MAP_DATA[mapIndex].offset;
+                                    numb* mapData = (numb*)(mapBuffers[playedBufferIndex]) + kernel::MAP_DATA[mapIndex].offset;
 
                                     getMinMax(mapData, xSize * ySize, &min, &max);
 
-                                    void* cutoffHeatmap = new float[cutoffHeight * cutoffWidth];
+                                    void* cutoffHeatmap = new numb[cutoffHeight * cutoffWidth];
 
-                                    cutoff2D(mapData, (float*)cutoffHeatmap,
+                                    cutoff2D(mapData, (numb*)cutoffHeatmap,
                                         xSize, ySize, cutoffMinX, cutoffMinY, cutoffMaxX, cutoffMaxY);
 
-                                    void* compressedHeatmap = new float[(int)ceil((float)cutoffWidth / heatStride) * (int)ceil((float)cutoffHeight / heatStride)];
+                                    void* compressedHeatmap = new numb[(int)ceil((numb)cutoffWidth / heatStride) * (int)ceil((numb)cutoffHeight / heatStride)];
 
-                                    compress2D((float*)cutoffHeatmap, (float*)compressedHeatmap,
+                                    compress2D((numb*)cutoffHeatmap, (numb*)compressedHeatmap,
                                         cutoffWidth, cutoffHeight, heatStride);
 
-                                    int rows = heatStride > 1 ? (int)ceil((float)cutoffHeight / heatStride) : cutoffHeight;
-                                    int cols = heatStride > 1 ? (int)ceil((float)cutoffWidth / heatStride) : cutoffWidth;
+                                    int rows = heatStride > 1 ? (int)ceil((numb)cutoffHeight / heatStride) : cutoffHeight;
+                                    int cols = heatStride > 1 ? (int)ceil((numb)cutoffWidth / heatStride) : cutoffWidth;
 
                                     ImPlot::PlotHeatmap((std::string(kernel::VAR_NAMES[mapIndex]) + "##" + plotName + std::to_string(0)).c_str(),
-                                        (float*)compressedHeatmap, rows, cols, (double)min, (double)max, window->showHeatmapValues ? "%.3f" : nullptr,
+                                        (numb*)compressedHeatmap, rows, cols, (double)min, (double)max, window->showHeatmapValues ? "%.3f" : nullptr,
                                         ImPlotPoint(heatmapX1Cutoff, heatmapY1Cutoff), ImPlotPoint(heatmapX2Cutoff, heatmapY2Cutoff)); // %3f
 
                                     delete[] cutoffHeatmap;
@@ -1635,7 +1649,7 @@ int imgui_main(int, char**)
                                 plot->Axes[plot->CurrentX].Range.Max = 1;
                                 plot->Axes[plot->CurrentY].Range.Max = 1000;
 
-                                float* mapData = (float*)(mapBuffers[playedBufferIndex]) + kernel::MAP_DATA[mapIndex].offset;
+                                //numb* mapData = (float*)(mapBuffers[playedBufferIndex]) + kernel::MAP_DATA[mapIndex].offset;
 
                                 ImPlot::PlotHeatmap((std::string(kernel::VAR_NAMES[mapIndex]) + "_legend##" + plotName + std::to_string(0) + "_legend").c_str(),
                                     legendData, 1000, 1, 0, 999, nullptr,

@@ -17,17 +17,17 @@ namespace kernel
     const char* name = "Lorenz system";
 
     const char* VAR_NAMES[]{ "x", "y", "z" };
-    float VAR_VALUES[]{ 10.0f, 10.0f, 10.0f };
+    numb VAR_VALUES[]{ 10.0f, 10.0f, 10.0f };
     RangingType VAR_RANGING[]{ None, None, None };
-    float VAR_STEPS[]{ 0.1f, 1.0f, 1.0f };
-    float VAR_MAX[]{ 29.0f, 29.0f, 29.0f };
+    numb VAR_STEPS[]{ 0.1f, 1.0f, 1.0f };
+    numb VAR_MAX[]{ 29.0f, 29.0f, 29.0f };
     int VAR_STEP_COUNTS[]{ 0, 0, 0 };
 
     const char* PARAM_NAMES[]{ "sigma", "rho", "beta" };
-    float PARAM_VALUES[]{ 0.0f, 20.0f, (8.0f / 3.0f) };
+    numb PARAM_VALUES[]{ 0.0f, 20.0f, (8.0f / 3.0f) };
     RangingType PARAM_RANGING[]{ Linear, Linear, None };
-    float PARAM_STEPS[]{ 0.2f, 0.2f, 0.0f };
-    float PARAM_MAX[]{ 100.0f, 100.0f, 0.0f };
+    numb PARAM_STEPS[]{ 0.4f, 0.4f, 0.0f };
+    numb PARAM_MAX[]{ 100.0f, 100.0f, 0.0f };
     int PARAM_STEP_COUNTS[]{ 0, 0, 0 };
 
     const char* MAP_NAMES[]{ "LLE" };
@@ -38,11 +38,11 @@ namespace kernel
 
     bool executeOnLaunch = true;
     int steps = 1000;
-    float stepSize = 0.01f;
+    numb stepSize = 0.01f;
     bool onlyShowLast = false;
 }
 
-__global__ void kernelProgram(float* data, float* params, float* maps, MapData* mapData, PreRanging* ranging, int steps, float h, int variationSize, float* previousData)
+__global__ void kernelProgram(numb* data, numb* params, numb* maps, MapData* mapData, PreRanging* ranging, int steps, numb h, int variationSize, numb* previousData)
 {
     int b = blockIdx.x;                                     // Current block of THREADS_PER_BLOCK threads
     int t = threadIdx.x;                                    // Current thread in the block, from 0 to THREADS_PER_BLOCK-1
@@ -57,8 +57,8 @@ __global__ void kernelProgram(float* data, float* params, float* maps, MapData* 
     for (int i = 0; i < kernel::VAR_COUNT; i++) varStep[i] = 0;
     for (int i = 0; i < kernel::PARAM_COUNT; i++) paramStep[i] = 0;
 
-    float varValues[kernel::VAR_COUNT];
-    float paramValues[kernel::PARAM_COUNT];
+    numb varValues[kernel::VAR_COUNT];
+    numb paramValues[kernel::PARAM_COUNT];
 
     // Copying initial values into the beginning of the 0th variation
     for (int i = 0; i < kernel::VAR_COUNT; i++) varValues[i] = !ranging->continuation ? data[i] : previousData[variationStart + (steps * kernel::VAR_COUNT) + i];
@@ -73,7 +73,7 @@ __global__ void kernelProgram(float* data, float* params, float* maps, MapData* 
         int csteps = ranging->rangings[i].steps;
         int step = tVariation % csteps;
         tVariation = tVariation / csteps;
-        float value = ranging->rangings[i].min + ranging->rangings[i].step * step;
+        numb value = ranging->rangings[i].min + ranging->rangings[i].step * step;
 
         if (isVar)
         {
@@ -94,9 +94,9 @@ __global__ void kernelProgram(float* data, float* params, float* maps, MapData* 
     initV(y);
     initV(z);
 
-    LLE_INIT(float);
+    LLE_INIT(numb);
     LLE_FILL;
-    float deflection = 0.1f;
+    numb deflection = 0.1f;
     int L = 50;
     LLE_DEFLECT(z, deflection);
 
@@ -114,8 +114,8 @@ __global__ void kernelProgram(float* data, float* params, float* maps, MapData* 
         LLE_IF_MOD(s, L)
         {
             // Calculate local LLE
-            float norm = NORM_3D(LLE_V(x), dataV(x NEXT), LLE_V(y), dataV(y NEXT), LLE_V(z), dataV(z NEXT));
-            float growth = norm / deflection;
+            numb norm = NORM_3D(LLE_V(x), dataV(x NEXT), LLE_V(y), dataV(y NEXT), LLE_V(z), dataV(z NEXT));
+            numb growth = norm / deflection;
             if (deflection == 0.0f) growth = 0.0f;
             LLE_ADD(log(growth));
 
@@ -131,11 +131,11 @@ __global__ void kernelProgram(float* data, float* params, float* maps, MapData* 
     }
 }
 
-__device__ void finiteDifferenceScheme(float* currentV, float* nextV, float* parameters, float h)
+__device__ void finiteDifferenceScheme(numb* currentV, numb* nextV, numb* parameters, numb h)
 {
-    float dx = P(sigma) * (V(y) - V(x));
-    float dy = V(x) * (P(rho) - V(z)) - V(y);
-    float dz = V(x) * V(y) - P(beta) * V(z);
+    numb dx = P(sigma) * (V(y) - V(x));
+    numb dy = V(x) * (P(rho) - V(z)) - V(y);
+    numb dz = V(x) * V(y) - P(beta) * V(z);
 
     Vnext(x) = V(x) + h * dx;
     Vnext(y) = V(y) + h * dy;

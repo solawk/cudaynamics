@@ -1,4 +1,7 @@
 #pragma once
+
+#define numb float
+
 #include <string>
 #include <vector>
 #include <set>
@@ -12,7 +15,7 @@
 using namespace std;
 
 #define calculateStepCount(_min, _max, _step) (_step != 0 ? (int)((_max - _min) / _step) + 1 : 0)
-#define stepFromStepCount(_min, _max, _stepCount) ((_max - _min) / (float)(_stepCount - 1))
+#define stepFromStepCount(_min, _max, _stepCount) ((_max - _min) / (numb)(_stepCount - 1))
 #define calculateValue(_min, _step, _currentStep) ((_min) + (_step) * (_currentStep))
 // Calculate step from value, floored int
 #define stepFromValue(_min, _step, _value) (int)((_value - _min) / _step)
@@ -27,12 +30,12 @@ struct SinglePreRangingInfo
 {
 public:
 	int index;
-	float min;
-	float step;
-	float max;
+	numb min;
+	numb step;
+	numb max;
 	int steps;
 
-	void init(int _i, float _min, float _step, float _max, int _steps)
+	void init(int _i, numb _min, numb _step, numb _max, int _steps)
 	{
 		index = _i;
 		min = _min;
@@ -72,14 +75,14 @@ public:
 	int totalVariations;	// Ranging var/param combinations count
 
 	vector<string> names;
-	vector<float> min;
-	vector<float> step;
-	vector<float> max;
+	vector<numb> min;
+	vector<numb> step;
+	vector<numb> max;
 
 	vector<int> stepCount;
 	vector<int> currentStep;
 
-	vector<float> currentValue;
+	vector<numb> currentValue;
 
 	float timeElapsed;
 

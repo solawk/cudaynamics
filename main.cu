@@ -8,7 +8,7 @@
 #include "cuda_macros.h"
 #include <objects.h>
 
-cudaError_t execute(float* data, float* maps, int rangingCount, int variationSize, int variations, unsigned long int mapsSize, float* previousData)
+cudaError_t execute(numb* data, numb* maps, int rangingCount, int variationSize, int variations, unsigned long int mapsSize, numb* previousData)
 {
     unsigned long int size = variationSize * variations;
 
@@ -24,19 +24,19 @@ cudaError_t execute(float* data, float* maps, int rangingCount, int variationSiz
     ranging.setRangingAndVariations(rangingCount, variations);
     int rangingIndex = 0;
 
-    float* cuda_data = 0;
-    float* cuda_params = 0;
-    float* cuda_maps = 0;
+    numb* cuda_data = 0;
+    numb* cuda_params = 0;
+    numb* cuda_maps = 0;
     PreRanging* cuda_ranging = 0;
-    float* cuda_prev_data = 0;
+    numb* cuda_prev_data = 0;
     MapData* cuda_map_data = 0;
 
     CUDA_SET_DEVICE;
 
-    CUDA_MALLOC((void**)&cuda_data, size * sizeof(float), "cudaMalloc data failed!");
-    CUDA_MALLOC((void**)&cuda_prev_data, size * sizeof(float), "cudaMalloc prev data failed!");
-    CUDA_MALLOC((void**)&cuda_params, kernel::PARAM_COUNT * sizeof(float), "cudaMalloc params failed!");
-    CUDA_MALLOC((void**)&cuda_maps, mapsSize * sizeof(float), "cudaMalloc maps failed!");
+    CUDA_MALLOC((void**)&cuda_data, size * sizeof(numb), "cudaMalloc data failed!");
+    CUDA_MALLOC((void**)&cuda_prev_data, size * sizeof(numb), "cudaMalloc prev data failed!");
+    CUDA_MALLOC((void**)&cuda_params, kernel::PARAM_COUNT * sizeof(numb), "cudaMalloc params failed!");
+    CUDA_MALLOC((void**)&cuda_maps, mapsSize * sizeof(numb), "cudaMalloc maps failed!");
     CUDA_MALLOC((void**)&cuda_map_data, kernel::MAP_COUNT * sizeof(MapData), "cudaMalloc map data failed!");
 
     // Parameters array structure (PreRanging):
@@ -52,15 +52,15 @@ cudaError_t execute(float* data, float* maps, int rangingCount, int variationSiz
 
     if (!ranging.continuation)
     {
-        CUDA_MEMCPY(cuda_data, kernel::VAR_VALUES, cudaMemcpyHostToDevice, kernel::VAR_COUNT * sizeof(float), "cudaMemcpy data failed!");
+        CUDA_MEMCPY(cuda_data, kernel::VAR_VALUES, cudaMemcpyHostToDevice, kernel::VAR_COUNT * sizeof(numb), "cudaMemcpy data failed!");
     }
     else
     {
-        CUDA_MEMCPY(cuda_prev_data, previousData, cudaMemcpyHostToDevice, size * sizeof(float), "cudaMemcpy prev data failed!");
+        CUDA_MEMCPY(cuda_prev_data, previousData, cudaMemcpyHostToDevice, size * sizeof(numb), "cudaMemcpy prev data failed!");
     }
 
-    CUDA_MEMCPY(cuda_params, kernel::PARAM_VALUES, cudaMemcpyHostToDevice, kernel::PARAM_COUNT * sizeof(float), "cudaMemcpy params failed!");
-    CUDA_MEMCPY(cuda_maps, maps, cudaMemcpyHostToDevice, mapsSize * sizeof(float), "cudaMemcpy maps failed!");
+    CUDA_MEMCPY(cuda_params, kernel::PARAM_VALUES, cudaMemcpyHostToDevice, kernel::PARAM_COUNT * sizeof(numb), "cudaMemcpy params failed!");
+    CUDA_MEMCPY(cuda_maps, maps, cudaMemcpyHostToDevice, mapsSize * sizeof(numb), "cudaMemcpy maps failed!");
     CUDA_MEMCPY(cuda_map_data, &kernel::MAP_DATA, cudaMemcpyHostToDevice, kernel::MAP_COUNT * sizeof(MapData), "cudaMemcpy map data failed!");
     CUDA_MEMCPY(cuda_ranging, &ranging, cudaMemcpyHostToDevice, sizeof(ranging), "cudaMemcpy ranging failed!");
 
@@ -73,8 +73,8 @@ cudaError_t execute(float* data, float* maps, int rangingCount, int variationSiz
     CUDA_SYNCHRONIZE;
     //incompute = std::chrono::steady_clock::now();
 
-    CUDA_MEMCPY(data, cuda_data, cudaMemcpyDeviceToHost, size * sizeof(float), "cudaMemcpy back failed!");
-    CUDA_MEMCPY(maps, cuda_maps, cudaMemcpyDeviceToHost, mapsSize * sizeof(float), "cudaMemcpy maps back failed!");
+    CUDA_MEMCPY(data, cuda_data, cudaMemcpyDeviceToHost, size * sizeof(numb), "cudaMemcpy back failed!");
+    CUDA_MEMCPY(maps, cuda_maps, cudaMemcpyDeviceToHost, mapsSize * sizeof(numb), "cudaMemcpy maps back failed!");
 
 Error:
     cudaFree(cuda_data);
@@ -91,7 +91,7 @@ Error:
     return cudaStatus;
 }
 
-int compute(void** dest, void** maps, float* previousData, PostRanging* rangingData)
+int compute(void** dest, void** maps, numb* previousData, PostRanging* rangingData)
 {
     std::chrono::steady_clock::time_point before = std::chrono::steady_clock::now();
     std::chrono::steady_clock::time_point after;
@@ -148,7 +148,7 @@ int compute(void** dest, void** maps, float* previousData, PostRanging* rangingD
     rangingData->totalVariations = variations;
     unsigned long int variationSize = kernel::VAR_COUNT * (kernel::steps + 1); // All steps for the current parameter/variable value combination
     unsigned long int size = variationSize * variations; // Entire data array size
-    if (*dest == nullptr) *dest = (void*)(new float[size]);
+    if (*dest == nullptr) *dest = (void*)(new numb[size]);
 
     // Maps allocate memory for a Xvariations*Yvariations matrix, where X and Y are MAP_X and MAP_Y
 
@@ -186,13 +186,13 @@ int compute(void** dest, void** maps, float* previousData, PostRanging* rangingD
         kernel::MAP_DATA[i].offset = mapsSize;
         mapsSize += kernel::MAP_DATA[i].xSize * kernel::MAP_DATA[i].ySize;
     }
-    if (*maps == nullptr) *maps = (void*)(new float[mapsSize]);
+    if (*maps == nullptr) *maps = (void*)(new numb[mapsSize]);
 
     bool hasFailed = false;
 
     // Execution
 
-    cudaError_t cudaStatus = execute((float*)(*dest), (float*)(*maps), rangingCount, variationSize, variations, mapsSize, previousData);
+    cudaError_t cudaStatus = execute((numb*)(*dest), (numb*)(*maps), rangingCount, variationSize, variations, mapsSize, previousData);
     if (cudaStatus != cudaSuccess) { fprintf(stderr, "execute failed!\n"); hasFailed = true; }
 
     // Output

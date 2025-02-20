@@ -2,6 +2,7 @@
 #include "imgui_main.h"
 #include <objects.h>
 
+
 // Choosing the kernel to compile
 #define SEL_LORENZ
 
@@ -13,4 +14,4 @@
 #include "kernels/RLC-sJJ.h"
 #endif
 
-int compute(void**, void**, float*, PostRanging*);
+int compute(void**, void**, numb*, PostRanging*);
