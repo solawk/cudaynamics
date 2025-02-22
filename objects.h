@@ -24,7 +24,7 @@ using namespace std;
 // Linear - fixed step values from min (inclusive) to max (not necessarily inclusive)
 // UniformRandom - random values from min to max with uniform distribution, step = quantity
 // NormalRandom - random values from min to max with normal distribution around midpoint, step = quantity
-enum RangingType { None, Linear, UniformRandom, NormalRandom };
+enum RangingType { None, Step, Linear, UniformRandom, NormalRandom };
 
 struct SinglePreRangingInfo
 {

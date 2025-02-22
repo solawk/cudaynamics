@@ -94,19 +94,43 @@ __global__ void kernelProgram(numb* data, numb* params, numb* maps, MapData* map
     initV(y);
     initV(z);
 
-    LLE_INIT(numb);
-    LLE_FILL;
-    numb deflection = 0.1f;
-    int L = 50;
-    LLE_DEFLECT(z, deflection);
-
     for (int s = 0; s < steps; s++)
     {
         stepStart = variationStart + s * kernel::VAR_COUNT;
 
         finiteDifferenceScheme(&data[stepStart], &data[stepStart + kernel::VAR_COUNT], paramValues, h);
+    }
 
-        // LLE
+    // Analysis
+
+    LLE(steps, variationStart, data, paramValues, h, maps, mapData, varStep, paramStep);
+}
+
+__device__ void finiteDifferenceScheme(numb* currentV, numb* nextV, numb* parameters, numb h)
+{
+    numb dx = P(sigma) * (V(y) - V(x));
+    numb dy = V(x) * (P(rho) - V(z)) - V(y);
+    numb dz = V(x) * V(y) - P(beta) * V(z);
+
+    Vnext(x) = V(x) + h * dx;
+    Vnext(y) = V(y) + h * dy;
+    Vnext(z) = V(z) + h * dz;
+}
+
+__device__ void LLE(int steps, int variationStart, numb* data, numb* paramValues, numb h, numb* maps, MapData* mapData, int* varStep, int* paramStep)
+{
+    int stepStart = variationStart;
+
+    LLE_INIT(numb);
+    LLE_FILL;
+    numb r = 0.1f;
+    int L = 50;
+    LLE_DEFLECT(z, r);
+
+    for (int s = 0; s < steps; s++)
+    {
+        stepStart = variationStart + s * kernel::VAR_COUNT;
+
         LLE_STORE_TO_TEMP;
 
         finiteDifferenceScheme(LLE_array_temp, LLE_array, paramValues, h);
@@ -115,8 +139,8 @@ __global__ void kernelProgram(numb* data, numb* params, numb* maps, MapData* map
         {
             // Calculate local LLE
             numb norm = NORM_3D(LLE_V(x), dataV(x NEXT), LLE_V(y), dataV(y NEXT), LLE_V(z), dataV(z NEXT));
-            numb growth = norm / deflection;
-            if (deflection == 0.0f) growth = 0.0f;
+            numb growth = norm / r;
+            if (r == 0.0f) growth = 0.0f;
             LLE_ADD(log(growth));
 
             // Reset
@@ -129,17 +153,6 @@ __global__ void kernelProgram(numb* data, numb* params, numb* maps, MapData* map
         int LLEy = mapData->typeY == STEP ? s : mapData->typeY == VARIABLE ? varStep[mapData->indexY] : paramStep[mapData->indexY];
         M(kernel::LLE, LLEx, LLEy) = LLE_MEAN_RESULT;
     }
-}
-
-__device__ void finiteDifferenceScheme(numb* currentV, numb* nextV, numb* parameters, numb h)
-{
-    numb dx = P(sigma) * (V(y) - V(x));
-    numb dy = V(x) * (P(rho) - V(z)) - V(y);
-    numb dz = V(x) * V(y) - P(beta) * V(z);
-
-    Vnext(x) = V(x) + h * dx;
-    Vnext(y) = V(y) + h * dy;
-    Vnext(z) = V(z) + h * dz;
 }
 
 #endif

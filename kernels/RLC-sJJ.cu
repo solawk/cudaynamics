@@ -17,17 +17,17 @@ namespace kernel
     const char* name = "Shunted Josephson Junction";
 
     const char* VAR_NAMES[]{ "sin_x1", "x1", "x2", "x3" };
-    float VAR_VALUES[]{ 0.0f, -0.31f, 3.3f, 0.76f };
+    numb VAR_VALUES[]{ 0.0f, -0.31f, 3.3f, 0.76f };
     bool VAR_RANGING[]{ false, false, false, false };
-    float VAR_STEPS[]{ 0.0f, 0.02f, 0.1f, 0.1f };
-    float VAR_MAX[]{ 0.0f, -0.01f, 4.3f, 1.76f };
+    numb VAR_STEPS[]{ 0.0f, 0.02f, 0.1f, 0.1f };
+    numb VAR_MAX[]{ 0.0f, -0.01f, 4.3f, 1.76f };
     int VAR_STEP_COUNTS[]{ 0, 0, 0, 0 };
 
     const char* PARAM_NAMES[]{ "betaL", "betaC", "i", "Vg/IcRs", "Rn", "Rsg" };
-    float PARAM_VALUES[]{ 2.0f, 0.5f, 1.25f, 6.9f, 0.367f, 0.0478f }; // 29.215f, 0.707f, 1.25f, 6.9f, 0.367f, 0.0478f
+    numb PARAM_VALUES[]{ 2.0f, 0.5f, 1.25f, 6.9f, 0.367f, 0.0478f }; // 29.215f, 0.707f, 1.25f, 6.9f, 0.367f, 0.0478f
     bool PARAM_RANGING[]{ true, true, false, false, false, false };
-    float PARAM_STEPS[]{ 0.01f, 0.01f, 0.0f, 0.0f, 0.0f, 0.0f };
-    float PARAM_MAX[]{ 3.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f };
+    numb PARAM_STEPS[]{ 0.01f, 0.01f, 0.0f, 0.0f, 0.0f, 0.0f };
+    numb PARAM_MAX[]{ 3.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f };
     int PARAM_STEP_COUNTS[]{ 0, 0, 0, 0, 0, 0 };
 
     const char* MAP_NAMES[]{ "LLE" };
@@ -38,11 +38,11 @@ namespace kernel
 
     bool executeOnLaunch = true;
     int steps = 400;
-    float stepSize = 0.01f;
+    numb stepSize = 0.01f;
     bool onlyShowLast = false;
 }
 
-__global__ void kernelProgram(float* data, float* params, float* maps, MapData* mapData, PreRanging* ranging, int steps, float h, int variationSize, float* previousData)
+__global__ void kernelProgram(numb* data, numb* params, numb* maps, MapData* mapData, PreRanging* ranging, int steps, numb h, int variationSize, numb* previousData)
 {
     int b = blockIdx.x;                                     // Current block of THREADS_PER_BLOCK threads
     int t = threadIdx.x;                                    // Current thread in the block, from 0 to THREADS_PER_BLOCK-1
@@ -57,8 +57,8 @@ __global__ void kernelProgram(float* data, float* params, float* maps, MapData* 
     for (int i = 0; i < kernel::VAR_COUNT; i++) varStep[i] = 0;
     for (int i = 0; i < kernel::PARAM_COUNT; i++) paramStep[i] = 0;
 
-    float varValues[kernel::VAR_COUNT];
-    float paramValues[kernel::PARAM_COUNT];
+    numb varValues[kernel::VAR_COUNT];
+    numb paramValues[kernel::PARAM_COUNT];
 
     for (int i = 0; i < kernel::VAR_COUNT; i++) varValues[i] = !ranging->continuation ? data[i] : previousData[variationStart + (steps * kernel::VAR_COUNT) + i];
     for (int i = 0; i < kernel::PARAM_COUNT; i++) paramValues[i] = params[i];
@@ -72,7 +72,7 @@ __global__ void kernelProgram(float* data, float* params, float* maps, MapData* 
         int csteps = ranging->rangings[i].steps;
         int step = tVariation % csteps;
         tVariation = tVariation / csteps;
-        float value = ranging->rangings[i].min + ranging->rangings[i].step * step;
+        numb value = ranging->rangings[i].min + ranging->rangings[i].step * step;
 
         if (isVar)
         {
@@ -94,9 +94,9 @@ __global__ void kernelProgram(float* data, float* params, float* maps, MapData* 
     initV(x1);
     initV(x2);
 
-    LLE_INIT(float);
+    LLE_INIT(numb);
     LLE_FILL;
-    float deflection = 0.0001f;
+    numb deflection = 0.0001f;
     int L = 10;
     LLE_DEFLECT(x2, deflection);
 
@@ -114,7 +114,7 @@ __global__ void kernelProgram(float* data, float* params, float* maps, MapData* 
         LLE_IF_MOD(s, L)
         {
             // Calculate local LLE
-            float norm = NORM_3D(LLE_V(sin_x0), dataV(sin_x0 NEXT), LLE_V(x1), dataV(x1 NEXT), LLE_V(x2), dataV(x2 NEXT));
+            numb norm = NORM_3D(LLE_V(sin_x0), dataV(sin_x0 NEXT), LLE_V(x1), dataV(x1 NEXT), LLE_V(x2), dataV(x2 NEXT));
             LLE_ADD(log(norm / deflection));
 
             // Reset
@@ -129,7 +129,7 @@ __global__ void kernelProgram(float* data, float* params, float* maps, MapData* 
     }
 }
 
-__device__ void finiteDifferenceScheme(float* currentV, float* nextV, float* parameters, float h)
+__device__ void finiteDifferenceScheme(numb* currentV, numb* nextV, numb* parameters, numb h)
 {
     Vnext(x0) = fmodf(V(x0) + h * V(x1), 2.0f * 3.141592f);
     Vnext(sin_x0) = sinf(Vnext(x0));

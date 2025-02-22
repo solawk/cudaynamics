@@ -41,3 +41,5 @@ const int THREADS_PER_BLOCK = 64;
 __global__ void kernelProgram(numb*, numb*, numb*, MapData*, PreRanging*, int, numb, int, numb*);
 
 __device__ void finiteDifferenceScheme(numb* currentV, numb* nextV, numb* parameters, numb h);
+
+__device__ void LLE(int steps, int variationStart, numb* data, numb* paramValues, numb h, numb* maps, MapData* mapData, int* varStep, int* paramStep);

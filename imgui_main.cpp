@@ -79,7 +79,7 @@ ImVec4 xAxisColor = ImVec4(0.75f, 0.3f, 0.3f, 1.0f);
 ImVec4 yAxisColor = ImVec4(0.33f, 0.67f, 0.4f, 1.0f);
 ImVec4 zAxisColor = ImVec4(0.3f, 0.45f, 0.7f, 1.0f);
 
-std::string rangingTypes[] = { "Fixed", "Linear", "Random", "Normal" };
+std::string rangingTypes[] = { "Fixed", "Step", "Linear", "Random", "Normal" };
 
 std::future<int> computationFutures[2];
 
@@ -359,7 +359,7 @@ int imgui_main(int, char**)
                 ImGui::PushItemWidth(120.0f);
                 if (ImGui::BeginCombo(("##RANGING_" + std::string(kernel::VAR_NAMES[i])).c_str(), (rangingTypes[varNew.RANGING[i]]).c_str()))
                 {
-                    for (int r = 0; r < 4; r++)
+                    for (int r = 0; r < 5; r++)
                     {
                         bool isSelected = varNew.RANGING[i] == r;
                         ImGuiSelectableFlags selectableFlags = 0;
@@ -469,7 +469,7 @@ int imgui_main(int, char**)
                 ImGui::PushItemWidth(120.0f);
                 if (ImGui::BeginCombo(("##RANGING_" + std::string(kernel::PARAM_NAMES[i])).c_str(), (rangingTypes[paramNew.RANGING[i]]).c_str()))
                 {
-                    for (int r = 0; r < 4; r++)
+                    for (int r = 0; r < 5; r++)
                     {
                         bool isSelected = paramNew.RANGING[i] == r;
                         ImGuiSelectableFlags selectableFlags = 0;
