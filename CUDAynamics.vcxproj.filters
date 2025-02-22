@@ -51,6 +51,9 @@
     <Filter Include="dbscan">
       <UniqueIdentifier>{4461c4e3-1746-41e9-847c-27da9839fd03}</UniqueIdentifier>
     </Filter>
+    <Filter Include="analysis">
+      <UniqueIdentifier>{de16d9d3-e2a2-45ef-8e41-d0ff21a3645f}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="imgui\imconfig.h">
@@ -94,6 +97,10 @@
     </ClInclude>
     <ClInclude Include="quaternion.h" />
     <ClInclude Include="plotWindow.h" />
+    <ClInclude Include="analysis.h" />
+    <ClInclude Include="analysis\lle.h">
+      <Filter>analysis</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="main.cu" />
@@ -102,6 +109,9 @@
     </CudaCompile>
     <CudaCompile Include="kernels\RLC-sJJ.cu">
       <Filter>kernels</Filter>
+    </CudaCompile>
+    <CudaCompile Include="analysis\lle.cu">
+      <Filter>analysis</Filter>
     </CudaCompile>
   </ItemGroup>
   <ItemGroup>

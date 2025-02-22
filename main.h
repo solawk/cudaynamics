@@ -1,7 +1,7 @@
 #pragma once
 #include "imgui_main.h"
 #include <objects.h>
-
+#include "analysis.h"
 
 // Choosing the kernel to compile
 #define SEL_LORENZ

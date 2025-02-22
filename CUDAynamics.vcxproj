@@ -77,6 +77,7 @@
       <Include>imgui;imgui/backends;.;backends;kernels;implot;dbscan</Include>
       <AdditionalCompilerOptions>
       </AdditionalCompilerOptions>
+      <GenerateRelocatableDeviceCode>true</GenerateRelocatableDeviceCode>
     </CudaCompile>
     <CudaLink />
   </ItemDefinitionGroup>
@@ -115,6 +116,8 @@
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="analysis.h" />
+    <ClInclude Include="analysis\lle.h" />
     <ClInclude Include="cuda_macros.h" />
     <ClInclude Include="dbscan\dbscan.h" />
     <ClInclude Include="imgui\backends\imgui_impl_dx11.h" />
@@ -136,6 +139,7 @@
     <ClInclude Include="resource.h" />
   </ItemGroup>
   <ItemGroup>
+    <CudaCompile Include="analysis\lle.cu" />
     <CudaCompile Include="kernels\lorenz.cu" />
     <CudaCompile Include="kernels\RLC-sJJ.cu" />
     <CudaCompile Include="main.cu" />

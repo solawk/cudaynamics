@@ -382,7 +382,7 @@ int imgui_main(int, char**)
                 }
                 float varNewMin = (float)varNew.MIN[i];
                 ImGui::DragFloat(("##" + std::string(kernel::VAR_NAMES[i])).c_str(), &varNewMin, dragChangeSpeed, 0.0f, 0.0f, "%f", dragFlag);
-                varNew.MIN[i] = (double)varNewMin;
+                varNew.MIN[i] = (numb)varNewMin;
                 if (popStyle) POP_FRAME(3);
                 ImGui::PopItemWidth();
 
@@ -400,7 +400,7 @@ int imgui_main(int, char**)
                     }
                     float varNewStep = (float)varNew.STEP[i];
                     ImGui::DragFloat(("##STEP_" + std::string(kernel::VAR_NAMES[i])).c_str(), &varNewStep, dragChangeSpeed, 0.0f, 0.0f, "%f", dragFlag);
-                    varNew.STEP[i] = (double)varNewStep;
+                    varNew.STEP[i] = (numb)varNewStep;
                     if (popStyle) POP_FRAME(3);
 
                     // Max
@@ -413,7 +413,7 @@ int imgui_main(int, char**)
                     }
                     float varNewMax = (float)varNew.MAX[i];
                     ImGui::DragFloat(("##MAX_" + std::string(kernel::VAR_NAMES[i])).c_str(), &varNewMax, dragChangeSpeed, 0.0f, 0.0f, "%f", dragFlag);
-                    varNew.MAX[i] = (double)varNewMax;
+                    varNew.MAX[i] = (numb)varNewMax;
                     if (popStyle) POP_FRAME(3);
                     ImGui::PopItemWidth();
 
@@ -493,7 +493,7 @@ int imgui_main(int, char**)
                 }
                 float paramNewMin = (float)paramNew.MIN[i];
                 ImGui::DragFloat(("##" + std::string(kernel::PARAM_NAMES[i])).c_str(), &paramNewMin, dragChangeSpeed, 0.0f, 0.0f, "%f", changeAllowed ? 0 : ImGuiSliderFlags_ReadOnly);
-                paramNew.MIN[i] = (double)paramNewMin;
+                paramNew.MIN[i] = (numb)paramNewMin;
                 if (popStyle) POP_FRAME(3);
                 ImGui::PopItemWidth();
 
@@ -511,7 +511,7 @@ int imgui_main(int, char**)
                     }
                     float paramNewStep = (float)paramNew.STEP[i];
                     ImGui::DragFloat(("##STEP_" + std::string(kernel::PARAM_NAMES[i])).c_str(), &paramNewStep, dragChangeSpeed, 0.0f, 0.0f, "%f", changeAllowed ? 0 : ImGuiSliderFlags_ReadOnly);
-                    paramNew.STEP[i] = (double)paramNewStep;
+                    paramNew.STEP[i] = (numb)paramNewStep;
                     if (popStyle) POP_FRAME(3);
 
                     // Max
@@ -524,7 +524,7 @@ int imgui_main(int, char**)
                     }
                     float paramNewMax = (float)paramNew.MAX[i];
                     ImGui::DragFloat(("##MAX_" + std::string(kernel::PARAM_NAMES[i])).c_str(), &paramNewMax, dragChangeSpeed, 0.0f, 0.0f, "%f", changeAllowed ? 0 : ImGuiSliderFlags_ReadOnly);
-                    paramNew.MAX[i] = (double)paramNewMax;
+                    paramNew.MAX[i] = (numb)paramNewMax;
                     if (popStyle) POP_FRAME(3);
                     ImGui::PopItemWidth();
                 }
@@ -625,7 +625,7 @@ int imgui_main(int, char**)
             }
             float tempStepSize = (float)kernel::stepSize;
             ImGui::InputFloat("Step size", &tempStepSize, 0.0f, 0.0f, "%f");
-            kernel::stepSize = (double)tempStepSize;
+            kernel::stepSize = (numb)tempStepSize;
             ImGui::PopItemWidth();
             
             bool tempEnabledParticles = enabledParticles;
@@ -1237,6 +1237,8 @@ int imgui_main(int, char**)
                             if (is3d)
                                 rotateOffsetBuffer((numb*)particleBuffer, rangingData[playedBufferIndex].totalVariations, kernel::VAR_COUNT, window->variables[0], window->variables[1], window->variables[2],
                                     rotationEuler, window->offset, window->scale);
+
+                            getMinMax2D((numb*)particleBuffer, rangingData[playedBufferIndex].totalVariations, &(plot->dataMin), &(plot->dataMax));
 
                             ImPlot::SetNextLineStyle(window->markerColor);
                             ImPlot::PushStyleVar(ImPlotStyleVar_MarkerWeight, window->markerOutlineSize);
