@@ -113,6 +113,9 @@
     <CudaCompile Include="analysis\lle.cu">
       <Filter>analysis</Filter>
     </CudaCompile>
+    <CudaCompile Include="kernels\MRLCs-JJ.cu">
+      <Filter>kernels</Filter>
+    </CudaCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="CUDAynamics.rc" />

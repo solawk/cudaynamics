@@ -1875,7 +1875,7 @@ bool UpdateInput(ImPlotPlot& plot) {
             plot.SelectRect = ImRect(0, 0, 0, 0);
         }
 
-        if (IO.MouseDoubleClicked[gp.InputMap.Fit])
+        if (IO.MouseDoubleClicked[gp.InputMap.Fit] && !ImGui::IsKeyDown(ImGuiKey_LeftShift))
         {
             // Autofit
 

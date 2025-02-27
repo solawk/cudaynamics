@@ -1,12 +1,18 @@
 #pragma once
 #include "cuda_runtime.h"
-#include "../objects.h"
+
+#include "cuda_macros.h"
+#include "device_launch_parameters.h"
+#include <stdio.h>
+#include <fstream>
+#include <chrono>
+#include <wtypes.h>
 
 namespace kernel
 {
 	extern const char* name;
 
-	enum VARIABLES { sin_x0, x0, x1, x2, VAR_COUNT };
+	enum VARIABLES { sin_x0, x0, x0true, x1, x2, VAR_COUNT };
 	extern const char* VAR_NAMES[];
 	extern numb VAR_VALUES[];
 	extern RangingType VAR_RANGING[];
@@ -14,7 +20,7 @@ namespace kernel
 	extern numb VAR_MAX[];
 	extern int VAR_STEP_COUNTS[];
 
-	enum PARAMETERS { p0, p1, p2, p3, p4, p5, PARAM_COUNT };
+	enum PARAMETERS { p0, p1, p2, p3, p4, p5, p6, PARAM_COUNT };
 	extern const char* PARAM_NAMES[];
 	extern numb PARAM_VALUES[];
 	extern RangingType PARAM_RANGING[];
@@ -26,7 +32,7 @@ namespace kernel
 	extern const char* MAP_NAMES[];
 	extern MapData MAP_DATA[];
 
-	enum ANALYSIS { LLE_ANALYSIS, ANALYSIS_COUNT };
+	enum ANALYSIS { ANALYSIS_COUNT };
 	extern const char* ANALYSIS_NAMES[];
 	extern bool ANALYSIS_ENABLED[];
 

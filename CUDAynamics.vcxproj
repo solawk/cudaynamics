@@ -141,6 +141,7 @@
   <ItemGroup>
     <CudaCompile Include="analysis\lle.cu" />
     <CudaCompile Include="kernels\lorenz.cu" />
+    <CudaCompile Include="kernels\MRLCs-JJ.cu" />
     <CudaCompile Include="kernels\RLC-sJJ.cu" />
     <CudaCompile Include="main.cu" />
   </ItemGroup>

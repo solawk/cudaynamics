@@ -890,11 +890,12 @@ int imgui_main(int, char**)
 
                     // Variable list
 
-                    for (const int& v : selectedPlotVarsSet)
+                    for (const int v : selectedPlotVarsSet)
                     {
                         if (ImGui::Button(("x##" + std::to_string(v)).c_str()))
                         {
                             selectedPlotVarsSet.erase(v);
+                            break; // temporary workaround (hahaha)
                         }
                         ImGui::SameLine();
                         ImGui::Text(("- " + std::string(kernel::VAR_NAMES[v])).c_str());
