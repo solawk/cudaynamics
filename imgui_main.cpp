@@ -253,6 +253,18 @@ int imgui_main(int, char**)
     LOAD_PARAMNEW;
     stepsNew = kernel::steps;
 
+    bool isFullscreen[9] = { false };                   //for fullscreen
+    bool isFullscreenEnd[9] = { false };                //
+    ImVec2 originalPos[9], originalSize[9];             //
+    ImVec2 fullscreenPos, fullscreenSize;               //
+    fullscreenPos.x = 0;                                //
+    fullscreenPos.y = 0;                                //
+    fullscreenSize.x = GetSystemMetrics(SM_CXSCREEN);   //
+    fullscreenSize.y = GetSystemMetrics(SM_CYSCREEN);   //
+    const char* textFullcreenMode = "to windowed mode"; //
+    const char* textWindowMode = "to fullscreen mode";  //
+    int buttonPadding;                                  //
+
     try
     {
         loadWindows();
@@ -293,6 +305,7 @@ int imgui_main(int, char**)
         ImGui_ImplDX11_NewFrame();
         ImGui_ImplWin32_NewFrame();
         ImGui::NewFrame();
+        
 
         timeElapsed += frameTime;
         float breath = (cosf(timeElapsed * 6.0f) + 1.0f) / 2.0f;
@@ -304,8 +317,53 @@ int imgui_main(int, char**)
         // MAIN WINDOW
         {
             style.WindowMenuButtonPosition = ImGuiDir_Left;
+
+            if (isFullscreen[0])                                        // set position and size for fullcreen
+            {                                                           //
+                ImGui::SetNextWindowPos(fullscreenPos);                 //
+                ImGui::SetNextWindowSize(fullscreenSize);               //
+            }                                                           //
+            if (isFullscreenEnd[0])                                      //
+            {                                                           //
+                ImGui::SetNextWindowPos(originalPos[0]);                //
+                ImGui::SetNextWindowSize(originalSize[0]);              //
+                isFullscreenEnd[0] = false;                             //
+            }                                                           //
             ImGui::Begin("CUDAynamics", &work);
+
+
             ImGui::Text(kernel::name);
+            if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal))        //  tooltip
+            {                                                               //
+                ImGui::SetTooltip("shows the name of nonlinear system");    //
+            }                                                               //
+
+            if (isFullscreen[0])                                                        // fullcreen button
+            {                                                                           //
+                buttonPadding = 195;                                                    //
+            }                                                                           //
+            else                                                                        //
+            {                                                                           //
+                buttonPadding = 220;                                                    //
+            }                                                                           //
+            ImGui::SameLine(ImGui::GetContentRegionAvail().x - buttonPadding);          //
+            if (ImGui::Button(isFullscreen[0] ? textFullcreenMode : textWindowMode)) {  //
+                isFullscreen[0] = !isFullscreen[0];                                     //
+                if (isFullscreen[0])                                                    //
+                {                                                                       //
+                    originalPos[0] = ImGui::GetWindowPos();                             //
+                    originalSize[0] = ImGui::GetWindowSize();                           //
+                }                                                                       //
+                else                                                                    //
+                {                                                                       //
+                    isFullscreenEnd[0] = true;                                          //
+                }                                                                       //
+            }                                                                           //
+
+            if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal))                                                //  tooltip
+            {                                                                                                       //
+                ImGui::SetTooltip(isFullscreen[0] ? "switches to windowed mode" : "switches to a fullscreen mode"); //
+            }                                                                                                       //
 
             int tempTotalVariations = 1;
             for (int v = 0; v < kernel::VAR_COUNT; v++) if (varNew.RANGING[v]) tempTotalVariations *= (calculateStepCount(varNew.MIN[v], varNew.MAX[v], varNew.STEP[v]));
@@ -341,6 +399,10 @@ int imgui_main(int, char**)
                     namePadded += ' ';
 
                 ImGui::Text(namePadded.c_str());
+                if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal))        //  tooltip
+                {                                                               //
+                    ImGui::SetTooltip("shows variable name");                   //
+                }                                                               //
 
                 if (playingParticles)
                 {
@@ -368,6 +430,11 @@ int imgui_main(int, char**)
 
                     ImGui::EndCombo();
                 }
+                if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal))        //  tooltip
+                {                                                               //
+                    ImGui::SetTooltip("selects the type of ranging");           //
+                }                                                               //
+
                 ImGui::PopItemWidth();
                 if (popStyle) POP_FRAME(3);
 
@@ -386,6 +453,11 @@ int imgui_main(int, char**)
                 if (popStyle) POP_FRAME(3);
                 ImGui::PopItemWidth();
 
+                if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal))                                                                     //  tooltip
+                {                                                                                                                            //
+                    ImGui::SetTooltip(varNew.RANGING[i] ? "selects the start value of a variable" : "selects the value of a variable");      //
+                }                                                                                                                            //
+
                 // If ranging
                 if (varNew.RANGING[i])
                 {
@@ -402,6 +474,10 @@ int imgui_main(int, char**)
                     ImGui::DragFloat(("##STEP_" + std::string(kernel::VAR_NAMES[i])).c_str(), &varNewStep, dragChangeSpeed, 0.0f, 0.0f, "%f", dragFlag);
                     varNew.STEP[i] = (numb)varNewStep;
                     if (popStyle) POP_FRAME(3);
+                    if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal))                                 //  tooltip
+                    {                                                                                        //
+                        ImGui::SetTooltip("selects how much the value of a variable changes at each step");  //
+                    }                                                                                        //
 
                     // Max
                     ImGui::SameLine();
@@ -416,10 +492,18 @@ int imgui_main(int, char**)
                     varNew.MAX[i] = (numb)varNewMax;
                     if (popStyle) POP_FRAME(3);
                     ImGui::PopItemWidth();
+                    if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal))             //  tooltip
+                    {                                                                    //
+                        ImGui::SetTooltip("selects the maximum value of a variable");    //
+                    }                                                                    //
 
                     // Step count
                     ImGui::SameLine();
                     ImGui::Text((std::to_string(calculateStepCount(varNew.MIN[i], varNew.MAX[i], varNew.STEP[i])) + " steps").c_str());
+                    if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal))                  //  tooltip
+                    {                                                                         //
+                        ImGui::SetTooltip("shows total amount of steps for this variable");   //
+                    }                                                                         //
                 }
 
                 if (playingParticles)
@@ -450,6 +534,10 @@ int imgui_main(int, char**)
                     namePadded += ' ';
 
                 ImGui::Text(namePadded.c_str());
+                if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal))        //  tooltip
+                {                                                               //
+                    ImGui::SetTooltip("shows the name of the parameter");       //
+                }                                                               //
 
                 if (!changeAllowed)
                 {
@@ -481,6 +569,10 @@ int imgui_main(int, char**)
                 ImGui::PopItemWidth();
                 if (popStyle) POP_FRAME(3);
                 if (playingParticles) POP_FRAME(3);
+                if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal))        //  tooltip
+                {                                                               //
+                    ImGui::SetTooltip("selects the type of ranging");           //
+                }                                                               //
 
                 // Min
                 ImGui::SameLine();
@@ -496,6 +588,10 @@ int imgui_main(int, char**)
                 paramNew.MIN[i] = (numb)paramNewMin;
                 if (popStyle) POP_FRAME(3);
                 ImGui::PopItemWidth();
+                if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal))                                                                     //  tooltip
+                {                                                                                                                            //
+                    ImGui::SetTooltip(paramNew.RANGING[i] ? "selects the start value of a parameter" : "selects the value of a parameter");  //
+                }                                                                                                                            //
 
                 // If ranging
                 if (paramNew.RANGING[i])
@@ -513,6 +609,10 @@ int imgui_main(int, char**)
                     ImGui::DragFloat(("##STEP_" + std::string(kernel::PARAM_NAMES[i])).c_str(), &paramNewStep, dragChangeSpeed, 0.0f, 0.0f, "%f", changeAllowed ? 0 : ImGuiSliderFlags_ReadOnly);
                     paramNew.STEP[i] = (numb)paramNewStep;
                     if (popStyle) POP_FRAME(3);
+                    if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal))                                    //  tooltip
+                    {                                                                                           //
+                        ImGui::SetTooltip("selects how much the value of a parameter changes at each step");    //
+                    }                                                                                           //
 
                     // Max
                     ImGui::SameLine();
@@ -527,6 +627,10 @@ int imgui_main(int, char**)
                     paramNew.MAX[i] = (numb)paramNewMax;
                     if (popStyle) POP_FRAME(3);
                     ImGui::PopItemWidth();
+                    if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal))             //  tooltip
+                    {                                                                    //
+                        ImGui::SetTooltip("selects the maximum value of a parameter");   //
+                    }                                                                    //
                 }
 
                 if (!changeAllowed) POP_FRAME(4); // disabledText popped as well
@@ -539,11 +643,19 @@ int imgui_main(int, char**)
                     {
                         ImGui::SameLine();
                         ImGui::Text((std::to_string(stepCount) + " steps").c_str());
+                        if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal))                  //  tooltip
+                        {                                                                         //
+                            ImGui::SetTooltip("shows total amount of steps for this parameter");  //
+                        }                                                                         //
 
                         if (thisChanged && stepCount != paramNew.stepsOf(i))
                         {
                             ImGui::SameLine();
                             ImGui::Text(("(new - " + std::to_string(paramNew.stepsOf(i)) + " steps)").c_str());
+                            if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal))        //  tooltip
+                            {                                                               //
+                                ImGui::SetTooltip("shows the new amount of steps");         //
+                            }                                                               //
                             applicationProhibited = true;
                         }
                     }
@@ -559,9 +671,17 @@ int imgui_main(int, char**)
                     if (autoLoadNewParams) LOAD_PARAMNEW;
                     else UNLOAD_PARAMNEW;
                 }
+                if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal))                                     //  tooltip
+                {                                                                                            //
+                    ImGui::SetTooltip("automatically applies parameter changes but locks some settings");    //
+                }                                                                                            //
 
                 ImGui::PushItemWidth(200.0f);
                 ImGui::InputFloat("Drag speed", &(dragChangeSpeed));
+                if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal))        //  tooltip
+                {                                                               //
+                    ImGui::SetTooltip("selects least count for sliders");       //
+                }                                                               //
             }
 
             if (autoLoadNewParams)
@@ -600,6 +720,10 @@ int imgui_main(int, char**)
             unsigned long long singleBufferNumberCount = ((tempTotalVariationsLL * varCountLL) * stepsNewLL);
             unsigned long long singleBufferNumbSize = singleBufferNumberCount * sizeof(numb);
             ImGui::Text(("Single buffer size: " + memoryString(singleBufferNumbSize) + " (" + to_string(singleBufferNumbSize) + " bytes)").c_str());
+            if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal))                     //  tooltip
+            {                                                                            //
+                ImGui::SetTooltip("shows amount of memory beeing used by one buffer");   //
+            }                                                                            //
 
             ImGui::PushItemWidth(200.0f);
             if (playingParticles)
@@ -617,6 +741,10 @@ int imgui_main(int, char**)
             }
             ImGui::InputInt("Steps", &(stepsNew), 1, 1000, playingParticles ? ImGuiInputTextFlags_ReadOnly : 0);
             if (popStyle) POP_FRAME(3);
+            if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal))                //  tooltip
+            {                                                                       //
+                ImGui::SetTooltip("shows amount of calculation steps in buffer");   //
+            }                                                                       //
             if (playingParticles)
             {
                 ImGui::PopStyleColor();
@@ -627,17 +755,29 @@ int imgui_main(int, char**)
             ImGui::InputFloat("Step size", &tempStepSize, 0.0f, 0.0f, "%f");
             kernel::stepSize = (numb)tempStepSize;
             ImGui::PopItemWidth();
+            if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal))                //  tooltip
+            {                                                                       //
+                ImGui::SetTooltip("sets size of calculation step");                 //
+            }                                                                       //
             
             bool tempEnabledParticles = enabledParticles;
             if (ImGui::Checkbox("Particles mode", &(tempEnabledParticles)))
             {
                 enabledParticles = !enabledParticles;
             }
+            if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal))                        //  tooltip
+            {                                                                               //
+                ImGui::SetTooltip("allows to display animation and control its settings");  //
+            }                                                                               //
 
             if (tempEnabledParticles)
             {
                 ImGui::PushItemWidth(200.0f);
                 ImGui::DragFloat("Animation speed, steps/s", &(particleSpeed), 1.0f);
+                if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal))                        //  tooltip
+                {                                                                               //
+                    ImGui::SetTooltip("sets the speed at which the animation is shown");        //
+                }                                                                               //
                 if (particleSpeed < 0.0f) particleSpeed = 0.0f;
                 ImGui::PopItemWidth();
 
@@ -648,16 +788,32 @@ int imgui_main(int, char**)
 
                     ImGui::SameLine();
                     ImGui::Text(("(max " + to_string(stepsPerSecond) + " before stalling)").c_str());
+                    if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal))                    //  tooltip
+                    {                                                                           //
+                        ImGui::SetTooltip("shows the maximum possible animation speed");        //
+                    }                                                                           //
                 }
 
                 ImGui::DragInt("##Animation step", &(particleStep), 1.0f, 0, kernel::steps);
+                if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal))                                                            //  tooltip
+                {                                                                                                                   //
+                    ImGui::SetTooltip("shows current animation step in the buffer and allows to scroll through the animation");     //
+                }                                                                                                                   //
                 ImGui::SameLine();
                 ImGui::Text(("Animation step" + (continuousComputingEnabled ? " (total step " + to_string(bufferNo * kernel::steps + particleStep) + ")" : "")).c_str());
+                if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal))                    //  tooltip
+                {                                                                           //
+                    ImGui::SetTooltip("shows the total amount of animation steps");         //
+                }                                                                           //
 
                 if (ImGui::Button("Reset to step 0"))
                 {
                     particleStep = 0;
                 }
+                if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal))                    //  tooltip
+                {                                                                           //
+                    ImGui::SetTooltip("resets the step in the current buffer to 0");        //
+                }                                                                           //
 
                 if (anyChanged)
                 {
@@ -679,6 +835,10 @@ int imgui_main(int, char**)
                     }
                 }
                 if (anyChanged) POP_FRAME(4);
+                if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal))                    //  tooltip
+                {                                                                           //
+                    ImGui::SetTooltip("starts/pauses the animation");                       //
+                }                                                                           //
 
                 bool tempContinuous = continuousComputingEnabled;
                 if (ImGui::Checkbox("Continuous computing", &(tempContinuous)))
@@ -697,12 +857,19 @@ int imgui_main(int, char**)
                         particleStep = 0;
                     }
                 }
+                if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal))                        //  tooltip
+                {                                                                               //
+                    ImGui::SetTooltip("allows to use two buffers for continuous calculation");  //
+                }                                                                               //
             }
 
             frameTime = 1.0f / io.Framerate;
             ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
             //ImGui::Text("BufferToFill %i PlayedBuffer %i", bufferToFillIndex, playedBufferIndex);
-
+            if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal))                        //  tooltip
+            {                                                                               //
+                ImGui::SetTooltip("shows average framerate");                               //
+            }                                                                               //
             if (playingParticles && enabledParticles)
             {
                 particlePhase += frameTime * particleSpeed;
@@ -730,6 +897,10 @@ int imgui_main(int, char**)
                             particleStep = kernel::steps;
 
                             ImGui::Text("Stalling!");
+                            if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal))                                                     //  tooltip
+                            {                                                                                                            //
+                                ImGui::SetTooltip("shows that animation is't ready, reduce animation speeds to improve performance");    //
+                            }                                                                                                            //
                         }
                     }
                     else
@@ -760,6 +931,10 @@ int imgui_main(int, char**)
                 computing();
             }
             if (playBreath) ImGui::PopStyleColor();
+            if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal))                        //  tooltip
+            {                                                                               //
+                ImGui::SetTooltip("starts computation");                                    //
+            }                                                                               //
 
             if (anyChanged)
             {
@@ -768,6 +943,10 @@ int imgui_main(int, char**)
                     LOAD_VARNEW;
                     LOAD_PARAMNEW;
                 }
+                if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal))                        //  tooltip
+                {                                                                               //
+                    ImGui::SetTooltip("returns variable values to default");                    //
+                }                                                                               //
             }
 
             ImGui::End();
@@ -789,6 +968,18 @@ int imgui_main(int, char**)
 
                 if (rangingWindowEnabled)
                 {
+                    if (isFullscreen[1])                                        // set position and size for fullcreen
+                    {                                                           //
+                        ImGui::SetNextWindowPos(fullscreenPos);                 //
+                        ImGui::SetNextWindowSize(fullscreenSize);               //
+                    }                                                           //
+                    if (isFullscreenEnd[1])                                     //
+                    {                                                           //
+                        ImGui::SetNextWindowPos(originalPos[1]);                //
+                        ImGui::SetNextWindowSize(originalSize[1]);              //
+                        isFullscreenEnd[1] = false;                             //
+                    }                                                           //
+
                     ImGui::Begin("Ranging", &rangingWindowEnabled);
 
                     for (int r = 0; r < rangingData[playedBufferIndex].rangingCount; r++)
@@ -798,12 +989,50 @@ int imgui_main(int, char**)
 
                         ImGui::PushItemWidth(150.0f);
                         ImGui::DragInt(("##" + rangingData[playedBufferIndex].names[r] + "_ranging").c_str(), &(rangingData[playedBufferIndex].currentStep[r]), 1.0f, 0, rangingData[playedBufferIndex].stepCount[r] - 1);
+                        if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal))                        //  tooltip
+                        {                                                                               //
+                            ImGui::SetTooltip("sets the value of a parameter");                         //
+                        }                                                                               //
                         ImGui::SameLine();
                         ImGui::Text((rangingData[playedBufferIndex].names[r] + " = " + std::to_string(currentValue)).c_str());
                         ImGui::PopItemWidth();
+                        if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal))                        //  tooltip
+                        {                                                                               //
+                            ImGui::SetTooltip("shows the name of a parameter and it's value");          //
+                        }                                                                               //
+                        if (r == 0)
+                        {
+                            if (isFullscreen[1])                                                        // fullcreen button
+                            {                                                                           //
+                                buttonPadding = 195;                                                    //
+                            }                                                                           //
+                            else                                                                        //
+                            {                                                                           //
+                                buttonPadding = 220;                                                    //
+                            }                                                                           //
+                            ImGui::SameLine(ImGui::GetContentRegionAvail().x - buttonPadding);          //
+                            if (ImGui::Button(isFullscreen[1] ? textFullcreenMode : textWindowMode)) {  //
+                                isFullscreen[1] = !isFullscreen[1];                                     //
+                                if (isFullscreen[1]) {                                                  //
+                                    originalPos[1] = ImGui::GetWindowPos();                             //
+                                    originalSize[1] = ImGui::GetWindowSize();                           //
+                                }                                                                       //
+                                else {                                                                  //
+                                    isFullscreenEnd[1] = true;                                          //
+                                }                                                                       //
+                            }                                                                           //
+                            if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal))                                                //  tooltip
+                            {                                                                                                       //
+                                ImGui::SetTooltip(isFullscreen[1] ? "switches to windowed mode" : "switches to a fullscreen mode"); //
+                            }                                                                                                       //
+                        }
                     }
 
                     ImGui::Text(("Current variations: " + std::to_string(currentTotalVariations)).c_str());
+                    if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal))                        //  tooltip
+                    {                                                                               //
+                        ImGui::SetTooltip("shows the amount of current variations");                //
+                    }                                                                               //
 
                     // Apply ranging configuration as fixed values
                     if (ImGui::Button("Apply fixed values"))
@@ -828,6 +1057,10 @@ int imgui_main(int, char**)
                             }
                         }
                     }
+                    if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal))                             //  tooltip
+                    {                                                                                    //
+                        ImGui::SetTooltip("changes all the parametes above to selected fixed values");   //
+                    }                                                                                    //
 
                     ImGui::End();
                 }
@@ -840,6 +1073,18 @@ int imgui_main(int, char**)
 
             if (graphBuilderWindowEnabled)
             {
+                if (isFullscreen[2])                                        // set position and size for fullcreen
+                {                                                           //
+                    ImGui::SetNextWindowPos(fullscreenPos);                 //
+                    ImGui::SetNextWindowSize(fullscreenSize);               //
+                }                                                           //
+                if (isFullscreenEnd[2])                                     //
+                {                                                           //
+                    ImGui::SetNextWindowPos(originalPos[2]);                //
+                    ImGui::SetNextWindowSize(originalSize[2]);              //
+                    isFullscreenEnd[2] = false;                             //
+                }                                                           //
+
                 ImGui::Begin("Graph Builder", &graphBuilderWindowEnabled);
 
                 //ImGui::PushItemWidth(300.0f);
@@ -863,6 +1108,34 @@ int imgui_main(int, char**)
                     ImGui::EndCombo();
                 }
                 ImGui::PopItemWidth();
+                if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal))                             //  tooltip
+                {                                                                                    //
+                    ImGui::SetTooltip("selects plot type for the new graph");                        //
+                }                                                                                    //
+
+                if (isFullscreen[2])                                                        // fullcreen button
+                {                                                                           //
+                    buttonPadding = 195;                                                    //
+                }                                                                           //
+                else                                                                        //
+                {                                                                           //
+                    buttonPadding = 220;                                                    //
+                }                                                                           //
+                ImGui::SameLine(ImGui::GetContentRegionAvail().x - buttonPadding);          //
+                if (ImGui::Button(isFullscreen[2] ? textFullcreenMode : textWindowMode)) {  //
+                    isFullscreen[2] = !isFullscreen[2];                                     //
+                    if (isFullscreen[2]) {                                                  //
+                        originalPos[2] = ImGui::GetWindowPos();                             //
+                        originalSize[2] = ImGui::GetWindowSize();                           //
+                    }                                                                       //
+                    else {                                                                  //
+                        isFullscreenEnd[2] = true;                                          //
+                    }                                                                       //
+                }                                                                           //
+                if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal))                                                //  tooltip
+                {                                                                                                       //
+                    ImGui::SetTooltip(isFullscreen[2] ? "switches to windowed mode" : "switches to a fullscreen mode"); //
+                }                                                                                                       //
 
                 std::string variablexyz[] = { "x", "y", "z" };
 
@@ -887,6 +1160,10 @@ int imgui_main(int, char**)
 
                         ImGui::EndCombo();
                     }
+                    if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal))                             //  tooltip
+                    {                                                                                    //
+                        ImGui::SetTooltip("selects the variable used in the graph");                     //
+                    }                                                                                    //
 
                     // Variable list
 
@@ -897,6 +1174,10 @@ int imgui_main(int, char**)
                             selectedPlotVarsSet.erase(v);
                             break; // temporary workaround (hahaha)
                         }
+                        if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal))                             //  tooltip
+                        {                                                                                    //
+                            ImGui::SetTooltip("removes the variable");                                       //
+                        }                                                                                    //
                         ImGui::SameLine();
                         ImGui::Text(("- " + std::string(kernel::VAR_NAMES[v])).c_str());
                     }
@@ -932,6 +1213,10 @@ int imgui_main(int, char**)
                             }
                             ImGui::EndCombo();
                         }
+                        if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal))                             //  tooltip
+                        {                                                                                    //
+                            ImGui::SetTooltip("sets a variable for the axis");                               //
+                        }                                                                                    //
                     }
                     ImGui::PopItemWidth();
                     break;
@@ -976,6 +1261,10 @@ int imgui_main(int, char**)
 
                     plotWindows.push_back(plotWindow);
                 }
+                if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal))                             //  tooltip
+                {                                                                                    //
+                    ImGui::SetTooltip("creates selected graph in the new window");                   //
+                }                                                                                    //
 
                 ImGui::End();
             }
@@ -999,6 +1288,19 @@ int imgui_main(int, char**)
             style.WindowMenuButtonPosition = ImGuiDir_None;
             std::string windowName = window->name + std::to_string(window->id);
             std::string plotName = windowName + "_plot";
+
+            if (isFullscreen[3 + w])                                    // set position and size for fullcreen
+            {                                                           //
+                ImGui::SetNextWindowPos(fullscreenPos);                 //
+                ImGui::SetNextWindowSize(fullscreenSize);               //
+            }                                                           //
+            if (isFullscreenEnd[3 + w])                                 //
+            {                                                           //
+                ImGui::SetNextWindowPos(originalPos[3 + w]);            //
+                ImGui::SetNextWindowSize(originalSize[3 + w]);          //
+                isFullscreenEnd[3 + w] = false;                         //
+            }                                                           //
+
             ImGui::Begin(windowName.c_str(), &(window->active));
 
             bool autofitHeatmap = false;
@@ -1066,6 +1368,34 @@ int imgui_main(int, char**)
 
                 ImGui::EndCombo();
             }
+            if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal))                             //  tooltip
+            {                                                                                    //
+                ImGui::SetTooltip("opens controls for the plot area");                           //
+            }                                                                                    //
+
+            if (isFullscreen[3 + w])                                                           // fullcreen button
+            {                                                                                //
+                buttonPadding = 195;                                                         //
+            }                                                                                //
+            else                                                                             //
+            {                                                                                //
+                buttonPadding = 220;                                                         //
+            }                                                                                //
+            ImGui::SameLine(ImGui::GetContentRegionAvail().x - buttonPadding);               //
+            if (ImGui::Button(isFullscreen[3 + w] ? textFullcreenMode : textWindowMode)) {   //
+                isFullscreen[3 + w] = !isFullscreen[3 + w];                                  //
+                if (isFullscreen[3 + w]) {                                                   //
+                    originalPos[3 + w] = ImGui::GetWindowPos();                              //
+                    originalSize[3 + w] = ImGui::GetWindowSize();                            //
+                }                                                                            //
+                else {                                                                       //
+                    isFullscreenEnd[3 + w] = true;                                           //
+                }                                                                            //
+            }                                                                                //
+            if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal))                                                  //  tooltip
+            {                                                                                                         //
+                ImGui::SetTooltip(isFullscreen[3 + w] ? "switches to windowed mode" : "switches to a fullscreen mode"); //
+            }                                                                                                         //
 
             // Common variables
             ImPlotAxisFlags axisFlags = (toAutofit ? ImPlotAxisFlags_AutoFit : 0);
@@ -1129,9 +1459,25 @@ int imgui_main(int, char**)
                     rotationEulerEditable.z += window->autorotate.z * frameTime;
                     
                     ImGui::DragFloat3("Rotation", (float*)&rotationEulerEditable, 1.0f);
+                    if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal))                             //  tooltip
+                    {                                                                                    //
+                        ImGui::SetTooltip("controls rotation of the axis (x, y, z)");                    //
+                    }                                                                                    //
                     ImGui::DragFloat3("Automatic rotation", (float*)&window->autorotate, 0.1f);
+                    if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal))                             //  tooltip
+                    {                                                                                    //
+                        ImGui::SetTooltip("sets continuous rotation of the axis (x, y, z)");             //
+                    }                                                                                    //
                     ImGui::DragFloat3("Offset", (float*)&window->offset, 0.01f);
+                    if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal))                             //  tooltip
+                    {                                                                                    //
+                        ImGui::SetTooltip("controls offset of the graph along each axis (x, y, z)");     //
+                    }                                                                                    //
                     ImGui::DragFloat3("Scale", (float*)&window->scale, 0.01f);
+                    if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal))                             //  tooltip
+                    {                                                                                    //
+                        ImGui::SetTooltip("scales graph on each axis (x, y, z)");                        //
+                    }                                                                                    //
 
                     if (window->scale.x < 0.0f) window->scale.x = 0.0f;
                     if (window->scale.y < 0.0f) window->scale.y = 0.0f;
