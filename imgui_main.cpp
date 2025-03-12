@@ -1675,13 +1675,21 @@ void listAttrRanging(Attribute* attr, bool isChanged)
     ATTR_END;
 }
 
-void listAttrNumb(Attribute* attr, numb* field, std::string name, bool isChanged)
+void listAttrNumb(Attribute* attr, numb* field, std::string name, std::string inner, bool isChanged)
 {
     ATTR_BEGIN;
-    ImGui::PushItemWidth(150.0f);
+    ImGui::PushItemWidth(200.0f);
     float varNewMin = (float)(*field);
-    ImGui::DragFloat(("##" + name + attr->name).c_str(), &varNewMin, dragChangeSpeed, 0.0f, 0.0f, "%f", dragFlag);
+    ImGui::DragFloat(("##" + name + attr->name).c_str(), &varNewMin, dragChangeSpeed, 0.0f, 0.0f, (inner + "%f").c_str(), dragFlag);
     (*field) = (numb)varNewMin;
+    ATTR_END;
+}
+
+void listAttrInt(Attribute* attr, int* field, std::string name, std::string inner, bool isChanged)
+{
+    ATTR_BEGIN;
+    ImGui::PushItemWidth(200.0f);
+    ImGui::DragInt(("##" + name + attr->name).c_str(), field, dragChangeSpeed, 0, 0, (inner + "%i").c_str(), dragFlag);
     ATTR_END;
 }
 
@@ -1706,19 +1714,35 @@ void listVariable(int i)
     // Ranging
     listAttrRanging(&(kernelNew.variables[i]), kernelNew.variables[i].rangingType != KERNEL.variables[i].rangingType);
 
-    // Min
-    listAttrNumb(&(kernelNew.variables[i]), &(kernelNew.variables[i].min), "", kernelNew.variables[i].min != KERNEL.variables[i].min);
-
-    listAttrNumb(&(kernelNew.variables[i]), &(kernelNew.variables[i].step), "STEP", kernelNew.variables[i].step != KERNEL.variables[i].step);
-
-    listAttrNumb(&(kernelNew.variables[i]), &(kernelNew.variables[i].max), "MAX", kernelNew.variables[i].max != KERNEL.variables[i].max);
-
-    // If ranging
-    if (kernelNew.variables[i].rangingType)
+    switch (kernelNew.variables[i].rangingType)
     {
-        // Step count
-        ImGui::SameLine();
-        ImGui::Text((std::to_string(/*calculateStepCount(varNew.MIN[i], varNew.MAX[i], varNew.STEP[i])*/9988) + " steps").c_str());
+    case None:
+        listAttrNumb(&(kernelNew.variables[i]), &(kernelNew.variables[i].min), "", "", kernelNew.variables[i].min != KERNEL.variables[i].min);
+        break;
+    case Step:
+        listAttrNumb(&(kernelNew.variables[i]), &(kernelNew.variables[i].min), "", "Min: ", kernelNew.variables[i].min != KERNEL.variables[i].min);
+        listAttrNumb(&(kernelNew.variables[i]), &(kernelNew.variables[i].max), "MAX", "Max: ", kernelNew.variables[i].max != KERNEL.variables[i].max);
+        listAttrNumb(&(kernelNew.variables[i]), &(kernelNew.variables[i].step), "STEP", "Step: ", kernelNew.variables[i].step != KERNEL.variables[i].step);
+        kernelNew.variables[i].CalcStepCount();
+        ImGui::SameLine(); ImGui::Text((std::to_string(kernelNew.variables[i].stepCount) + " steps").c_str());
+        break;
+    case Linear:
+        listAttrNumb(&(kernelNew.variables[i]), &(kernelNew.variables[i].min), "", "Min: ", kernelNew.variables[i].min != KERNEL.variables[i].min);
+        listAttrNumb(&(kernelNew.variables[i]), &(kernelNew.variables[i].max), "MAX", "Max: ", kernelNew.variables[i].max != KERNEL.variables[i].max);
+        listAttrInt(&(kernelNew.variables[i]), &(kernelNew.variables[i].stepCount), "STEPCOUNT", "Count: ", kernelNew.variables[i].stepCount != KERNEL.variables[i].stepCount);
+        kernelNew.variables[i].CalcStep();
+        ImGui::SameLine(); ImGui::Text(("Step: " + (std::to_string(kernelNew.variables[i].step))).c_str());
+        break;
+    case UniformRandom:
+        listAttrNumb(&(kernelNew.variables[i]), &(kernelNew.variables[i].mean), "MEAN", "Mean: ", kernelNew.variables[i].mean != KERNEL.variables[i].mean);
+        listAttrNumb(&(kernelNew.variables[i]), &(kernelNew.variables[i].deviation), "DEV", "Dev: ", kernelNew.variables[i].deviation != KERNEL.variables[i].deviation);
+        listAttrInt(&(kernelNew.variables[i]), &(kernelNew.variables[i].stepCount), "STEPCOUNT", "Count: ", kernelNew.variables[i].stepCount != KERNEL.variables[i].stepCount);
+        break;
+    case NormalRandom:
+        listAttrNumb(&(kernelNew.variables[i]), &(kernelNew.variables[i].mean), "MU", "Mu: ", kernelNew.variables[i].mean != KERNEL.variables[i].mean);
+        listAttrNumb(&(kernelNew.variables[i]), &(kernelNew.variables[i].deviation), "SIGMA", "Sigma: ", kernelNew.variables[i].deviation != KERNEL.variables[i].deviation);
+        listAttrInt(&(kernelNew.variables[i]), &(kernelNew.variables[i].stepCount), "STEPCOUNT", "Count: ", kernelNew.variables[i].stepCount != KERNEL.variables[i].stepCount);
+        break;
     }
 
     if (playingParticles)
@@ -1758,41 +1782,37 @@ void listParameter(int i)
 
     listAttrRanging(&(kernelNew.parameters[i]), kernelNew.parameters[i].rangingType != KERNEL.parameters[i].rangingType);
 
-    listAttrNumb(&(kernelNew.parameters[i]), &(kernelNew.parameters[i].min), "", kernelNew.parameters[i].min != KERNEL.parameters[i].min);
-
-    // Min
-
-    // If ranging
-    if (kernelNew.parameters[i].rangingType)
+    switch (kernelNew.parameters[i].rangingType)
     {
-        // Step
-        ImGui::SameLine();
-        ImGui::PushItemWidth(150.0f);
-        popStyle = false;
-        if (kernelNew.parameters[i].step != KERNEL.parameters[i].step)
-        {
-            PUSH_UNSAVED_FRAME;
-            popStyle = true;
-        }
-        float paramNewStep = (float)kernelNew.parameters[i].step;
-        ImGui::DragFloat(("##STEP_" + KERNEL.parameters[i].name).c_str(), &paramNewStep, dragChangeSpeed, 0.0f, 0.0f, "%f", changeAllowed ? 0 : ImGuiSliderFlags_ReadOnly);
-        kernelNew.parameters[i].step = (numb)paramNewStep;
-        if (popStyle) POP_FRAME(3);
-
-        // Max
-        ImGui::SameLine();
-        popStyle = false;
-        if (kernelNew.parameters[i].max != KERNEL.parameters[i].max)
-        {
-            PUSH_UNSAVED_FRAME;
-            popStyle = true;
-        }
-        float paramNewMax = (float)kernelNew.parameters[i].max;
-        ImGui::DragFloat(("##MAX_" + KERNEL.parameters[i].name).c_str(), &paramNewMax, dragChangeSpeed, 0.0f, 0.0f, "%f", changeAllowed ? 0 : ImGuiSliderFlags_ReadOnly);
-        kernelNew.parameters[i].max = (numb)paramNewMax;
-        if (popStyle) POP_FRAME(3);
-        ImGui::PopItemWidth();
+    case None:
+        listAttrNumb(&(kernelNew.parameters[i]), &(kernelNew.parameters[i].min), "", "", kernelNew.parameters[i].min != KERNEL.parameters[i].min);
+        break;
+    case Step:
+        listAttrNumb(&(kernelNew.parameters[i]), &(kernelNew.parameters[i].min), "", "Min: ", kernelNew.parameters[i].min != KERNEL.parameters[i].min);
+        listAttrNumb(&(kernelNew.parameters[i]), &(kernelNew.parameters[i].max), "MAX", "Max: ", kernelNew.parameters[i].max != KERNEL.parameters[i].max);
+        listAttrNumb(&(kernelNew.parameters[i]), &(kernelNew.parameters[i].step), "STEP", "Step: ", kernelNew.parameters[i].step != KERNEL.parameters[i].step);
+        kernelNew.parameters[i].CalcStepCount();
+        ImGui::SameLine(); ImGui::Text((std::to_string(kernelNew.parameters[i].stepCount) + " steps").c_str());
+        break;
+    case Linear:
+        listAttrNumb(&(kernelNew.parameters[i]), &(kernelNew.parameters[i].min), "", "Min: ", kernelNew.parameters[i].min != KERNEL.parameters[i].min);
+        listAttrNumb(&(kernelNew.parameters[i]), &(kernelNew.parameters[i].max), "MAX", "Max: ", kernelNew.parameters[i].max != KERNEL.parameters[i].max);
+        listAttrInt(&(kernelNew.parameters[i]), &(kernelNew.parameters[i].stepCount), "STEPCOUNT", "Count: ", kernelNew.parameters[i].stepCount != KERNEL.parameters[i].stepCount);
+        kernelNew.parameters[i].CalcStep();
+        ImGui::SameLine(); ImGui::Text(("Step: " + (std::to_string(kernelNew.parameters[i].step))).c_str());
+        break;
+    case UniformRandom:
+        listAttrNumb(&(kernelNew.parameters[i]), &(kernelNew.parameters[i].mean), "MEAN", "Mean: ", kernelNew.parameters[i].mean != KERNEL.parameters[i].mean);
+        listAttrNumb(&(kernelNew.parameters[i]), &(kernelNew.parameters[i].deviation), "DEV", "Dev: ", kernelNew.parameters[i].deviation != KERNEL.parameters[i].deviation);
+        listAttrInt(&(kernelNew.parameters[i]), &(kernelNew.parameters[i].stepCount), "STEPCOUNT", "Count: ", kernelNew.parameters[i].stepCount != KERNEL.parameters[i].stepCount);
+        break;
+    case NormalRandom:
+        listAttrNumb(&(kernelNew.parameters[i]), &(kernelNew.parameters[i].mean), "MU", "Mu: ", kernelNew.parameters[i].mean != KERNEL.parameters[i].mean);
+        listAttrNumb(&(kernelNew.parameters[i]), &(kernelNew.parameters[i].deviation), "SIGMA", "Sigma: ", kernelNew.parameters[i].deviation != KERNEL.parameters[i].deviation);
+        listAttrInt(&(kernelNew.parameters[i]), &(kernelNew.parameters[i].stepCount), "STEPCOUNT", "Count: ", kernelNew.parameters[i].stepCount != KERNEL.parameters[i].stepCount);
+        break;
     }
+
 
     if (playingParticles)
     {
@@ -1801,22 +1821,4 @@ void listParameter(int i)
     }
 
     if (!changeAllowed) POP_FRAME(4); // disabledText popped as well
-
-    // Step count
-    if (kernelNew.parameters[i].rangingType)
-    {
-        int stepCount = /*calculateStepCount(kernel::PARAM_VALUES[i], kernel::PARAM_MAX[i], kernel::PARAM_STEPS[i])*/6655; // TODO
-        if (stepCount > 0)
-        {
-            ImGui::SameLine();
-            ImGui::Text((std::to_string(stepCount) + " steps").c_str());
-
-            /*if (thisChanged && stepCount != paramNew.stepsOf(i))
-            {
-                ImGui::SameLine();
-                ImGui::Text(("(new - " + std::to_string(paramNew.stepsOf(i)) + " steps)").c_str());
-                applicationProhibited = true;
-            }*/
-        }
-    }
 }
