@@ -1,0 +1,22 @@
+Name: Lorenz system
+Steps: 1000
+Step size: 0.01
+// Compute on CUDAynamics launch: yes/no
+Execute on launch: yes
+// Ranging types:
+// Fixed (single <minimum value>)
+// Linear (<step count> values uniformly distributed between <minimum value> and <maximum value>, inclusively)
+// Step (values are picked from <minimum value> to <maximum value> with a step <step>, including minimum, including maximum if it ends up as a picked value)
+// Random (<step count> values randomly picked from <minimum value> to <maximum value>)
+// Normal (normal distribution of <step count> values, defined by <normal mean> and <normal deviation>
+//
+// Defining variables/parameters:
+// var/param <name> <ranging type> <minimum value> <maximum value> <step> <step count> <normal mean> <normal deviation>
+var x Step 10.0 29.0 1.0 0 0.0 0.0
+var y Fixed 10.0 29.0 0.1 0 0.0 0.0
+var z Fixed 10.0 29.0 0.1 0 0.0 0.0
+param sigma Fixed 10.0 29.0 0.1 0 0.0 0.0
+param rho Step 28.0 29.0 0.1 0 0.0 0.0
+param beta Fixed 2.666667 29.0 0.1 0 0.0 0.0
+// Defining maps:
+map LLE sigma rho

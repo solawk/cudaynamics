@@ -3,25 +3,30 @@
 // Short kernel macros
 
 // Variable value in the current step and variation
-#define dataV(n)		data[stepStart + kernel::n]
+//#define dataV(n)		data[stepStart + n]
 
 // Starting value of the variable in the variation
-#define initV(n)		dataV(n) = varValues[kernel::n]
+//#define initV(n)		dataV(n) = varValues[n]
 
 // Current variable value in the FDS
-#define V(n)			currentV[kernel::n]
+#define V(n)			currentV[attributes::variables::n]
 
 // Next variable value in the FDS
-#define Vnext(n)		nextV[kernel::n]
+#define Vnext(n)		nextV[attributes::variables::n]
 
 // Parameter value in the FDS
-#define P(n)			parameters[kernel::n]
+#define P(n)			parameters[attributes::parameters::n]
 
 // Map cell value (index, x, y)
 #define M(i, x, y)		maps[mapData[i].offset + y * mapData[i].xSize + x]
 
 // Shift to next step
-#define NEXT			+ kernel::VAR_COUNT
+//#define NEXT			+ kernel::VAR_COUNT
+
+// Computation access macros
+
+#define CUDA_marshal	data->marshal
+#define CUDA_kernel		CUDA_marshal.kernel
 
 // Preparation macros
 

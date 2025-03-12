@@ -10,25 +10,15 @@ static ID3D11RenderTargetView* g_mainRenderTargetView = nullptr;
 std::vector<PlotWindow> plotWindows;
 int uniqueIds = 0; // Unique window IDs
 
-void** initialValues = nullptr; // Array of all initial values of variables and parameters, can be not regenerated at will (e.g., user wants the same random values)
-// When changes are applied to initial values, nullified automatically
-// Not regenerated when hot-swapping (since there is no point to it anyway)
-// Is generated before every launch, unless disabled
-
-void* computedData[2] = { nullptr, nullptr }; // For double buffering the computations, aren't null when computed
-atomic_bool computedDataReady[2] = { false, false };
+Computation computations[2];
 int playedBufferIndex = 0; // Buffer currently shown
 int bufferToFillIndex = 0; // Buffer to send computations to
-void* mapBuffers[2] = { nullptr, nullptr };
 
-InputValuesBuffer<numb> varNew;
 bool autoLoadNewParams = false;
-InputValuesBuffer<numb> paramNew;
-int stepsNew = 0;
+Kernel kernelNew;
 
 void* dataBuffer = nullptr; // One variation local buffer
-void* particleBuffer = nullptr; // One step local buffer
-numb* valuesOverride = nullptr; // For transferring end variable values to the next buffer
+numb* particleBuffer = nullptr; // One step local buffer
 
 void* axisBuffer = new numb[3 * 2 * 3] {}; // 3 axis, 2 points
 void* rulerBuffer = new numb[51 * 3] {}; // 1 axis, 5 * 10 + 1 points
@@ -36,11 +26,10 @@ void* gridBuffer = new numb[10 * 5 * 3 * 2] {};
 
 int computedSteps = 0; // Step count for the current computation
 bool autofitAfterComputing = false; // Temporary flag to autofit computed data
-PostRanging rangingData[2]; // Data about variation variables and parameters (1 per buffer for stability)
 int currentTotalVariations = 0; // Current amount of variations, so we can compare and safely hot-swap the parameter values
 bool executedOnLaunch = false; // Temporary flag to execute computations on launch if needed
 
-bool enabledParticles = true; // Particles mode
+bool enabledParticles = false; // Particles mode
 bool playingParticles = false; // Playing animation
 float particleSpeed = 5000.0f; // Steps per second
 float particlePhase = 0.0f; // Animation frame cooldown
@@ -64,6 +53,11 @@ int variation = 0;
 int stride = 1;
 float frameTime; // In seconds
 float timeElapsed = 0.0f; // Total time elapsed, in seconds
+int maxNameLength;
+bool anyChanged;
+bool thisChanged;
+bool popStyle;
+ImGuiSliderFlags dragFlag;
 
 // Colors
 ImVec4 unsavedBackgroundColor = ImVec4(0.427f, 0.427f, 0.137f, 1.0f);
@@ -81,16 +75,12 @@ ImVec4 zAxisColor = ImVec4(0.3f, 0.45f, 0.7f, 1.0f);
 
 std::string rangingTypes[] = { "Fixed", "Step", "Linear", "Random", "Normal" };
 
-std::future<int> computationFutures[2];
+//std::future<int> computationFutures[2];
 
 bool rangingWindowEnabled = true;
 bool graphBuilderWindowEnabled = true;
 
 // Repetitive stuff
-#define LOAD_VARNEW     varNew.load(kernel::VAR_VALUES, kernel::VAR_MAX, kernel::VAR_STEPS, kernel::VAR_RANGING, kernel::VAR_COUNT)
-#define UNLOAD_VARNEW   varNew.unload(kernel::VAR_VALUES, kernel::VAR_MAX, kernel::VAR_STEPS, kernel::VAR_RANGING, kernel::VAR_COUNT)
-#define LOAD_PARAMNEW   paramNew.load(kernel::PARAM_VALUES, kernel::PARAM_MAX, kernel::PARAM_STEPS, kernel::PARAM_RANGING, kernel::PARAM_COUNT)
-#define UNLOAD_PARAMNEW paramNew.unload(kernel::PARAM_VALUES, kernel::PARAM_MAX, kernel::PARAM_STEPS, kernel::PARAM_RANGING, kernel::PARAM_COUNT)
 #define PUSH_DISABLED_FRAME {ImGui::PushStyleColor(ImGuiCol_FrameBg, disabledBackgroundColor); \
                             ImGui::PushStyleColor(ImGuiCol_FrameBgActive, disabledBackgroundColor); \
                             ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, disabledBackgroundColor);}
@@ -102,58 +92,46 @@ bool graphBuilderWindowEnabled = true;
 
 void deleteBothBuffers()
 {
-    if (computedData[0] != nullptr) { delete[] computedData[0]; computedData[0] = nullptr; }
-    if (computedData[1] != nullptr) { delete[] computedData[1]; computedData[1] = nullptr; }
-
-    if (mapBuffers[0] != nullptr) { delete[] mapBuffers[0]; mapBuffers[0] = nullptr; }
-    if (mapBuffers[1] != nullptr) { delete[] mapBuffers[1]; mapBuffers[1] = nullptr; }
-    //if (compressedHeatmap != nullptr) { delete[] compressedHeatmap; compressedHeatmap = nullptr; }
-
-    computedDataReady[0] = false;
-    computedDataReady[1] = false;
+    computations[0].Clear();
+    computations[1].Clear();
 
     playedBufferIndex = 0;
     bufferToFillIndex = 0;
 }
 
-void resetOverrideBuffer(int totalVariations)
-{
-    if (valuesOverride) delete[] valuesOverride;
-    valuesOverride = new numb[kernel::VAR_COUNT * totalVariations];
-}
-
-void resetTempBuffers(int totalVariations)
+void resetTempBuffers(Computation* data)
 {
     if (dataBuffer) delete[] dataBuffer;
-    dataBuffer = new numb[(computedSteps + 1) * kernel::VAR_COUNT];
+    dataBuffer = new numb[(CUDA_kernel.steps + 1) * KERNEL.VAR_COUNT];
 
     if (particleBuffer) delete[] particleBuffer;
-    particleBuffer = new numb[totalVariations * kernel::VAR_COUNT];
+    particleBuffer = new numb[CUDA_marshal.totalVariations * KERNEL.VAR_COUNT];
 }
 
 void computing();
 
-int asyncComputation(void** dest, PostRanging* rangingData)
+int asyncComputation()
 {
-    computedDataReady[bufferToFillIndex] = false;
+    computations[bufferToFillIndex].ready = false;
 
-    bool isFirstBatch = computedData[1 - bufferToFillIndex] == nullptr; // Is another buffer null, only true when computing for the first time
-    if (isFirstBatch) rangingData->clear();
+    bool isFirstBatch = computations[1 - bufferToFillIndex].marshal.trajectory == nullptr; // Is another buffer null, only true when computing for the first time
+    computations[bufferToFillIndex].isFirst = isFirstBatch;
+    //if (isFirstBatch) rangingData->clear();
 
     //printf("is first batch %i, total variations %i\n", isFirstBatch, rangingData->totalVariations);
+    // 
+    // TODO: just send the Computation and set its previousTrajectory if not first batch
+    int computationResult = compute(&(computations[bufferToFillIndex]));
 
-    int computationResult = compute(dest, &(mapBuffers[bufferToFillIndex]), isFirstBatch ? nullptr : (numb*)(computedData[1 - bufferToFillIndex]), rangingData);
-
-    computedSteps = kernel::steps;
+    computedSteps = KERNEL.steps;
 
     if (isFirstBatch)
     {
         autofitAfterComputing = true;
-        resetTempBuffers(rangingData->totalVariations);
-        resetOverrideBuffer(rangingData->totalVariations);
+        resetTempBuffers(&(computations[bufferToFillIndex]));
     }
 
-    computedDataReady[bufferToFillIndex] = true;
+    computations[bufferToFillIndex].ready = true;
 
     if (continuousComputingEnabled) bufferToFillIndex = 1 - bufferToFillIndex;
     if (continuousComputingEnabled && bufferToFillIndex != playedBufferIndex)
@@ -166,13 +144,13 @@ int asyncComputation(void** dest, PostRanging* rangingData)
 
 void computing()
 {
-    computationFutures[bufferToFillIndex] = std::async(asyncComputation, &(computedData[bufferToFillIndex]), &(rangingData[bufferToFillIndex]));
+    computations[bufferToFillIndex].future = std::async(asyncComputation);
 }
 
 // Windows configuration saving and loading
 void saveWindows()
 {
-    ofstream configFileStream((std::string(kernel::name) + ".config").c_str(), ios::out);
+    ofstream configFileStream((KERNEL.name + ".config").c_str(), ios::out);
 
     for (PlotWindow w : plotWindows)
     {
@@ -182,9 +160,10 @@ void saveWindows()
 
     configFileStream.close();
 }
+
 void loadWindows()
 {
-    ifstream configFileStream((std::string(kernel::name) + ".config").c_str(), ios::in);
+    ifstream configFileStream((KERNEL.name + ".config").c_str(), ios::in);
 
     for (std::string line; getline(configFileStream, line); )
     {
@@ -195,6 +174,28 @@ void loadWindows()
     }
 
     configFileStream.close();
+}
+
+void terminateBuffers()
+{
+    if (computations[0].future.valid()) computations[0].future.wait();
+    if (computations[1].future.valid()) computations[1].future.wait();
+    deleteBothBuffers();
+    if (dataBuffer != nullptr)      { delete[] dataBuffer;      dataBuffer = nullptr; }
+    if (particleBuffer != nullptr)  { delete[] particleBuffer;  particleBuffer = nullptr; }
+
+    executedOnLaunch = false;
+    playedBufferIndex = bufferToFillIndex = 0;
+}
+
+void initializeKernel(bool needTerminate)
+{
+    if (needTerminate) terminateBuffers();
+
+    kernelNew.CopyFrom(&KERNEL);
+
+    computations[0].Clear();
+    computations[1].Clear();
 }
 
 // Main code
@@ -249,9 +250,16 @@ int imgui_main(int, char**)
     int selectedPlotVars[3]; selectedPlotVars[0] = 0; for (int i = 1; i < 3; i++) selectedPlotVars[i] = -1;
     set<int> selectedPlotVarsSet;
     int selectedPlotMap = 0;
-    LOAD_VARNEW;
-    LOAD_PARAMNEW;
-    stepsNew = kernel::steps;
+
+    computations[0].marshal.trajectory = computations[1].marshal.trajectory = nullptr;
+    computations[0].marshal.parameterVariations = computations[1].marshal.parameterVariations = nullptr;
+
+    computations[0].index = 0;
+    computations[1].index = 1;
+    computations[0].otherMarshal = &(computations[1].marshal);
+    computations[1].otherMarshal = &(computations[0].marshal);
+    
+    initializeKernel(false);
 
     try
     {
@@ -297,7 +305,7 @@ int imgui_main(int, char**)
         timeElapsed += frameTime;
         float breath = (cosf(timeElapsed * 6.0f) + 1.0f) / 2.0f;
         float buttonBreathMult = 1.2f + breath * 0.8f;
-        bool noComputedData = computedData[0] == nullptr;
+        bool noComputedData = computations[0].marshal.trajectory == nullptr;
 
         if (particleStep > computedSteps) particleStep = computedSteps;
 
@@ -305,249 +313,54 @@ int imgui_main(int, char**)
         {
             style.WindowMenuButtonPosition = ImGuiDir_Left;
             ImGui::Begin("CUDAynamics", &work);
-            ImGui::Text(kernel::name);
 
-            int tempTotalVariations = 1;
-            for (int v = 0; v < kernel::VAR_COUNT; v++) if (varNew.RANGING[v]) tempTotalVariations *= (calculateStepCount(varNew.MIN[v], varNew.MAX[v], varNew.STEP[v]));
-            for (int p = 0; p < kernel::PARAM_COUNT; p++) if (paramNew.RANGING[p])  tempTotalVariations *= (calculateStepCount(paramNew.MIN[p], paramNew.MAX[p], paramNew.STEP[p]));
+            // Selecting kernel
+            if (ImGui::BeginCombo("##selectingKernel", KERNEL.name.c_str()))
+            {
+                for (auto k : kernels)
+                {
+                    bool isSelected = k.first == selectedKernel;
+                    ImGuiSelectableFlags selectableFlags = 0;
+                    if (ImGui::Selectable(k.second.name.c_str(), isSelected, selectableFlags))
+                    {
+                        selectedKernel = k.first;
+                        initializeKernel(true);
+                    }
+                }
+
+                ImGui::EndCombo();
+            }
+
+            //int tempTotalVariations = 1; TODO
+            //for (int v = 0; v < kernel::VAR_COUNT; v++) if (varNew.RANGING[v]) tempTotalVariations *= (calculateStepCount(varNew.MIN[v], varNew.MAX[v], varNew.STEP[v]));
+            //for (int p = 0; p < kernel::PARAM_COUNT; p++) if (paramNew.RANGING[p])  tempTotalVariations *= (calculateStepCount(paramNew.MIN[p], paramNew.MAX[p], paramNew.STEP[p]));
 
             // Parameters & Variables
 
-            ImGuiSliderFlags dragFlag = !playingParticles ? 0 : ImGuiSliderFlags_ReadOnly;
+            dragFlag = !playingParticles ? 0 : ImGuiSliderFlags_ReadOnly;
 
-            string namePadded;
-            int maxNameLength = 0;
+            maxNameLength = 0;
+            for (int i = 0; i < KERNEL.PARAM_COUNT; i++) if (KERNEL.parameters[i].name.length() > maxNameLength) maxNameLength = (int)KERNEL.parameters[i].name.length();
+            for (int i = 0; i < KERNEL.VAR_COUNT; i++) if (KERNEL.variables[i].name.length() > maxNameLength) maxNameLength = (int)KERNEL.variables[i].name.length();
 
-            for (int i = 0; i < kernel::PARAM_COUNT; i++) if (strlen(kernel::PARAM_NAMES[i]) > maxNameLength) maxNameLength = (int)strlen(kernel::PARAM_NAMES[i]);
-            for (int i = 0; i < kernel::VAR_COUNT; i++) if (strlen(kernel::VAR_NAMES[i]) > maxNameLength) maxNameLength = (int)strlen(kernel::VAR_NAMES[i]);          
-
-            bool anyChanged = false;
-            bool thisChanged;
-            bool popStyle;
+            anyChanged = false;
+            thisChanged = false;
+            popStyle = false;
 
             ImGui::SeparatorText("Variables");
 
-            for (int i = 0; i < kernel::VAR_COUNT; i++)
+            for (int i = 0; i < KERNEL.VAR_COUNT; i++)
             {
-                thisChanged = false;
-                if (varNew.MIN[i] != kernel::VAR_VALUES[i]) { anyChanged = true; thisChanged = true; }
-                if (varNew.MAX[i] != kernel::VAR_MAX[i]) { anyChanged = true; thisChanged = true; }
-                if (varNew.STEP[i] != kernel::VAR_STEPS[i]) { anyChanged = true; thisChanged = true; }
-                if (varNew.RANGING[i] != kernel::VAR_RANGING[i]) { anyChanged = true; thisChanged = true; }
-                if (thisChanged) varNew.recountSteps(i);
-
-                namePadded = kernel::VAR_NAMES[i];
-                for (int j = (int)strlen(kernel::VAR_NAMES[i]); j < maxNameLength; j++)
-                    namePadded += ' ';
-
-                ImGui::Text(namePadded.c_str());
-
-                if (playingParticles)
-                {
-                    ImGui::PushStyleColor(ImGuiCol_Text, disabledTextColor);
-                    PUSH_DISABLED_FRAME;
-                }
-
-                // Ranging
-                ImGui::SameLine();
-                popStyle = false;
-                if (varNew.RANGING[i] != kernel::VAR_RANGING[i])
-                {
-                    PUSH_UNSAVED_FRAME;
-                    popStyle = true;
-                }
-                ImGui::PushItemWidth(120.0f);
-                if (ImGui::BeginCombo(("##RANGING_" + std::string(kernel::VAR_NAMES[i])).c_str(), (rangingTypes[varNew.RANGING[i]]).c_str()))
-                {
-                    for (int r = 0; r < 5; r++)
-                    {
-                        bool isSelected = varNew.RANGING[i] == r;
-                        ImGuiSelectableFlags selectableFlags = 0;
-                        if (ImGui::Selectable(rangingTypes[r].c_str(), isSelected, selectableFlags)) varNew.RANGING[i] = (RangingType)r;
-                    }
-
-                    ImGui::EndCombo();
-                }
-                ImGui::PopItemWidth();
-                if (popStyle) POP_FRAME(3);
-
-                // Min
-                ImGui::SameLine();
-                ImGui::PushItemWidth(150.0f);
-                popStyle = false;
-                if (varNew.MIN[i] != kernel::VAR_VALUES[i])
-                {
-                    PUSH_UNSAVED_FRAME;
-                    popStyle = true;
-                }
-                float varNewMin = (float)varNew.MIN[i];
-                ImGui::DragFloat(("##" + std::string(kernel::VAR_NAMES[i])).c_str(), &varNewMin, dragChangeSpeed, 0.0f, 0.0f, "%f", dragFlag);
-                varNew.MIN[i] = (numb)varNewMin;
-                if (popStyle) POP_FRAME(3);
-                ImGui::PopItemWidth();
-
-                // If ranging
-                if (varNew.RANGING[i])
-                {
-                    // Step
-                    ImGui::SameLine();
-                    ImGui::PushItemWidth(150.0f);
-                    popStyle = false;
-                    if (varNew.STEP[i] != kernel::VAR_STEPS[i])
-                    {
-                        PUSH_UNSAVED_FRAME;
-                        popStyle = true;
-                    }
-                    float varNewStep = (float)varNew.STEP[i];
-                    ImGui::DragFloat(("##STEP_" + std::string(kernel::VAR_NAMES[i])).c_str(), &varNewStep, dragChangeSpeed, 0.0f, 0.0f, "%f", dragFlag);
-                    varNew.STEP[i] = (numb)varNewStep;
-                    if (popStyle) POP_FRAME(3);
-
-                    // Max
-                    ImGui::SameLine();
-                    popStyle = false;
-                    if (varNew.MAX[i] != kernel::VAR_MAX[i])
-                    {
-                        PUSH_UNSAVED_FRAME;
-                        popStyle = true;
-                    }
-                    float varNewMax = (float)varNew.MAX[i];
-                    ImGui::DragFloat(("##MAX_" + std::string(kernel::VAR_NAMES[i])).c_str(), &varNewMax, dragChangeSpeed, 0.0f, 0.0f, "%f", dragFlag);
-                    varNew.MAX[i] = (numb)varNewMax;
-                    if (popStyle) POP_FRAME(3);
-                    ImGui::PopItemWidth();
-
-                    // Step count
-                    ImGui::SameLine();
-                    ImGui::Text((std::to_string(calculateStepCount(varNew.MIN[i], varNew.MAX[i], varNew.STEP[i])) + " steps").c_str());
-                }
-
-                if (playingParticles)
-                {
-                    ImGui::PopStyleColor();
-                    POP_FRAME(3);
-                }
+                listVariable(i);
             }
 
             ImGui::SeparatorText("Parameters");
 
             bool applicationProhibited = false;
 
-            for (int i = 0; i < kernel::PARAM_COUNT; i++)
+            for (int i = 0; i < KERNEL.PARAM_COUNT; i++)
             {
-                bool isRanging = paramNew.RANGING[i];
-                bool changeAllowed = !paramNew.RANGING[i] || !playingParticles || !autoLoadNewParams;
-
-                thisChanged = false;
-                if (paramNew.MIN[i] != kernel::PARAM_VALUES[i]) { anyChanged = true; thisChanged = true; }
-                if (paramNew.MAX[i] != kernel::PARAM_MAX[i]) { anyChanged = true; thisChanged = true; }
-                if (paramNew.STEP[i] != kernel::PARAM_STEPS[i]) { anyChanged = true; thisChanged = true; }
-                if (paramNew.RANGING[i] != kernel::PARAM_RANGING[i]) { anyChanged = true; thisChanged = true; }
-                if (thisChanged) paramNew.recountSteps(i);
-
-                namePadded = kernel::PARAM_NAMES[i];
-                for (int j = (int)strlen(kernel::PARAM_NAMES[i]); j < maxNameLength; j++)
-                    namePadded += ' ';
-
-                ImGui::Text(namePadded.c_str());
-
-                if (!changeAllowed)
-                {
-                    ImGui::PushStyleColor(ImGuiCol_Text, disabledTextColor); // disabledText push
-                    PUSH_DISABLED_FRAME;
-                }
-
-                // Ranging
-                ImGui::SameLine();
-                if (playingParticles) PUSH_DISABLED_FRAME;
-                popStyle = false;
-                if (paramNew.RANGING[i] != kernel::PARAM_RANGING[i])
-                {
-                    PUSH_UNSAVED_FRAME;
-                    popStyle = true;
-                }
-                ImGui::PushItemWidth(120.0f);
-                if (ImGui::BeginCombo(("##RANGING_" + std::string(kernel::PARAM_NAMES[i])).c_str(), (rangingTypes[paramNew.RANGING[i]]).c_str()))
-                {
-                    for (int r = 0; r < 5; r++)
-                    {
-                        bool isSelected = paramNew.RANGING[i] == r;
-                        ImGuiSelectableFlags selectableFlags = 0;
-                        if (ImGui::Selectable(rangingTypes[r].c_str(), isSelected, selectableFlags)) paramNew.RANGING[i] = (RangingType)r;
-                    }
-
-                    ImGui::EndCombo();
-                }
-                ImGui::PopItemWidth();
-                if (popStyle) POP_FRAME(3);
-                if (playingParticles) POP_FRAME(3);
-
-                // Min
-                ImGui::SameLine();
-                ImGui::PushItemWidth(150.0f);
-                popStyle = false;
-                if (paramNew.MIN[i] != kernel::PARAM_VALUES[i])
-                {
-                    PUSH_UNSAVED_FRAME;
-                    popStyle = true;
-                }
-                float paramNewMin = (float)paramNew.MIN[i];
-                ImGui::DragFloat(("##" + std::string(kernel::PARAM_NAMES[i])).c_str(), &paramNewMin, dragChangeSpeed, 0.0f, 0.0f, "%f", changeAllowed ? 0 : ImGuiSliderFlags_ReadOnly);
-                paramNew.MIN[i] = (numb)paramNewMin;
-                if (popStyle) POP_FRAME(3);
-                ImGui::PopItemWidth();
-
-                // If ranging
-                if (paramNew.RANGING[i])
-                {
-                    // Step
-                    ImGui::SameLine();
-                    ImGui::PushItemWidth(150.0f);
-                    popStyle = false;
-                    if (paramNew.STEP[i] != kernel::PARAM_STEPS[i])
-                    {
-                        PUSH_UNSAVED_FRAME;
-                        popStyle = true;
-                    }
-                    float paramNewStep = (float)paramNew.STEP[i];
-                    ImGui::DragFloat(("##STEP_" + std::string(kernel::PARAM_NAMES[i])).c_str(), &paramNewStep, dragChangeSpeed, 0.0f, 0.0f, "%f", changeAllowed ? 0 : ImGuiSliderFlags_ReadOnly);
-                    paramNew.STEP[i] = (numb)paramNewStep;
-                    if (popStyle) POP_FRAME(3);
-
-                    // Max
-                    ImGui::SameLine();
-                    popStyle = false;
-                    if (paramNew.MAX[i] != kernel::PARAM_MAX[i])
-                    {
-                        PUSH_UNSAVED_FRAME;
-                        popStyle = true;
-                    }
-                    float paramNewMax = (float)paramNew.MAX[i];
-                    ImGui::DragFloat(("##MAX_" + std::string(kernel::PARAM_NAMES[i])).c_str(), &paramNewMax, dragChangeSpeed, 0.0f, 0.0f, "%f", changeAllowed ? 0 : ImGuiSliderFlags_ReadOnly);
-                    paramNew.MAX[i] = (numb)paramNewMax;
-                    if (popStyle) POP_FRAME(3);
-                    ImGui::PopItemWidth();
-                }
-
-                if (!changeAllowed) POP_FRAME(4); // disabledText popped as well
-
-                // Step count
-                if (paramNew.RANGING[i])
-                {
-                    int stepCount = calculateStepCount(kernel::PARAM_VALUES[i], kernel::PARAM_MAX[i], kernel::PARAM_STEPS[i]);
-                    if (stepCount > 0)
-                    {
-                        ImGui::SameLine();
-                        ImGui::Text((std::to_string(stepCount) + " steps").c_str());
-
-                        if (thisChanged && stepCount != paramNew.stepsOf(i))
-                        {
-                            ImGui::SameLine();
-                            ImGui::Text(("(new - " + std::to_string(paramNew.stepsOf(i)) + " steps)").c_str());
-                            applicationProhibited = true;
-                        }
-                    }
-                }
+                listParameter(i);
             }
 
             if (enabledParticles)
@@ -556,8 +369,8 @@ int imgui_main(int, char**)
                 if (ImGui::Checkbox("Apply parameter changes automatically", &(tempAutoLoadNewParams)))
                 {
                     autoLoadNewParams = !autoLoadNewParams;
-                    if (autoLoadNewParams) LOAD_PARAMNEW;
-                    else UNLOAD_PARAMNEW;
+                    if (autoLoadNewParams) kernelNew.CopyFrom(&KERNEL);
+                    else KERNEL.CopyFrom(&kernelNew);
                 }
 
                 ImGui::PushItemWidth(200.0f);
@@ -566,7 +379,7 @@ int imgui_main(int, char**)
 
             if (autoLoadNewParams)
             {
-                UNLOAD_PARAMNEW;
+                KERNEL.CopyFrom(&kernelNew);
             }
             else if (playingParticles && !autoLoadNewParams && anyChanged)
             {
@@ -579,7 +392,7 @@ int imgui_main(int, char**)
                 }
                 if (ImGui::Button("Apply") && !applicationProhibited)
                 {
-                    UNLOAD_PARAMNEW;
+                    KERNEL.CopyFrom(&kernelNew);
                 }
                 if (applicationProhibited)
                 {
@@ -594,12 +407,12 @@ int imgui_main(int, char**)
 
             ImGui::SeparatorText("Simulation");
 
-            unsigned long long tempTotalVariationsLL = tempTotalVariations;
-            unsigned long long varCountLL = kernel::VAR_COUNT;
-            unsigned long long stepsNewLL = stepsNew + 1;
-            unsigned long long singleBufferNumberCount = ((tempTotalVariationsLL * varCountLL) * stepsNewLL);
-            unsigned long long singleBufferNumbSize = singleBufferNumberCount * sizeof(numb);
-            ImGui::Text(("Single buffer size: " + memoryString(singleBufferNumbSize) + " (" + to_string(singleBufferNumbSize) + " bytes)").c_str());
+            //unsigned long long tempTotalVariationsLL = tempTotalVariations;
+            //unsigned long long varCountLL = kernel::VAR_COUNT;
+            //unsigned long long stepsNewLL = stepsNew + 1;
+            //unsigned long long singleBufferNumberCount = ((tempTotalVariationsLL * varCountLL) * stepsNewLL);
+            //unsigned long long singleBufferNumbSize = singleBufferNumberCount * sizeof(numb);
+            ImGui::Text(("Single buffer size: " + memoryString(/*singleBufferNumbSize*/1234) + " (" + to_string(/*singleBufferNumbSize*/5678) + " bytes)").c_str()); // TODO
 
             ImGui::PushItemWidth(200.0f);
             if (playingParticles)
@@ -609,13 +422,13 @@ int imgui_main(int, char**)
                 ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, disabledBackgroundColor);
             }
             popStyle = false;
-            if (stepsNew != kernel::steps)
+            if (kernelNew.steps != KERNEL.steps)
             {
                 anyChanged = true;
                 PUSH_UNSAVED_FRAME;
                 popStyle = true;
             }
-            ImGui::InputInt("Steps", &(stepsNew), 1, 1000, playingParticles ? ImGuiInputTextFlags_ReadOnly : 0);
+            ImGui::InputInt("Steps", &(kernelNew.steps), 1, 1000, playingParticles ? ImGuiInputTextFlags_ReadOnly : 0);
             if (popStyle) POP_FRAME(3);
             if (playingParticles)
             {
@@ -623,9 +436,9 @@ int imgui_main(int, char**)
                 ImGui::PopStyleColor();
                 ImGui::PopStyleColor();
             }
-            float tempStepSize = (float)kernel::stepSize;
+            float tempStepSize = (float)KERNEL.stepSize;
             ImGui::InputFloat("Step size", &tempStepSize, 0.0f, 0.0f, "%f");
-            kernel::stepSize = (numb)tempStepSize;
+            KERNEL.stepSize = (numb)tempStepSize;
             ImGui::PopItemWidth();
             
             bool tempEnabledParticles = enabledParticles;
@@ -641,18 +454,18 @@ int imgui_main(int, char**)
                 if (particleSpeed < 0.0f) particleSpeed = 0.0f;
                 ImGui::PopItemWidth();
 
-                if (rangingData[playedBufferIndex].timeElapsed > 0.0f)
+                if (computations[playedBufferIndex].timeElapsed > 0.0f)
                 {
-                    float buffersPerSecond = 1000.0f / rangingData[playedBufferIndex].timeElapsed;
+                    float buffersPerSecond = 1000.0f / computations[playedBufferIndex].timeElapsed;
                     int stepsPerSecond = (int)(computedSteps * buffersPerSecond);
 
                     ImGui::SameLine();
                     ImGui::Text(("(max " + to_string(stepsPerSecond) + " before stalling)").c_str());
                 }
 
-                ImGui::DragInt("##Animation step", &(particleStep), 1.0f, 0, kernel::steps);
+                ImGui::DragInt("##Animation step", &(particleStep), 1.0f, 0, KERNEL.steps);
                 ImGui::SameLine();
-                ImGui::Text(("Animation step" + (continuousComputingEnabled ? " (total step " + to_string(bufferNo * kernel::steps + particleStep) + ")" : "")).c_str());
+                ImGui::Text(("Animation step" + (continuousComputingEnabled ? " (total step " + to_string(bufferNo * KERNEL.steps + particleStep) + ")" : "")).c_str());
 
                 if (ImGui::Button("Reset to step 0"))
                 {
@@ -667,15 +480,15 @@ int imgui_main(int, char**)
                 bool tempPlayingParticles = playingParticles;
                 if (ImGui::Checkbox("Play", &(tempPlayingParticles)) && !anyChanged)
                 {
-                    if (computedDataReady[0] || playingParticles)
+                    if (computations[0].ready || playingParticles)
                     {
                         playingParticles = !playingParticles;
-                        LOAD_PARAMNEW;
+                        kernelNew.CopyFrom(&KERNEL);
                     }
 
                     if (!playingParticles)
                     {
-                        UNLOAD_PARAMNEW;
+                        KERNEL.CopyFrom(&kernelNew);
                     }
                 }
                 if (anyChanged) POP_FRAME(4);
@@ -684,8 +497,8 @@ int imgui_main(int, char**)
                 if (ImGui::Checkbox("Continuous computing", &(tempContinuous)))
                 {
                     // Flags of having buffers computed, to not interrupt computations in progress when switching
-                    bool noncont = !continuousComputingEnabled && computedDataReady[0];
-                    bool cont = continuousComputingEnabled && computedDataReady[0] && computedDataReady[1];
+                    bool noncont = !continuousComputingEnabled && computations[0].ready;
+                    bool cont = continuousComputingEnabled && computations[0].ready && computations[1].ready;
 
                     if (noComputedData || noncont || cont)
                     {
@@ -710,13 +523,13 @@ int imgui_main(int, char**)
                 particlePhase -= (float)passedSteps;
 
                 particleStep += passedSteps;
-                if (particleStep > kernel::steps) // Reached the end of animation
+                if (particleStep > KERNEL.steps) // Reached the end of animation
                 {
                     if (continuousComputingEnabled)
                     {
                         // Starting from another buffer
 
-                        if (computedDataReady[1 - playedBufferIndex])
+                        if (computations[1 - playedBufferIndex].ready)
                         {
                             playedBufferIndex = 1 - playedBufferIndex;
                             particleStep = 0;
@@ -727,7 +540,7 @@ int imgui_main(int, char**)
                         else
                         {
                             //printf("Stalling!\n");
-                            particleStep = kernel::steps;
+                            particleStep = KERNEL.steps;
 
                             ImGui::Text("Stalling!");
                         }
@@ -735,7 +548,7 @@ int imgui_main(int, char**)
                     else
                     {
                         // Stopping
-                        particleStep = kernel::steps;
+                        particleStep = KERNEL.steps;
                         playingParticles = false;
                     }                   
                 }
@@ -745,19 +558,27 @@ int imgui_main(int, char**)
             bool playBreath = noComputedData || (anyChanged && (!playingParticles || !enabledParticles));
             if (playBreath)
                 ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.137f * buttonBreathMult, 0.271f * buttonBreathMult, 0.427f * buttonBreathMult, 1.0f));
-            if (ImGui::Button("= COMPUTE =") || (kernel::executeOnLaunch && !executedOnLaunch))
+            if (ImGui::Button("= COMPUTE =") || (KERNEL.executeOnLaunch && !executedOnLaunch))
             {
-                executedOnLaunch = true;
-                bufferToFillIndex = 0;
-                playedBufferIndex = 0;
-                bufferNo = 0;
-                deleteBothBuffers();
+                bool computation0InProgress = !computations[0].ready && computations[0].marshal.trajectory != nullptr;
+                bool computation1InProgress = !computations[1].ready && computations[1].marshal.trajectory != nullptr;
 
-                UNLOAD_VARNEW;
-                UNLOAD_PARAMNEW;
-                kernel::steps = stepsNew;
+                if (computation0InProgress || computation1InProgress)
+                {
+                    printf("Preventing computing too fast!\n");
+                }
+                else
+                {
+                    executedOnLaunch = true;
+                    bufferToFillIndex = 0;
+                    playedBufferIndex = 0;
+                    bufferNo = 0;
+                    deleteBothBuffers();
 
-                computing();
+                    KERNEL.CopyFrom(&kernelNew);
+
+                    computing();
+                }
             }
             if (playBreath) ImGui::PopStyleColor();
 
@@ -765,8 +586,7 @@ int imgui_main(int, char**)
             {
                 if (ImGui::Button("Reset changed values"))
                 {
-                    LOAD_VARNEW;
-                    LOAD_PARAMNEW;
+                    kernelNew.CopyFrom(&KERNEL);
                 }
             }
 
@@ -775,9 +595,10 @@ int imgui_main(int, char**)
             // RANGING
 
             variation = 0;
+            /*variation = 0;
             stride = 1;
 
-            if (rangingData[playedBufferIndex].rangingCount > 0 && computedDataReady[playedBufferIndex])
+            if (rangingData[playedBufferIndex].rangingCount > 0 && computations[playedBufferIndex].ready)
             {
                 for (int r = rangingData[playedBufferIndex].rangingCount - 1; r >= 0; r--)
                 {
@@ -811,27 +632,27 @@ int imgui_main(int, char**)
                         for (int r = 0; r < rangingData[playedBufferIndex].rangingCount; r++)
                         {
                             bool isParam = false;
-                            int entityIndex = -1;
-                            rangingData[playedBufferIndex].getIndexOfVarOrParam(&isParam, &entityIndex, kernel::VAR_COUNT, kernel::PARAM_COUNT, &(kernel::VAR_NAMES[0]), &(kernel::PARAM_NAMES[0]), r);
+                            int entityIndex = -1; // TODO NB!
+                            rangingData[playedBufferIndex].getIndexOfVarOrParam(&isParam, &entityIndex, KERNEL.VAR_COUNT, KERNEL.PARAM_COUNT, &(kernel::VAR_NAMES[0]), &(kernel::PARAM_NAMES[0]), r);
 
                             if (entityIndex == -1) continue;
 
                             if (!isParam)
                             {
-                                varNew.RANGING[entityIndex] = RangingType::None;
-                                varNew.MIN[entityIndex] = rangingData[playedBufferIndex].currentValue[r];
+                                kernelNew.variables[entityIndex].rangingType = RangingType::None;
+                                kernelNew.variables[entityIndex].min = rangingData[playedBufferIndex].currentValue[r];
                             }
                             else
                             {
-                                paramNew.RANGING[entityIndex] = RangingType::None;
-                                paramNew.MIN[entityIndex] = rangingData[playedBufferIndex].currentValue[r];
+                                kernelNew.parameters[entityIndex].rangingType = RangingType::None;
+                                kernelNew.parameters[entityIndex].min = rangingData[playedBufferIndex].currentValue[r];
                             }
                         }
                     }
 
                     ImGui::End();
                 }
-            }
+            }*/
 
             //ImGui::Text((std::string("Ready 0 ") + std::to_string(computedDataReady[0])).c_str());
             //ImGui::Text((std::string("Ready 1 ") + std::to_string(computedDataReady[1])).c_str());
@@ -876,13 +697,13 @@ int imgui_main(int, char**)
                     ImGui::SameLine();
                     if (ImGui::BeginCombo("##Add variable combo", " ", ImGuiComboFlags_NoPreview))
                     {
-                        for (int v = 0; v < kernel::VAR_COUNT; v++)
+                        for (int v = 0; v < KERNEL.VAR_COUNT; v++)
                         {
                             bool isSelected = selectedPlotVarsSet.find(v) != selectedPlotVarsSet.end();
                             ImGuiSelectableFlags selectableFlags = 0;
 
                             if (isSelected) selectableFlags = ImGuiSelectableFlags_Disabled;
-                            if (ImGui::Selectable(kernel::VAR_NAMES[v])) selectedPlotVarsSet.insert(v);
+                            if (ImGui::Selectable(KERNEL.variables[v].name.c_str())) selectedPlotVarsSet.insert(v);
                         }
 
                         ImGui::EndCombo();
@@ -898,7 +719,7 @@ int imgui_main(int, char**)
                             break; // temporary workaround (hahaha)
                         }
                         ImGui::SameLine();
-                        ImGui::Text(("- " + std::string(kernel::VAR_NAMES[v])).c_str());
+                        ImGui::Text(("- " + KERNEL.variables[v].name).c_str());
                     }
 
                     break;
@@ -909,9 +730,9 @@ int imgui_main(int, char**)
                     {
                         ImGui::Text(("Variable " + variablexyz[sv]).c_str());
                         ImGui::SameLine();
-                        if (ImGui::BeginCombo(("##Plot builder var " + std::to_string(sv + 1)).c_str(), selectedPlotVars[sv] > -1 ? kernel::VAR_NAMES[selectedPlotVars[sv]] : "-"))
+                        if (ImGui::BeginCombo(("##Plot builder var " + std::to_string(sv + 1)).c_str(), selectedPlotVars[sv] > -1 ? KERNEL.variables[selectedPlotVars[sv]].name.c_str() : "-"))
                         {
-                            for (int v = (sv > 0 ? -1 : 0); v < kernel::VAR_COUNT; v++)
+                            for (int v = (sv > 0 ? -1 : 0); v < KERNEL.VAR_COUNT; v++)
                             {
                                 bool isSelected = selectedPlotVars[sv] == v;
                                 ImGuiSelectableFlags selectableFlags = 0;
@@ -927,7 +748,7 @@ int imgui_main(int, char**)
                                     if (sv == 1 && selectedPlotVars[0] == -1) selectableFlags = ImGuiSelectableFlags_Disabled;
                                     if (sv == 2 && selectedPlotVars[1] == -1) selectableFlags = ImGuiSelectableFlags_Disabled;
                                     if (v == selectedPlotVars[(sv + 1) % 3] || v == selectedPlotVars[(sv + 2) % 3]) selectableFlags = ImGuiSelectableFlags_Disabled;
-                                    if (ImGui::Selectable(v > -1 ? kernel::VAR_NAMES[v] : "-", isSelected, selectableFlags)) selectedPlotVars[sv] = v;
+                                    if (ImGui::Selectable(v > -1 ? KERNEL.variables[v].name.c_str() : "-", isSelected, selectableFlags)) selectedPlotVars[sv] = v;
                                 }
                             }
                             ImGui::EndCombo();
@@ -941,15 +762,15 @@ int imgui_main(int, char**)
                     break;
 
                 case Heatmap:
-                    if (kernel::MAP_COUNT > 0)
+                    if (KERNEL.MAP_COUNT > 0)
                     {
                         ImGui::PushItemWidth(150.0f);
 
                         ImGui::Text("Index");
                         ImGui::SameLine();
-                        if (ImGui::BeginCombo("##Plot builder map index selection", kernel::MAP_NAMES[selectedPlotMap]))
+                        /*if (ImGui::BeginCombo("##Plot builder map index selection", kernel::MAP_NAMES[selectedPlotMap]))
                         {
-                            for (int m = 0; m < kernel::MAP_COUNT; m++)
+                            for (int m = 0; m < KERNEL.MAP_COUNT; m++)
                             {
                                 bool isSelected = selectedPlotMap == m;
                                 ImGuiSelectableFlags selectableFlags = 0;
@@ -958,7 +779,7 @@ int imgui_main(int, char**)
                                 if (ImGui::Selectable(kernel::MAP_NAMES[m], isSelected, selectableFlags)) selectedPlotMap = m;
                             }
                             ImGui::EndCombo();
-                        }
+                        }*/ // TODO
 
                         ImGui::PopItemWidth();
                     }
@@ -1087,11 +908,11 @@ int imgui_main(int, char**)
 
                     plot->is3d = false;
 
-                    if (computedDataReady[playedBufferIndex])
+                    if (computations[playedBufferIndex].ready)
                     {
-                        int variationSize = kernel::VAR_COUNT * (computedSteps + 1);
+                        int variationSize = KERNEL.VAR_COUNT * (computedSteps + 1);
 
-                        void* computedVariation = (numb*)(computedData[playedBufferIndex]) + (variationSize * variation);
+                        void* computedVariation = (numb*)(computations[playedBufferIndex].marshal.trajectory) + (variationSize * variation);
                         memcpy(dataBuffer, computedVariation, variationSize * sizeof(numb));
 
                         //void PlotLine(const char* label_id, const T* values, int count, double xscale, double x0, ImPlotLineFlags flags, int offset, int stride)
@@ -1099,8 +920,8 @@ int imgui_main(int, char**)
                         for (int v = 0; v < window->variableCount; v++)
                         {
                             //ImPlot::SetNextLineStyle(ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
-                            ImPlot::PlotLine((std::string(kernel::VAR_NAMES[window->variables[v]]) + "##" + plotName + std::to_string(v)).c_str(),
-                                &(((numb*)dataBuffer)[window->variables[v]]), computedSteps + 1, 1.0f, 0.0f, ImPlotLineFlags_None, 0, sizeof(numb) * kernel::VAR_COUNT);
+                            ImPlot::PlotLine((KERNEL.variables[window->variables[v]].name + "##" + plotName + std::to_string(v)).c_str(),
+                                &(((numb*)dataBuffer)[window->variables[v]]), computedSteps + 1, 1.0f, 0.0f, ImPlotLineFlags_None, 0, sizeof(numb) * KERNEL.VAR_COUNT);
                         }
                     }
 
@@ -1170,7 +991,14 @@ int imgui_main(int, char**)
                 {
                     plot = ImPlot::GetPlot(plotName.c_str());
 
-                    float plotRangeSize = (float)plot->Axes[ImAxis_X1].Range.Max - (float)plot->Axes[ImAxis_X1].Range.Min;
+                    float plotRangeSize =  ((float)plot->Axes[ImAxis_X1].Range.Max - (float)plot->Axes[ImAxis_X1].Range.Min);
+
+                    if (!computations[playedBufferIndex].ready)
+                    {
+                        plotRangeSize = 10.0f;
+                        plot->dataMin = ImVec2(-10.0f, -10.0f);
+                        plot->dataMax = ImVec2(10.0f, 10.0f);
+                    }
 
                     float deltax = -window->deltarotation.x;
                     float deltay = -window->deltarotation.y;
@@ -1197,101 +1025,56 @@ int imgui_main(int, char**)
                     //printf("%f %f %f %f\n", window->quatRot.x, window->quatRot.y, window->quatRot.z, window->quatRot.w);
                     rotationEuler = ToEulerAngles(window->quatRot);
 
-                    if (computedDataReady[playedBufferIndex])
+                    populateAxisBuffer((numb*)axisBuffer, plotRangeSize / 10.0f, plotRangeSize / 10.0f, plotRangeSize / 10.0f);
+                    if (is3d)
                     {
-                        int variationSize = kernel::VAR_COUNT * (computedSteps + 1);
+                        rotateOffsetBuffer((numb*)axisBuffer, 6, 3, 0, 1, 2, rotationEuler, ImVec4(0, 0, 0, 0), ImVec4(1, 1, 1, 0));
+                    }
 
-                        populateAxisBuffer((numb*)axisBuffer, plotRangeSize / 10, plotRangeSize / 10, plotRangeSize / 10);
+                    // Axis
+                    if (window->showAxis)
+                    {
+                        ImPlot::SetNextLineStyle(xAxisColor);
+                        ImPlot::PlotLine(plotName.c_str(), &(((numb*)axisBuffer)[0]), &(((numb*)axisBuffer)[1]), 2, 0, 0, sizeof(numb) * 3);
+                        ImPlot::SetNextLineStyle(yAxisColor);
+                        ImPlot::PlotLine(plotName.c_str(), &(((numb*)axisBuffer)[6]), &(((numb*)axisBuffer)[7]), 2, 0, 0, sizeof(numb) * 3);
+
                         if (is3d)
                         {
-                            rotateOffsetBuffer((numb*)axisBuffer, 6, 3, 0, 1, 2, rotationEuler, ImVec4(0, 0, 0, 0), ImVec4(1, 1, 1, 0));
+                            ImPlot::SetNextLineStyle(zAxisColor);
+                            ImPlot::PlotLine(plotName.c_str(), &(((numb*)axisBuffer)[12]), &(((numb*)axisBuffer)[13]), 2, 0, 0, sizeof(numb) * 3);
                         }
+                    }
 
-                        int xIndex = is3d ? 0 : window->variables[0];
-                        int yIndex = is3d ? 1 : window->variables[1];
+                    // Axis names
+                    if (window->showAxisNames)
+                    {
+                        ImPlot::PushStyleColor(ImPlotCol_InlayText, xAxisColor);
+                        ImPlot::PlotText(KERNEL.variables[window->variables[0]].name.c_str(), ((numb*)axisBuffer)[0], ((numb*)axisBuffer)[1], ImVec2(0.0f, 0.0f));
+                        ImPlot::PopStyleColor();
+                        ImPlot::PushStyleColor(ImPlotCol_InlayText, yAxisColor);
+                        ImPlot::PlotText(KERNEL.variables[window->variables[1]].name.c_str(), ((numb*)axisBuffer)[6], ((numb*)axisBuffer)[7], ImVec2(0.0f, 0.0f));
+                        ImPlot::PopStyleColor();
 
-                        if (!enabledParticles) // Trajectory - one variation, all steps
+                        if (is3d)
                         {
-                            void* computedVariation = (numb*)(computedData[playedBufferIndex]) + (variationSize * variation);
-                            memcpy(dataBuffer, computedVariation, variationSize * sizeof(numb));
-
-                            if (is3d)
-                                rotateOffsetBuffer((numb*)dataBuffer, computedSteps + 1, kernel::VAR_COUNT, window->variables[0], window->variables[1], window->variables[2],
-                                    rotationEuler, window->offset, window->scale);
-
-                            getMinMax2D((numb*)dataBuffer, computedSteps + 1, &(plot->dataMin), &(plot->dataMax));
-                            //printf("%f:%f %f:%f\n", plot->dataMin.x, plot->dataMin.y, plot->dataMax.x, plot->dataMax.y);
-
-                            ImPlot::SetNextLineStyle(ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
-                            ImPlot::PlotLine(plotName.c_str(), &(((numb*)dataBuffer)[xIndex]), &(((numb*)dataBuffer)[yIndex]), computedSteps + 1, 0, 0, sizeof(numb) * kernel::VAR_COUNT);
-                        }
-                        else // Particles - all variations, one certain step
-                        {
-                            if (particleStep > kernel::steps) particleStep = kernel::steps;
-
-                            for (int v = 0; v < rangingData[playedBufferIndex].totalVariations; v++)
-                            {
-                                for (int var = 0; var < kernel::VAR_COUNT; var++)
-                                    ((numb*)particleBuffer)[v * kernel::VAR_COUNT + var] = ((numb*)(computedData[playedBufferIndex]))[(variationSize * v) + (kernel::VAR_COUNT * particleStep) + var];
-                            }
-
-                            if (is3d)
-                                rotateOffsetBuffer((numb*)particleBuffer, rangingData[playedBufferIndex].totalVariations, kernel::VAR_COUNT, window->variables[0], window->variables[1], window->variables[2],
-                                    rotationEuler, window->offset, window->scale);
-
-                            getMinMax2D((numb*)particleBuffer, rangingData[playedBufferIndex].totalVariations, &(plot->dataMin), &(plot->dataMax));
-
-                            ImPlot::SetNextLineStyle(window->markerColor);
-                            ImPlot::PushStyleVar(ImPlotStyleVar_MarkerWeight, window->markerOutlineSize);
-                            //ImPlot::PushStyleVar(ImPlotStyleVar_FillAlpha, 0.25f);
-                            ImPlot::SetNextMarkerStyle(window->markerShape, window->markerSize);
-                            ImPlot::PlotScatter(plotName.c_str(), &(((numb*)particleBuffer)[xIndex]), &(((numb*)particleBuffer)[yIndex]), rangingData[playedBufferIndex].totalVariations, 0, 0, sizeof(numb) * kernel::VAR_COUNT);
-                        }
-
-                        // Axis
-                        if (window->showAxis)
-                        {
-                            ImPlot::SetNextLineStyle(xAxisColor);
-                            ImPlot::PlotLine(plotName.c_str(), &(((numb*)axisBuffer)[0]), &(((numb*)axisBuffer)[1]), 2, 0, 0, sizeof(numb) * 3);
-                            ImPlot::SetNextLineStyle(yAxisColor);
-                            ImPlot::PlotLine(plotName.c_str(), &(((numb*)axisBuffer)[6]), &(((numb*)axisBuffer)[7]), 2, 0, 0, sizeof(numb) * 3);
-
-                            if (is3d)
-                            {
-                                ImPlot::SetNextLineStyle(zAxisColor);
-                                ImPlot::PlotLine(plotName.c_str(), &(((numb*)axisBuffer)[12]), &(((numb*)axisBuffer)[13]), 2, 0, 0, sizeof(numb) * 3);
-                            }
-                        }
-
-                        // Axis names
-                        if (window->showAxisNames)
-                        {
-                            ImPlot::PushStyleColor(ImPlotCol_InlayText, xAxisColor);
-                            ImPlot::PlotText(kernel::VAR_NAMES[window->variables[0]], ((numb*)axisBuffer)[0], ((numb*)axisBuffer)[1], ImVec2(0.0f, 0.0f));
+                            ImPlot::PushStyleColor(ImPlotCol_InlayText, zAxisColor);
+                            ImPlot::PlotText(KERNEL.variables[window->variables[2]].name.c_str(), ((numb*)axisBuffer)[12], ((numb*)axisBuffer)[13], ImVec2(0.0f, 0.0f));
                             ImPlot::PopStyleColor();
-                            ImPlot::PushStyleColor(ImPlotCol_InlayText, yAxisColor);
-                            ImPlot::PlotText(kernel::VAR_NAMES[window->variables[1]], ((numb*)axisBuffer)[6], ((numb*)axisBuffer)[7], ImVec2(0.0f, 0.0f));
-                            ImPlot::PopStyleColor();
-
-                            if (is3d)
-                            {
-                                ImPlot::PushStyleColor(ImPlotCol_InlayText, zAxisColor);
-                                ImPlot::PlotText(kernel::VAR_NAMES[window->variables[2]], ((numb*)axisBuffer)[12], ((numb*)axisBuffer)[13], ImVec2(0.0f, 0.0f));
-                                ImPlot::PopStyleColor();
-                            }
                         }
+                    }
 
-                        // Ruler
-                        if (is3d && window->showRuler)
-                        {
-                            ImVec4 scale(plotRangeSize / window->scale.x, plotRangeSize / window->scale.y, plotRangeSize / window->scale.z, 0);
-                            ImVec4 scaleLog(floorf(log10f(scale.x)), floorf(log10f(scale.y)), floorf(log10f(scale.z)), 0);
-                            ImVec4 scale0(powf(10, scaleLog.x - 1), powf(10, scaleLog.y - 1), powf(10, scaleLog.z - 1), 0);
-                            ImVec4 scale1(powf(10, scaleLog.x), powf(10, scaleLog.y), powf(10, scaleLog.z), 0);
-                            ImVec4 scaleInterp(log10f(scale.x) - scaleLog.x, log10f(scale.y) - scaleLog.y, log10f(scale.z) - scaleLog.z, 0);
+                    // Ruler
+                    if (is3d && window->showRuler)
+                    {
+                        ImVec4 scale(plotRangeSize / window->scale.x, plotRangeSize / window->scale.y, plotRangeSize / window->scale.z, 0);
+                        ImVec4 scaleLog(floorf(log10f(scale.x)), floorf(log10f(scale.y)), floorf(log10f(scale.z)), 0);
+                        ImVec4 scale0(powf(10, scaleLog.x - 1), powf(10, scaleLog.y - 1), powf(10, scaleLog.z - 1), 0);
+                        ImVec4 scale1(powf(10, scaleLog.x), powf(10, scaleLog.y), powf(10, scaleLog.z), 0);
+                        ImVec4 scaleInterp(log10f(scale.x) - scaleLog.x, log10f(scale.y) - scaleLog.y, log10f(scale.z) - scaleLog.z, 0);
 
-                            ImVec4 alpha0((1.0f - scaleInterp.x) * window->rulerAlpha, (1.0f - scaleInterp.y) * window->rulerAlpha, (1.0f - scaleInterp.z) * window->rulerAlpha, 0);
-                            ImVec4 alpha1(scaleInterp.x * window->rulerAlpha, scaleInterp.y * window->rulerAlpha, scaleInterp.z * window->rulerAlpha, 0);
+                        ImVec4 alpha0((1.0f - scaleInterp.x) * window->rulerAlpha, (1.0f - scaleInterp.y) * window->rulerAlpha, (1.0f - scaleInterp.z) * window->rulerAlpha, 0);
+                        ImVec4 alpha1(scaleInterp.x * window->rulerAlpha, scaleInterp.y * window->rulerAlpha, scaleInterp.z * window->rulerAlpha, 0);
 
 #define DRAW_RULER_PART(colorR, colorG, colorB, alpha, scale, scaleStr, dim) ImPlot::SetNextLineStyle(ImVec4(colorR, colorG, colorB, alpha)); \
                             populateRulerBuffer((numb*)rulerBuffer, scale, dim); \
@@ -1302,14 +1085,59 @@ int imgui_main(int, char**)
                             ImPlot::PlotText(scaleString(scaleStr).c_str(), ((numb*)rulerBuffer)[150 + 0], ((numb*)rulerBuffer)[150 + 1], ImVec2(0.0f, 0.0f)); \
                             ImPlot::PopStyleColor();
 
-                            DRAW_RULER_PART(xAxisColor.x, xAxisColor.y, xAxisColor.z, alpha0.x, scale0.x * window->scale.x, scale0.x, 0);
-                            DRAW_RULER_PART(xAxisColor.x, xAxisColor.y, xAxisColor.z, alpha1.x, scale1.x* window->scale.x, scale1.x, 0);
+                        DRAW_RULER_PART(xAxisColor.x, xAxisColor.y, xAxisColor.z, alpha0.x, scale0.x * window->scale.x, scale0.x, 0);
+                        DRAW_RULER_PART(xAxisColor.x, xAxisColor.y, xAxisColor.z, alpha1.x, scale1.x * window->scale.x, scale1.x, 0);
 
-                            DRAW_RULER_PART(yAxisColor.x, yAxisColor.y, yAxisColor.z, alpha0.y, scale0.y* window->scale.y, scale0.y, 1);
-                            DRAW_RULER_PART(yAxisColor.x, yAxisColor.y, yAxisColor.z, alpha1.y, scale1.y* window->scale.y, scale1.y, 1);
+                        DRAW_RULER_PART(yAxisColor.x, yAxisColor.y, yAxisColor.z, alpha0.y, scale0.y * window->scale.y, scale0.y, 1);
+                        DRAW_RULER_PART(yAxisColor.x, yAxisColor.y, yAxisColor.z, alpha1.y, scale1.y * window->scale.y, scale1.y, 1);
 
-                            DRAW_RULER_PART(zAxisColor.x, zAxisColor.y, zAxisColor.z, alpha0.z, scale0.z * window->scale.z, scale0.z, 2);
-                            DRAW_RULER_PART(zAxisColor.x, zAxisColor.y, zAxisColor.z, alpha1.z, scale1.z * window->scale.z, scale1.z, 2);
+                        DRAW_RULER_PART(zAxisColor.x, zAxisColor.y, zAxisColor.z, alpha0.z, scale0.z * window->scale.z, scale0.z, 2);
+                        DRAW_RULER_PART(zAxisColor.x, zAxisColor.y, zAxisColor.z, alpha1.z, scale1.z * window->scale.z, scale1.z, 2);
+                    }
+
+                    if (computations[playedBufferIndex].ready)
+                    {
+                        //int variationSize = KERNEL.VAR_COUNT * (computedSteps + 1);
+
+                        int xIndex = is3d ? 0 : window->variables[0];
+                        int yIndex = is3d ? 1 : window->variables[1];
+
+                        if (!enabledParticles) // Trajectory - one variation, all steps
+                        {
+                            numb* computedVariation = computations[playedBufferIndex].marshal.trajectory + (computations[playedBufferIndex].marshal.variationSize * variation);
+                            memcpy(dataBuffer, computedVariation, computations[playedBufferIndex].marshal.variationSize * sizeof(numb));
+
+                            if (is3d)
+                                rotateOffsetBuffer((numb*)dataBuffer, computedSteps + 1, KERNEL.VAR_COUNT, window->variables[0], window->variables[1], window->variables[2],
+                                    rotationEuler, window->offset, window->scale);
+
+                            getMinMax2D((numb*)dataBuffer, computedSteps + 1, &(plot->dataMin), &(plot->dataMax));
+                            //printf("%f:%f %f:%f\n", plot->dataMin.x, plot->dataMin.y, plot->dataMax.x, plot->dataMax.y);
+
+                            ImPlot::SetNextLineStyle(ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
+                            ImPlot::PlotLine(plotName.c_str(), &(((numb*)dataBuffer)[xIndex]), &(((numb*)dataBuffer)[yIndex]), computedSteps + 1, 0, 0, sizeof(numb) * KERNEL.VAR_COUNT);
+                        }
+                        else // Particles - all variations, one certain step
+                        {
+                            if (particleStep > KERNEL.steps) particleStep = KERNEL.steps;
+
+                            for (int v = 0; v < computations[playedBufferIndex].marshal.totalVariations; v++)
+                            {
+                                for (int var = 0; var < KERNEL.VAR_COUNT; var++)
+                                    particleBuffer[v * KERNEL.VAR_COUNT + var] = ((numb*)(computations[playedBufferIndex].marshal.trajectory))[(computations[playedBufferIndex].marshal.variationSize * v) + (KERNEL.VAR_COUNT * particleStep) + var];
+                            }
+
+                            if (is3d)
+                                rotateOffsetBuffer(particleBuffer, computations[playedBufferIndex].marshal.totalVariations, KERNEL.VAR_COUNT, window->variables[0], window->variables[1], window->variables[2],
+                                    rotationEuler, window->offset, window->scale);
+
+                            getMinMax2D(particleBuffer, computations[playedBufferIndex].marshal.totalVariations, &(plot->dataMin), &(plot->dataMax));
+
+                            ImPlot::SetNextLineStyle(window->markerColor);
+                            ImPlot::PushStyleVar(ImPlotStyleVar_MarkerWeight, window->markerOutlineSize);
+                            //ImPlot::PushStyleVar(ImPlotStyleVar_FillAlpha, 0.25f);
+                            ImPlot::SetNextMarkerStyle(window->markerShape, window->markerSize);
+                            ImPlot::PlotScatter(plotName.c_str(), &((particleBuffer)[xIndex]), &((particleBuffer)[yIndex]), computations[playedBufferIndex].marshal.totalVariations, 0, 0, sizeof(numb) * KERNEL.VAR_COUNT);
                         }
 
                         // Grid
@@ -1376,7 +1204,7 @@ int imgui_main(int, char**)
                 }
                 if (window->whiteBg) ImPlot::PopStyleColor(2);
                 break;
-
+                /*
                 case Heatmap:
                     if (ImGui::BeginTable((plotName + "_table").c_str(), 2, ImGuiTableFlags_Reorderable, ImVec2(-1, 0)))
                     {
@@ -1554,7 +1382,7 @@ int imgui_main(int, char**)
 
                                         int indexX = kernel::MAP_DATA[mapIndex].indexX;
                                         int indexY = kernel::MAP_DATA[mapIndex].indexY;
-
+                                        
                                         if (kernel::MAP_DATA[mapIndex].typeX == VARIABLE)
                                         {
                                             varNew.MIN[indexX] = calculateValue(kernel::VAR_VALUES[indexX], kernel::VAR_STEPS[indexX], stepX1);
@@ -1674,6 +1502,7 @@ int imgui_main(int, char**)
                     }
 
                     break;
+                    */
             }          
 
             ImGui::End();
@@ -1714,13 +1543,8 @@ int imgui_main(int, char**)
     ::DestroyWindow(hwnd);
     ::UnregisterClassW(wc.lpszClassName, wc.hInstance);
 
-    if (computationFutures[0].valid()) computationFutures[0].wait();
-    if (computationFutures[1].valid()) computationFutures[1].wait();
-    deleteBothBuffers();
-    if (dataBuffer != nullptr) delete[] dataBuffer;
-    if (particleBuffer != nullptr) delete[] particleBuffer;
-    if (valuesOverride != nullptr) delete[] valuesOverride;
-    if (axisBuffer != nullptr) delete[] axisBuffer;
+    terminateBuffers();
+    if (axisBuffer != nullptr) { delete[] axisBuffer;      axisBuffer = nullptr; }
 
     return 0;
 }
@@ -1823,4 +1647,176 @@ LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
         break;
     }
     return ::DefWindowProcW(hWnd, msg, wParam, lParam);
+}
+
+// Non-ImGui functions
+
+#define ATTR_BEGIN  ImGui::SameLine(); popStyle = false; if (isChanged) { PUSH_UNSAVED_FRAME; popStyle = true; }
+#define ATTR_END    ImGui::PopItemWidth(); if (popStyle) POP_FRAME(3);
+
+void listAttrRanging(Attribute* attr, bool isChanged)
+{
+    ATTR_BEGIN;
+    ImGui::PushItemWidth(120.0f);
+    if (ImGui::BeginCombo(("##RANGING_" + attr->name).c_str(), (rangingTypes[attr->rangingType]).c_str()))
+    {
+        for (int r = 0; r < 5; r++)
+        {
+            bool isSelected = attr->rangingType == r;
+            ImGuiSelectableFlags selectableFlags = 0;
+            if (ImGui::Selectable(rangingTypes[r].c_str(), isSelected, selectableFlags) && !playingParticles)
+            {
+                attr->rangingType = (RangingType)r;
+            }
+        }
+
+        ImGui::EndCombo();
+    }
+    ATTR_END;
+}
+
+void listAttrNumb(Attribute* attr, numb* field, std::string name, bool isChanged)
+{
+    ATTR_BEGIN;
+    ImGui::PushItemWidth(150.0f);
+    float varNewMin = (float)(*field);
+    ImGui::DragFloat(("##" + name + attr->name).c_str(), &varNewMin, dragChangeSpeed, 0.0f, 0.0f, "%f", dragFlag);
+    (*field) = (numb)varNewMin;
+    ATTR_END;
+}
+
+void listVariable(int i)
+{
+    thisChanged = false;
+    if (kernelNew.variables[i].IsDifferentFrom(&(KERNEL.variables[i]))) { anyChanged = true; thisChanged = true; }
+    //if (thisChanged) varNew.recountSteps(i); // TODO
+
+    std::string namePadded = KERNEL.variables[i].name;
+    for (int j = (int)KERNEL.variables[i].name.length(); j < maxNameLength; j++)
+        namePadded += ' ';
+
+    ImGui::Text(namePadded.c_str());
+
+    if (playingParticles)
+    {
+        ImGui::PushStyleColor(ImGuiCol_Text, disabledTextColor);
+        PUSH_DISABLED_FRAME;
+    }
+
+    // Ranging
+    listAttrRanging(&(kernelNew.variables[i]), kernelNew.variables[i].rangingType != KERNEL.variables[i].rangingType);
+
+    // Min
+    listAttrNumb(&(kernelNew.variables[i]), &(kernelNew.variables[i].min), "", kernelNew.variables[i].min != KERNEL.variables[i].min);
+
+    listAttrNumb(&(kernelNew.variables[i]), &(kernelNew.variables[i].step), "STEP", kernelNew.variables[i].step != KERNEL.variables[i].step);
+
+    listAttrNumb(&(kernelNew.variables[i]), &(kernelNew.variables[i].max), "MAX", kernelNew.variables[i].max != KERNEL.variables[i].max);
+
+    // If ranging
+    if (kernelNew.variables[i].rangingType)
+    {
+        // Step count
+        ImGui::SameLine();
+        ImGui::Text((std::to_string(/*calculateStepCount(varNew.MIN[i], varNew.MAX[i], varNew.STEP[i])*/9988) + " steps").c_str());
+    }
+
+    if (playingParticles)
+    {
+        ImGui::PopStyleColor();
+        POP_FRAME(3);
+    }
+}
+
+void listParameter(int i)
+{
+    bool isRanging = kernelNew.parameters[i].rangingType;
+    bool changeAllowed = !kernelNew.parameters[i].rangingType || !playingParticles || !autoLoadNewParams;
+
+    thisChanged = false;
+    if (kernelNew.parameters[i].IsDifferentFrom(&(KERNEL.parameters[i]))) { anyChanged = true; thisChanged = true; }
+    //if (thisChanged) paramNew.recountSteps(i); // TODO
+
+    std::string namePadded = KERNEL.parameters[i].name;
+    for (int j = (int)KERNEL.parameters[i].name.length(); j < maxNameLength; j++)
+        namePadded += ' ';
+
+    ImGui::Text(namePadded.c_str());
+
+    if (!changeAllowed)
+    {
+        ImGui::PushStyleColor(ImGuiCol_Text, disabledTextColor); // disabledText push
+        PUSH_DISABLED_FRAME;
+    }
+
+    // Ranging
+    if (playingParticles)
+    {
+        ImGui::PushStyleColor(ImGuiCol_Text, disabledTextColor);
+        PUSH_DISABLED_FRAME;
+    }
+
+    listAttrRanging(&(kernelNew.parameters[i]), kernelNew.parameters[i].rangingType != KERNEL.parameters[i].rangingType);
+
+    listAttrNumb(&(kernelNew.parameters[i]), &(kernelNew.parameters[i].min), "", kernelNew.parameters[i].min != KERNEL.parameters[i].min);
+
+    // Min
+
+    // If ranging
+    if (kernelNew.parameters[i].rangingType)
+    {
+        // Step
+        ImGui::SameLine();
+        ImGui::PushItemWidth(150.0f);
+        popStyle = false;
+        if (kernelNew.parameters[i].step != KERNEL.parameters[i].step)
+        {
+            PUSH_UNSAVED_FRAME;
+            popStyle = true;
+        }
+        float paramNewStep = (float)kernelNew.parameters[i].step;
+        ImGui::DragFloat(("##STEP_" + KERNEL.parameters[i].name).c_str(), &paramNewStep, dragChangeSpeed, 0.0f, 0.0f, "%f", changeAllowed ? 0 : ImGuiSliderFlags_ReadOnly);
+        kernelNew.parameters[i].step = (numb)paramNewStep;
+        if (popStyle) POP_FRAME(3);
+
+        // Max
+        ImGui::SameLine();
+        popStyle = false;
+        if (kernelNew.parameters[i].max != KERNEL.parameters[i].max)
+        {
+            PUSH_UNSAVED_FRAME;
+            popStyle = true;
+        }
+        float paramNewMax = (float)kernelNew.parameters[i].max;
+        ImGui::DragFloat(("##MAX_" + KERNEL.parameters[i].name).c_str(), &paramNewMax, dragChangeSpeed, 0.0f, 0.0f, "%f", changeAllowed ? 0 : ImGuiSliderFlags_ReadOnly);
+        kernelNew.parameters[i].max = (numb)paramNewMax;
+        if (popStyle) POP_FRAME(3);
+        ImGui::PopItemWidth();
+    }
+
+    if (playingParticles)
+    {
+        ImGui::PopStyleColor();
+        POP_FRAME(3);
+    }
+
+    if (!changeAllowed) POP_FRAME(4); // disabledText popped as well
+
+    // Step count
+    if (kernelNew.parameters[i].rangingType)
+    {
+        int stepCount = /*calculateStepCount(kernel::PARAM_VALUES[i], kernel::PARAM_MAX[i], kernel::PARAM_STEPS[i])*/6655; // TODO
+        if (stepCount > 0)
+        {
+            ImGui::SameLine();
+            ImGui::Text((std::to_string(stepCount) + " steps").c_str());
+
+            /*if (thisChanged && stepCount != paramNew.stepsOf(i))
+            {
+                ImGui::SameLine();
+                ImGui::Text(("(new - " + std::to_string(paramNew.stepsOf(i)) + " steps)").c_str());
+                applicationProhibited = true;
+            }*/
+        }
+    }
 }

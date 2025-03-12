@@ -1,6 +1,8 @@
 #pragma once
 
 #define numb float
+#define MAX_ATTRIBUTES 128
+#define MAX_MAPS 16
 
 #include <string>
 #include <vector>
@@ -11,8 +13,6 @@
 #include "implot/implot.h"
 #include "quaternion.h"
 #include "plotWindow.h"
-
-using namespace std;
 
 #define calculateStepCount(_min, _max, _step) (_step != 0 ? (int)((_max - _min) / _step) + 1 : 0)
 #define stepFromStepCount(_min, _max, _stepCount) ((_max - _min) / (numb)(_stepCount - 1))
@@ -74,15 +74,15 @@ public:
 	int rangingCount;		// Amount of ranging variables/parameters
 	int totalVariations;	// Ranging var/param combinations count
 
-	vector<string> names;
-	vector<numb> min;
-	vector<numb> step;
-	vector<numb> max;
+	std::vector<std::string> names;
+	std::vector<numb> min;
+	std::vector<numb> step;
+	std::vector<numb> max;
 
-	vector<int> stepCount;
-	vector<int> currentStep;
+	std::vector<int> stepCount;
+	std::vector<int> currentStep;
 
-	vector<numb> currentValue;
+	std::vector<numb> currentValue;
 
 	float timeElapsed;
 

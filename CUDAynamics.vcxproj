@@ -13,7 +13,7 @@
   <PropertyGroup Label="Globals">
     <ProjectGuid>{6AE29681-4F81-47CA-9B63-5E789958C40E}</ProjectGuid>
     <RootNamespace>CUDAynamics</RootNamespace>
-    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>10.0.19041.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
@@ -64,7 +64,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;WIN64;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <LanguageStandard>stdcpp14</LanguageStandard>
+      <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -114,10 +114,13 @@
     <ClCompile Include="implot\implot.cpp" />
     <ClCompile Include="implot\implot_items.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="main_utils.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="analysis.h" />
     <ClInclude Include="analysis\lle.h" />
+    <ClInclude Include="attribute_struct.h" />
+    <ClInclude Include="computation_struct.h" />
     <ClInclude Include="cuda_macros.h" />
     <ClInclude Include="dbscan\dbscan.h" />
     <ClInclude Include="imgui\backends\imgui_impl_dx11.h" />
@@ -132,7 +135,10 @@
     <ClInclude Include="imgui_utils.h" />
     <ClInclude Include="implot\implot.h" />
     <ClInclude Include="implot\implot_internal.h" />
+    <ClInclude Include="kernel_struct.h" />
     <ClInclude Include="main.h" />
+    <ClInclude Include="main_utils.h" />
+    <ClInclude Include="marshal_struct.h" />
     <ClInclude Include="objects.h" />
     <ClInclude Include="plotWindow.h" />
     <ClInclude Include="quaternion.h" />
@@ -140,9 +146,8 @@
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="analysis\lle.cu" />
-    <CudaCompile Include="kernels\lorenz.cu" />
-    <CudaCompile Include="kernels\MRLCs-JJ.cu" />
-    <CudaCompile Include="kernels\RLC-sJJ.cu" />
+    <CudaCompile Include="kernels\halvorsen\halvorsen.cu" />
+    <CudaCompile Include="kernels\lorenz2\lorenz2.cu" />
     <CudaCompile Include="main.cu" />
   </ItemGroup>
   <ItemGroup>

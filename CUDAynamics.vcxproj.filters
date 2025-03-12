@@ -34,6 +34,7 @@
     <ClCompile Include="dbscan\dbscan.cpp">
       <Filter>dbscan</Filter>
     </ClCompile>
+    <ClCompile Include="main_utils.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="imgui">
@@ -101,19 +102,21 @@
     <ClInclude Include="analysis\lle.h">
       <Filter>analysis</Filter>
     </ClInclude>
+    <ClInclude Include="main_utils.h" />
+    <ClInclude Include="kernel_struct.h" />
+    <ClInclude Include="marshal_struct.h" />
+    <ClInclude Include="computation_struct.h" />
+    <ClInclude Include="attribute_struct.h" />
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="main.cu" />
-    <CudaCompile Include="kernels\lorenz.cu">
-      <Filter>kernels</Filter>
-    </CudaCompile>
-    <CudaCompile Include="kernels\RLC-sJJ.cu">
-      <Filter>kernels</Filter>
-    </CudaCompile>
     <CudaCompile Include="analysis\lle.cu">
       <Filter>analysis</Filter>
     </CudaCompile>
-    <CudaCompile Include="kernels\MRLCs-JJ.cu">
+    <CudaCompile Include="kernels\lorenz2\lorenz2.cu">
+      <Filter>kernels</Filter>
+    </CudaCompile>
+    <CudaCompile Include="kernels\halvorsen\halvorsen.cu">
       <Filter>kernels</Filter>
     </CudaCompile>
   </ItemGroup>

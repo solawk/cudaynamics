@@ -1282,7 +1282,7 @@ enum ImPlotFlagsObsolete_ {
 namespace ImPlot {
 
 // OBSOLETED in v0.13 -> PLANNED REMOVAL in v1.0
-IMPLOT_DEPRECATED( IMPLOT_API bool BeginPlot(const char* title_id,
+/*IMPLOT_DEPRECATED(*/ IMPLOT_API bool BeginPlot(const char* title_id,
                                              const char* x_label,  // = nullptr,
                                              const char* y_label,  // = nullptr,
                                              const ImVec2& size       = ImVec2(-1,0),
@@ -1292,7 +1292,7 @@ IMPLOT_DEPRECATED( IMPLOT_API bool BeginPlot(const char* title_id,
                                              ImPlotAxisFlags y2_flags = ImPlotAxisFlags_AuxDefault,
                                              ImPlotAxisFlags y3_flags = ImPlotAxisFlags_AuxDefault,
                                              const char* y2_label     = nullptr,
-                                             const char* y3_label     = nullptr) );
+                                             const char* y3_label     = nullptr) /*)*/;
 
 } // namespace ImPlot
 
