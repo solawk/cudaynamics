@@ -1121,23 +1121,43 @@ int imgui_main(int, char**)
                         {
                             if (particleStep > KERNEL.steps) particleStep = KERNEL.steps;
 
-                            for (int v = 0; v < computations[playedBufferIndex].marshal.totalVariations; v++)
+                            std::chrono::steady_clock::time_point before = std::chrono::steady_clock::now();
+
+                            int totalVariations = computations[playedBufferIndex].marshal.totalVariations;
+                            int varCount = KERNEL.VAR_COUNT; // If you don't make this local, it increases the copying time by 30 times, tee-hee
+                            int variationSize = computations[playedBufferIndex].marshal.variationSize;
+                            numb* trajectory = computations[playedBufferIndex].marshal.trajectory;
+
+                            for (int v = 0; v < totalVariations; v++)
                             {
-                                for (int var = 0; var < KERNEL.VAR_COUNT; var++)
-                                    particleBuffer[v * KERNEL.VAR_COUNT + var] = ((numb*)(computations[playedBufferIndex].marshal.trajectory))[(computations[playedBufferIndex].marshal.variationSize * v) + (KERNEL.VAR_COUNT * particleStep) + var];
+                                for (int var = 0; var < varCount; var++)
+                                    particleBuffer[v * varCount + var] = trajectory[(variationSize * v) + (varCount * particleStep) + var];
                             }
+                            std::chrono::steady_clock::time_point after1 = std::chrono::steady_clock::now();
 
                             if (is3d)
                                 rotateOffsetBuffer(particleBuffer, computations[playedBufferIndex].marshal.totalVariations, KERNEL.VAR_COUNT, window->variables[0], window->variables[1], window->variables[2],
                                     rotationEuler, window->offset, window->scale);
+                            std::chrono::steady_clock::time_point after2 = std::chrono::steady_clock::now();
 
                             getMinMax2D(particleBuffer, computations[playedBufferIndex].marshal.totalVariations, &(plot->dataMin), &(plot->dataMax));
+                            std::chrono::steady_clock::time_point after3 = std::chrono::steady_clock::now();
 
                             ImPlot::SetNextLineStyle(window->markerColor);
                             ImPlot::PushStyleVar(ImPlotStyleVar_MarkerWeight, window->markerOutlineSize);
                             //ImPlot::PushStyleVar(ImPlotStyleVar_FillAlpha, 0.25f);
                             ImPlot::SetNextMarkerStyle(window->markerShape, window->markerSize);
                             ImPlot::PlotScatter(plotName.c_str(), &((particleBuffer)[xIndex]), &((particleBuffer)[yIndex]), computations[playedBufferIndex].marshal.totalVariations, 0, 0, sizeof(numb) * KERNEL.VAR_COUNT);
+                            std::chrono::steady_clock::time_point after4 = std::chrono::steady_clock::now();
+                            std::chrono::steady_clock::duration elapsed1 = after1 - before;
+                            std::chrono::steady_clock::duration elapsed2 = after2 - after1;
+                            std::chrono::steady_clock::duration elapsed3 = after3 - after2;
+                            std::chrono::steady_clock::duration elapsed4 = after4 - after3;
+                            int timeElapsed1 = (int)std::chrono::duration_cast<std::chrono::milliseconds>(elapsed1).count();
+                            int timeElapsed2 = (int)std::chrono::duration_cast<std::chrono::milliseconds>(elapsed2).count();
+                            int timeElapsed3 = (int)std::chrono::duration_cast<std::chrono::milliseconds>(elapsed3).count();
+                            int timeElapsed4 = (int)std::chrono::duration_cast<std::chrono::milliseconds>(elapsed4).count();
+                            printf("copying %i, rotating %i, minmax %i, drawing %i\n", timeElapsed1, timeElapsed2, timeElapsed3, timeElapsed4);
                         }
 
                         // Grid

@@ -19,7 +19,8 @@ int main()
     addKernel(lorenz2);
     addKernel(halvorsen);
 
-    selectedKernel = kernels.begin()->first;
+    //selectedKernel = kernels.begin()->first;
+    selectedKernel = "lorenz2";
 
     imgui_main(0, 0);
 

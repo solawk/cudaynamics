@@ -12,11 +12,11 @@ Execute on launch: yes
 //
 // Defining variables/parameters:
 // var/param <name> <ranging type> <minimum value> <maximum value> <step> <step count> <normal mean> <normal deviation>
-var x Step 10.0 29.0 1.0 0 0.0 0.0
-var y Fixed 10.0 29.0 0.1 0 0.0 0.0
+var x Linear 10.0 29.0 1.0 500 0.0 0.0
+var y Linear 10.0 29.0 0.1 500 0.0 0.0
 var z Fixed 10.0 29.0 0.1 0 0.0 0.0
 param sigma Fixed 10.0 29.0 0.1 0 0.0 0.0
-param rho Step 28.0 29.0 0.1 0 0.0 0.0
+param rho Fixed 28.0 29.0 0.1 0 0.0 0.0
 param beta Fixed 2.666667 29.0 0.1 0 0.0 0.0
 // Defining maps:
 map LLE sigma rho
