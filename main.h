@@ -8,6 +8,8 @@
 #include "analysis.h"
 #include "kernel_struct.h"
 #include "computation_struct.h"
+#include "mapData_struct.h"
+#include "variationSteps.h"
 
 #include "kernels/lorenz2/lorenz2.h"
 #include "kernels/halvorsen/halvorsen.h"

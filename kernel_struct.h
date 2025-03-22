@@ -1,6 +1,7 @@
 #pragma once
 #include "objects.h"
 #include "attribute_struct.h"
+#include "mapData_struct.h"
 //#include "main.h"
 
 struct Kernel
@@ -48,9 +49,48 @@ public:
 		PARAM_COUNT = kernel->PARAM_COUNT;
 		MAP_COUNT = kernel->MAP_COUNT;
 	}
+
+	void MapsSetSizes()
+	{
+		unsigned long int mapsSize = 0;
+
+		for (int i = 0; i < MAP_COUNT; i++)
+		{
+			int index = mapDatas[i].indexX;
+			switch (mapDatas[i].typeX)
+			{
+			case VARIABLE:
+				mapDatas[i].xSize = variables[index].stepCount;
+				break;
+			case PARAMETER:
+				mapDatas[i].xSize = parameters[index].stepCount;
+				break;
+			case STEP:
+				mapDatas[i].xSize = steps;
+				break;
+			}
+
+			index = mapDatas[i].indexY;
+			switch (mapDatas[i].typeY)
+			{
+			case VARIABLE:
+				mapDatas[i].ySize = variables[index].stepCount;
+				break;
+			case PARAMETER:
+				mapDatas[i].ySize = parameters[index].stepCount;
+				break;
+			case STEP:
+				mapDatas[i].ySize = steps;
+				break;
+			}
+
+			mapDatas[i].offset = mapsSize;
+			mapsSize += mapDatas[i].xSize * mapDatas[i].ySize;
+		}
+	}
 };
 
-struct MarshalledKernel
+struct MarshalledKernel : Kernel
 {
 public:
 	int steps;
@@ -100,44 +140,5 @@ public:
 		kernel->VAR_COUNT = VAR_COUNT;
 		kernel->PARAM_COUNT = PARAM_COUNT;
 		kernel->MAP_COUNT = MAP_COUNT;
-	}
-
-	void MapsSetSizes()
-	{
-		/*unsigned long int mapsSize = 0;
-
-		for (int i = 0; i < MAP_COUNT; i++)
-		{
-			int index = mapDatas[i].indexX;
-			switch (mapDatas[i].typeX)
-			{
-			case VARIABLE:
-				mapDatas[i].xSize = variables[index].stepCount;
-				break;
-			case PARAMETER:
-				mapDatas[i].xSize = parameters[index].stepCount;
-				break;
-			case STEP:
-				mapDatas[i].xSize = KERNEL.steps;
-				break;
-			}
-
-			index = mapDatas[i].indexY;
-			switch (mapDatas[i].typeY)
-			{
-			case VARIABLE:
-				mapDatas[i].ySize = variables[index].stepCount;
-				break;
-			case PARAMETER:
-				mapDatas[i].ySize = parameters[index].stepCount;
-				break;
-			case STEP:
-				mapDatas[i].ySize = KERNEL.steps;
-				break;
-			}
-
-			mapDatas[i].offset = mapsSize;
-			mapsSize += mapDatas[i].xSize * mapDatas[i].ySize;
-		}*/
 	}
 };

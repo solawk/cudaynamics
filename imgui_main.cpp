@@ -18,8 +18,9 @@ std::vector<int> attributeValueIndices;
 bool autoLoadNewParams = false;
 Kernel kernelNew;
 
-void* dataBuffer = nullptr; // One variation local buffer
+numb* dataBuffer = nullptr; // One variation local buffer
 numb* particleBuffer = nullptr; // One step local buffer
+numb* mapBuffer = nullptr;
 
 void* axisBuffer = new numb[3 * 2 * 3] {}; // 3 axis, 2 points
 void* rulerBuffer = new numb[51 * 3] {}; // 1 axis, 5 * 10 + 1 points
@@ -106,6 +107,9 @@ void resetTempBuffers(Computation* data)
 
     if (particleBuffer) delete[] particleBuffer;
     particleBuffer = new numb[CUDA_marshal.totalVariations * KERNEL.VAR_COUNT];
+
+    if (mapBuffer) delete[] mapBuffer;
+    mapBuffer = new numb[CUDA_marshal.mapsSize];
 }
 
 std::string padString(std::string str, int length)
@@ -195,6 +199,7 @@ void terminateBuffers()
     deleteBothBuffers();
     if (dataBuffer != nullptr)      { delete[] dataBuffer;      dataBuffer = nullptr; }
     if (particleBuffer != nullptr)  { delete[] particleBuffer;  particleBuffer = nullptr; }
+    if (mapBuffer != nullptr)       { delete[] mapBuffer;  mapBuffer = nullptr; }
 
     executedOnLaunch = false;
     playedBufferIndex = bufferToFillIndex = 0;
@@ -420,8 +425,8 @@ int imgui_main(int, char**)
             ImGui::SeparatorText("Simulation");
 
             int tempTotalVariations = 1;
-            for (int v = 0; v < KERNEL.VAR_COUNT; v++)      if (kernelNew.variables[v].stepCount > 1)   tempTotalVariations *= kernelNew.variables[v].stepCount;
-            for (int p = 0; p < KERNEL.PARAM_COUNT; p++)    if (kernelNew.parameters[p].stepCount > 1)  tempTotalVariations *= kernelNew.parameters[p].stepCount;
+            for (int v = 0; v < KERNEL.VAR_COUNT; v++)      if (kernelNew.variables[v].stepCount > 1 && kernelNew.variables[v].rangingType > None)      tempTotalVariations *= kernelNew.variables[v].stepCount;
+            for (int p = 0; p < KERNEL.PARAM_COUNT; p++)    if (kernelNew.parameters[p].stepCount > 1 && kernelNew.parameters[p].rangingType > None)    tempTotalVariations *= kernelNew.parameters[p].stepCount;
             unsigned long long tempTotalVariationsLL = tempTotalVariations;
             unsigned long long varCountLL = KERNEL.VAR_COUNT;
             unsigned long long stepsNewLL = kernelNew.steps + 1;
@@ -620,15 +625,7 @@ int imgui_main(int, char**)
                             ImGui::SameLine(); ImGui::Text(("Value: " + std::to_string(calculateValue(attr->min, attr->step, index))).c_str());
                         }
 
-                        int attrStride = 1;
-                        for (int i = KERNEL.VAR_COUNT + KERNEL.PARAM_COUNT - 1; i >= 0; i--)
-                        {
-                            bool isVar = i < KERNEL.VAR_COUNT;
-                            Attribute* attr = isVar ? &(computations[playedBufferIndex].marshal.kernel.variables[i]) : &(computations[playedBufferIndex].marshal.kernel.parameters[i - KERNEL.VAR_COUNT]);
-
-                            variation += attributeValueIndices[i] * attrStride;
-                            attrStride *= attr->stepCount;
-                        }
+                        steps2Variation(&variation, &(attributeValueIndices.data()[0]), &KERNEL);
                     }
 
                     ImGui::EndTabItem();
@@ -662,6 +659,7 @@ int imgui_main(int, char**)
                     deleteBothBuffers();
 
                     KERNEL.CopyFrom(&kernelNew);
+                    KERNEL.MapsSetSizes();
 
                     // TODO: All calc steps and stepcounts should be done beforehand, since ranging will be incorrect otherwise
                     //initAVI();
@@ -946,7 +944,7 @@ int imgui_main(int, char**)
                         {
                             //ImPlot::SetNextLineStyle(ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
                             ImPlot::PlotLine((KERNEL.variables[window->variables[v]].name + "##" + plotName + std::to_string(v)).c_str(),
-                                &(((numb*)dataBuffer)[window->variables[v]]), computedSteps + 1, 1.0f, 0.0f, ImPlotLineFlags_None, 0, sizeof(numb) * KERNEL.VAR_COUNT);
+                                &((dataBuffer)[window->variables[v]]), computedSteps + 1, 1.0f, 0.0f, ImPlotLineFlags_None, 0, sizeof(numb) * KERNEL.VAR_COUNT);
                         }
                     }
 
@@ -1133,14 +1131,14 @@ int imgui_main(int, char**)
                             memcpy(dataBuffer, computedVariation, computations[playedBufferIndex].marshal.variationSize * sizeof(numb));
 
                             if (is3d)
-                                rotateOffsetBuffer((numb*)dataBuffer, computedSteps + 1, KERNEL.VAR_COUNT, window->variables[0], window->variables[1], window->variables[2],
+                                rotateOffsetBuffer(dataBuffer, computedSteps + 1, KERNEL.VAR_COUNT, window->variables[0], window->variables[1], window->variables[2],
                                     rotationEuler, window->offset, window->scale);
 
-                            getMinMax2D((numb*)dataBuffer, computedSteps + 1, &(plot->dataMin), &(plot->dataMax));
+                            getMinMax2D(dataBuffer, computedSteps + 1, &(plot->dataMin), &(plot->dataMax));
                             //printf("%f:%f %f:%f\n", plot->dataMin.x, plot->dataMin.y, plot->dataMax.x, plot->dataMax.y);
 
                             ImPlot::SetNextLineStyle(ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
-                            ImPlot::PlotLine(plotName.c_str(), &(((numb*)dataBuffer)[xIndex]), &(((numb*)dataBuffer)[yIndex]), computedSteps + 1, 0, 0, sizeof(numb) * KERNEL.VAR_COUNT);
+                            ImPlot::PlotLine(plotName.c_str(), &((dataBuffer)[xIndex]), &((dataBuffer)[yIndex]), computedSteps + 1, 0, 0, sizeof(numb) * KERNEL.VAR_COUNT);
                         }
                         else // Particles - all variations, one certain step
                         {
@@ -1177,7 +1175,7 @@ int imgui_main(int, char**)
                 }
                 if (window->whiteBg) ImPlot::PopStyleColor(2);
                 break;
-                /*
+                
                 case Heatmap:
                     if (ImGui::BeginTable((plotName + "_table").c_str(), 2, ImGuiTableFlags_Reorderable, ImVec2(-1, 0)))
                     {
@@ -1193,6 +1191,8 @@ int imgui_main(int, char**)
 
                         ImGui::TableSetColumnIndex(0);
 
+                        MapData* map = nullptr;
+
                         if (window->whiteBg) { ImPlot::PushStyleColor(ImPlotCol_PlotBg, ImVec4(1.0f, 1.0f, 1.0f, 1.0f)); ImPlot::PushStyleColor(ImPlotCol_AxisGrid, ImVec4(0.2f, 0.2f, 0.2f, 1.0f)); }
                         if (ImPlot::BeginPlot(plotName.c_str(), "", "", ImVec2(-1, -1), ImPlotFlags_NoTitle | ImPlotFlags_NoLegend, axisFlags, axisFlags))
                         {
@@ -1200,23 +1200,25 @@ int imgui_main(int, char**)
                             plot->is3d = false;
                             plot->isHeatmapSelectionModeOn = window->isHeatmapSelectionModeOn;
 
-                            if (mapBuffers[playedBufferIndex])
+                            if (computations[playedBufferIndex].ready)
                             {
                                 ImPlot::PushColormap(heatmapColorMap);
                                 mapIndex = window->variables[0];
-                                int xSize = kernel::MAP_DATA[mapIndex].xSize;
-                                int ySize = kernel::MAP_DATA[mapIndex].ySize;
+                                int xSize = KERNEL.mapDatas[mapIndex].xSize;
+                                int ySize = KERNEL.mapDatas[mapIndex].ySize;
+
+                                map = &(KERNEL.mapDatas[mapIndex]);
 
                                 ImVec4 plotRect = ImVec4((float)plot->Axes[plot->CurrentX].Range.Min, (float)plot->Axes[plot->CurrentY].Range.Min,
                                     (float)plot->Axes[plot->CurrentX].Range.Max, (float)plot->Axes[plot->CurrentY].Range.Max); // minX, minY, maxX, maxY
                                 //printf("%f %f %f %f\n", plotRect.x, plotRect.y, plotRect.z, plotRect.w);
 
-                                numb valuesX = kernel::MAP_DATA[mapIndex].typeX == PARAMETER ? kernel::PARAM_VALUES[kernel::MAP_DATA[mapIndex].indexX] : kernel::MAP_DATA[mapIndex].typeX == VARIABLE ? kernel::VAR_VALUES[kernel::MAP_DATA[mapIndex].indexX] : 0;
-                                numb valuesY = kernel::MAP_DATA[mapIndex].typeY == PARAMETER ? kernel::PARAM_VALUES[kernel::MAP_DATA[mapIndex].indexY] : kernel::MAP_DATA[mapIndex].typeY == VARIABLE ? kernel::VAR_VALUES[kernel::MAP_DATA[mapIndex].indexY] : 0;
-                                numb stepsX = kernel::MAP_DATA[mapIndex].typeX == PARAMETER ? kernel::PARAM_STEPS[kernel::MAP_DATA[mapIndex].indexX] : kernel::MAP_DATA[mapIndex].typeX == VARIABLE ? kernel::VAR_STEPS[kernel::MAP_DATA[mapIndex].indexX] : 0;
-                                numb stepsY = kernel::MAP_DATA[mapIndex].typeY == PARAMETER ? kernel::PARAM_STEPS[kernel::MAP_DATA[mapIndex].indexY] : kernel::MAP_DATA[mapIndex].typeY == VARIABLE ? kernel::VAR_STEPS[kernel::MAP_DATA[mapIndex].indexY] : 0;
-                                numb maxX = kernel::MAP_DATA[mapIndex].typeX == PARAMETER ? kernel::PARAM_MAX[kernel::MAP_DATA[mapIndex].indexX] : kernel::MAP_DATA[mapIndex].typeX == VARIABLE ? kernel::VAR_MAX[kernel::MAP_DATA[mapIndex].indexX] : 0;
-                                numb maxY = kernel::MAP_DATA[mapIndex].typeY == PARAMETER ? kernel::PARAM_MAX[kernel::MAP_DATA[mapIndex].indexY] : kernel::MAP_DATA[mapIndex].typeY == VARIABLE ? kernel::VAR_MAX[kernel::MAP_DATA[mapIndex].indexY] : 0;
+                                numb valuesX = map->typeX == PARAMETER ? KERNEL.parameters[map->indexX].min : map->typeX == VARIABLE ? KERNEL.variables[map->indexX].min : 0;
+                                numb valuesY = map->typeY == PARAMETER ? KERNEL.parameters[map->indexY].min : map->typeY == VARIABLE ? KERNEL.variables[map->indexY].min : 0;
+                                numb stepsX = map->typeX == PARAMETER ? KERNEL.parameters[map->indexX].step : map->typeX == VARIABLE ? KERNEL.variables[map->indexX].step : 0;
+                                numb stepsY = map->typeY == PARAMETER ? KERNEL.parameters[map->indexY].step : map->typeY == VARIABLE ? KERNEL.variables[map->indexY].step : 0;
+                                numb maxX = map->typeX == PARAMETER ? KERNEL.parameters[map->indexX].max : map->typeX == VARIABLE ? KERNEL.variables[map->indexX].max : 0;
+                                numb maxY = map->typeY == PARAMETER ? KERNEL.parameters[map->indexY].max : map->typeY == VARIABLE ? KERNEL.variables[map->indexY].max : 0;
 
                                 int cutoffWidth;
                                 int cutoffHeight;
@@ -1272,7 +1274,7 @@ int imgui_main(int, char**)
                                 numb heatmapY2Cutoff = window->showActualDiapasons ? valueMinY : cutoffMinY;
 
                                 // Choosing configuration
-                                if (plot->shiftClicked && plot->shiftClickLocation.x > 0.0)
+                                /*if (plot->shiftClicked && plot->shiftClickLocation.x > 0.0)
                                 {
                                     int stepX = 0;
                                     int stepY = 0;
@@ -1314,10 +1316,10 @@ int imgui_main(int, char**)
                                             rangingData[playedBufferIndex].currentStep[rangingIndexY] = stepY;
                                         }
                                     }
-                                }
+                                }*/
 
                                 // Selecting new ranging
-                                if (plot->shiftSelected)
+                                /*if (plot->shiftSelected)
                                 {
                                     int stepX1 = 0;
                                     int stepY1 = 0;
@@ -1382,7 +1384,7 @@ int imgui_main(int, char**)
                                             paramNew.RANGING[indexY] = Linear;
                                         }
                                     }
-                                }
+                                }*/
 
                                 if (autofitHeatmap || toAutofit)
                                 {
@@ -1395,7 +1397,8 @@ int imgui_main(int, char**)
                                 // Actual drawing of the heatmap
                                 if (cutoffWidth > 0 && cutoffHeight > 0)
                                 {
-                                    numb* mapData = (numb*)(mapBuffers[playedBufferIndex]) + kernel::MAP_DATA[mapIndex].offset;
+                                    //memcpy(mapBuffer, computations[playedBufferIndex].marshal.maps, computations[playedBufferIndex].marshal.mapsSize * sizeof(numb));
+                                    numb* mapData = computations[playedBufferIndex].marshal.maps + map->offset;
 
                                     getMinMax(mapData, xSize * ySize, &min, &max);
 
@@ -1412,7 +1415,7 @@ int imgui_main(int, char**)
                                     int rows = heatStride > 1 ? (int)ceil((numb)cutoffHeight / heatStride) : cutoffHeight;
                                     int cols = heatStride > 1 ? (int)ceil((numb)cutoffWidth / heatStride) : cutoffWidth;
 
-                                    ImPlot::PlotHeatmap((std::string(kernel::VAR_NAMES[mapIndex]) + "##" + plotName + std::to_string(0)).c_str(),
+                                    ImPlot::PlotHeatmap(("Map " + std::to_string(mapIndex) + "##" + plotName + std::to_string(0)).c_str(),
                                         (numb*)compressedHeatmap, rows, cols, (double)min, (double)max, window->showHeatmapValues ? "%.3f" : nullptr,
                                         ImPlotPoint(heatmapX1Cutoff, heatmapY1Cutoff), ImPlotPoint(heatmapX2Cutoff, heatmapY2Cutoff)); // %3f
 
@@ -1438,15 +1441,15 @@ int imgui_main(int, char**)
                             plot = ImPlot::GetPlot((plotName + "_legend").c_str());
                             plot->is3d = false;
 
-                            if (mapBuffers[playedBufferIndex])
+                            if (map != nullptr)
                             {
                                 float* legendData = new float[1000];
                                 for (int i = 0; i < 1000; i++) legendData[i] = (float)i;
 
                                 ImPlot::PushColormap(heatmapColorMap);
                                 mapIndex = window->variables[0];
-                                int xSize = kernel::MAP_DATA[mapIndex].xSize;
-                                int ySize = kernel::MAP_DATA[mapIndex].ySize;
+                                int xSize = map->xSize;
+                                int ySize = map->ySize;
 
                                 plot->Axes[plot->CurrentX].Range.Min = 0;
                                 plot->Axes[plot->CurrentY].Range.Min = 0;
@@ -1455,7 +1458,7 @@ int imgui_main(int, char**)
 
                                 //numb* mapData = (float*)(mapBuffers[playedBufferIndex]) + kernel::MAP_DATA[mapIndex].offset;
 
-                                ImPlot::PlotHeatmap((std::string(kernel::VAR_NAMES[mapIndex]) + "_legend##" + plotName + std::to_string(0) + "_legend").c_str(),
+                                ImPlot::PlotHeatmap(("Map " + std::to_string(mapIndex) + "_legend##" + plotName + std::to_string(0) + "_legend").c_str(),
                                     legendData, 1000, 1, 0, 999, nullptr,
                                     ImPlotPoint(0.0f, 1000.0f),
                                     ImPlotPoint(1.0f, 0.0f)); // %3f
@@ -1475,7 +1478,6 @@ int imgui_main(int, char**)
                     }
 
                     break;
-                    */
             }          
 
             ImGui::End();

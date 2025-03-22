@@ -14,6 +14,9 @@ struct Marshal
 	// Parameter values for each variation
 	numb* parameterVariations;
 
+	// Attribute step indices for each variation
+	int* stepIndices;
+
 	// Map data
 	numb* maps;
 

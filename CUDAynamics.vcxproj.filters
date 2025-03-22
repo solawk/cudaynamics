@@ -35,6 +35,7 @@
       <Filter>dbscan</Filter>
     </ClCompile>
     <ClCompile Include="main_utils.cpp" />
+    <ClCompile Include="variationSteps.cu" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="imgui">
@@ -107,6 +108,8 @@
     <ClInclude Include="marshal_struct.h" />
     <ClInclude Include="computation_struct.h" />
     <ClInclude Include="attribute_struct.h" />
+    <ClInclude Include="mapData_struct.h" />
+    <ClInclude Include="variationSteps.h" />
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="main.cu" />

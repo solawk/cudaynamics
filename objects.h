@@ -211,17 +211,3 @@ template<typename T> struct InputValuesBuffer
 	}
 };
 
-enum MapDimensionType { VARIABLE, PARAMETER, STEP };
-
-struct MapData
-{
-	unsigned long int xSize;
-	unsigned long int ySize;
-	unsigned long int offset;
-
-	int indexX;
-	MapDimensionType typeX;
-
-	int indexY;
-	MapDimensionType typeY;
-};

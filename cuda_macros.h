@@ -54,9 +54,6 @@
 
 // == Largest Lyapunov Exponent (LLE) ==
 
-// Declare parallel array
-#define LLE_INIT(type) type LLE_array[kernel::VAR_COUNT]; type LLE_array_temp[kernel::VAR_COUNT]; numb LLE_value = 0.0f; int LLE_div = 0;
-
 // Store to temp array
 #define LLE_STORE_TO_TEMP for (int i = 0; i < kernel::VAR_COUNT; i++) LLE_array_temp[i] = LLE_array[i];
 

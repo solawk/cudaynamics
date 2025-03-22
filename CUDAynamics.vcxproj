@@ -115,6 +115,7 @@
     <ClCompile Include="implot\implot_items.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="main_utils.cpp" />
+    <ClCompile Include="variationSteps.cu" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="analysis.h" />
@@ -138,11 +139,13 @@
     <ClInclude Include="kernel_struct.h" />
     <ClInclude Include="main.h" />
     <ClInclude Include="main_utils.h" />
+    <ClInclude Include="mapData_struct.h" />
     <ClInclude Include="marshal_struct.h" />
     <ClInclude Include="objects.h" />
     <ClInclude Include="plotWindow.h" />
     <ClInclude Include="quaternion.h" />
     <ClInclude Include="resource.h" />
+    <ClInclude Include="variationSteps.h" />
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="analysis\lle.cu" />
