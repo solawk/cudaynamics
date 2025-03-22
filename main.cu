@@ -10,7 +10,7 @@
 
 cudaError_t execute(Computation* data)
 {
-    unsigned long int size = CUDA_marshal.variationSize * CUDA_marshal.totalVariations;
+    unsigned long long size = CUDA_marshal.variationSize * CUDA_marshal.totalVariations;
 
     //std::chrono::steady_clock::time_point before = std::chrono::steady_clock::now();
     //std::chrono::steady_clock::time_point precompute, incompute, postcompute;
@@ -22,16 +22,16 @@ cudaError_t execute(Computation* data)
     data->threads_per_block = KERNEL_TPB;
 
     // We create a dummy CUDA Computation with a Marshal to store the pointers in
-    Computation* cuda_computation;
-    numb* cuda_trajectory;
-    numb* cuda_parameters;
+    Computation* cuda_computation = nullptr;
+    numb* cuda_trajectory = nullptr;
+    numb* cuda_parameters = nullptr;
     //numb* cuda_maps;
 
     CUDA_SET_DEVICE;
 
     CUDA_MALLOC(&cuda_computation, sizeof(Computation), "cudaMalloc computation failed!");
     CUDA_MALLOC(&cuda_trajectory, size * sizeof(numb), "cudaMalloc data failed!");
-    CUDA_MALLOC(&cuda_parameters, CUDA_marshal.totalVariations * CUDA_kernel.PARAM_COUNT * sizeof(numb), "cudaMalloc data failed!");
+    CUDA_MALLOC(&cuda_parameters, (unsigned long long)CUDA_marshal.totalVariations * CUDA_kernel.PARAM_COUNT * sizeof(numb), "cudaMalloc data failed!");
     //CUDA_MALLOC(&cuda_maps, CUDA_marshal.mapsSize * sizeof(numb), "cudaMalloc maps failed!");
 
     CUDA_MEMCPY(cuda_computation, data, cudaMemcpyHostToDevice, sizeof(Computation), "cudaMemcpy computation failed!");
@@ -39,7 +39,7 @@ cudaError_t execute(Computation* data)
     CUDA_MEMCPY(&(cuda_computation->marshal.parameterVariations), &cuda_parameters, cudaMemcpyHostToDevice, sizeof(numb*), "cudaMemcpy parameter address failed!");
 
     CUDA_MEMCPY(cuda_trajectory, CUDA_marshal.trajectory, cudaMemcpyHostToDevice, size * sizeof(numb), "cudaMemcpy data failed!");
-    CUDA_MEMCPY(cuda_parameters, CUDA_marshal.parameterVariations, cudaMemcpyHostToDevice, CUDA_marshal.totalVariations * CUDA_kernel.PARAM_COUNT * sizeof(numb), "cudaMemcpy params failed!");
+    CUDA_MEMCPY(cuda_parameters, CUDA_marshal.parameterVariations, cudaMemcpyHostToDevice, (unsigned long long)CUDA_marshal.totalVariations * CUDA_kernel.PARAM_COUNT * sizeof(numb), "cudaMemcpy params failed!");
     //CUDA_MEMCPY(cuda_maps, maps, cudaMemcpyHostToDevice, mapsSize * sizeof(numb), "cudaMemcpy maps failed!");
     //CUDA_MEMCPY(cuda_map_data, &kernel::MAP_DATA, cudaMemcpyHostToDevice, kernel::MAP_COUNT * sizeof(MapData), "cudaMemcpy map data failed!");
 
@@ -56,10 +56,10 @@ cudaError_t execute(Computation* data)
     //CUDA_MEMCPY(maps, cuda_maps, cudaMemcpyDeviceToHost, mapsSize * sizeof(numb), "cudaMemcpy maps back failed!");
 
 Error:
-    cudaFree(cuda_trajectory);
-    cudaFree(cuda_parameters);
+    if (cuda_trajectory != nullptr) cudaFree(cuda_trajectory);
+    if (cuda_parameters != nullptr) cudaFree(cuda_parameters);
     //cudaFree(cuda_maps);
-    cudaFree(cuda_computation);
+    if (cuda_computation != nullptr) cudaFree(cuda_computation);
 
     //postcompute = std::chrono::steady_clock::now();
     //printf("Precompute time: %Ii ms\n", std::chrono::duration_cast<std::chrono::milliseconds>(precompute - before).count());
@@ -102,9 +102,9 @@ int compute(Computation* data)
     }
 
     CUDA_marshal.totalVariations = variations;
-    unsigned long int trajectorySize = CUDA_kernel.VAR_COUNT * (CUDA_kernel.steps + 1); // All steps for the current parameter/variable value combination
+    unsigned long long trajectorySize = CUDA_kernel.VAR_COUNT * (CUDA_kernel.steps + 1); // All steps for the current parameter/variable value combination
     CUDA_marshal.variationSize = trajectorySize;
-    unsigned long int size = trajectorySize * variations; // Entire data array size
+    unsigned long long size = trajectorySize * variations; // Entire data array size
 
     if (CUDA_marshal.trajectory == nullptr)
         CUDA_marshal.trajectory = new numb[size];
@@ -165,16 +165,16 @@ int compute(Computation* data)
 
 void fillAttributeBuffers(Computation* data)
 {
-    int varStride = (CUDA_kernel.steps + 1) * CUDA_kernel.VAR_COUNT;    // Stride between variations in "trajectory"
-    int paramStride = CUDA_kernel.PARAM_COUNT;                          // Stride between variations in "parameterVariations"
+    unsigned long long varStride = CUDA_marshal.variationSize;    // Stride between variations in "trajectory"
+    unsigned long long paramStride = CUDA_kernel.PARAM_COUNT;                          // Stride between variations in "parameterVariations"
    
     std::vector<int> attributeStepIndices;
     int totalAttributes = CUDA_kernel.VAR_COUNT + CUDA_kernel.PARAM_COUNT;
     for (int i = 0; i < totalAttributes; i++) attributeStepIndices.push_back(0);
 
-    for (int i = 0; i < CUDA_marshal.totalVariations; i++)
+    for (unsigned long long i = 0; i < CUDA_marshal.totalVariations; i++)
     {
-        if (data->isFirst)
+        if (data->isFirst) // Meaning no previous trajectory
         {
             // Forming buffer from attribute values
             // Counting step indeces like a number, incrementing by 1 for each variation

@@ -13,6 +13,7 @@ int uniqueIds = 0; // Unique window IDs
 Computation computations[2];
 int playedBufferIndex = 0; // Buffer currently shown
 int bufferToFillIndex = 0; // Buffer to send computations to
+std::vector<int> attributeValueIndices;
 
 bool autoLoadNewParams = false;
 Kernel kernelNew;
@@ -22,7 +23,6 @@ numb* particleBuffer = nullptr; // One step local buffer
 
 void* axisBuffer = new numb[3 * 2 * 3] {}; // 3 axis, 2 points
 void* rulerBuffer = new numb[51 * 3] {}; // 1 axis, 5 * 10 + 1 points
-void* gridBuffer = new numb[10 * 5 * 3 * 2] {};
 
 int computedSteps = 0; // Step count for the current computation
 bool autofitAfterComputing = false; // Temporary flag to autofit computed data
@@ -108,6 +108,21 @@ void resetTempBuffers(Computation* data)
     particleBuffer = new numb[CUDA_marshal.totalVariations * KERNEL.VAR_COUNT];
 }
 
+std::string padString(std::string str, int length)
+{
+    std::string strPadded = str;
+    for (int j = (int)str.length(); j < length; j++)
+        strPadded += ' ';
+    return strPadded;
+}
+
+// Initialize the Attribute Value Indeces vector for ranging
+void initAVI()
+{
+    attributeValueIndices.clear();
+    for (int i = 0; i < kernelNew.VAR_COUNT + kernelNew.PARAM_COUNT; i++) attributeValueIndices.push_back(0);
+}
+
 void computing();
 
 int asyncComputation()
@@ -116,11 +131,7 @@ int asyncComputation()
 
     bool isFirstBatch = computations[1 - bufferToFillIndex].marshal.trajectory == nullptr; // Is another buffer null, only true when computing for the first time
     computations[bufferToFillIndex].isFirst = isFirstBatch;
-    //if (isFirstBatch) rangingData->clear();
 
-    //printf("is first batch %i, total variations %i\n", isFirstBatch, rangingData->totalVariations);
-    // 
-    // TODO: just send the Computation and set its previousTrajectory if not first batch
     int computationResult = compute(&(computations[bufferToFillIndex]));
 
     computedSteps = KERNEL.steps;
@@ -129,6 +140,7 @@ int asyncComputation()
     {
         autofitAfterComputing = true;
         resetTempBuffers(&(computations[bufferToFillIndex]));
+        initAVI();
     }
 
     computations[bufferToFillIndex].ready = true;
@@ -196,6 +208,24 @@ void initializeKernel(bool needTerminate)
 
     computations[0].Clear();
     computations[1].Clear();
+
+    attributeValueIndices.clear();
+
+    particleStep = 0;
+}
+
+void computationStatus(bool comp0, bool comp1)
+{
+    if (comp0)
+    {
+        ImGui::Text("Computing buffer 0...");
+        return;
+    }
+    
+    if (comp1)
+    {
+        ImGui::Text("Computing buffer 1...");
+    }
 }
 
 // Main code
@@ -331,10 +361,6 @@ int imgui_main(int, char**)
                 ImGui::EndCombo();
             }
 
-            //int tempTotalVariations = 1; TODO
-            //for (int v = 0; v < kernel::VAR_COUNT; v++) if (varNew.RANGING[v]) tempTotalVariations *= (calculateStepCount(varNew.MIN[v], varNew.MAX[v], varNew.STEP[v]));
-            //for (int p = 0; p < kernel::PARAM_COUNT; p++) if (paramNew.RANGING[p])  tempTotalVariations *= (calculateStepCount(paramNew.MIN[p], paramNew.MAX[p], paramNew.STEP[p]));
-
             // Parameters & Variables
 
             dragFlag = !playingParticles ? 0 : ImGuiSliderFlags_ReadOnly;
@@ -361,20 +387,6 @@ int imgui_main(int, char**)
             for (int i = 0; i < KERNEL.PARAM_COUNT; i++)
             {
                 listParameter(i);
-            }
-
-            if (enabledParticles)
-            {
-                bool tempAutoLoadNewParams = autoLoadNewParams;
-                if (ImGui::Checkbox("Apply parameter changes automatically", &(tempAutoLoadNewParams)))
-                {
-                    autoLoadNewParams = !autoLoadNewParams;
-                    if (autoLoadNewParams) kernelNew.CopyFrom(&KERNEL);
-                    else KERNEL.CopyFrom(&kernelNew);
-                }
-
-                ImGui::PushItemWidth(200.0f);
-                ImGui::InputFloat("Drag speed", &(dragChangeSpeed));
             }
 
             if (autoLoadNewParams)
@@ -407,12 +419,17 @@ int imgui_main(int, char**)
 
             ImGui::SeparatorText("Simulation");
 
-            //unsigned long long tempTotalVariationsLL = tempTotalVariations;
-            //unsigned long long varCountLL = kernel::VAR_COUNT;
-            //unsigned long long stepsNewLL = stepsNew + 1;
-            //unsigned long long singleBufferNumberCount = ((tempTotalVariationsLL * varCountLL) * stepsNewLL);
-            //unsigned long long singleBufferNumbSize = singleBufferNumberCount * sizeof(numb);
-            ImGui::Text(("Single buffer size: " + memoryString(/*singleBufferNumbSize*/1234) + " (" + to_string(/*singleBufferNumbSize*/5678) + " bytes)").c_str()); // TODO
+            int tempTotalVariations = 1;
+            for (int v = 0; v < KERNEL.VAR_COUNT; v++)      if (kernelNew.variables[v].stepCount > 1)   tempTotalVariations *= kernelNew.variables[v].stepCount;
+            for (int p = 0; p < KERNEL.PARAM_COUNT; p++)    if (kernelNew.parameters[p].stepCount > 1)  tempTotalVariations *= kernelNew.parameters[p].stepCount;
+            unsigned long long tempTotalVariationsLL = tempTotalVariations;
+            unsigned long long varCountLL = KERNEL.VAR_COUNT;
+            unsigned long long stepsNewLL = kernelNew.steps + 1;
+            unsigned long long singleBufferNumberCount = ((tempTotalVariationsLL * varCountLL) * stepsNewLL);
+            unsigned long long singleBufferNumbSize = singleBufferNumberCount * sizeof(numb);
+            ImGui::Text(("Single trajectory memory: " + memoryString(singleBufferNumbSize) + " (" + to_string(singleBufferNumbSize) + " bytes)").c_str());
+
+            frameTime = 1.0f / io.Framerate; ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
 
             ImGui::PushItemWidth(200.0f);
             if (playingParticles)
@@ -441,127 +458,196 @@ int imgui_main(int, char**)
             KERNEL.stepSize = (numb)tempStepSize;
             ImGui::PopItemWidth();
             
-            bool tempEnabledParticles = enabledParticles;
+            /*bool tempEnabledParticles = enabledParticles;
             if (ImGui::Checkbox("Particles mode", &(tempEnabledParticles)))
             {
                 enabledParticles = !enabledParticles;
-            }
+            }*/
 
-            if (tempEnabledParticles)
+            variation = 0;
+
+            ImGui::NewLine();
+            if (ImGui::BeginTabBar("SimulationSettingsModes"))
             {
-                ImGui::PushItemWidth(200.0f);
-                ImGui::DragFloat("Animation speed, steps/s", &(particleSpeed), 1.0f);
-                if (particleSpeed < 0.0f) particleSpeed = 0.0f;
-                ImGui::PopItemWidth();
-
-                if (computations[playedBufferIndex].timeElapsed > 0.0f)
+                if (ImGui::BeginTabItem("Particles Mode"))
                 {
-                    float buffersPerSecond = 1000.0f / computations[playedBufferIndex].timeElapsed;
-                    int stepsPerSecond = (int)(computedSteps * buffersPerSecond);
+                    enabledParticles = true;
 
-                    ImGui::SameLine();
-                    ImGui::Text(("(max " + to_string(stepsPerSecond) + " before stalling)").c_str());
-                }
-
-                ImGui::DragInt("##Animation step", &(particleStep), 1.0f, 0, KERNEL.steps);
-                ImGui::SameLine();
-                ImGui::Text(("Animation step" + (continuousComputingEnabled ? " (total step " + to_string(bufferNo * KERNEL.steps + particleStep) + ")" : "")).c_str());
-
-                if (ImGui::Button("Reset to step 0"))
-                {
-                    particleStep = 0;
-                }
-
-                if (anyChanged)
-                {
-                    ImGui::PushStyleColor(ImGuiCol_Text, disabledTextColor);
-                    PUSH_DISABLED_FRAME;
-                }
-                bool tempPlayingParticles = playingParticles;
-                if (ImGui::Checkbox("Play", &(tempPlayingParticles)) && !anyChanged)
-                {
-                    if (computations[0].ready || playingParticles)
+                    // PARTICLES MODE
+                    if (/*tempEnabledParticles*/1)
                     {
-                        playingParticles = !playingParticles;
-                        kernelNew.CopyFrom(&KERNEL);
-                    }
+                        ImGui::PushItemWidth(200.0f);
+                        ImGui::DragFloat("Animation speed, steps/s", &(particleSpeed), 1.0f);
+                        if (particleSpeed < 0.0f) particleSpeed = 0.0f;
+                        ImGui::PopItemWidth();
 
-                    if (!playingParticles)
-                    {
-                        KERNEL.CopyFrom(&kernelNew);
-                    }
-                }
-                if (anyChanged) POP_FRAME(4);
-
-                bool tempContinuous = continuousComputingEnabled;
-                if (ImGui::Checkbox("Continuous computing", &(tempContinuous)))
-                {
-                    // Flags of having buffers computed, to not interrupt computations in progress when switching
-                    bool noncont = !continuousComputingEnabled && computations[0].ready;
-                    bool cont = continuousComputingEnabled && computations[0].ready && computations[1].ready;
-
-                    if (noComputedData || noncont || cont)
-                    {
-                        continuousComputingEnabled = !continuousComputingEnabled;
-
-                        bufferNo = 0;
-                        deleteBothBuffers();
-                        playingParticles = false;
-                        particleStep = 0;
-                    }
-                }
-            }
-
-            frameTime = 1.0f / io.Framerate;
-            ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
-            //ImGui::Text("BufferToFill %i PlayedBuffer %i", bufferToFillIndex, playedBufferIndex);
-
-            if (playingParticles && enabledParticles)
-            {
-                particlePhase += frameTime * particleSpeed;
-                int passedSteps = (int)floor(particlePhase);
-                particlePhase -= (float)passedSteps;
-
-                particleStep += passedSteps;
-                if (particleStep > KERNEL.steps) // Reached the end of animation
-                {
-                    if (continuousComputingEnabled)
-                    {
-                        // Starting from another buffer
-
-                        if (computations[1 - playedBufferIndex].ready)
+                        if (computations[playedBufferIndex].timeElapsed > 0.0f)
                         {
-                            playedBufferIndex = 1 - playedBufferIndex;
+                            float buffersPerSecond = 1000.0f / computations[playedBufferIndex].timeElapsed;
+                            int stepsPerSecond = (int)(computedSteps * buffersPerSecond);
+
+                            ImGui::SameLine();
+                            ImGui::Text(("(max " + to_string(stepsPerSecond) + " before stalling)").c_str());
+                        }
+
+                        ImGui::PushItemWidth(200.0f);
+                        ImGui::DragInt("##Animation step", &(particleStep), 1.0f, 0, KERNEL.steps);
+                        ImGui::PopItemWidth();
+                        ImGui::SameLine();
+                        ImGui::Text(("Animation step" + (continuousComputingEnabled ? " (total step " + to_string(bufferNo * KERNEL.steps + particleStep) + ")" : "")).c_str());
+
+                        if (ImGui::Button("Reset to step 0"))
+                        {
                             particleStep = 0;
-                            bufferNo++;
-                            //printf("Switch occured and starting playing %i\n", playedBufferIndex);
-                            computing();
                         }
-                        else
-                        {
-                            //printf("Stalling!\n");
-                            particleStep = KERNEL.steps;
 
-                            ImGui::Text("Stalling!");
+                        if (anyChanged)
+                        {
+                            ImGui::PushStyleColor(ImGuiCol_Text, disabledTextColor);
+                            PUSH_DISABLED_FRAME;
+                        }
+                        bool tempPlayingParticles = playingParticles;
+                        if (ImGui::Checkbox("Play", &(tempPlayingParticles)) && !anyChanged)
+                        {
+                            if (computations[0].ready || playingParticles)
+                            {
+                                playingParticles = !playingParticles;
+                                kernelNew.CopyFrom(&KERNEL);
+                            }
+
+                            if (!playingParticles)
+                            {
+                                KERNEL.CopyFrom(&kernelNew);
+                            }
+                        }
+                        if (anyChanged) POP_FRAME(4);
+
+                        bool tempContinuous = continuousComputingEnabled;
+                        if (ImGui::Checkbox("Continuous computing", &(tempContinuous)))
+                        {
+                            // Flags of having buffers computed, to not interrupt computations in progress when switching
+                            bool noncont = !continuousComputingEnabled && computations[0].ready;
+                            bool cont = continuousComputingEnabled && computations[0].ready && computations[1].ready;
+
+                            if (noComputedData || noncont || cont)
+                            {
+                                continuousComputingEnabled = !continuousComputingEnabled;
+
+                                bufferNo = 0;
+                                deleteBothBuffers();
+                                playingParticles = false;
+                                particleStep = 0;
+                            }
                         }
                     }
-                    else
+
+                    // PARTICLES MODE
+                    if (playingParticles && enabledParticles)
                     {
-                        // Stopping
-                        particleStep = KERNEL.steps;
-                        playingParticles = false;
-                    }                   
+                        particlePhase += frameTime * particleSpeed;
+                        int passedSteps = (int)floor(particlePhase);
+                        particlePhase -= (float)passedSteps;
+
+                        particleStep += passedSteps;
+                        if (particleStep > KERNEL.steps) // Reached the end of animation
+                        {
+                            if (continuousComputingEnabled)
+                            {
+                                // Starting from another buffer
+
+                                if (computations[1 - playedBufferIndex].ready)
+                                {
+                                    playedBufferIndex = 1 - playedBufferIndex;
+                                    particleStep = 0;
+                                    bufferNo++;
+                                    //printf("Switch occured and starting playing %i\n", playedBufferIndex);
+                                    computing();
+                                }
+                                else
+                                {
+                                    //printf("Stalling!\n");
+                                    particleStep = KERNEL.steps;
+
+                                    ImGui::Text("Stalling!");
+                                }
+                            }
+                            else
+                            {
+                                // Stopping
+                                particleStep = KERNEL.steps;
+                                playingParticles = false;
+                            }
+                        }
+                    }
+
+                    // Auto-loading
+                    bool tempAutoLoadNewParams = autoLoadNewParams;
+                    if (ImGui::Checkbox("Apply parameter changes automatically", &(tempAutoLoadNewParams)))
+                    {
+                        autoLoadNewParams = !autoLoadNewParams;
+                        if (autoLoadNewParams) kernelNew.CopyFrom(&KERNEL);
+                        else KERNEL.CopyFrom(&kernelNew);
+                    }
+
+                    ImGui::PushItemWidth(200.0f);
+                    ImGui::InputFloat("Value drag speed", &(dragChangeSpeed));
+
+                    ImGui::EndTabItem();
                 }
+
+                if (ImGui::BeginTabItem("Orbit Mode"))
+                {
+                    enabledParticles = false;
+
+                    // RANGING, ORBIT MODE
+                    if (computations[playedBufferIndex].ready)
+                    {
+                        for (int i = 0; i < KERNEL.VAR_COUNT + KERNEL.PARAM_COUNT; i++)
+                        {
+                            bool isVar = i < KERNEL.VAR_COUNT;
+                            Attribute* attr = isVar ? &(computations[playedBufferIndex].marshal.kernel.variables[i]) : &(computations[playedBufferIndex].marshal.kernel.parameters[i - KERNEL.VAR_COUNT]);
+
+                            if (attr->stepCount == 1) continue;
+
+                            ImGui::Text(padString(attr->name, maxNameLength).c_str()); ImGui::SameLine();
+                            int index = attributeValueIndices[i];
+                            ImGui::PushItemWidth(150.0f);
+                            ImGui::DragInt(("##RangingNo_" + std::to_string(i)).c_str(), &index, 1.0f, 0, 0, "Step: %d");
+                            ImGui::PopItemWidth();
+                            if (index < 0) index = 0;
+                            if (index >= attr->stepCount) index = attr->stepCount - 1;
+                            attributeValueIndices[i] = index;
+                            ImGui::SameLine(); ImGui::Text(("Value: " + std::to_string(calculateValue(attr->min, attr->step, index))).c_str());
+                        }
+
+                        int attrStride = 1;
+                        for (int i = KERNEL.VAR_COUNT + KERNEL.PARAM_COUNT - 1; i >= 0; i--)
+                        {
+                            bool isVar = i < KERNEL.VAR_COUNT;
+                            Attribute* attr = isVar ? &(computations[playedBufferIndex].marshal.kernel.variables[i]) : &(computations[playedBufferIndex].marshal.kernel.parameters[i - KERNEL.VAR_COUNT]);
+
+                            variation += attributeValueIndices[i] * attrStride;
+                            attrStride *= attr->stepCount;
+                        }
+                    }
+
+                    ImGui::EndTabItem();
+                }
+
+                ImGui::EndTabBar();
             }
 
+            // COMMON
             // default button color is 0.137 0.271 0.427
             bool playBreath = noComputedData || (anyChanged && (!playingParticles || !enabledParticles));
             if (playBreath)
                 ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.137f * buttonBreathMult, 0.271f * buttonBreathMult, 0.427f * buttonBreathMult, 1.0f));
+
+            bool computation0InProgress = !computations[0].ready && computations[0].marshal.trajectory != nullptr;
+            bool computation1InProgress = !computations[1].ready && computations[1].marshal.trajectory != nullptr;
+
             if (ImGui::Button("= COMPUTE =") || (KERNEL.executeOnLaunch && !executedOnLaunch))
             {
-                bool computation0InProgress = !computations[0].ready && computations[0].marshal.trajectory != nullptr;
-                bool computation1InProgress = !computations[1].ready && computations[1].marshal.trajectory != nullptr;
 
                 if (computation0InProgress || computation1InProgress)
                 {
@@ -577,11 +663,15 @@ int imgui_main(int, char**)
 
                     KERNEL.CopyFrom(&kernelNew);
 
+                    // TODO: All calc steps and stepcounts should be done beforehand, since ranging will be incorrect otherwise
+                    //initAVI();
                     computing();
                 }
             }
             if (playBreath) ImGui::PopStyleColor();
+            if (!playingParticles) computationStatus(computation0InProgress, computation1InProgress);
 
+            // COMMON
             if (anyChanged)
             {
                 if (ImGui::Button("Reset changed values"))
@@ -591,71 +681,6 @@ int imgui_main(int, char**)
             }
 
             ImGui::End();
-
-            // RANGING
-
-            variation = 0;
-            /*variation = 0;
-            stride = 1;
-
-            if (rangingData[playedBufferIndex].rangingCount > 0 && computations[playedBufferIndex].ready)
-            {
-                for (int r = rangingData[playedBufferIndex].rangingCount - 1; r >= 0; r--)
-                {
-                    variation += rangingData[playedBufferIndex].currentStep[r] * stride;
-                    stride *= rangingData[playedBufferIndex].stepCount[r];
-                }
-
-                currentTotalVariations = rangingData->totalVariations;
-
-                if (rangingWindowEnabled)
-                {
-                    ImGui::Begin("Ranging", &rangingWindowEnabled);
-
-                    for (int r = 0; r < rangingData[playedBufferIndex].rangingCount; r++)
-                    {
-                        numb currentValue = calculateValue(rangingData[playedBufferIndex].min[r], rangingData[playedBufferIndex].step[r], rangingData[playedBufferIndex].currentStep[r]);
-                        rangingData[playedBufferIndex].currentValue[r] = currentValue;
-
-                        ImGui::PushItemWidth(150.0f);
-                        ImGui::DragInt(("##" + rangingData[playedBufferIndex].names[r] + "_ranging").c_str(), &(rangingData[playedBufferIndex].currentStep[r]), 1.0f, 0, rangingData[playedBufferIndex].stepCount[r] - 1);
-                        ImGui::SameLine();
-                        ImGui::Text((rangingData[playedBufferIndex].names[r] + " = " + std::to_string(currentValue)).c_str());
-                        ImGui::PopItemWidth();
-                    }
-
-                    ImGui::Text(("Current variations: " + std::to_string(currentTotalVariations)).c_str());
-
-                    // Apply ranging configuration as fixed values
-                    if (ImGui::Button("Apply fixed values"))
-                    {
-                        for (int r = 0; r < rangingData[playedBufferIndex].rangingCount; r++)
-                        {
-                            bool isParam = false;
-                            int entityIndex = -1; // TODO NB!
-                            rangingData[playedBufferIndex].getIndexOfVarOrParam(&isParam, &entityIndex, KERNEL.VAR_COUNT, KERNEL.PARAM_COUNT, &(kernel::VAR_NAMES[0]), &(kernel::PARAM_NAMES[0]), r);
-
-                            if (entityIndex == -1) continue;
-
-                            if (!isParam)
-                            {
-                                kernelNew.variables[entityIndex].rangingType = RangingType::None;
-                                kernelNew.variables[entityIndex].min = rangingData[playedBufferIndex].currentValue[r];
-                            }
-                            else
-                            {
-                                kernelNew.parameters[entityIndex].rangingType = RangingType::None;
-                                kernelNew.parameters[entityIndex].min = rangingData[playedBufferIndex].currentValue[r];
-                            }
-                        }
-                    }
-
-                    ImGui::End();
-                }
-            }*/
-
-            //ImGui::Text((std::string("Ready 0 ") + std::to_string(computedDataReady[0])).c_str());
-            //ImGui::Text((std::string("Ready 1 ") + std::to_string(computedDataReady[1])).c_str());
 
             // Graph Builder
 
@@ -1121,8 +1146,6 @@ int imgui_main(int, char**)
                         {
                             if (particleStep > KERNEL.steps) particleStep = KERNEL.steps;
 
-                            std::chrono::steady_clock::time_point before = std::chrono::steady_clock::now();
-
                             int totalVariations = computations[playedBufferIndex].marshal.totalVariations;
                             int varCount = KERNEL.VAR_COUNT; // If you don't make this local, it increases the copying time by 30 times, tee-hee
                             int variationSize = computations[playedBufferIndex].marshal.variationSize;
@@ -1133,89 +1156,19 @@ int imgui_main(int, char**)
                                 for (int var = 0; var < varCount; var++)
                                     particleBuffer[v * varCount + var] = trajectory[(variationSize * v) + (varCount * particleStep) + var];
                             }
-                            std::chrono::steady_clock::time_point after1 = std::chrono::steady_clock::now();
 
                             if (is3d)
                                 rotateOffsetBuffer(particleBuffer, computations[playedBufferIndex].marshal.totalVariations, KERNEL.VAR_COUNT, window->variables[0], window->variables[1], window->variables[2],
                                     rotationEuler, window->offset, window->scale);
-                            std::chrono::steady_clock::time_point after2 = std::chrono::steady_clock::now();
 
                             getMinMax2D(particleBuffer, computations[playedBufferIndex].marshal.totalVariations, &(plot->dataMin), &(plot->dataMax));
-                            std::chrono::steady_clock::time_point after3 = std::chrono::steady_clock::now();
 
                             ImPlot::SetNextLineStyle(window->markerColor);
                             ImPlot::PushStyleVar(ImPlotStyleVar_MarkerWeight, window->markerOutlineSize);
                             //ImPlot::PushStyleVar(ImPlotStyleVar_FillAlpha, 0.25f);
                             ImPlot::SetNextMarkerStyle(window->markerShape, window->markerSize);
                             ImPlot::PlotScatter(plotName.c_str(), &((particleBuffer)[xIndex]), &((particleBuffer)[yIndex]), computations[playedBufferIndex].marshal.totalVariations, 0, 0, sizeof(numb) * KERNEL.VAR_COUNT);
-                            std::chrono::steady_clock::time_point after4 = std::chrono::steady_clock::now();
-                            std::chrono::steady_clock::duration elapsed1 = after1 - before;
-                            std::chrono::steady_clock::duration elapsed2 = after2 - after1;
-                            std::chrono::steady_clock::duration elapsed3 = after3 - after2;
-                            std::chrono::steady_clock::duration elapsed4 = after4 - after3;
-                            int timeElapsed1 = (int)std::chrono::duration_cast<std::chrono::milliseconds>(elapsed1).count();
-                            int timeElapsed2 = (int)std::chrono::duration_cast<std::chrono::milliseconds>(elapsed2).count();
-                            int timeElapsed3 = (int)std::chrono::duration_cast<std::chrono::milliseconds>(elapsed3).count();
-                            int timeElapsed4 = (int)std::chrono::duration_cast<std::chrono::milliseconds>(elapsed4).count();
-                            printf("copying %i, rotating %i, minmax %i, drawing %i\n", timeElapsed1, timeElapsed2, timeElapsed3, timeElapsed4);
                         }
-
-                        // Grid
-#if 0
-                        if (is3d && window->showGrid)
-                        {
-                            ImVec4 scale(plotRangeSize / window->scale.x, plotRangeSize / window->scale.y, plotRangeSize / window->scale.z, 0);
-                            ImVec4 scaleLog(floorf(log10f(scale.x)), floorf(log10f(scale.y)), floorf(log10f(scale.z)), 0);
-                            ImVec4 scale0(powf(10, scaleLog.x - 1), powf(10, scaleLog.y - 1), powf(10, scaleLog.z - 1), 0);
-                            ImVec4 scale1(powf(10, scaleLog.x), powf(10, scaleLog.y), powf(10, scaleLog.z), 0);
-                            ImVec4 scaleInterp(log10f(scale.x) - scaleLog.x, log10f(scale.y) - scaleLog.y, log10f(scale.z) - scaleLog.z, 0);
-
-                            ImVec4 alpha0((1.0f - scaleInterp.x) * window->gridAlpha, (1.0f - scaleInterp.y) * window->gridAlpha, (1.0f - scaleInterp.z) * window->gridAlpha, 0);
-                            ImVec4 alpha1(scaleInterp.x * window->gridAlpha, scaleInterp.y * window->gridAlpha, scaleInterp.z * window->gridAlpha, 0);
-
-                            // x
-                            ImPlot::SetNextLineStyle(ImVec4(1.0f, 1.0f, 1.0f, alpha0.x));
-                            populateGridBuffer((float*)gridBuffer);
-                            rotateOffsetBuffer2((float*)gridBuffer, 10 * 5 * 2, 3, 0, 1, 2, window->rotation.y, window->rotation.x, ImVec4(0, 0, 0, 0), ImVec4(scale0.x * window->scale.x, scale0.y * window->scale.y, scale0.z * window->scale.z, 0));
-                            ImPlot::PlotLine(plotName.c_str(), &(((float*)gridBuffer)[0]), &(((float*)gridBuffer)[1]), 10 * 5 * 2, 0, 0, sizeof(float) * 3);
-                            /*ImPlot::PushStyleColor(ImPlotCol_InlayText, ImVec4(1.0f, 1.0f, 1.0f, alpha0.x));
-                            ImPlot::PlotText(std::to_string(scale0.x).c_str(), ((float*)gridBuffer)[54 + 0], ((float*)gridBuffer)[54 + 1], ImVec2(0.0f, 0.0f));
-                            ImPlot::PopStyleColor();*/
-
-                            ImPlot::SetNextLineStyle(ImVec4(1.0f, 1.0f, 1.0f, alpha1.x));
-                            populateGridBuffer((float*)gridBuffer);
-                            rotateOffsetBuffer2((float*)gridBuffer, 10 * 5 * 2, 3, 0, 1, 2, window->rotation.y, window->rotation.x, ImVec4(0, 0, 0, 0), ImVec4(scale1.x * window->scale.x, scale1.y * window->scale.y, scale1.z * window->scale.z, 0));
-                            ImPlot::PlotLine(plotName.c_str(), &(((float*)gridBuffer)[0]), &(((float*)gridBuffer)[1]), 10 * 5 * 2, 0, 0, sizeof(float) * 3);
-
-                            // y
-                            ImPlot::SetNextLineStyle(ImVec4(1.0f, 1.0f, 1.0f, alpha0.y));
-                            populateGridBuffer((float*)gridBuffer);
-                            gridX2Y((float*)gridBuffer);
-                            rotateOffsetBuffer2((float*)gridBuffer, 10 * 5 * 2, 3, 0, 1, 2, window->rotation.y, window->rotation.x, ImVec4(0, 0, 0, 0), ImVec4(scale0.x * window->scale.x, scale0.y * window->scale.y, scale0.z * window->scale.z, 0));
-                            ImPlot::PlotLine(plotName.c_str(), &(((float*)gridBuffer)[0]), &(((float*)gridBuffer)[1]), 10 * 5 * 2, 0, 0, sizeof(float) * 3);
-
-                            ImPlot::SetNextLineStyle(ImVec4(1.0f, 1.0f, 1.0f, alpha1.y));
-                            populateGridBuffer((float*)gridBuffer);
-                            gridX2Y((float*)gridBuffer);
-                            rotateOffsetBuffer2((float*)gridBuffer, 10 * 5 * 2, 3, 0, 1, 2, window->rotation.y, window->rotation.x, ImVec4(0, 0, 0, 0), ImVec4(scale1.x * window->scale.x, scale1.y * window->scale.y, scale1.z * window->scale.z, 0));
-                            ImPlot::PlotLine(plotName.c_str(), &(((float*)gridBuffer)[0]), &(((float*)gridBuffer)[1]), 10 * 5 * 2, 0, 0, sizeof(float) * 3);
-
-                            // z
-                            ImPlot::SetNextLineStyle(ImVec4(1.0f, 1.0f, 1.0f, alpha0.z));
-                            populateGridBuffer((float*)gridBuffer);
-                            gridX2Y((float*)gridBuffer);
-                            gridY2Z((float*)gridBuffer);
-                            rotateOffsetBuffer2((float*)gridBuffer, 10 * 5 * 2, 3, 0, 1, 2, window->rotation.y, window->rotation.x, ImVec4(0, 0, 0, 0), ImVec4(scale0.x * window->scale.x, scale0.y * window->scale.y, scale0.z * window->scale.z, 0));
-                            ImPlot::PlotLine(plotName.c_str(), &(((float*)gridBuffer)[0]), &(((float*)gridBuffer)[1]), 10 * 5 * 2, 0, 0, sizeof(float) * 3);
-
-                            ImPlot::SetNextLineStyle(ImVec4(1.0f, 1.0f, 1.0f, alpha1.z));
-                            populateGridBuffer((float*)gridBuffer);
-                            gridX2Y((float*)gridBuffer);
-                            gridY2Z((float*)gridBuffer);
-                            rotateOffsetBuffer2((float*)gridBuffer, 10 * 5 * 2, 3, 0, 1, 2, window->rotation.y, window->rotation.x, ImVec4(0, 0, 0, 0), ImVec4(scale1.x * window->scale.x, scale1.y * window->scale.y, scale1.z * window->scale.z, 0));
-                            ImPlot::PlotLine(plotName.c_str(), &(((float*)gridBuffer)[0]), &(((float*)gridBuffer)[1]), 10 * 5 * 2, 0, 0, sizeof(float) * 3);
-                        }
-#endif
                     }
 
                     // PHASE DIAGRAM END
@@ -1719,11 +1672,7 @@ void listVariable(int i)
     if (kernelNew.variables[i].IsDifferentFrom(&(KERNEL.variables[i]))) { anyChanged = true; thisChanged = true; }
     //if (thisChanged) varNew.recountSteps(i); // TODO
 
-    std::string namePadded = KERNEL.variables[i].name;
-    for (int j = (int)KERNEL.variables[i].name.length(); j < maxNameLength; j++)
-        namePadded += ' ';
-
-    ImGui::Text(namePadded.c_str());
+    ImGui::Text(padString(KERNEL.variables[i].name, maxNameLength).c_str());
 
     if (playingParticles)
     {
@@ -1781,11 +1730,7 @@ void listParameter(int i)
     if (kernelNew.parameters[i].IsDifferentFrom(&(KERNEL.parameters[i]))) { anyChanged = true; thisChanged = true; }
     //if (thisChanged) paramNew.recountSteps(i); // TODO
 
-    std::string namePadded = KERNEL.parameters[i].name;
-    for (int j = (int)KERNEL.parameters[i].name.length(); j < maxNameLength; j++)
-        namePadded += ' ';
-
-    ImGui::Text(namePadded.c_str());
+    ImGui::Text(padString(KERNEL.parameters[i].name, maxNameLength).c_str());
 
     if (!changeAllowed)
     {

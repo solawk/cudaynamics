@@ -22,6 +22,7 @@ public:
 		if (rangingType == None) stepCount = 1;
 		if (rangingType != Step) return;
 		stepCount = (int)((max - min) / step + 1);
+		if (stepCount < 1) stepCount = 1;
 	}
 
 	void CalcStep()
