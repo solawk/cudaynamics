@@ -110,6 +110,8 @@
     <ClInclude Include="attribute_struct.h" />
     <ClInclude Include="mapData_struct.h" />
     <ClInclude Include="variationSteps.h" />
+    <ClInclude Include="heatmapSizing_struct.h" />
+    <ClInclude Include="kernels_common.h" />
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="main.cu" />

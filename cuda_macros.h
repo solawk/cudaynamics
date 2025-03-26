@@ -18,7 +18,10 @@
 #define P(n)			parameters[attributes::parameters::n]
 
 // Map cell value (index, x, y)
-#define M(i, x, y)		maps[mapData[i].offset + y * mapData[i].xSize + x]
+//#define M(i, x, y)		maps[mapData[i].offset + y * mapData[i].xSize + x]
+
+// Map
+#define M(n)			CUDA_kernel.mapDatas[attributes::maps::n]
 
 // Shift to next step
 //#define NEXT			+ kernel::VAR_COUNT
@@ -27,6 +30,9 @@
 
 #define CUDA_marshal	data->marshal
 #define CUDA_kernel		CUDA_marshal.kernel
+
+#define STEP_INDICES_X(m) CUDA_marshal.stepIndices[indicesStart + (CUDA_kernel.mapDatas[attributes::maps::m].typeX == PARAMETER ? CUDA_kernel.VAR_COUNT : 0) + CUDA_kernel.mapDatas[attributes::maps::m].indexX]
+#define STEP_INDICES_Y(m) CUDA_marshal.stepIndices[indicesStart + (CUDA_kernel.mapDatas[attributes::maps::m].typeY == PARAMETER ? CUDA_kernel.VAR_COUNT : 0) + CUDA_kernel.mapDatas[attributes::maps::m].indexY]
 
 // Preparation macros
 

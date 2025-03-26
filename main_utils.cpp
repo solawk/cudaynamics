@@ -73,53 +73,6 @@ Kernel readKernelText(std::string name)
 		if (str[0] == "map")
 		{
 			tempMapData.name = str[1];
-			tempMapData.indexX = -1;
-			tempMapData.indexY = -1;
-
-			std::string x = str[2];
-			std::string y = str[3];
-
-			if (x == "<step>")
-			{
-				tempMapData.indexX = 0;
-				tempMapData.typeX = STEP;
-			}
-
-			if (y == "<step>")
-			{
-				tempMapData.indexY = 0;
-				tempMapData.typeY = STEP;
-			}
-
-			for (int i = 0; i < kernel.variables.size(); i++)
-			{
-				if (tempMapData.indexX == -1 && kernel.variables[i].name == x)
-				{
-					tempMapData.indexX = i; tempMapData.typeX = VARIABLE;
-				}
-				if (tempMapData.indexY == -1 && kernel.variables[i].name == y)
-				{
-					tempMapData.indexY = i; tempMapData.typeY = VARIABLE;
-				}
-			}
-
-			for (int i = 0; i < kernel.parameters.size(); i++)
-			{
-				if (tempMapData.indexX == -1 && kernel.parameters[i].name == x)
-				{
-					tempMapData.indexX = i; tempMapData.typeX = PARAMETER;
-				}
-				if (tempMapData.indexY == -1 && kernel.parameters[i].name == y)
-				{
-					tempMapData.indexY = i; tempMapData.typeY = PARAMETER;
-				}
-			}
-
-			if (tempMapData.indexX == -1 || tempMapData.indexY == -1)
-			{
-				printf("Did not load a map!\n");
-				continue;
-			}
 
 			kernel.mapDatas.push_back(tempMapData);
 		}
@@ -128,6 +81,5 @@ Kernel readKernelText(std::string name)
 	fileStream.close();
 
 	kernel.calcAttributeCounts();
-	kernel.MapsSetSizes();
 	return kernel;
 }

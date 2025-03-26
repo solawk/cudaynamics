@@ -124,6 +124,7 @@
     <ClInclude Include="computation_struct.h" />
     <ClInclude Include="cuda_macros.h" />
     <ClInclude Include="dbscan\dbscan.h" />
+    <ClInclude Include="heatmapSizing_struct.h" />
     <ClInclude Include="imgui\backends\imgui_impl_dx11.h" />
     <ClInclude Include="imgui\backends\imgui_impl_win32.h" />
     <ClInclude Include="imgui\imconfig.h" />
@@ -136,6 +137,7 @@
     <ClInclude Include="imgui_utils.h" />
     <ClInclude Include="implot\implot.h" />
     <ClInclude Include="implot\implot_internal.h" />
+    <ClInclude Include="kernels_common.h" />
     <ClInclude Include="kernel_struct.h" />
     <ClInclude Include="main.h" />
     <ClInclude Include="main_utils.h" />

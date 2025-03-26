@@ -3,4 +3,31 @@
 #include "../computation_struct.h"
 #include "../mapData_struct.h"
 
-__device__ void LLE(Computation* data, int variation, int mapX, int mapY, void(*finiteDifferenceScheme)(numb*, numb*, numb*, numb));
+#define MAX_LLE_NORM_VARIABLES 8
+
+struct LLE_Settings
+{
+	numb r;					// Initial deflection
+	numb epsilon;			// Maximum deflection
+
+	int variableToDeflect;	// Variable to initially deflect
+	int normVariables[MAX_LLE_NORM_VARIABLES];	// Variables to count the norm from (-1 if not counting)
+
+	__device__ LLE_Settings(numb _r, numb _eps, int _varToDeflect)
+	{
+		r = _r;
+		epsilon = _eps;
+		variableToDeflect = _varToDeflect;
+		normVariables[0] = -1;
+	}
+
+	__device__ void Use3DNorm()
+	{
+		normVariables[0] = 0;
+		normVariables[1] = 1;
+		normVariables[2] = 2;
+		normVariables[3] = -1;
+	}
+};
+
+__device__ void LLE(Computation* data, LLE_Settings settings, int variation, int mapX, int mapY, void(*finiteDifferenceScheme)(numb*, numb*, numb*, numb));

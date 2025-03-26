@@ -72,7 +72,7 @@ void populateAxisBuffer(numb* buffer, float x, float y, float z)
 
 void rotateOffsetBuffer2(numb* buffer, int pointCount, int varCount, int xdo, int ydo, int zdo, float pitch, float yaw, ImVec4 offset, ImVec4 scale)
 {
-	float x, y, z, zt;
+	numb x, y, z, zt;
 
 	for (int i = 0; i < pointCount; i++)
 	{
@@ -236,7 +236,7 @@ void gridX2Y(numb* buffer)
 {
 	for (int i = 0; i < 10 * 5 * 2; i++)
 	{
-		float z = buffer[i * 3 + 2];
+		numb z = buffer[i * 3 + 2];
 		buffer[i * 3 + 2] = buffer[i * 3 + 0];
 		buffer[i * 3 + 0] = z;
 	}
@@ -246,7 +246,7 @@ void gridY2Z(numb* buffer)
 {
 	for (int i = 0; i < 10 * 5 * 2; i++)
 	{
-		float z = buffer[i * 3 + 2];
+		numb z = buffer[i * 3 + 2];
 		buffer[i * 3 + 2] = buffer[i * 3 + 1];
 		buffer[i * 3 + 1] = z;
 	}
@@ -336,10 +336,10 @@ void getMinMax(numb* data, int size, numb* min, numb* max)
 
 void getMinMax2D(numb* data, int size, ImVec2* min, ImVec2* max)
 {
-	(*min).x = data[0];
-	(*min).y = data[1];
-	(*max).x = data[0];
-	(*max).y = data[1];
+	(*min).x = (float)data[0];
+	(*min).y = (float)data[1];
+	(*max).x = (float)data[0];
+	(*max).y = (float)data[1];
 
 	int x, y;
 
@@ -350,9 +350,9 @@ void getMinMax2D(numb* data, int size, ImVec2* min, ImVec2* max)
 
 		if (isnan(data[x]) || isinf(data[x]) || isnan(data[y]) || isinf(data[y])) continue;
 
-		if (data[x] < (*min).x) (*min).x = data[x];
-		if (data[y] < (*min).y) (*min).y = data[y];
-		if (data[x] > (*max).x) (*max).x = data[x];
-		if (data[y] > (*max).y) (*max).y = data[y];
+		if ((float)data[x] < (*min).x) (*min).x = (float)data[x];
+		if ((float)data[y] < (*min).y) (*min).y = (float)data[y];
+		if ((float)data[x] > (*max).x) (*max).x = (float)data[x];
+		if ((float)data[y] > (*max).y) (*max).y = (float)data[y];
 	}
 }

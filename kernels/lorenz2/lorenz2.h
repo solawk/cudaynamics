@@ -1,11 +1,5 @@
 #pragma once
-#include "cuda_runtime.h"
-#include "cuda_macros.h"
-#include "device_launch_parameters.h"
-#include <stdio.h>
-#include <fstream>
-#include <chrono>
-#include <wtypes.h>
+#include <kernels_common.h>
 
 const int THREADS_PER_BLOCK_lorenz2 = 64;
 

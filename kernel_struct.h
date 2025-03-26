@@ -39,9 +39,15 @@ public:
 		mapDatas.clear();
 
 		for (int i = 0; i < kernel->VAR_COUNT; i++)
+		{
 			variables.push_back(kernel->variables[i]);
+			variables[i].Generate(true);
+		}
 		for (int i = 0; i < kernel->PARAM_COUNT; i++)
+		{
 			parameters.push_back(kernel->parameters[i]);
+			parameters[i].Generate(true);
+		}
 		for (int i = 0; i < kernel->MAP_COUNT; i++)
 			mapDatas.push_back(kernel->mapDatas[i]);
 
@@ -50,12 +56,99 @@ public:
 		MAP_COUNT = kernel->MAP_COUNT;
 	}
 
+	void PrepareAttributes()
+	{
+		for (int i = 0; i < VAR_COUNT; i++)
+		{
+			variables[i].CalcStepCount();
+			variables[i].CalcStep();
+			//if (!CUDA_kernel.variables[i].DoValuesExist()) CUDA_kernel.variables[i].Generate(); TODO
+			variables[i].ClearValues(); variables[i].Generate(false);
+		}
+
+		for (int i = 0; i < PARAM_COUNT; i++)
+		{
+			parameters[i].CalcStepCount();
+			parameters[i].CalcStep();
+			//if (!CUDA_kernel.parameters[i].DoValuesExist()) CUDA_kernel.parameters[i].Generate();
+			parameters[i].ClearValues(); parameters[i].Generate(false);
+		}
+	}
+
+	void AssessMapAttributes()
+	{
+		int varAttribute1 = -1;
+		int varAttribute2 = -1;
+		bool tooManyVarAttributes = false;
+		MapDimensionType varType1 = VARIABLE;
+		MapDimensionType varType2 = VARIABLE;
+
+		for (int i = 0; i < VAR_COUNT; i++)
+		{
+			if (variables[i].stepCount > 1)
+			{
+				if (varAttribute1 == -1)
+				{
+					varAttribute1 = i;
+					varType1 = VARIABLE;
+				}
+				else if (varAttribute2 == -1)
+				{
+					varAttribute2 = i;
+					varType2 = VARIABLE;
+				}
+				else tooManyVarAttributes = true;
+			}
+		}
+
+		for (int i = 0; i < PARAM_COUNT; i++)
+		{
+			if (parameters[i].stepCount > 1)
+			{
+				if (varAttribute1 == -1)
+				{
+					varAttribute1 = i;
+					varType1 = PARAMETER;
+				}
+				else if (varAttribute2 == -1)
+				{
+					varAttribute2 = i;
+					varType2 = PARAMETER;
+				}
+				else tooManyVarAttributes = true;
+			}
+		}
+
+		for (int i = 0; i < MAP_COUNT; i++) mapDatas[i].toCompute = false;
+
+		if (!tooManyVarAttributes && varAttribute1 > -1)
+		{
+			if (varAttribute2 > -1)
+			{
+				for (int i = 0; i < MAP_COUNT; i++)
+				{
+					mapDatas[i].indexX = varAttribute1;
+					mapDatas[i].indexY = varAttribute2;
+					mapDatas[i].typeX = varType1;
+					mapDatas[i].typeY = varType2;
+					mapDatas[i].toCompute = true;
+				}
+			}
+			else
+			{
+				// TODO: if step
+			}
+		}
+	}
+
 	void MapsSetSizes()
 	{
 		unsigned long int mapsSize = 0;
 
 		for (int i = 0; i < MAP_COUNT; i++)
 		{
+			if (!mapDatas[i].toCompute) continue;
+
 			int index = mapDatas[i].indexX;
 			switch (mapDatas[i].typeX)
 			{

@@ -5,6 +5,7 @@ namespace attributes
 {
     enum variables { x, y, z };
     enum parameters { sigma, rho, beta };
+    enum maps { LLE };
 }
 
 __global__ void kernelProgram_lorenz2(Computation* data)
@@ -15,7 +16,7 @@ __global__ void kernelProgram_lorenz2(Computation* data)
     if (variation >= CUDA_marshal.totalVariations) return;      // Shutdown thread if there isn't a variation to compute
     int variationStart = variation * CUDA_marshal.variationSize;         // Start index to store the modelling data for the variation
     int stepStart = variationStart;                         // Start index for the current modelling step
-    int indicesStart = variation * (CUDA_kernel.VAR_COUNT + CUDA_kernel.PARAM_COUNT);
+    int indicesStart = variation * (CUDA_kernel.VAR_COUNT + CUDA_kernel.PARAM_COUNT);   // Start index for the step indices of the attributes in the current variation
 
     // Custom area (usually) starts here
 
@@ -31,10 +32,12 @@ __global__ void kernelProgram_lorenz2(Computation* data)
 
     // Analysis
 
-    LLE(data, variation,
-        CUDA_marshal.stepIndices[indicesStart + (CUDA_kernel.mapDatas[0].typeX == PARAMETER ? CUDA_kernel.VAR_COUNT : 0) + CUDA_kernel.mapDatas[0].indexX],
-        CUDA_marshal.stepIndices[indicesStart + (CUDA_kernel.mapDatas[0].typeY == PARAMETER ? CUDA_kernel.VAR_COUNT : 0) + CUDA_kernel.mapDatas[0].indexY],
-        &finiteDifferenceScheme_lorenz2);
+    if (M(LLE).toCompute)
+    {
+        LLE_Settings lle_settings(0.01f, 0.1f, 0);
+        lle_settings.Use3DNorm();
+        LLE(data, lle_settings, variation, STEP_INDICES_X(LLE), STEP_INDICES_Y(LLE), &finiteDifferenceScheme_lorenz2);
+    }
 }
 
 __device__ void finiteDifferenceScheme_lorenz2(numb* currentV, numb* nextV, numb* parameters, numb h)

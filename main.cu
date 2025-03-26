@@ -88,24 +88,18 @@ int compute(Computation* data)
 
     for (int i = 0; i < CUDA_kernel.VAR_COUNT; i++)
     {
-        CUDA_kernel.variables[i].CalcStepCount(); // Ackchyually should be calculated in the gui before computation, but let's keep it as a failsafe for now (f o r e v e r)
-        CUDA_kernel.variables[i].CalcStep();
-        //if (!CUDA_kernel.variables[i].DoValuesExist()) CUDA_kernel.variables[i].Generate(); TODO
-        CUDA_kernel.variables[i].ClearValues(); CUDA_kernel.variables[i].Generate();
-
         if (CUDA_kernel.variables[i].stepCount > 1)
+        {
             variations *= CUDA_kernel.variables[i].stepCount;
+        }
     }
 
     for (int i = 0; i < CUDA_kernel.PARAM_COUNT; i++)
     {
-        CUDA_kernel.parameters[i].CalcStepCount();
-        CUDA_kernel.parameters[i].CalcStep();
-        //if (!CUDA_kernel.parameters[i].DoValuesExist()) CUDA_kernel.parameters[i].Generate();
-        CUDA_kernel.parameters[i].ClearValues(); CUDA_kernel.parameters[i].Generate();
-
         if (CUDA_kernel.parameters[i].stepCount > 1)
+        {
             variations *= CUDA_kernel.parameters[i].stepCount;
+        }
     }
 
     CUDA_marshal.totalVariations = variations;
@@ -134,9 +128,44 @@ int compute(Computation* data)
 
     // Maps allocate memory for a Xvariations*Yvariations matrix, where X and Y are MAP_X and MAP_Y
 
-    CUDA_kernel.MapsSetSizes();
+    /*unsigned long int mapsSize = 0;
+
+    for (int i = 0; i < CUDA_kernel.MAP_COUNT; i++)
+    {
+        int index = CUDA_kernel.mapDatas[i].indexX;
+        switch (CUDA_kernel.mapDatas[i].typeX)
+        {
+        case VARIABLE:
+            CUDA_kernel.mapDatas[i].xSize = CUDA_kernel.variables[index].stepCount;
+            break;
+        case PARAMETER:
+            CUDA_kernel.mapDatas[i].xSize = CUDA_kernel.parameters[index].stepCount;
+            break;
+        case STEP:
+            CUDA_kernel.mapDatas[i].xSize = CUDA_kernel.steps;
+            break;
+        }
+
+        index = CUDA_kernel.mapDatas[i].indexY;
+        switch (CUDA_kernel.mapDatas[i].typeY)
+        {
+        case VARIABLE:
+            CUDA_kernel.mapDatas[i].ySize = CUDA_kernel.variables[index].stepCount;
+            break;
+        case PARAMETER:
+            CUDA_kernel.mapDatas[i].ySize = CUDA_kernel.parameters[index].stepCount;
+            break;
+        case STEP:
+            CUDA_kernel.mapDatas[i].ySize = CUDA_kernel.steps;
+            break;
+        }
+
+        CUDA_kernel.mapDatas[i].offset = mapsSize;
+        mapsSize += CUDA_kernel.mapDatas[i].xSize * CUDA_kernel.mapDatas[i].ySize;
+    }*/
+
     CUDA_marshal.mapsSize = 0;
-    for (int i = 0; i < CUDA_kernel.MAP_COUNT; i++) CUDA_marshal.mapsSize += CUDA_kernel.mapDatas[i].xSize * CUDA_kernel.mapDatas[i].ySize;
+    for (int i = 0; i < CUDA_kernel.MAP_COUNT; i++) if (CUDA_kernel.mapDatas[i].toCompute) CUDA_marshal.mapsSize += CUDA_kernel.mapDatas[i].xSize * CUDA_kernel.mapDatas[i].ySize;
     delete[] CUDA_marshal.maps;
     CUDA_marshal.maps = nullptr;
     if (CUDA_marshal.mapsSize > 0) CUDA_marshal.maps = new numb[CUDA_marshal.mapsSize];
