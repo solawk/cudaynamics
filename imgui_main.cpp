@@ -236,6 +236,25 @@ void computationStatus(bool comp0, bool comp1)
     }
 }
 
+void switchPlayedBuffer()
+{
+    if (computations[1 - playedBufferIndex].ready)
+    {
+        playedBufferIndex = 1 - playedBufferIndex;
+        particleStep = 0;
+        bufferNo++;
+        //printf("Switch occured and starting playing %i\n", playedBufferIndex);
+        computing();
+    }
+    else
+    {
+        //printf("Stalling!\n");
+        particleStep = KERNEL.steps;
+
+        ImGui::Text("Stalling!");
+    }
+}
+
 // Main code
 int imgui_main(int, char**)
 {
@@ -399,7 +418,10 @@ int imgui_main(int, char**)
 
             if (autoLoadNewParams)
             {
-                KERNEL.CopyFrom(&kernelNew);
+                if (anyChanged)
+                {
+                    KERNEL.CopyParameterValuesFrom(&kernelNew);
+                }
             }
             else if (playingParticles && !autoLoadNewParams && anyChanged)
             {
@@ -412,7 +434,7 @@ int imgui_main(int, char**)
                 }
                 if (ImGui::Button("Apply") && !applicationProhibited)
                 {
-                    KERNEL.CopyFrom(&kernelNew);
+                    KERNEL.CopyParameterValuesFrom(&kernelNew);
                 }
                 if (applicationProhibited)
                 {
@@ -461,10 +483,19 @@ int imgui_main(int, char**)
                 ImGui::PopStyleColor();
                 ImGui::PopStyleColor();
             }
-            float tempStepSize = (float)KERNEL.stepSize;
-            ImGui::InputFloat("Step size", &tempStepSize, 0.0f, 0.0f, "%f");
-            KERNEL.stepSize = (numb)tempStepSize;
+
+            popStyle = false;
+            if (kernelNew.stepSize != KERNEL.stepSize)
+            {
+                anyChanged = true;
+                PUSH_UNSAVED_FRAME;
+                popStyle = true;
+            }
+            //float tempStepSize = (float)kernelNew.stepSize;
+            ImGui::InputFloat("Step size", &(kernelNew.stepSize), 0.0f, 0.0f, "%f");
+            //kernelNew.stepSize = (numb)tempStepSize;
             ImGui::PopItemWidth();
+            if (popStyle) POP_FRAME(3);
             
             /*bool tempEnabledParticles = enabledParticles;
             if (ImGui::Checkbox("Particles mode", &(tempEnabledParticles)))
@@ -563,21 +594,7 @@ int imgui_main(int, char**)
                             {
                                 // Starting from another buffer
 
-                                if (computations[1 - playedBufferIndex].ready)
-                                {
-                                    playedBufferIndex = 1 - playedBufferIndex;
-                                    particleStep = 0;
-                                    bufferNo++;
-                                    //printf("Switch occured and starting playing %i\n", playedBufferIndex);
-                                    computing();
-                                }
-                                else
-                                {
-                                    //printf("Stalling!\n");
-                                    particleStep = KERNEL.steps;
-
-                                    ImGui::Text("Stalling!");
-                                }
+                                switchPlayedBuffer();
                             }
                             else
                             {
@@ -593,8 +610,8 @@ int imgui_main(int, char**)
                     if (ImGui::Checkbox("Apply parameter changes automatically", &(tempAutoLoadNewParams)))
                     {
                         autoLoadNewParams = !autoLoadNewParams;
-                        if (autoLoadNewParams) kernelNew.CopyFrom(&KERNEL);
-                        else KERNEL.CopyFrom(&kernelNew);
+                        if (autoLoadNewParams) kernelNew.CopyParameterValuesFrom(&KERNEL);
+                        else KERNEL.CopyParameterValuesFrom(&kernelNew);
                     }
 
                     ImGui::PushItemWidth(200.0f);
@@ -620,7 +637,7 @@ int imgui_main(int, char**)
                             ImGui::Text(padString(attr->name, maxNameLength).c_str()); ImGui::SameLine();
                             int index = attributeValueIndices[i];
                             ImGui::PushItemWidth(150.0f);
-                            ImGui::DragInt(("##RangingNo_" + std::to_string(i)).c_str(), &index, 1.0f, 0, 0, "Step: %d");
+                            ImGui::SliderInt(("##RangingNo_" + std::to_string(i)).c_str(), &index, 0, attr->stepCount - 1, "Step: %d");
                             ImGui::PopItemWidth();
                             if (index < 0) index = 0;
                             if (index >= attr->stepCount) index = attr->stepCount - 1;
@@ -629,6 +646,11 @@ int imgui_main(int, char**)
                         }
 
                         steps2Variation(&variation, &(attributeValueIndices.data()[0]), &KERNEL);
+                    }
+
+                    if (ImGui::Button("Next buffer"))
+                    {
+                        switchPlayedBuffer();
                     }
 
                     ImGui::EndTabItem();
@@ -650,7 +672,6 @@ int imgui_main(int, char**)
 
             if (ImGui::Button("= COMPUTE =") || (KERNEL.executeOnLaunch && !executedOnLaunch))
             {
-
                 if (computation0InProgress || computation1InProgress)
                 {
                     printf("Preventing computing too fast!\n");
@@ -1331,6 +1352,8 @@ int imgui_main(int, char**)
                                             kernelNew.parameters[sizing.map->indexY].max = calculateValue(KERNEL.parameters[sizing.map->indexY].min, KERNEL.parameters[sizing.map->indexY].step, stepY2);
                                             kernelNew.parameters[sizing.map->indexY].rangingType = Linear;
                                         }
+
+                                        autoLoadNewParams = false; // Otherwise the map immediately starts drawing the cut region
                                     }
                                 }
                                 // end of it

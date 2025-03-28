@@ -34,7 +34,7 @@ __global__ void kernelProgram_lorenz2(Computation* data)
 
     if (M(LLE).toCompute)
     {
-        LLE_Settings lle_settings(0.01f, 0.1f, 0);
+        LLE_Settings lle_settings(0.01f, 50, 0);
         lle_settings.Use3DNorm();
         LLE(data, lle_settings, variation, STEP_INDICES_X(LLE), STEP_INDICES_Y(LLE), &finiteDifferenceScheme_lorenz2);
     }

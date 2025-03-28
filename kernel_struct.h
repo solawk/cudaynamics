@@ -56,6 +56,19 @@ public:
 		MAP_COUNT = kernel->MAP_COUNT;
 	}
 
+	void CopyParameterValuesFrom(Kernel* kernel)
+	{
+		for (Attribute& p : parameters)	p.ClearValues(); parameters.clear();
+
+		for (int i = 0; i < kernel->PARAM_COUNT; i++)
+		{
+			parameters.push_back(kernel->parameters[i]);
+			parameters[i].Generate(true);
+		}
+
+		PARAM_COUNT = kernel->PARAM_COUNT;
+	}
+
 	void PrepareAttributes()
 	{
 		for (int i = 0; i < VAR_COUNT; i++)

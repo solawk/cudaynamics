@@ -7,16 +7,16 @@
 
 struct LLE_Settings
 {
-	numb r;					// Initial deflection
-	numb epsilon;			// Maximum deflection
+	numb r;			// Initial deflection
+	int L;			// Deflection observation duration (steps)
 
 	int variableToDeflect;	// Variable to initially deflect
 	int normVariables[MAX_LLE_NORM_VARIABLES];	// Variables to count the norm from (-1 if not counting)
 
-	__device__ LLE_Settings(numb _r, numb _eps, int _varToDeflect)
+	__device__ LLE_Settings(numb _r, int _L, int _varToDeflect)
 	{
 		r = _r;
-		epsilon = _eps;
+		L = _L;
 		variableToDeflect = _varToDeflect;
 		normVariables[0] = -1;
 	}

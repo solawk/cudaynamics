@@ -14,7 +14,7 @@ __device__ void LLE(Computation* data, LLE_Settings settings, int variation, int
         LLE_array[i] = CUDA_marshal.trajectory[stepStart + i];
 
     numb r = settings.r;
-    numb epsilon = settings.epsilon;
+    int L = settings.L;
     LLE_array[settings.variableToDeflect] += r;
 
     for (int s = 0; s < CUDA_kernel.steps; s++)
@@ -26,41 +26,41 @@ __device__ void LLE(Computation* data, LLE_Settings settings, int variation, int
 
         finiteDifferenceScheme(LLE_array_temp, LLE_array, &(CUDA_marshal.parameterVariations[variation * CUDA_kernel.PARAM_COUNT]), CUDA_kernel.stepSize);
 
-        // TODO: Rework into any dimension count up to MAX_LLE_NORM_VARIABLES
-        numb norm;
-        if (settings.normVariables[1] == -1)
+        if (s % L == 0)
         {
-            // 1D
-            norm = NORM_3D(
-                LLE_array[0], CUDA_marshal.trajectory[stepStart + 0],
-                LLE_array[1], CUDA_marshal.trajectory[stepStart + 1],
-                LLE_array[2], CUDA_marshal.trajectory[stepStart + 2]
-            );
-        }
-        else if (settings.normVariables[2] == -1)
-        {
-            // 2D
-            norm = NORM_3D(
-                LLE_array[0], CUDA_marshal.trajectory[stepStart + 0],
-                LLE_array[1], CUDA_marshal.trajectory[stepStart + 1],
-                LLE_array[2], CUDA_marshal.trajectory[stepStart + 2]
-            );
-        }
-        else
-        {
-            // 3D
-            norm = NORM_3D(
-                LLE_array[0], CUDA_marshal.trajectory[stepStart + 0],
-                LLE_array[1], CUDA_marshal.trajectory[stepStart + 1],
-                LLE_array[2], CUDA_marshal.trajectory[stepStart + 2]
-            );
-        }
+            // TODO: Rework into any dimension count up to MAX_LLE_NORM_VARIABLES
+            numb norm;
+            if (settings.normVariables[1] == -1)
+            {
+                // 1D
+                norm = NORM_3D(
+                    LLE_array[0], CUDA_marshal.trajectory[stepStart + 0],
+                    LLE_array[1], CUDA_marshal.trajectory[stepStart + 1],
+                    LLE_array[2], CUDA_marshal.trajectory[stepStart + 2]
+                );
+            }
+            else if (settings.normVariables[2] == -1)
+            {
+                // 2D
+                norm = NORM_3D(
+                    LLE_array[0], CUDA_marshal.trajectory[stepStart + 0],
+                    LLE_array[1], CUDA_marshal.trajectory[stepStart + 1],
+                    LLE_array[2], CUDA_marshal.trajectory[stepStart + 2]
+                );
+            }
+            else
+            {
+                // 3D
+                norm = NORM_3D(
+                    LLE_array[0], CUDA_marshal.trajectory[stepStart + 0],
+                    LLE_array[1], CUDA_marshal.trajectory[stepStart + 1],
+                    LLE_array[2], CUDA_marshal.trajectory[stepStart + 2]
+                );
+            }
 
-        numb growth = norm / r; // How many times the deflection has grown
-        if (growth > 0.0f) LLE_value += log(growth);
+            numb growth = norm / r; // How many times the deflection has grown
+            if (growth > 0.0f) LLE_value += log(growth);
 
-        if (norm >= epsilon)
-        {
             // Reset
             LLE_array[0] = CUDA_marshal.trajectory[stepStart + 0] + (LLE_array[0] - CUDA_marshal.trajectory[stepStart + 0]) / growth;
             LLE_array[1] = CUDA_marshal.trajectory[stepStart + 1] + (LLE_array[1] - CUDA_marshal.trajectory[stepStart + 1]) / growth;
@@ -68,5 +68,5 @@ __device__ void LLE(Computation* data, LLE_Settings settings, int variation, int
         }
     }
 
-    CUDA_marshal.maps[mapData->offset + mapY * mapData->xSize + mapX] = LLE_value / CUDA_kernel.steps;
+    CUDA_marshal.maps[mapData->offset + mapY * mapData->xSize + mapX] = LLE_value / ((CUDA_kernel.steps + 1) * CUDA_kernel.stepSize);
 }
