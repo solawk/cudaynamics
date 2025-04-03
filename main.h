@@ -13,6 +13,7 @@
 
 #include "kernels/lorenz2/lorenz2.h"
 #include "kernels/halvorsen/halvorsen.h"
+#include "kernels/mrlcs_jj/mrlcs_jj.h"
 
 extern std::map<std::string, Kernel> kernels;
 extern std::map<std::string, int> kernelTPBs;
@@ -24,6 +25,7 @@ extern std::string selectedKernel;
                                 kernelTPBs[#name] = THREADS_PER_BLOCK_##name; \
                                 kernelPrograms[#name] = kernelProgram_##name; \
                                 kernelFDSs[#name] = finiteDifferenceScheme_##name;
+#define selectKernel(name)      selectedKernel = #name;
 #define KERNEL      kernels[selectedKernel]
 #define KERNEL_TPB  kernelTPBs[selectedKernel]
 #define KERNEL_PROG kernelPrograms[selectedKernel]

@@ -63,6 +63,8 @@ Kernel readKernelText(std::string name)
 
 			tempAttribute.CalcStep();
 			tempAttribute.CalcStepCount();
+			
+			if (tempAttribute.stepCount < 2) tempAttribute.stepCount = 2;
 
 			if (str[0] == "var")
 				kernel.variables.push_back(tempAttribute);

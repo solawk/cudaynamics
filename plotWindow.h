@@ -6,7 +6,7 @@ using namespace std;
 // Maximum amount of variables and parameters in the plot
 #define MAX_VARS_PARAMS 32
 
-enum PlotType { Series, Phase, Orbit, Heatmap, PlotType_COUNT };
+enum PlotType { Series, Phase, Phase2D, Orbit, Heatmap, PlotType_COUNT };
 
 struct PlotWindow
 {
@@ -19,7 +19,6 @@ public:
 	vector<int> variables; // or map
 
 	// Plot rotation
-	bool is3d;
 	ImVec4 offset;
 	ImVec4 scale;
 	ImVec4 quatRot;
@@ -53,7 +52,6 @@ public:
 		id = _id;
 		name = _name;
 
-		is3d = _is3d;
 		quatRot = ImVec4(1.0f, 0.0f, 0.0f, 0.0f);
 		autorotate = ImVec4(0.0f, 0.0f, 0.0f, 0.0f);
 
@@ -117,7 +115,6 @@ public:
 
 		exportString += " " + to_string((int)type);
 
-		exportString += " " + to_string((int)is3d);
 		exportString += " " + to_string(quatRot.x) + " " + to_string(quatRot.y) + " " + to_string(quatRot.z) + " " + to_string(quatRot.w);
 		exportString += " " + to_string(autorotate.x) + " " + to_string(autorotate.y) + " " + to_string(autorotate.z);
 		exportString += " " + to_string(offset.x) + " " + to_string(offset.y) + " " + to_string(offset.z);
@@ -154,8 +151,6 @@ public:
 
 		name = data[d++];
 		type = (PlotType)atoi(data[d++].c_str());
-
-		is3d = (bool)atoi(data[d++].c_str());
 
 		quatRot.x = (float)atof(data[d++].c_str());
 		quatRot.y = (float)atof(data[d++].c_str());

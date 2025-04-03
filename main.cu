@@ -88,7 +88,7 @@ int compute(Computation* data)
 
     for (int i = 0; i < CUDA_kernel.VAR_COUNT; i++)
     {
-        if (CUDA_kernel.variables[i].stepCount > 1)
+        if (CUDA_kernel.variables[i].TrueStepCount() > 1)
         {
             variations *= CUDA_kernel.variables[i].stepCount;
         }
@@ -96,7 +96,7 @@ int compute(Computation* data)
 
     for (int i = 0; i < CUDA_kernel.PARAM_COUNT; i++)
     {
-        if (CUDA_kernel.parameters[i].stepCount > 1)
+        if (CUDA_kernel.parameters[i].TrueStepCount() > 1)
         {
             variations *= CUDA_kernel.parameters[i].stepCount;
         }
@@ -249,7 +249,9 @@ void fillAttributeBuffers(Computation* data)
             attributeStepIndices[j]++;
 
             bool isParam = j >= CUDA_kernel.VAR_COUNT;
-            int stepCountOfAttribute = isParam ? CUDA_kernel.parameters[j - CUDA_kernel.VAR_COUNT].stepCount : CUDA_kernel.variables[j].stepCount;
+            int stepCountOfAttribute = isParam ?
+                CUDA_kernel.parameters[j - CUDA_kernel.VAR_COUNT].TrueStepCount() :
+                CUDA_kernel.variables[j].TrueStepCount();
 
             if (attributeStepIndices[j] < stepCountOfAttribute) break;
             attributeStepIndices[j] = 0;

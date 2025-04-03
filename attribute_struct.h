@@ -16,10 +16,16 @@ public:
 	// Actual generated values of the attribute, if it's ranged
 	numb* values = nullptr;
 
+	int TrueStepCount()
+	{
+		if (rangingType == None) return 1;
+		return stepCount;
+	}
+
 	// When ranging by step value, calculate step count
 	void CalcStepCount()
 	{
-		if (rangingType == None) stepCount = 1;
+		//if (rangingType == None) stepCount = 1;
 		if (rangingType != Step) return;
 		stepCount = (int)((max - min) / step + 1);
 		if (stepCount < 1) stepCount = 1;
@@ -48,7 +54,8 @@ public:
 	void Generate(bool preserveValues)
 	{
 		numb* oldValues = values; // if the attribute has been copied, "values" points to the source array of values
-		values = new numb[stepCount];
+		int trueStepCount = TrueStepCount();
+		values = new numb[trueStepCount];
 
 		switch (rangingType)
 		{
@@ -59,7 +66,7 @@ public:
 		case Linear:
 			if (!preserveValues)
 			{
-				for (int i = 0; i < stepCount; i++)
+				for (int i = 0; i < trueStepCount; i++)
 				{
 					values[i] = min + step * i;
 					if (values[i] > max) values[i] = max;
@@ -67,7 +74,7 @@ public:
 			}
 			else if (oldValues != nullptr)
 			{
-				for (int i = 0; i < stepCount; i++)
+				for (int i = 0; i < trueStepCount; i++)
 				{
 					values[i] = oldValues[i];
 				}

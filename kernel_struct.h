@@ -98,7 +98,7 @@ public:
 
 		for (int i = 0; i < VAR_COUNT; i++)
 		{
-			if (variables[i].stepCount > 1)
+			if (variables[i].TrueStepCount() > 1)
 			{
 				if (varAttribute1 == -1)
 				{
@@ -116,7 +116,7 @@ public:
 
 		for (int i = 0; i < PARAM_COUNT; i++)
 		{
-			if (parameters[i].stepCount > 1)
+			if (parameters[i].TrueStepCount() > 1)
 			{
 				if (varAttribute1 == -1)
 				{

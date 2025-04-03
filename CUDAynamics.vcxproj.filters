@@ -36,6 +36,18 @@
     </ClCompile>
     <ClCompile Include="main_utils.cpp" />
     <ClCompile Include="variationSteps.cu" />
+    <ClCompile Include="implot3d\implot3d.cpp">
+      <Filter>implot3d</Filter>
+    </ClCompile>
+    <ClCompile Include="implot3d\implot3d_demo.cpp">
+      <Filter>implot3d</Filter>
+    </ClCompile>
+    <ClCompile Include="implot3d\implot3d_items.cpp">
+      <Filter>implot3d</Filter>
+    </ClCompile>
+    <ClCompile Include="implot3d\implot3d_meshes.cpp">
+      <Filter>implot3d</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="imgui">
@@ -55,6 +67,9 @@
     </Filter>
     <Filter Include="analysis">
       <UniqueIdentifier>{de16d9d3-e2a2-45ef-8e41-d0ff21a3645f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="implot3d">
+      <UniqueIdentifier>{2e2d2bfc-a3ca-4599-adcc-177cb5b5f913}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -112,6 +127,12 @@
     <ClInclude Include="variationSteps.h" />
     <ClInclude Include="heatmapSizing_struct.h" />
     <ClInclude Include="kernels_common.h" />
+    <ClInclude Include="implot3d\implot3d.h">
+      <Filter>implot3d</Filter>
+    </ClInclude>
+    <ClInclude Include="implot3d\implot3d_internal.h">
+      <Filter>implot3d</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="main.cu" />
@@ -122,6 +143,9 @@
       <Filter>kernels</Filter>
     </CudaCompile>
     <CudaCompile Include="kernels\halvorsen\halvorsen.cu">
+      <Filter>kernels</Filter>
+    </CudaCompile>
+    <CudaCompile Include="kernels\mrlcs_jj\mrlcs_jj.cu">
       <Filter>kernels</Filter>
     </CudaCompile>
   </ItemGroup>

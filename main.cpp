@@ -18,9 +18,10 @@ int main()
 {
     addKernel(lorenz2);
     addKernel(halvorsen);
+    addKernel(mrlcs_jj);
 
-    //selectedKernel = kernels.begin()->first;
-    selectedKernel = "lorenz2";
+    //selectKernel(kernels.begin()->first);
+    selectKernel(lorenz2);
 
     imgui_main(0, 0);
 

@@ -111,6 +111,10 @@
     <ClCompile Include="imgui\imgui_widgets.cpp" />
     <ClCompile Include="imgui_main.cpp" />
     <ClCompile Include="imgui_utils.cpp" />
+    <ClCompile Include="implot3d\implot3d.cpp" />
+    <ClCompile Include="implot3d\implot3d_demo.cpp" />
+    <ClCompile Include="implot3d\implot3d_items.cpp" />
+    <ClCompile Include="implot3d\implot3d_meshes.cpp" />
     <ClCompile Include="implot\implot.cpp" />
     <ClCompile Include="implot\implot_items.cpp" />
     <ClCompile Include="main.cpp" />
@@ -135,6 +139,8 @@
     <ClInclude Include="imgui\imstb_truetype.h" />
     <ClInclude Include="imgui_main.h" />
     <ClInclude Include="imgui_utils.h" />
+    <ClInclude Include="implot3d\implot3d.h" />
+    <ClInclude Include="implot3d\implot3d_internal.h" />
     <ClInclude Include="implot\implot.h" />
     <ClInclude Include="implot\implot_internal.h" />
     <ClInclude Include="kernels_common.h" />
@@ -153,6 +159,7 @@
     <CudaCompile Include="analysis\lle.cu" />
     <CudaCompile Include="kernels\halvorsen\halvorsen.cu" />
     <CudaCompile Include="kernels\lorenz2\lorenz2.cu" />
+    <CudaCompile Include="kernels\mrlcs_jj\mrlcs_jj.cu" />
     <CudaCompile Include="main.cu" />
   </ItemGroup>
   <ItemGroup>

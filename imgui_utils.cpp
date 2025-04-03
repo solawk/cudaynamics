@@ -70,23 +70,6 @@ void populateAxisBuffer(numb* buffer, float x, float y, float z)
 	buffer[17] = -z * 0.5f;
 }
 
-void rotateOffsetBuffer2(numb* buffer, int pointCount, int varCount, int xdo, int ydo, int zdo, float pitch, float yaw, ImVec4 offset, ImVec4 scale)
-{
-	numb x, y, z, zt;
-
-	for (int i = 0; i < pointCount; i++)
-	{
-		x = ((numb*)buffer)[i * varCount + xdo] * scale.x + offset.x;
-		y = ((numb*)buffer)[i * varCount + ydo] * scale.y + offset.y;
-		z = ((numb*)buffer)[i * varCount + zdo] * scale.z + offset.z;
-
-		((numb*)buffer)[i * varCount + 1] = y * cosf(-pitch * DEG2RAD) - z * sinf(-pitch * DEG2RAD);
-		((numb*)buffer)[i * varCount + 2] = zt = y * sinf(-pitch * DEG2RAD) + z * cosf(-pitch * DEG2RAD);
-
-		((numb*)buffer)[i * varCount + 0] = x * cosf(yaw * DEG2RAD) + zt * sinf(yaw * DEG2RAD);
-	}
-}
-
 void rotateOffsetBuffer(numb* buffer, int pointCount, int varCount, int xdo, int ydo, int zdo, ImVec4 rotation, ImVec4 offset, ImVec4 scale)
 {
 	numb x, y, z;
@@ -112,6 +95,32 @@ void rotateOffsetBuffer(numb* buffer, int pointCount, int varCount, int xdo, int
 		((numb*)buffer)[i * varCount + 0] = (x * bc * gc) + (y * (as * bs * gc - (ac * gs))) + (z * (ac * bs * gc + as * gs));
 		((numb*)buffer)[i * varCount + 1] = (x * bc * gs) + (y * (as * bs * gs + (ac * gc))) + (z * (ac * bs * gs - as * gc));
 		((numb*)buffer)[i * varCount + 2] = (x * -bs) + (y * (as * bc)) + (z * (ac * bc));
+	}
+}
+
+void rotateOffsetBufferQuat(numb* buffer, int pointCount, int varCount, int xdo, int ydo, int zdo, ImVec4 rotation, ImVec4 offset, ImVec4 scale)
+{
+	numb x, y, z;
+
+	float r = rotation.w;
+	float i = rotation.x;
+	float j = rotation.y;
+	float k = rotation.z;
+
+	float r2 = r * r;
+	float i2 = i * i;
+	float j2 = j * j;
+	float k2 = k * k;
+
+	for (int i = 0; i < pointCount; i++)
+	{
+		x = buffer[i * varCount + xdo] * scale.x + offset.x;
+		y = buffer[i * varCount + ydo] * scale.y + offset.y;
+		z = buffer[i * varCount + zdo] * scale.z + offset.z;
+
+		buffer[i * varCount + 0] = (x * (1.0f - 2.0f * j2 - 2.0f * k2))		+ (y * (2.0f * (i * j - k * r)))		+ (z * (2.0f * (i * k + j * r)));
+		buffer[i * varCount + 1] = (x * (2.0f * (i * j + k * r)))			+ (y * (1.0f - 2.0f * i2 - 2.0f * k2))	+ (z * (2.0f * (j * k - i * r)));
+		buffer[i * varCount + 2] = (x * (2.0f * (i * k - j * r)))			+ (y * (2.0f * (j * k + i * r)))		+ (z * (1.0f - 2.0f * i2 - 2.0f * j2));
 	}
 }
 
@@ -332,6 +341,9 @@ void getMinMax(numb* data, int size, numb* min, numb* max)
 		if (data[i] < *min) *min = data[i];
 		if (data[i] > *max) *max = data[i];
 	}
+
+	if (isnan(*min)) *min = 0.0f;
+	if (isnan(*max)) *max = 1.0f;
 }
 
 void getMinMax2D(numb* data, int size, ImVec2* min, ImVec2* max)
@@ -355,4 +367,9 @@ void getMinMax2D(numb* data, int size, ImVec2* min, ImVec2* max)
 		if ((float)data[x] > (*max).x) (*max).x = (float)data[x];
 		if ((float)data[y] > (*max).y) (*max).y = (float)data[y];
 	}
+
+	if (isnan((*min).x)) (*min).x = 0.0f;
+	if (isnan((*min).y)) (*min).y = 0.0f;
+	if (isnan((*max).x)) (*max).x = 1.0f;
+	if (isnan((*max).y)) (*max).y = 1.0f;
 }

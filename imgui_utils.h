@@ -14,8 +14,8 @@ std::string memoryString(unsigned long long bytes);
 std::string scaleString(float scale);
 
 void populateAxisBuffer(numb* buffer, float x, float y, float z);
-void rotateOffsetBuffer2(numb* buffer, int pointCount, int varCount, int xdo, int ydo, int zdo, float pitch, float yaw, ImVec4 offset, ImVec4 scale);
 void rotateOffsetBuffer(numb* buffer, int pointCount, int varCount, int xdo, int ydo, int zdo, ImVec4 rotation, ImVec4 offset, ImVec4 scale);
+void rotateOffsetBufferQuat(numb* buffer, int pointCount, int varCount, int xdo, int ydo, int zdo, ImVec4 rotation, ImVec4 offset, ImVec4 scale);
 
 void populateRulerBuffer(numb* buffer, float s, int dim);
 

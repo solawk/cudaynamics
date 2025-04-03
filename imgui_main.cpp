@@ -22,8 +22,8 @@ numb* dataBuffer = nullptr; // One variation local buffer
 numb* particleBuffer = nullptr; // One step local buffer
 numb* mapBuffer = nullptr;
 
-void* axisBuffer = new numb[3 * 2 * 3] {}; // 3 axis, 2 points
-void* rulerBuffer = new numb[51 * 3] {}; // 1 axis, 5 * 10 + 1 points
+float axisBuffer[18]{}; // 3 axis, 2 points
+float rulerBuffer[153]{}; // 1 axis, 5 * 10 + 1 points
 
 int computedSteps = 0; // Step count for the current computation
 bool autofitAfterComputing = false; // Temporary flag to autofit computed data
@@ -40,7 +40,7 @@ float dragChangeSpeed = 1.0f;
 int bufferNo = 0;
 
 bool selectParticleTab = false;
-bool selectOrbitTab = false;
+bool selectOrbitTab = true;
 
 // Plot graph settings
 /*
@@ -212,6 +212,9 @@ void initializeKernel(bool needTerminate)
 {
     if (needTerminate) terminateBuffers();
 
+    plotWindows.clear();
+    uniqueIds = 0;
+
     kernelNew.CopyFrom(&KERNEL);
 
     computations[0].Clear();
@@ -276,6 +279,8 @@ int imgui_main(int, char**)
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
     ImPlot::CreateContext();
+    ImPlot3D::CreateContext();
+
     ImGuiIO& io = ImGui::GetIO(); (void)io;
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
@@ -380,8 +385,13 @@ int imgui_main(int, char**)
                     ImGuiSelectableFlags selectableFlags = 0;
                     if (ImGui::Selectable(k.second.name.c_str(), isSelected, selectableFlags))
                     {
+                        saveWindows();
+
                         selectedKernel = k.first;
                         initializeKernel(true);
+                        playingParticles = false;
+
+                        loadWindows();
                     }
                 }
 
@@ -389,8 +399,6 @@ int imgui_main(int, char**)
             }
 
             // Parameters & Variables
-
-            dragFlag = !playingParticles ? 0 : ImGuiSliderFlags_ReadOnly;
 
             maxNameLength = 0;
             for (int i = 0; i < KERNEL.PARAM_COUNT; i++) if (KERNEL.parameters[i].name.length() > maxNameLength) maxNameLength = (int)KERNEL.parameters[i].name.length();
@@ -416,32 +424,32 @@ int imgui_main(int, char**)
                 listParameter(i);
             }
 
-            if (autoLoadNewParams)
+            if (playingParticles && anyChanged)
             {
-                if (anyChanged)
+                if (autoLoadNewParams)
                 {
                     KERNEL.CopyParameterValuesFrom(&kernelNew);
                 }
-            }
-            else if (playingParticles && !autoLoadNewParams && anyChanged)
-            {
-                if (applicationProhibited)
+                else
                 {
-                    ImGui::PushStyleColor(ImGuiCol_Text, disabledTextColor);
-                    ImGui::PushStyleColor(ImGuiCol_Button, disabledBackgroundColor);
-                    ImGui::PushStyleColor(ImGuiCol_ButtonActive, disabledBackgroundColor);
-                    ImGui::PushStyleColor(ImGuiCol_ButtonHovered, disabledBackgroundColor);
-                }
-                if (ImGui::Button("Apply") && !applicationProhibited)
-                {
-                    KERNEL.CopyParameterValuesFrom(&kernelNew);
-                }
-                if (applicationProhibited)
-                {
-                    ImGui::PopStyleColor();
-                    ImGui::PopStyleColor();
-                    ImGui::PopStyleColor();
-                    ImGui::PopStyleColor();
+                    if (applicationProhibited)
+                    {
+                        ImGui::PushStyleColor(ImGuiCol_Text, disabledTextColor);
+                        ImGui::PushStyleColor(ImGuiCol_Button, disabledBackgroundColor);
+                        ImGui::PushStyleColor(ImGuiCol_ButtonActive, disabledBackgroundColor);
+                        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, disabledBackgroundColor);
+                    }
+                    if (ImGui::Button("Apply") && !applicationProhibited)
+                    {
+                        KERNEL.CopyParameterValuesFrom(&kernelNew);
+                    }
+                    if (applicationProhibited)
+                    {
+                        ImGui::PopStyleColor();
+                        ImGui::PopStyleColor();
+                        ImGui::PopStyleColor();
+                        ImGui::PopStyleColor();
+                    }
                 }
             }
 
@@ -450,8 +458,8 @@ int imgui_main(int, char**)
             ImGui::SeparatorText("Simulation");
 
             int tempTotalVariations = 1;
-            for (int v = 0; v < KERNEL.VAR_COUNT; v++)      if (kernelNew.variables[v].stepCount > 1 && kernelNew.variables[v].rangingType > None)      tempTotalVariations *= kernelNew.variables[v].stepCount;
-            for (int p = 0; p < KERNEL.PARAM_COUNT; p++)    if (kernelNew.parameters[p].stepCount > 1 && kernelNew.parameters[p].rangingType > None)    tempTotalVariations *= kernelNew.parameters[p].stepCount;
+            for (int v = 0; v < KERNEL.VAR_COUNT; v++)      if (kernelNew.variables[v].TrueStepCount() > 1)      tempTotalVariations *= kernelNew.variables[v].stepCount;
+            for (int p = 0; p < KERNEL.PARAM_COUNT; p++)    if (kernelNew.parameters[p].TrueStepCount() > 1)    tempTotalVariations *= kernelNew.parameters[p].stepCount;
             unsigned long long tempTotalVariationsLL = tempTotalVariations;
             unsigned long long varCountLL = KERNEL.VAR_COUNT;
             unsigned long long stepsNewLL = kernelNew.steps + 1;
@@ -606,12 +614,15 @@ int imgui_main(int, char**)
                     }
 
                     // Auto-loading
-                    bool tempAutoLoadNewParams = autoLoadNewParams;
-                    if (ImGui::Checkbox("Apply parameter changes automatically", &(tempAutoLoadNewParams)))
+                    if (playingParticles)
                     {
-                        autoLoadNewParams = !autoLoadNewParams;
-                        if (autoLoadNewParams) kernelNew.CopyParameterValuesFrom(&KERNEL);
-                        else KERNEL.CopyParameterValuesFrom(&kernelNew);
+                        bool tempAutoLoadNewParams = autoLoadNewParams;
+                        if (ImGui::Checkbox("Apply parameter changes automatically", &(tempAutoLoadNewParams)))
+                        {
+                            autoLoadNewParams = !autoLoadNewParams;
+                            if (autoLoadNewParams) kernelNew.CopyParameterValuesFrom(&KERNEL);
+                            else KERNEL.CopyParameterValuesFrom(&kernelNew);
+                        }
                     }
 
                     ImGui::PushItemWidth(200.0f);
@@ -632,15 +643,15 @@ int imgui_main(int, char**)
                             bool isVar = i < KERNEL.VAR_COUNT;
                             Attribute* attr = isVar ? &(computations[playedBufferIndex].marshal.kernel.variables[i]) : &(computations[playedBufferIndex].marshal.kernel.parameters[i - KERNEL.VAR_COUNT]);
 
-                            if (attr->stepCount == 1) continue;
+                            if (attr->TrueStepCount() == 1) continue;
 
                             ImGui::Text(padString(attr->name, maxNameLength).c_str()); ImGui::SameLine();
                             int index = attributeValueIndices[i];
                             ImGui::PushItemWidth(150.0f);
                             ImGui::SliderInt(("##RangingNo_" + std::to_string(i)).c_str(), &index, 0, attr->stepCount - 1, "Step: %d");
                             ImGui::PopItemWidth();
-                            if (index < 0) index = 0;
-                            if (index >= attr->stepCount) index = attr->stepCount - 1;
+                            //if (index < 0) index = 0;
+                            //if (index >= attr->stepCount) index = attr->stepCount - 1;
                             attributeValueIndices[i] = index;
                             ImGui::SameLine(); ImGui::Text(("Value: " + std::to_string(calculateValue(attr->min, attr->step, index))).c_str());
                         }
@@ -698,7 +709,7 @@ int imgui_main(int, char**)
             if (!playingParticles) computationStatus(computation0InProgress, computation1InProgress);
 
             // COMMON
-            if (anyChanged)
+            if (anyChanged && !autoLoadNewParams)
             {
                 if (ImGui::Button("Reset changed values"))
                 {
@@ -719,7 +730,7 @@ int imgui_main(int, char**)
                 //ImGui::PopItemWidth();
 
                 // Type
-                std::string plottypes[] = { "Time series", "Phase diagram", "Orbit diagram", "Heatmap" };
+                std::string plottypes[] = { "Time series", "3D Phase diagram", "2D Phase diagram", "Orbit diagram", "Heatmap" };
                 ImGui::Text("Plot type ");
                 ImGui::SameLine();
                 ImGui::PushItemWidth(250.0f);
@@ -768,6 +779,7 @@ int imgui_main(int, char**)
                         {
                             selectedPlotVarsSet.erase(v);
                             break; // temporary workaround (hahaha)
+                            // I forgor what was the original problem and I'm too afraid to find out what'll happen if I remove this workaround :skull:
                         }
                         ImGui::SameLine();
                         ImGui::Text(("- " + KERNEL.variables[v].name).c_str());
@@ -778,6 +790,39 @@ int imgui_main(int, char**)
                 case Phase:
                     ImGui::PushItemWidth(150.0f);
                     for (int sv = 0; sv < 3; sv++)
+                    {
+                        ImGui::Text(("Variable " + variablexyz[sv]).c_str());
+                        ImGui::SameLine();
+                        if (ImGui::BeginCombo(("##Plot builder var " + std::to_string(sv + 1)).c_str(), selectedPlotVars[sv] > -1 ? KERNEL.variables[selectedPlotVars[sv]].name.c_str() : "-"))
+                        {
+                            for (int v = (sv > 0 ? -1 : 0); v < KERNEL.VAR_COUNT; v++)
+                            {
+                                bool isSelected = selectedPlotVars[sv] == v;
+                                ImGuiSelectableFlags selectableFlags = 0;
+
+                                if (v == -1)
+                                {
+                                    if (sv == 0 && (selectedPlotVars[1] > -1 || selectedPlotVars[2] > -1)) selectableFlags = ImGuiSelectableFlags_Disabled;
+                                    if (sv == 1 && (selectedPlotVars[2] > -1)) selectableFlags = ImGuiSelectableFlags_Disabled;
+                                    if (ImGui::Selectable("-", isSelected, selectableFlags)) selectedPlotVars[sv] = -1;
+                                }
+                                else
+                                {
+                                    if (sv == 1 && selectedPlotVars[0] == -1) selectableFlags = ImGuiSelectableFlags_Disabled;
+                                    if (sv == 2 && selectedPlotVars[1] == -1) selectableFlags = ImGuiSelectableFlags_Disabled;
+                                    if (v == selectedPlotVars[(sv + 1) % 3] || v == selectedPlotVars[(sv + 2) % 3]) selectableFlags = ImGuiSelectableFlags_Disabled;
+                                    if (ImGui::Selectable(v > -1 ? KERNEL.variables[v].name.c_str() : "-", isSelected, selectableFlags)) selectedPlotVars[sv] = v;
+                                }
+                            }
+                            ImGui::EndCombo();
+                        }
+                    }
+                    ImGui::PopItemWidth();
+                    break;
+
+                case Phase2D:
+                    ImGui::PushItemWidth(150.0f);
+                    for (int sv = 0; sv < 2; sv++)
                     {
                         ImGui::Text(("Variable " + variablexyz[sv]).c_str());
                         ImGui::SameLine();
@@ -844,6 +889,7 @@ int imgui_main(int, char**)
 
                     if (plotType == Series) plotWindow.AssignVariables(selectedPlotVarsSet);
                     if (plotType == Phase) plotWindow.AssignVariables(selectedPlotVars);
+                    if (plotType == Phase2D) plotWindow.AssignVariables(selectedPlotVars);
                     if (plotType == Heatmap) plotWindow.AssignVariables(selectedPlotMap);
 
                     plotWindows.push_back(plotWindow);
@@ -942,7 +988,7 @@ int imgui_main(int, char**)
             // Common variables
             ImPlotAxisFlags axisFlags = (toAutofit ? ImPlotAxisFlags_AutoFit : 0);
             ImPlotPlot* plot;
-            bool is3d;
+            ImPlot3DPlot* plot3d;
             int mapIndex;
             ImPlotColormap heatmapColorMap = !window->grayscaleHeatmap ? ImPlotColormap_Jet : ImPlotColormap_Greys;
             ImVec4 rotationEuler;
@@ -985,71 +1031,74 @@ int imgui_main(int, char**)
 
             case Phase:
                 // PHASE DIAGRAM
-                is3d = window->variableCount == 3;
                 rotationEuler = ToEulerAngles(window->quatRot);
-
-                if (is3d)
+                if (isnan(rotationEuler.x))
                 {
-                    ImVec4 rotationEulerEditable(rotationEuler);                 
-                    rotationEulerEditable.x /= DEG2RAD;
-                    rotationEulerEditable.y /= DEG2RAD;
-                    rotationEulerEditable.z /= DEG2RAD;
-                    ImVec4 rotationEulerBeforeEdit(rotationEulerEditable);
-
-                    rotationEulerEditable.x += window->autorotate.x * frameTime;
-                    rotationEulerEditable.y += window->autorotate.y * frameTime;
-                    rotationEulerEditable.z += window->autorotate.z * frameTime;
-                    
-                    ImGui::DragFloat3("Rotation", (float*)&rotationEulerEditable, 1.0f);
-                    ImGui::DragFloat3("Automatic rotation", (float*)&window->autorotate, 0.1f);
-                    ImGui::DragFloat3("Offset", (float*)&window->offset, 0.01f);
-                    ImGui::DragFloat3("Scale", (float*)&window->scale, 0.01f);
-
-                    if (window->scale.x < 0.0f) window->scale.x = 0.0f;
-                    if (window->scale.y < 0.0f) window->scale.y = 0.0f;
-                    if (window->scale.z < 0.0f) window->scale.z = 0.0f;
-
-                    if (rotationEulerBeforeEdit != rotationEulerEditable)
-                    {
-                        // Rotate quaternion by euler drag
-
-                        ImVec4 deltaEuler = rotationEulerEditable - rotationEulerBeforeEdit;
-
-                        quaternion::Quaternion<float> quatEditable(1.0f, 0.0f, 0.0f, 0.0f);
-                        quaternion::Quaternion<float> quatRot(window->quatRot.w, window->quatRot.x, window->quatRot.y, window->quatRot.z);
-                        quaternion::Quaternion<float> quatZ(cosf(deltaEuler.z * 0.5f * DEG2RAD), 0.0f, 0.0f, sinf(deltaEuler.z * 0.5f * DEG2RAD));
-                        quaternion::Quaternion<float> quatY(cosf(deltaEuler.y * 0.5f * DEG2RAD), 0.0f, sinf(deltaEuler.y * 0.5f * DEG2RAD), 0.0f);
-                        quaternion::Quaternion<float> quatX(cosf(deltaEuler.x * 0.5f * DEG2RAD), sinf(deltaEuler.x * 0.5f * DEG2RAD), 0.0f, 0.0f);
-
-                        if (deltaEuler.x != 0.0f) quatEditable = quatX * quatEditable;
-                        if (deltaEuler.y != 0.0f) quatEditable = quatY * quatEditable;
-                        if (deltaEuler.z != 0.0f) quatEditable = quatZ * quatEditable;
-
-                        quatEditable = quatRot * quatEditable;
-
-                        window->quatRot.w = quatEditable.a();
-                        window->quatRot.x = quatEditable.b();
-                        window->quatRot.y = quatEditable.c();
-                        window->quatRot.z = quatEditable.d();
-                    }
-
-                    axisFlags |= ImPlotAxisFlags_NoGridLines | ImPlotAxisFlags_NoTickMarks | ImPlotAxisFlags_NoTickLabels;
+                    window->quatRot = ImVec4(1.0f, 0.0f, 0.0f, 0.0f);
+                    rotationEuler = ToEulerAngles(window->quatRot);
                 }
+
+                /*ImVec4 rotationEulerEditable(rotationEuler);
+                rotationEulerEditable.x /= DEG2RAD;
+                rotationEulerEditable.y /= DEG2RAD;
+                rotationEulerEditable.z /= DEG2RAD;
+                ImVec4 rotationEulerBeforeEdit(rotationEulerEditable);
+
+                rotationEulerEditable.x += window->autorotate.x * frameTime;
+                rotationEulerEditable.y += window->autorotate.y * frameTime;
+                rotationEulerEditable.z += window->autorotate.z * frameTime;
+
+                ImGui::DragFloat3("Rotation", (float*)&rotationEulerEditable, 1.0f);
+                ImGui::DragFloat3("Automatic rotation", (float*)&window->autorotate, 0.1f);
+                ImGui::DragFloat3("Offset", (float*)&window->offset, 0.01f);
+                ImGui::DragFloat3("Scale", (float*)&window->scale, 0.01f);
+
+                if (window->scale.x < 0.0f) window->scale.x = 0.0f;
+                if (window->scale.y < 0.0f) window->scale.y = 0.0f;
+                if (window->scale.z < 0.0f) window->scale.z = 0.0f;
+
+                if (rotationEulerBeforeEdit != rotationEulerEditable)
+                {
+                    // Rotate quaternion by euler drag
+
+                    ImVec4 deltaEuler = rotationEulerEditable - rotationEulerBeforeEdit;
+
+                    quaternion::Quaternion<float> quatEditable(1.0f, 0.0f, 0.0f, 0.0f);
+                    quaternion::Quaternion<float> quatRot(window->quatRot.w, window->quatRot.x, window->quatRot.y, window->quatRot.z);
+                    quaternion::Quaternion<float> quatZ(cosf(deltaEuler.z * 0.5f * DEG2RAD), 0.0f, 0.0f, sinf(deltaEuler.z * 0.5f * DEG2RAD));
+                    quaternion::Quaternion<float> quatY(cosf(deltaEuler.y * 0.5f * DEG2RAD), 0.0f, sinf(deltaEuler.y * 0.5f * DEG2RAD), 0.0f);
+                    quaternion::Quaternion<float> quatX(cosf(deltaEuler.x * 0.5f * DEG2RAD), sinf(deltaEuler.x * 0.5f * DEG2RAD), 0.0f, 0.0f);
+
+                    if (deltaEuler.x != 0.0f) quatEditable = quatX * quatEditable;
+                    if (deltaEuler.y != 0.0f) quatEditable = quatY * quatEditable;
+                    if (deltaEuler.z != 0.0f) quatEditable = quatZ * quatEditable;
+
+                    quatEditable = quatRot * quatEditable;
+                    quatEditable = quaternion::normalize(quatEditable);
+
+                    window->quatRot.w = quatEditable.a();
+                    window->quatRot.x = quatEditable.b();
+                    window->quatRot.y = quatEditable.c();
+                    window->quatRot.z = quatEditable.d();
+                }*/
+
+                axisFlags |= ImPlotAxisFlags_NoGridLines | ImPlotAxisFlags_NoTickMarks | ImPlotAxisFlags_NoTickLabels;
 
                 //printf("Begin phase\n");
                 if (window->whiteBg) { ImPlot::PushStyleColor(ImPlotCol_PlotBg, ImVec4(1.0f, 1.0f, 1.0f, 1.0f)); ImPlot::PushStyleColor(ImPlotCol_AxisGrid, ImVec4(0.2f, 0.2f, 0.2f, 1.0f)); }
-                if (ImPlot::BeginPlot(plotName.c_str(), "", "", ImVec2(-1, -1), ImPlotFlags_NoLegend | ImPlotFlags_NoTitle, axisFlags, axisFlags))
-                {
-                    plot = ImPlot::GetPlot(plotName.c_str());
 
-                    float plotRangeSize =  ((float)plot->Axes[ImAxis_X1].Range.Max - (float)plot->Axes[ImAxis_X1].Range.Min);
+                if (ImPlot3D::BeginPlot(plotName.c_str(), ImVec2(-1, -1), ImPlot3DFlags_NoLegend | ImPlot3DFlags_NoTitle | ImPlot3DFlags_NoClip))
+                {
+                    plot3d = ImPlot3D::GetCurrentPlot();
+
+                    /*float plotRangeSize =  ((float)plot->Axes[ImAxis_X1].Range.Max - (float)plot->Axes[ImAxis_X1].Range.Min);
 
                     if (!computations[playedBufferIndex].ready)
                     {
                         plotRangeSize = 10.0f;
                         plot->dataMin = ImVec2(-10.0f, -10.0f);
                         plot->dataMax = ImVec2(10.0f, 10.0f);
-                    }
+                    }*/
 
                     float deltax = -window->deltarotation.x;
                     float deltay = -window->deltarotation.y;
@@ -1057,11 +1106,11 @@ int imgui_main(int, char**)
                     window->deltarotation.x = 0;
                     window->deltarotation.y = 0;
 
-                    plot->is3d = is3d;
-                    plot->deltax = &(window->deltarotation.x);
-                    plot->deltay = &(window->deltarotation.y);
+                    //plot->is3d = true;
+                    //plot->deltax = &(window->deltarotation.x);
+                    //plot->deltay = &(window->deltarotation.y);
 
-                    if (deltax != 0.0f || deltay != 0.0f)
+                    /*if (deltax != 0.0f || deltay != 0.0f)
                     {
                         quaternion::Quaternion<float> quat(window->quatRot.w, window->quatRot.x, window->quatRot.y, window->quatRot.z);
                         quaternion::Quaternion<float> quatY(cosf(deltax * 0.5f * DEG2RAD), 0.0f, sinf(deltax * 0.5f * DEG2RAD), 0.0f);
@@ -1072,51 +1121,40 @@ int imgui_main(int, char**)
                         window->quatRot.x = quat.b();
                         window->quatRot.y = quat.c();
                         window->quatRot.z = quat.d();
-                    }
+                    }*/
                     //printf("%f %f %f %f\n", window->quatRot.x, window->quatRot.y, window->quatRot.z, window->quatRot.w);
-                    rotationEuler = ToEulerAngles(window->quatRot);
+                    //rotationEuler = ToEulerAngles(window->quatRot);
 
-                    populateAxisBuffer((numb*)axisBuffer, plotRangeSize / 10.0f, plotRangeSize / 10.0f, plotRangeSize / 10.0f);
-                    if (is3d)
-                    {
-                        rotateOffsetBuffer((numb*)axisBuffer, 6, 3, 0, 1, 2, rotationEuler, ImVec4(0, 0, 0, 0), ImVec4(1, 1, 1, 0));
-                    }
+                    //populateAxisBuffer(axisBuffer, plotRangeSize / 10.0f, plotRangeSize / 10.0f, plotRangeSize / 10.0f);
+                    //rotateOffsetBuffer(axisBuffer, 6, 3, 0, 1, 2, rotationEuler, ImVec4(0, 0, 0, 0), ImVec4(1, 1, 1, 0));
 
                     // Axis
-                    if (window->showAxis)
+                    /*if (window->showAxis)
                     {
                         ImPlot::SetNextLineStyle(xAxisColor);
-                        ImPlot::PlotLine(plotName.c_str(), &(((numb*)axisBuffer)[0]), &(((numb*)axisBuffer)[1]), 2, 0, 0, sizeof(numb) * 3);
+                        ImPlot::PlotLine(plotName.c_str(), &(axisBuffer[0]), &(axisBuffer[1]), 2, 0, 0, sizeof(float) * 3);
                         ImPlot::SetNextLineStyle(yAxisColor);
-                        ImPlot::PlotLine(plotName.c_str(), &(((numb*)axisBuffer)[6]), &(((numb*)axisBuffer)[7]), 2, 0, 0, sizeof(numb) * 3);
-
-                        if (is3d)
-                        {
-                            ImPlot::SetNextLineStyle(zAxisColor);
-                            ImPlot::PlotLine(plotName.c_str(), &(((numb*)axisBuffer)[12]), &(((numb*)axisBuffer)[13]), 2, 0, 0, sizeof(numb) * 3);
-                        }
+                        ImPlot::PlotLine(plotName.c_str(), &(axisBuffer[6]), &(axisBuffer[7]), 2, 0, 0, sizeof(float) * 3);
+                        ImPlot::SetNextLineStyle(zAxisColor);
+                        ImPlot::PlotLine(plotName.c_str(), &(axisBuffer[12]), &(axisBuffer[13]), 2, 0, 0, sizeof(float) * 3);
                     }
 
                     // Axis names
                     if (window->showAxisNames)
                     {
                         ImPlot::PushStyleColor(ImPlotCol_InlayText, xAxisColor);
-                        ImPlot::PlotText(KERNEL.variables[window->variables[0]].name.c_str(), ((numb*)axisBuffer)[0], ((numb*)axisBuffer)[1], ImVec2(0.0f, 0.0f));
+                        ImPlot::PlotText(KERNEL.variables[window->variables[0]].name.c_str(), axisBuffer[0], axisBuffer[1], ImVec2(0.0f, 0.0f));
                         ImPlot::PopStyleColor();
                         ImPlot::PushStyleColor(ImPlotCol_InlayText, yAxisColor);
-                        ImPlot::PlotText(KERNEL.variables[window->variables[1]].name.c_str(), ((numb*)axisBuffer)[6], ((numb*)axisBuffer)[7], ImVec2(0.0f, 0.0f));
+                        ImPlot::PlotText(KERNEL.variables[window->variables[1]].name.c_str(), axisBuffer[6], axisBuffer[7], ImVec2(0.0f, 0.0f));
                         ImPlot::PopStyleColor();
-
-                        if (is3d)
-                        {
-                            ImPlot::PushStyleColor(ImPlotCol_InlayText, zAxisColor);
-                            ImPlot::PlotText(KERNEL.variables[window->variables[2]].name.c_str(), ((numb*)axisBuffer)[12], ((numb*)axisBuffer)[13], ImVec2(0.0f, 0.0f));
-                            ImPlot::PopStyleColor();
-                        }
+                        ImPlot::PushStyleColor(ImPlotCol_InlayText, zAxisColor);
+                        ImPlot::PlotText(KERNEL.variables[window->variables[2]].name.c_str(), axisBuffer[12], axisBuffer[13], ImVec2(0.0f, 0.0f));
+                        ImPlot::PopStyleColor();
                     }
 
                     // Ruler
-                    if (is3d && window->showRuler)
+                    if (window->showRuler)
                     {
                         ImVec4 scale(plotRangeSize / window->scale.x, plotRangeSize / window->scale.y, plotRangeSize / window->scale.z, 0);
                         ImVec4 scaleLog(floorf(log10f(scale.x)), floorf(log10f(scale.y)), floorf(log10f(scale.z)), 0);
@@ -1128,12 +1166,12 @@ int imgui_main(int, char**)
                         ImVec4 alpha1(scaleInterp.x * window->rulerAlpha, scaleInterp.y * window->rulerAlpha, scaleInterp.z * window->rulerAlpha, 0);
 
 #define DRAW_RULER_PART(colorR, colorG, colorB, alpha, scale, scaleStr, dim) ImPlot::SetNextLineStyle(ImVec4(colorR, colorG, colorB, alpha)); \
-                            populateRulerBuffer((numb*)rulerBuffer, scale, dim); \
-                            rotateOffsetBuffer((numb*)rulerBuffer, 51, 3, 0, 1, 2, rotationEuler, \
+                            populateRulerBuffer(rulerBuffer, scale, dim); \
+                            rotateOffsetBuffer(rulerBuffer, 51, 3, 0, 1, 2, rotationEuler, \
                                 ImVec4(0, 0, 0, 0), ImVec4(scale, scale, scale, 0)); \
-                            ImPlot::PlotLine(plotName.c_str(), &(((numb*)rulerBuffer)[0]), &(((numb*)rulerBuffer)[1]), 51, 0, 0, sizeof(numb) * 3); \
+                            ImPlot::PlotLine(plotName.c_str(), &(rulerBuffer[0]), &(rulerBuffer[1]), 51, 0, 0, sizeof(float) * 3); \
                             ImPlot::PushStyleColor(ImPlotCol_InlayText, ImVec4(colorR, colorG, colorB, alpha)); \
-                            ImPlot::PlotText(scaleString(scaleStr).c_str(), ((numb*)rulerBuffer)[150 + 0], ((numb*)rulerBuffer)[150 + 1], ImVec2(0.0f, 0.0f)); \
+                            ImPlot::PlotText(scaleString(scaleStr * 10.0f).c_str(), rulerBuffer[150 + 0], rulerBuffer[150 + 1], ImVec2(0.0f, 0.0f)); \
                             ImPlot::PopStyleColor();
 
                         DRAW_RULER_PART(xAxisColor.x, xAxisColor.y, xAxisColor.z, alpha0.x, scale0.x * window->scale.x, scale0.x, 0);
@@ -1144,29 +1182,38 @@ int imgui_main(int, char**)
 
                         DRAW_RULER_PART(zAxisColor.x, zAxisColor.y, zAxisColor.z, alpha0.z, scale0.z * window->scale.z, scale0.z, 2);
                         DRAW_RULER_PART(zAxisColor.x, zAxisColor.y, zAxisColor.z, alpha1.z, scale1.z * window->scale.z, scale1.z, 2);
-                    }
+                    }*/
 
                     if (computations[playedBufferIndex].ready)
                     {
                         //int variationSize = KERNEL.VAR_COUNT * (computedSteps + 1);
 
-                        int xIndex = is3d ? 0 : window->variables[0];
-                        int yIndex = is3d ? 1 : window->variables[1];
-
                         if (!enabledParticles) // Trajectory - one variation, all steps
                         {
                             numb* computedVariation = computations[playedBufferIndex].marshal.trajectory + (computations[playedBufferIndex].marshal.variationSize * variation);
-                            memcpy(dataBuffer, computedVariation, computations[playedBufferIndex].marshal.variationSize * sizeof(numb));
+                            //memcpy(dataBuffer, computedVariation, computations[playedBufferIndex].marshal.variationSize * sizeof(numb));
 
-                            if (is3d)
+                            /*if (is3d)
                                 rotateOffsetBuffer(dataBuffer, computedSteps + 1, KERNEL.VAR_COUNT, window->variables[0], window->variables[1], window->variables[2],
-                                    rotationEuler, window->offset, window->scale);
+                                    rotationEuler, window->offset, window->scale);*/
 
-                            getMinMax2D(dataBuffer, computedSteps + 1, &(plot->dataMin), &(plot->dataMax));
+                            //getMinMax2D(dataBuffer, computedSteps + 1, &(plot->dataMin), &(plot->dataMax));
+                            //getMinMax2D(computedVariation, computedSteps + 1, &(plot->dataMin), &(plot->dataMax));
                             //printf("%f:%f %f:%f\n", plot->dataMin.x, plot->dataMin.y, plot->dataMax.x, plot->dataMax.y);
 
-                            ImPlot::SetNextLineStyle(ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
-                            ImPlot::PlotLine(plotName.c_str(), &((dataBuffer)[xIndex]), &((dataBuffer)[yIndex]), computedSteps + 1, 0, 0, sizeof(numb) * KERNEL.VAR_COUNT);
+                            ImPlot3D::SetNextLineStyle(ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
+                            //ImPlot::PlotLine(plotName.c_str(), &(dataBuffer[xIndex]), &(dataBuffer[yIndex]), computedSteps + 1, 0, 0, sizeof(numb) * KERNEL.VAR_COUNT);
+                            ImPlot3D::PlotLine(plotName.c_str(), &(computedVariation[window->variables[0]]), &(computedVariation[window->variables[1]]), &(computedVariation[window->variables[2]]),
+                                computedSteps + 1, 0, 0, sizeof(numb) * KERNEL.VAR_COUNT);
+                        
+                            /*static float xs1[1001], ys1[1001], zs1[1001];
+                            for (int i = 0; i < 1001; i++) {
+                                xs1[i] = i * 0.001f;
+                                ys1[i] = 0.5f + 0.5f * cosf(50 * (xs1[i] + (float)ImGui::GetTime() / 10));
+                                zs1[i] = 0.5f + 0.5f * sinf(50 * (xs1[i] + (float)ImGui::GetTime() / 10));
+                            }
+                            ImPlot3D::SetupAxes("x", "y", "z");
+                            ImPlot3D::PlotLine("f(x)", xs1, ys1, zs1, 1001, 0, 0, sizeof(float));*/
                         }
                         else // Particles - all variations, one certain step
                         {
@@ -1183,26 +1230,161 @@ int imgui_main(int, char**)
                                     particleBuffer[v * varCount + var] = trajectory[(variationSize * v) + (varCount * particleStep) + var];
                             }
 
-                            if (is3d)
-                                rotateOffsetBuffer(particleBuffer, computations[playedBufferIndex].marshal.totalVariations, KERNEL.VAR_COUNT, window->variables[0], window->variables[1], window->variables[2],
-                                    rotationEuler, window->offset, window->scale);
+                            /*rotateOffsetBuffer(particleBuffer, computations[playedBufferIndex].marshal.totalVariations, KERNEL.VAR_COUNT, window->variables[0], window->variables[1], window->variables[2],
+                                rotationEuler, window->offset, window->scale);
 
-                            getMinMax2D(particleBuffer, computations[playedBufferIndex].marshal.totalVariations, &(plot->dataMin), &(plot->dataMax));
+                            getMinMax2D(particleBuffer, computations[playedBufferIndex].marshal.totalVariations, &(plot->dataMin), &(plot->dataMax));*/
 
-                            ImPlot::SetNextLineStyle(window->markerColor);
-                            ImPlot::PushStyleVar(ImPlotStyleVar_MarkerWeight, window->markerOutlineSize);
+                            ImPlot3D::SetNextLineStyle(window->markerColor);
+                            ImPlot3D::PushStyleVar(ImPlotStyleVar_MarkerWeight, window->markerOutlineSize);
                             //ImPlot::PushStyleVar(ImPlotStyleVar_FillAlpha, 0.25f);
-                            ImPlot::SetNextMarkerStyle(window->markerShape, window->markerSize);
-                            ImPlot::PlotScatter(plotName.c_str(), &((particleBuffer)[xIndex]), &((particleBuffer)[yIndex]), computations[playedBufferIndex].marshal.totalVariations, 0, 0, sizeof(numb) * KERNEL.VAR_COUNT);
+                            ImPlot3D::SetNextMarkerStyle(window->markerShape, window->markerSize);
+                            ImPlot3D::PlotScatter(plotName.c_str(), &((particleBuffer)[window->variables[0]]), &((particleBuffer)[window->variables[1]]), &((particleBuffer)[window->variables[2]]),
+                                computations[playedBufferIndex].marshal.totalVariations, 0, 0, sizeof(numb) * KERNEL.VAR_COUNT);
                         }
                     }
 
                     // PHASE DIAGRAM END
-                    //printf("End phase\n");
-                    ImPlot::EndPlot();
+                    ImPlot3D::EndPlot();
                 }
                 if (window->whiteBg) ImPlot::PopStyleColor(2);
                 break;
+
+                case Phase2D:
+                    // PHASE DIAGRAM 2D
+                    rotationEuler = ToEulerAngles(window->quatRot);
+                    if (isnan(rotationEuler.x))
+                    {
+                        window->quatRot = ImVec4(1.0f, 0.0f, 0.0f, 0.0f);
+                        rotationEuler = ToEulerAngles(window->quatRot);
+                    }
+
+                    //printf("Begin phase\n");
+                    if (window->whiteBg) { ImPlot::PushStyleColor(ImPlotCol_PlotBg, ImVec4(1.0f, 1.0f, 1.0f, 1.0f)); ImPlot::PushStyleColor(ImPlotCol_AxisGrid, ImVec4(0.2f, 0.2f, 0.2f, 1.0f)); }
+
+                    if (ImPlot::BeginPlot(plotName.c_str(), "", "", ImVec2(-1, -1), ImPlotFlags_NoLegend | ImPlotFlags_NoTitle, axisFlags, axisFlags))
+                    {
+                        plot = ImPlot::GetPlot(plotName.c_str());
+
+                        float plotRangeSize = ((float)plot->Axes[ImAxis_X1].Range.Max - (float)plot->Axes[ImAxis_X1].Range.Min);
+
+                        if (!computations[playedBufferIndex].ready)
+                        {
+                            plotRangeSize = 10.0f;
+                            plot->dataMin = ImVec2(-10.0f, -10.0f);
+                            plot->dataMax = ImVec2(10.0f, 10.0f);
+                        }
+
+                        float deltax = -window->deltarotation.x;
+                        float deltay = -window->deltarotation.y;
+
+                        window->deltarotation.x = 0;
+                        window->deltarotation.y = 0;
+
+                        plot->is3d = false;
+                        plot->deltax = &(window->deltarotation.x);
+                        plot->deltay = &(window->deltarotation.y);
+
+                        /*if (deltax != 0.0f || deltay != 0.0f)
+                        {
+                            quaternion::Quaternion<float> quat(window->quatRot.w, window->quatRot.x, window->quatRot.y, window->quatRot.z);
+                            quaternion::Quaternion<float> quatY(cosf(deltax * 0.5f * DEG2RAD), 0.0f, sinf(deltax * 0.5f * DEG2RAD), 0.0f);
+                            quaternion::Quaternion<float> quatX(cosf(deltay * 0.5f * DEG2RAD), sinf(deltay * 0.5f * DEG2RAD), 0.0f, 0.0f);
+                            quat = quatY * quatX * quat;
+                            quat = quaternion::normalize(quat);
+                            window->quatRot.w = quat.a();
+                            window->quatRot.x = quat.b();
+                            window->quatRot.y = quat.c();
+                            window->quatRot.z = quat.d();
+                        }*/
+                        //printf("%f %f %f %f\n", window->quatRot.x, window->quatRot.y, window->quatRot.z, window->quatRot.w);
+                        //rotationEuler = ToEulerAngles(window->quatRot);*/
+
+                        populateAxisBuffer(axisBuffer, plotRangeSize / 10.0f, plotRangeSize / 10.0f, plotRangeSize / 10.0f);
+
+                        // Axis
+                        if (window->showAxis)
+                        {
+                            ImPlot::SetNextLineStyle(xAxisColor);
+                            ImPlot::PlotLine(plotName.c_str(), &(axisBuffer[0]), &(axisBuffer[1]), 2, 0, 0, sizeof(float) * 3);
+                            ImPlot::SetNextLineStyle(yAxisColor);
+                            ImPlot::PlotLine(plotName.c_str(), &(axisBuffer[6]), &(axisBuffer[7]), 2, 0, 0, sizeof(float) * 3);
+                        }
+
+                        // Axis names
+                        if (window->showAxisNames)
+                        {
+                            ImPlot::PushStyleColor(ImPlotCol_InlayText, xAxisColor);
+                            ImPlot::PlotText(KERNEL.variables[window->variables[0]].name.c_str(), axisBuffer[0], axisBuffer[1], ImVec2(0.0f, 0.0f));
+                            ImPlot::PopStyleColor();
+                            ImPlot::PushStyleColor(ImPlotCol_InlayText, yAxisColor);
+                            ImPlot::PlotText(KERNEL.variables[window->variables[1]].name.c_str(), axisBuffer[6], axisBuffer[7], ImVec2(0.0f, 0.0f));
+                            ImPlot::PopStyleColor();
+                        }
+
+                        if (computations[playedBufferIndex].ready)
+                        {
+                            //int variationSize = KERNEL.VAR_COUNT * (computedSteps + 1);
+
+                            int xIndex = window->variables[0];
+                            int yIndex = window->variables[1];
+
+                            if (!enabledParticles) // Trajectory - one variation, all steps
+                            {
+                                numb* computedVariation = computations[playedBufferIndex].marshal.trajectory + (computations[playedBufferIndex].marshal.variationSize * variation);
+                                //memcpy(dataBuffer, computedVariation, computations[playedBufferIndex].marshal.variationSize * sizeof(numb));
+
+                                /*if (is3d)
+                                    rotateOffsetBuffer(dataBuffer, computedSteps + 1, KERNEL.VAR_COUNT, window->variables[0], window->variables[1], window->variables[2],
+                                        rotationEuler, window->offset, window->scale);*/
+
+                                //getMinMax2D(dataBuffer, computedSteps + 1, &(plot->dataMin), &(plot->dataMax));
+                                //getMinMax2D(computedVariation, computedSteps + 1, &(plot->dataMin), &(plot->dataMax));
+                                //printf("%f:%f %f:%f\n", plot->dataMin.x, plot->dataMin.y, plot->dataMax.x, plot->dataMax.y);
+
+                                ImPlot::SetNextLineStyle(ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
+                                //ImPlot::PlotLine(plotName.c_str(), &(dataBuffer[xIndex]), &(dataBuffer[yIndex]), computedSteps + 1, 0, 0, sizeof(numb) * KERNEL.VAR_COUNT);
+                                ImPlot::PlotLine(plotName.c_str(), &(computedVariation[0]), &(computedVariation[1]), computedSteps + 1, 0, 0, sizeof(numb) * KERNEL.VAR_COUNT);
+
+                                /*static float xs1[1001], ys1[1001], zs1[1001];
+                                for (int i = 0; i < 1001; i++) {
+                                    xs1[i] = i * 0.001f;
+                                    ys1[i] = 0.5f + 0.5f * cosf(50 * (xs1[i] + (float)ImGui::GetTime() / 10));
+                                    zs1[i] = 0.5f + 0.5f * sinf(50 * (xs1[i] + (float)ImGui::GetTime() / 10));
+                                }
+                                ImPlot3D::SetupAxes("x", "y", "z");
+                                ImPlot3D::PlotLine("f(x)", xs1, ys1, zs1, 1001, 0, 0, sizeof(float));*/
+                            }
+                            else // Particles - all variations, one certain step
+                            {
+                                if (particleStep > KERNEL.steps) particleStep = KERNEL.steps;
+
+                                int totalVariations = computations[playedBufferIndex].marshal.totalVariations;
+                                int varCount = KERNEL.VAR_COUNT; // If you don't make this local, it increases the copying time by 30 times, tee-hee
+                                int variationSize = computations[playedBufferIndex].marshal.variationSize;
+                                numb* trajectory = computations[playedBufferIndex].marshal.trajectory;
+
+                                for (int v = 0; v < totalVariations; v++)
+                                {
+                                    for (int var = 0; var < varCount; var++)
+                                        particleBuffer[v * varCount + var] = trajectory[(variationSize * v) + (varCount * particleStep) + var];
+                                }
+
+                                getMinMax2D(particleBuffer, computations[playedBufferIndex].marshal.totalVariations, &(plot->dataMin), &(plot->dataMax));
+
+                                ImPlot::SetNextLineStyle(window->markerColor);
+                                ImPlot::PushStyleVar(ImPlotStyleVar_MarkerWeight, window->markerOutlineSize);
+                                //ImPlot::PushStyleVar(ImPlotStyleVar_FillAlpha, 0.25f);
+                                ImPlot::SetNextMarkerStyle(window->markerShape, window->markerSize);
+                                ImPlot::PlotScatter(plotName.c_str(), &((particleBuffer)[xIndex]), &((particleBuffer)[yIndex]), computations[playedBufferIndex].marshal.totalVariations, 0, 0, sizeof(numb) * KERNEL.VAR_COUNT);
+                            }
+                        }
+
+                        // PHASE DIAGRAM END
+                        ImPlot::EndPlot();
+                    }
+                    if (window->whiteBg) ImPlot::PopStyleColor(2);
+                    break;
                 
                 case Heatmap:
                     mapIndex = window->variables[0];
@@ -1266,12 +1448,12 @@ int imgui_main(int, char**)
                                     switch (sizing.map->typeX)
                                     {
                                     case VARIABLE:
-                                        if (stepX < 0 || stepX >= KERNEL.variables[sizing.map->indexX].stepCount) break;
+                                        if (stepX < 0 || stepX >= KERNEL.variables[sizing.map->indexX].TrueStepCount()) break;
                                         selectOrbitTab = true;
                                         attributeValueIndices[sizing.map->indexX] = stepX;
                                         break;
                                     case PARAMETER:
-                                        if (stepX < 0 || stepX >= KERNEL.parameters[sizing.map->indexX].stepCount) break;
+                                        if (stepX < 0 || stepX >= KERNEL.parameters[sizing.map->indexX].TrueStepCount()) break;
                                         selectOrbitTab = true;
                                         attributeValueIndices[KERNEL.VAR_COUNT + sizing.map->indexX] = stepX;
                                         break;
@@ -1280,12 +1462,12 @@ int imgui_main(int, char**)
                                     switch (sizing.map->typeY)
                                     {
                                     case VARIABLE:
-                                        if (stepY < 0 || stepY >= KERNEL.variables[sizing.map->indexY].stepCount) break;
+                                        if (stepY < 0 || stepY >= KERNEL.variables[sizing.map->indexY].TrueStepCount()) break;
                                         selectOrbitTab = true;
                                         attributeValueIndices[sizing.map->indexY] = stepY;
                                         break;
                                     case PARAMETER:
-                                        if (stepY < 0 || stepY >= KERNEL.parameters[sizing.map->indexY].stepCount) break;
+                                        if (stepY < 0 || stepY >= KERNEL.parameters[sizing.map->indexY].TrueStepCount()) break;
                                         selectOrbitTab = true;
                                         attributeValueIndices[KERNEL.VAR_COUNT + sizing.map->indexY] = stepY;
                                         break;
@@ -1320,8 +1502,8 @@ int imgui_main(int, char**)
                                     enabledParticles = false;
                                     playingParticles = false;
 
-                                    int xMaxStep = sizing.map->typeX == PARAMETER ? KERNEL.parameters[sizing.map->indexX].stepCount : (sizing.map->typeX == VARIABLE ? KERNEL.variables[sizing.map->indexX].stepCount : 0);
-                                    int yMaxStep = sizing.map->typeY == PARAMETER ? KERNEL.parameters[sizing.map->indexY].stepCount : (sizing.map->typeY == VARIABLE ? KERNEL.variables[sizing.map->indexY].stepCount : 0);
+                                    int xMaxStep = sizing.map->typeX == PARAMETER ? KERNEL.parameters[sizing.map->indexX].TrueStepCount() : (sizing.map->typeX == VARIABLE ? KERNEL.variables[sizing.map->indexX].TrueStepCount() : 0);
+                                    int yMaxStep = sizing.map->typeY == PARAMETER ? KERNEL.parameters[sizing.map->indexY].TrueStepCount() : (sizing.map->typeY == VARIABLE ? KERNEL.variables[sizing.map->indexY].TrueStepCount() : 0);
 
                                     // If inside the heatmap
                                     if (stepX1 >= 0 && stepX1 < xMaxStep && stepY1 >= 0 && stepY1 < yMaxStep
@@ -1480,6 +1662,7 @@ int imgui_main(int, char**)
     // Cleanup
     ImGui_ImplDX11_Shutdown();
     ImGui_ImplWin32_Shutdown();
+    ImPlot3D::DestroyContext();
     ImPlot::DestroyContext();
     ImGui::DestroyContext();
 
@@ -1488,7 +1671,6 @@ int imgui_main(int, char**)
     ::UnregisterClassW(wc.lpszClassName, wc.hInstance);
 
     terminateBuffers();
-    if (axisBuffer != nullptr) { delete[] axisBuffer;      axisBuffer = nullptr; }
 
     return 0;
 }
@@ -1595,7 +1777,7 @@ LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 
 // Non-ImGui functions
 
-#define ATTR_BEGIN  ImGui::SameLine(); popStyle = false; if (isChanged) { PUSH_UNSAVED_FRAME; popStyle = true; }
+#define ATTR_BEGIN  ImGui::SameLine(); popStyle = false; if (isChanged && !autoLoadNewParams) { PUSH_UNSAVED_FRAME; popStyle = true; }
 #define ATTR_END    ImGui::PopItemWidth(); if (popStyle) POP_FRAME(3);
 
 void listAttrRanging(Attribute* attr, bool isChanged)
@@ -1623,9 +1805,9 @@ void listAttrNumb(Attribute* attr, numb* field, std::string name, std::string in
 {
     ATTR_BEGIN;
     ImGui::PushItemWidth(200.0f);
-    float varNewMin = (float)(*field);
-    ImGui::DragFloat(("##" + name + attr->name).c_str(), &varNewMin, dragChangeSpeed, 0.0f, 0.0f, (inner + "%f").c_str(), dragFlag);
-    (*field) = (numb)varNewMin;
+    float var = (float)(*field);
+    ImGui::DragFloat(("##" + name + attr->name).c_str(), &var, dragChangeSpeed, 0.0f, 0.0f, (inner + "%f").c_str(), dragFlag);
+    (*field) = (numb)var;
     ATTR_END;
 }
 
@@ -1653,6 +1835,8 @@ void listVariable(int i)
 
     // Ranging
     listAttrRanging(&(kernelNew.variables[i]), kernelNew.variables[i].rangingType != KERNEL.variables[i].rangingType);
+
+    dragFlag = !playingParticles ? 0 : ImGuiSliderFlags_ReadOnly;
 
     switch (kernelNew.variables[i].rangingType)
     {
@@ -1694,8 +1878,7 @@ void listVariable(int i)
 
 void listParameter(int i)
 {
-    bool isRanging = kernelNew.parameters[i].rangingType;
-    bool changeAllowed = !kernelNew.parameters[i].rangingType || !playingParticles || !autoLoadNewParams;
+    bool changeAllowed = kernelNew.parameters[i].rangingType == None || !playingParticles || !autoLoadNewParams;
 
     thisChanged = false;
     if (kernelNew.parameters[i].IsDifferentFrom(&(KERNEL.parameters[i]))) { anyChanged = true; thisChanged = true; }
@@ -1718,11 +1901,10 @@ void listParameter(int i)
 
     listAttrRanging(&(kernelNew.parameters[i]), kernelNew.parameters[i].rangingType != KERNEL.parameters[i].rangingType);
 
+    dragFlag = (!playingParticles || kernelNew.parameters[i].rangingType == None) ? 0 : ImGuiSliderFlags_ReadOnly;
+
     switch (kernelNew.parameters[i].rangingType)
     {
-    case None:
-        listAttrNumb(&(kernelNew.parameters[i]), &(kernelNew.parameters[i].min), "", "", kernelNew.parameters[i].min != KERNEL.parameters[i].min);
-        break;
     case Step:
         listAttrNumb(&(kernelNew.parameters[i]), &(kernelNew.parameters[i].min), "", "Min: ", kernelNew.parameters[i].min != KERNEL.parameters[i].min);
         listAttrNumb(&(kernelNew.parameters[i]), &(kernelNew.parameters[i].max), "MAX", "Max: ", kernelNew.parameters[i].max != KERNEL.parameters[i].max);
@@ -1749,11 +1931,15 @@ void listParameter(int i)
         break;
     }
 
-
     if (playingParticles)
     {
         ImGui::PopStyleColor();
         POP_FRAME(3);
+    }
+
+    if (kernelNew.parameters[i].rangingType == None)
+    {
+        listAttrNumb(&(kernelNew.parameters[i]), &(kernelNew.parameters[i].min), "", "", kernelNew.parameters[i].min != KERNEL.parameters[i].min);
     }
 
     if (!changeAllowed) POP_FRAME(4); // disabledText popped as well

@@ -20,6 +20,7 @@
 #include <tchar.h>
 #include <objects.h>
 #include <implot_internal.h>
+#include "implot3d/implot3d_internal.h"
 #include "imgui_utils.h"
 #include "resource.h"
 #include "quaternion.h"

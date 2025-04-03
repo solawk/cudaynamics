@@ -5,6 +5,7 @@ namespace attributes
 {
     enum variables { x, y, z };
     enum parameters { alpha };
+    enum maps { LLE };
 }
 
 __global__ void kernelProgram_halvorsen(Computation* data)
@@ -15,12 +16,7 @@ __global__ void kernelProgram_halvorsen(Computation* data)
     if (variation >= CUDA_marshal.totalVariations) return;      // Shutdown thread if there isn't a variation to compute
     int variationStart = variation * CUDA_marshal.variationSize;         // Start index to store the modelling data for the variation
     int stepStart = variationStart;                         // Start index for the current modelling step
-
-    int varStep[MAX_ATTRIBUTES];
-    int paramStep[MAX_ATTRIBUTES];
-
-    for (int i = 0; i < CUDA_kernel.VAR_COUNT; i++) varStep[i] = 0;
-    for (int i = 0; i < CUDA_kernel.PARAM_COUNT; i++) paramStep[i] = 0;
+    int indicesStart = variation * (CUDA_kernel.VAR_COUNT + CUDA_kernel.PARAM_COUNT);   // Start index for the step indices of the attributes in the current variation
 
     // Custom area (usually) starts here
 
@@ -36,7 +32,12 @@ __global__ void kernelProgram_halvorsen(Computation* data)
 
     // Analysis
 
-    //LLE(CUDA_kernel.steps, variationStart, CUDA_marshal.trajectory, paramValues, CUDA_kernel.stepSize, CUDA_marshal.maps, CUDA_kernel.mapDatas, varStep, paramStep, &finiteDifferenceScheme_lorenz2);
+    if (M(LLE).toCompute)
+    {
+        LLE_Settings lle_settings(0.01f, 50, 0);
+        lle_settings.Use3DNorm();
+        LLE(data, lle_settings, variation, STEP_INDICES_X(LLE), STEP_INDICES_Y(LLE), &finiteDifferenceScheme_lorenz2);
+    }
 }
 
 __device__ void finiteDifferenceScheme_halvorsen(numb* currentV, numb* nextV, numb* parameters, numb h)
