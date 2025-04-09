@@ -14,7 +14,7 @@ std::map<std::string, void(*)(Computation*)> kernelPrograms;
 std::map<std::string, void(*)(numb*, numb*, numb*, numb)> kernelFDSs;
 std::string selectedKernel;
 
-int main()
+void common_main()
 {
     addKernel(lorenz2);
     addKernel(halvorsen);
@@ -24,13 +24,18 @@ int main()
     selectKernel(lorenz2);
 
     imgui_main(0, 0);
+}
+
+int main()
+{
+    common_main();
 
     return 0;
 }
 
 int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int nCmdShow)
 {
-    imgui_main(0, 0);
+    common_main();
 
     return 0;
 }

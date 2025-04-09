@@ -17,4 +17,9 @@ struct MapData
 
 	int indexY;
 	MapDimensionType typeY;
+
+	// Map can be calculated even with >2 varying attributes, as long as we fixate the rest with a certain value
+	// The fixed values of the varying attributes are stored in these arrays
+	numb varFixations[MAX_ATTRIBUTES];
+	numb paramFixations[MAX_ATTRIBUTES];
 };

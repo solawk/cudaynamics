@@ -2,7 +2,6 @@
 #include "objects.h"
 #include "attribute_struct.h"
 #include "mapData_struct.h"
-//#include "main.h"
 
 struct Kernel
 {
@@ -88,29 +87,34 @@ public:
 		}
 	}
 
-	void AssessMapAttributes()
+	void AssessMapAttributes(std::vector<int>* avi)
 	{
-		int varAttribute1 = -1;
-		int varAttribute2 = -1;
-		bool tooManyVarAttributes = false;
-		MapDimensionType varType1 = VARIABLE;
-		MapDimensionType varType2 = VARIABLE;
+		int varyingAttribute1 = -1;
+		int varyingAttribute2 = -1;
+		bool tooManyVaryingAttributes = false;
+		MapDimensionType varyingType1 = VARIABLE;
+		MapDimensionType varyingType2 = VARIABLE;
 
 		for (int i = 0; i < VAR_COUNT; i++)
 		{
 			if (variables[i].TrueStepCount() > 1)
 			{
-				if (varAttribute1 == -1)
+				for (int m = 0; m < MAP_COUNT; m++) mapDatas[m].varFixations[i] = variables[i].values[(*avi)[i]];
+			}
+
+			if (variables[i].selectedForMaps)
+			{
+				if (varyingAttribute1 == -1)
 				{
-					varAttribute1 = i;
-					varType1 = VARIABLE;
+					varyingAttribute1 = i;
+					varyingType1 = VARIABLE;
 				}
-				else if (varAttribute2 == -1)
+				else if (varyingAttribute2 == -1)
 				{
-					varAttribute2 = i;
-					varType2 = VARIABLE;
+					varyingAttribute2 = i;
+					varyingType2 = VARIABLE;
 				}
-				else tooManyVarAttributes = true;
+				else tooManyVaryingAttributes = true;
 			}
 		}
 
@@ -118,32 +122,37 @@ public:
 		{
 			if (parameters[i].TrueStepCount() > 1)
 			{
-				if (varAttribute1 == -1)
+				for (int m = 0; m < MAP_COUNT; m++) mapDatas[m].paramFixations[i] = parameters[i].values[(*avi)[VAR_COUNT + i]];
+			}
+
+			if (parameters[i].selectedForMaps)
+			{
+				if (varyingAttribute1 == -1)
 				{
-					varAttribute1 = i;
-					varType1 = PARAMETER;
+					varyingAttribute1 = i;
+					varyingType1 = PARAMETER;
 				}
-				else if (varAttribute2 == -1)
+				else if (varyingAttribute2 == -1)
 				{
-					varAttribute2 = i;
-					varType2 = PARAMETER;
+					varyingAttribute2 = i;
+					varyingType2 = PARAMETER;
 				}
-				else tooManyVarAttributes = true;
+				else tooManyVaryingAttributes = true;
 			}
 		}
 
 		for (int i = 0; i < MAP_COUNT; i++) mapDatas[i].toCompute = false;
 
-		if (!tooManyVarAttributes && varAttribute1 > -1)
+		if (!tooManyVaryingAttributes && varyingAttribute1 > -1)
 		{
-			if (varAttribute2 > -1)
+			if (varyingAttribute2 > -1)
 			{
 				for (int i = 0; i < MAP_COUNT; i++)
 				{
-					mapDatas[i].indexX = varAttribute1;
-					mapDatas[i].indexY = varAttribute2;
-					mapDatas[i].typeX = varType1;
-					mapDatas[i].typeY = varType2;
+					mapDatas[i].indexX = varyingAttribute1;
+					mapDatas[i].indexY = varyingAttribute2;
+					mapDatas[i].typeX = varyingType1;
+					mapDatas[i].typeY = varyingType2;
 					mapDatas[i].toCompute = true;
 				}
 			}

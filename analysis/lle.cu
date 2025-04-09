@@ -69,4 +69,5 @@ __device__ void LLE(Computation* data, LLE_Settings settings, int variation, int
     }
 
     CUDA_marshal.maps[mapData->offset + mapY * mapData->xSize + mapX] = LLE_value / ((CUDA_kernel.steps + 1) * CUDA_kernel.stepSize);
+    //CUDA_marshal.maps[mapData->offset + mapY * mapData->xSize + mapX] = CUDA_marshal.trajectory[variationStart + 2];
 }

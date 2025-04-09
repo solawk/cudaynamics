@@ -88,13 +88,13 @@ void rotateOffsetBuffer(numb* buffer, int pointCount, int varCount, int xdo, int
 
 	for (int i = 0; i < pointCount; i++)
 	{
-		x = ((numb*)buffer)[i * varCount + xdo] * scale.x + offset.x;
-		y = ((numb*)buffer)[i * varCount + ydo] * scale.y + offset.y;
-		z = ((numb*)buffer)[i * varCount + zdo] * scale.z + offset.z;
+		x = -(buffer[i * varCount + xdo] * scale.x + offset.x);
+		y = buffer[i * varCount + ydo] * scale.y + offset.y;
+		z = buffer[i * varCount + zdo] * scale.z + offset.z;
 
-		((numb*)buffer)[i * varCount + 0] = (x * bc * gc) + (y * (as * bs * gc - (ac * gs))) + (z * (ac * bs * gc + as * gs));
-		((numb*)buffer)[i * varCount + 1] = (x * bc * gs) + (y * (as * bs * gs + (ac * gc))) + (z * (ac * bs * gs - as * gc));
-		((numb*)buffer)[i * varCount + 2] = (x * -bs) + (y * (as * bc)) + (z * (ac * bc));
+		buffer[i * varCount + 0] = (x * bc * gc) + (y * (as * bs * gc - (ac * gs))) + (z * (ac * bs * gc + as * gs));
+		buffer[i * varCount + 1] = (x * bc * gs) + (y * (as * bs * gs + (ac * gc))) + (z * (ac * bs * gs - as * gc));
+		buffer[i * varCount + 2] = (x * -bs) + (y * (as * bc)) + (z * (ac * bc));
 	}
 }
 

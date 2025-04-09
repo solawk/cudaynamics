@@ -37,6 +37,11 @@ public:
 	bool grayscaleHeatmap;
 	int stride;
 	bool isHeatmapSelectionModeOn;
+	bool isImplot3d;
+
+	float heatmapMax;
+	float heatmapMin;
+	bool areHeatmapLimitsDefined;
 
 	bool showAxis;
 	bool showAxisNames;
@@ -69,6 +74,8 @@ public:
 		grayscaleHeatmap = false;
 		stride = 1;
 		isHeatmapSelectionModeOn = false;
+		isImplot3d = false;
+		areHeatmapLimitsDefined = false;
 
 		showAxis = true;
 		showAxisNames = true;
@@ -114,6 +121,7 @@ public:
 		string exportString = name;
 
 		exportString += " " + to_string((int)type);
+		exportString += " " + to_string((int)isImplot3d);
 
 		exportString += " " + to_string(quatRot.x) + " " + to_string(quatRot.y) + " " + to_string(quatRot.z) + " " + to_string(quatRot.w);
 		exportString += " " + to_string(autorotate.x) + " " + to_string(autorotate.y) + " " + to_string(autorotate.z);
@@ -151,6 +159,7 @@ public:
 
 		name = data[d++];
 		type = (PlotType)atoi(data[d++].c_str());
+		isImplot3d = (bool)atoi(data[d++].c_str());
 
 		quatRot.x = (float)atof(data[d++].c_str());
 		quatRot.y = (float)atof(data[d++].c_str());

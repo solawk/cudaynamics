@@ -128,42 +128,6 @@ int compute(Computation* data)
 
     // Maps allocate memory for a Xvariations*Yvariations matrix, where X and Y are MAP_X and MAP_Y
 
-    /*unsigned long int mapsSize = 0;
-
-    for (int i = 0; i < CUDA_kernel.MAP_COUNT; i++)
-    {
-        int index = CUDA_kernel.mapDatas[i].indexX;
-        switch (CUDA_kernel.mapDatas[i].typeX)
-        {
-        case VARIABLE:
-            CUDA_kernel.mapDatas[i].xSize = CUDA_kernel.variables[index].stepCount;
-            break;
-        case PARAMETER:
-            CUDA_kernel.mapDatas[i].xSize = CUDA_kernel.parameters[index].stepCount;
-            break;
-        case STEP:
-            CUDA_kernel.mapDatas[i].xSize = CUDA_kernel.steps;
-            break;
-        }
-
-        index = CUDA_kernel.mapDatas[i].indexY;
-        switch (CUDA_kernel.mapDatas[i].typeY)
-        {
-        case VARIABLE:
-            CUDA_kernel.mapDatas[i].ySize = CUDA_kernel.variables[index].stepCount;
-            break;
-        case PARAMETER:
-            CUDA_kernel.mapDatas[i].ySize = CUDA_kernel.parameters[index].stepCount;
-            break;
-        case STEP:
-            CUDA_kernel.mapDatas[i].ySize = CUDA_kernel.steps;
-            break;
-        }
-
-        CUDA_kernel.mapDatas[i].offset = mapsSize;
-        mapsSize += CUDA_kernel.mapDatas[i].xSize * CUDA_kernel.mapDatas[i].ySize;
-    }*/
-
     CUDA_marshal.mapsSize = 0;
     for (int i = 0; i < CUDA_kernel.MAP_COUNT; i++) if (CUDA_kernel.mapDatas[i].toCompute) CUDA_marshal.mapsSize += CUDA_kernel.mapDatas[i].xSize * CUDA_kernel.mapDatas[i].ySize;
     delete[] CUDA_marshal.maps;
@@ -182,7 +146,6 @@ int compute(Computation* data)
     after = std::chrono::steady_clock::now();
     std::chrono::steady_clock::duration elapsed = after - before;
     auto timeElapsed = std::chrono::duration_cast<std::chrono::milliseconds>(elapsed).count();
-    //printf("CUDA ended in %Ii ms\n", timeElapsed);
     data->timeElapsed = (float)timeElapsed;
 
 #if WRITE

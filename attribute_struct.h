@@ -12,6 +12,7 @@ public:
 	int stepCount;
 	numb mean;
 	numb deviation;
+	bool selectedForMaps = false;
 
 	// Actual generated values of the attribute, if it's ranged
 	numb* values = nullptr;
