@@ -37,6 +37,7 @@ public:
 	bool grayscaleHeatmap;
 	int stride;
 	bool isHeatmapSelectionModeOn;
+	bool isHeatmapAutoComputeOn;
 	bool isImplot3d;
 
 	float heatmapMax;
@@ -74,6 +75,7 @@ public:
 		grayscaleHeatmap = false;
 		stride = 1;
 		isHeatmapSelectionModeOn = false;
+		isHeatmapAutoComputeOn = false;
 		isImplot3d = false;
 		areHeatmapLimitsDefined = false;
 

@@ -42,6 +42,8 @@ int bufferNo = 0;
 bool selectParticleTab = false;
 bool selectOrbitTab = true;
 
+bool computeAfterShiftSelect = false;
+
 // Plot graph settings
 /*
 bool markerSettingsWindowEnabled = true;
@@ -233,6 +235,7 @@ void initializeKernel(bool needTerminate)
     initAVI();
 
     particleStep = 0;
+    computeAfterShiftSelect = false;
 }
 
 void computationStatus(bool comp0, bool comp1)
@@ -270,6 +273,34 @@ void removeHeatmapLimits()
     for (int i = 0; i < plotWindows.size(); i++)
     {
         plotWindows[i].areHeatmapLimitsDefined = false;
+    }
+}
+
+void prepareAndCompute()
+{
+    if ((!computations[0].ready && computations[0].marshal.trajectory != nullptr) || (!computations[1].ready && computations[1].marshal.trajectory != nullptr))
+    {
+        printf("Preventing computing too fast!\n");
+    }
+    else
+    {
+        executedOnLaunch = true;
+        computeAfterShiftSelect = false;
+        bufferToFillIndex = 0;
+        playedBufferIndex = 0;
+        bufferNo = 0;
+        deleteBothBuffers();
+        removeHeatmapLimits();
+
+        KERNEL.CopyFrom(&kernelNew);
+        KERNEL.PrepareAttributes();
+        KERNEL.AssessMapAttributes(&attributeValueIndices);
+        KERNEL.MapsSetSizes();
+
+        // TODO: All calc steps and stepcounts should be done beforehand, since ranging will be incorrect otherwise
+        // Done I guess? I forgor
+        //initAVI();
+        computing();
     }
 }
 
@@ -531,11 +562,16 @@ int imgui_main(int, char**)
             variation = 0;
 
             ImGui::NewLine();
-            if (ImGui::BeginTabBar("SimulationSettingsModes"))
+            //if (ImGui::BeginTabBar("SimulationSettingsModes"))
             {
-                if (ImGui::BeginTabItem("Particles Mode", NULL, selectParticleTab ? ImGuiTabItemFlags_SetSelected : 0))
+                //if (ImGui::BeginTabItem("Particles Mode", NULL, selectParticleTab ? ImGuiTabItemFlags_SetSelected : 0))
                 {
-                    enabledParticles = true;
+                    //enabledParticles = true;
+                    bool tempParticlesMode = enabledParticles;
+                    if (ImGui::Checkbox("Orbits/Particles", &(tempParticlesMode)))
+                    {
+                        enabledParticles = !enabledParticles;
+                    }
 
                     // PARTICLES MODE
                     if (/*tempEnabledParticles*/1)
@@ -652,12 +688,13 @@ int imgui_main(int, char**)
                     ImGui::InputFloat("Value drag speed", &(dragChangeSpeed));
                     TOOLTIP("Drag speed of attribute values, allows for precise automatic parameter setting");
 
-                    ImGui::EndTabItem();
+                    //ImGui::EndTabItem();
                 }
 
-                if (ImGui::BeginTabItem("Orbit Mode", NULL, selectOrbitTab ? ImGuiTabItemFlags_SetSelected : 0))
+                //if (ImGui::BeginTabItem("Orbit Mode", NULL, selectOrbitTab ? ImGuiTabItemFlags_SetSelected : 0))
+                ImGui::NewLine();
                 {
-                    enabledParticles = false;
+                    //enabledParticles = false;
 
                     // RANGING, ORBIT MODE
                     if (computations[playedBufferIndex].ready)
@@ -690,10 +727,10 @@ int imgui_main(int, char**)
                         switchPlayedBuffer();
                     }
 
-                    ImGui::EndTabItem();
+                    //ImGui::EndTabItem();
                 }
 
-                ImGui::EndTabBar();
+                //ImGui::EndTabBar();
             }
 
             selectParticleTab = selectOrbitTab = false;
@@ -707,30 +744,9 @@ int imgui_main(int, char**)
             bool computation0InProgress = !computations[0].ready && computations[0].marshal.trajectory != nullptr;
             bool computation1InProgress = !computations[1].ready && computations[1].marshal.trajectory != nullptr;
 
-            if (ImGui::Button("= COMPUTE =") || (KERNEL.executeOnLaunch && !executedOnLaunch))
+            if (ImGui::Button("= COMPUTE =") || (KERNEL.executeOnLaunch && !executedOnLaunch) || computeAfterShiftSelect)
             {
-                if (computation0InProgress || computation1InProgress)
-                {
-                    printf("Preventing computing too fast!\n");
-                }
-                else
-                {
-                    executedOnLaunch = true;
-                    bufferToFillIndex = 0;
-                    playedBufferIndex = 0;
-                    bufferNo = 0;
-                    deleteBothBuffers();
-                    removeHeatmapLimits();
-
-                    KERNEL.CopyFrom(&kernelNew);
-                    KERNEL.PrepareAttributes();
-                    KERNEL.AssessMapAttributes(&attributeValueIndices);
-                    KERNEL.MapsSetSizes();
-
-                    // TODO: All calc steps and stepcounts should be done beforehand, since ranging will be incorrect otherwise
-                    //initAVI();
-                    computing();
-                }
+                prepareAndCompute();
             }
             if (playBreath) ImGui::PopStyleColor();
             if (!playingParticles) computationStatus(computation0InProgress, computation1InProgress);
@@ -1013,6 +1029,9 @@ int imgui_main(int, char**)
 
                     bool tempHeatmapSelectionMode = window->isHeatmapSelectionModeOn; if (ImGui::Checkbox(("##" + windowName + "heatmapSelectionMode").c_str(), &tempHeatmapSelectionMode)) window->isHeatmapSelectionModeOn = !window->isHeatmapSelectionModeOn;
                     ImGui::SameLine(); ImGui::Text("Selection mode");
+
+                    bool tempHeatmapAutoCompute = window->isHeatmapAutoComputeOn; if (ImGui::Checkbox(("##" + windowName + "heatmapAutoCompute").c_str(), &tempHeatmapAutoCompute)) window->isHeatmapAutoComputeOn = !window->isHeatmapAutoComputeOn;
+                    ImGui::SameLine(); ImGui::Text("Auto-compute on Shift+RMB");
                 }
 
                 ImGui::EndCombo();
@@ -1261,10 +1280,12 @@ int imgui_main(int, char**)
                             }
                             else
                             {
+                                ImPlot3D::PushStyleColor(ImPlot3DCol_FrameBg, ImVec4(0.0f, 0.0f, 0.0f, 1.0f));
                                 ImPlot3D::SetNextLineStyle(ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
                                 ImPlot3D::SetupAxes(KERNEL.variables[window->variables[0]].name.c_str(), KERNEL.variables[window->variables[1]].name.c_str(), KERNEL.variables[window->variables[2]].name.c_str());
                                 ImPlot3D::PlotLine(plotName.c_str(), &(computedVariation[window->variables[0]]), &(computedVariation[window->variables[1]]), &(computedVariation[window->variables[2]]),
                                     computedSteps + 1, 0, 0, sizeof(numb)* KERNEL.VAR_COUNT);
+                                ImPlot3D::PopStyleColor(1);
                             }
                         }
                         else // Particles - all variations, one certain step
@@ -1298,12 +1319,14 @@ int imgui_main(int, char**)
                             }
                             else
                             {
+                                ImPlot3D::PushStyleColor(ImPlot3DCol_FrameBg, ImVec4(0.0f, 0.0f, 0.0f, 1.0f));
                                 ImPlot3D::SetNextLineStyle(window->markerColor);
                                 ImPlot3D::PushStyleVar(ImPlotStyleVar_MarkerWeight, window->markerOutlineSize);
                                 //ImPlot::PushStyleVar(ImPlotStyleVar_FillAlpha, 0.25f);
                                 ImPlot3D::SetNextMarkerStyle(window->markerShape, window->markerSize);
                                 ImPlot3D::PlotScatter(plotName.c_str(), &((particleBuffer)[window->variables[0]]), &((particleBuffer)[window->variables[1]]), &((particleBuffer)[window->variables[2]]),
                                     computations[playedBufferIndex].marshal.totalVariations, 0, 0, sizeof(numb)* KERNEL.VAR_COUNT);
+                                ImPlot3D::PopStyleColor(1);
                             }
                         }
                     }
@@ -1477,16 +1500,17 @@ int imgui_main(int, char**)
                                     enabledParticles = false;
                                     playingParticles = false;
 
+#define IGNOREOUTOFREACH    if (stepX < 0 || stepX >= KERNEL.variables[sizing.map->indexX].TrueStepCount()) break; \
+                            if (stepY < 0 || stepY >= KERNEL.variables[sizing.map->indexY].TrueStepCount()) break;
+
                                     switch (sizing.map->typeX)
                                     {
                                     case VARIABLE:
-                                        if (stepX < 0 || stepX >= KERNEL.variables[sizing.map->indexX].TrueStepCount()) break;
-                                        selectOrbitTab = true;
+                                        IGNOREOUTOFREACH;
                                         attributeValueIndices[sizing.map->indexX] = stepX;
                                         break;
                                     case PARAMETER:
-                                        if (stepX < 0 || stepX >= KERNEL.parameters[sizing.map->indexX].TrueStepCount()) break;
-                                        selectOrbitTab = true;
+                                        IGNOREOUTOFREACH;
                                         attributeValueIndices[KERNEL.VAR_COUNT + sizing.map->indexX] = stepX;
                                         break;
                                     }
@@ -1494,13 +1518,11 @@ int imgui_main(int, char**)
                                     switch (sizing.map->typeY)
                                     {
                                     case VARIABLE:
-                                        if (stepY < 0 || stepY >= KERNEL.variables[sizing.map->indexY].TrueStepCount()) break;
-                                        selectOrbitTab = true;
+                                        IGNOREOUTOFREACH;
                                         attributeValueIndices[sizing.map->indexY] = stepY;
                                         break;
                                     case PARAMETER:
-                                        if (stepY < 0 || stepY >= KERNEL.parameters[sizing.map->indexY].TrueStepCount()) break;
-                                        selectOrbitTab = true;
+                                        IGNOREOUTOFREACH;
                                         attributeValueIndices[KERNEL.VAR_COUNT + sizing.map->indexY] = stepY;
                                         break;
                                     }
@@ -1538,8 +1560,8 @@ int imgui_main(int, char**)
                                     int yMaxStep = sizing.map->typeY == PARAMETER ? KERNEL.parameters[sizing.map->indexY].TrueStepCount() : (sizing.map->typeY == VARIABLE ? KERNEL.variables[sizing.map->indexY].TrueStepCount() : 0);
 
                                     // If inside the heatmap
-                                    if (stepX1 >= 0 && stepX1 < xMaxStep && stepY1 >= 0 && stepY1 < yMaxStep
-                                        && stepX2 >= 0 && stepX2 < xMaxStep && stepY2 >= 0 && stepY2 < yMaxStep)
+                                    /*if (stepX1 >= 0 && stepX1 < xMaxStep && stepY1 >= 0 && stepY1 < yMaxStep
+                                        && stepX2 >= 0 && stepX2 < xMaxStep && stepY2 >= 0 && stepY2 < yMaxStep)*/
                                     {
                                         if (sizing.map->typeX == VARIABLE)
                                         {
@@ -1568,9 +1590,11 @@ int imgui_main(int, char**)
                                         }
 
                                         autoLoadNewParams = false; // Otherwise the map immediately starts drawing the cut region
+
+                                        if (window->isHeatmapAutoComputeOn) computeAfterShiftSelect = true;
                                     }
                                 }
-                                // end of it
+                                // end of selecting new ranging
 
                                 if (autofitHeatmap || toAutofit)
                                 {
