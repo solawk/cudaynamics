@@ -48,6 +48,9 @@
     <ClCompile Include="implot3d\implot3d_meshes.cpp">
       <Filter>implot3d</Filter>
     </ClCompile>
+    <ClCompile Include="gui\plotWindowMenu.cpp">
+      <Filter>gui</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="imgui">
@@ -70,6 +73,9 @@
     </Filter>
     <Filter Include="implot3d">
       <UniqueIdentifier>{2e2d2bfc-a3ca-4599-adcc-177cb5b5f913}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="gui">
+      <UniqueIdentifier>{6cdca27c-51e4-4f85-8673-eed16b31547e}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -132,6 +138,9 @@
     </ClInclude>
     <ClInclude Include="implot3d\implot3d_internal.h">
       <Filter>implot3d</Filter>
+    </ClInclude>
+    <ClInclude Include="gui\plotWindowMenu.h">
+      <Filter>gui</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

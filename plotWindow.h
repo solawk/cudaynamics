@@ -27,10 +27,15 @@ public:
 
 	// Plot settings
 	bool settingsListEnabled;
+
 	float markerSize;
 	float markerOutlineSize;
 	ImVec4 markerColor;
+
+	ImVec4 plotColor;
+
 	ImPlotMarker markerShape;
+
 	float rulerAlpha;
 	float gridAlpha;
 	bool whiteBg;
@@ -65,10 +70,15 @@ public:
 		scale = ImVec4(1.0f, 1.0f, 1.0f, 0.0f);
 
 		settingsListEnabled = true;
+
 		markerSize = 1.0f;
 		markerOutlineSize = 0.0f;
 		markerColor = ImVec4(1.0f, 1.0f, 1.0f, 0.5f);
+
+		plotColor = ImVec4(1.0f, 1.0f, 1.0f, 0.5f);
+
 		markerShape = ImPlotMarker_Circle;
+
 		rulerAlpha = 0.5f;
 		gridAlpha = 0.15f;
 		whiteBg = false;

@@ -1,5 +1,7 @@
 #include "imgui_main.h"
 
+#include "gui/plotWindowMenu.h"
+
 static ID3D11Device* g_pd3dDevice = nullptr;
 static ID3D11DeviceContext* g_pd3dDeviceContext = nullptr;
 static IDXGISwapChain* g_pSwapChain = nullptr;
@@ -960,9 +962,12 @@ int imgui_main(int, char**)
             style.WindowMenuButtonPosition = ImGuiDir_None;
             std::string windowName = window->name + std::to_string(window->id);
             std::string plotName = windowName + "_plot";
-            ImGui::Begin(windowName.c_str(), &(window->active));
+            ImGui::Begin(windowName.c_str(), &(window->active), ImGuiWindowFlags_MenuBar);
 
             bool autofitHeatmap = false;
+
+            // Menu
+            plotWindowMenu(window);
 
             // Plot variables
             if (ImGui::BeginCombo(("##" + windowName + "_plotSettings").c_str(), "Plot settings"))
@@ -1275,13 +1280,13 @@ int imgui_main(int, char**)
                                 getMinMax2D(computedVariation, computedSteps + 1, &(plot->dataMin), &(plot->dataMax));
                                 //printf("%f:%f %f:%f\n", plot->dataMin.x, plot->dataMin.y, plot->dataMax.x, plot->dataMax.y);
 
-                                ImPlot::SetNextLineStyle(ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
+                                ImPlot::SetNextLineStyle(window->plotColor);
                                 ImPlot::PlotLine(plotName.c_str(), &(dataBuffer[0]), &(dataBuffer[1]), computedSteps + 1, 0, 0, sizeof(numb) * KERNEL.VAR_COUNT);
                             }
                             else
                             {
-                                ImPlot3D::PushStyleColor(ImPlot3DCol_FrameBg, ImVec4(0.0f, 0.0f, 0.0f, 1.0f));
-                                ImPlot3D::SetNextLineStyle(ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
+                                ImPlot3D::PushStyleColor(ImPlot3DCol_FrameBg, ImVec4(0.07f, 0.07f, 0.07f, 1.0f));
+                                ImPlot3D::SetNextLineStyle(window->plotColor);
                                 ImPlot3D::SetupAxes(KERNEL.variables[window->variables[0]].name.c_str(), KERNEL.variables[window->variables[1]].name.c_str(), KERNEL.variables[window->variables[2]].name.c_str());
                                 ImPlot3D::PlotLine(plotName.c_str(), &(computedVariation[window->variables[0]]), &(computedVariation[window->variables[1]]), &(computedVariation[window->variables[2]]),
                                     computedSteps + 1, 0, 0, sizeof(numb)* KERNEL.VAR_COUNT);
@@ -1319,7 +1324,7 @@ int imgui_main(int, char**)
                             }
                             else
                             {
-                                ImPlot3D::PushStyleColor(ImPlot3DCol_FrameBg, ImVec4(0.0f, 0.0f, 0.0f, 1.0f));
+                                ImPlot3D::PushStyleColor(ImPlot3DCol_FrameBg, ImVec4(0.07f, 0.07f, 0.07f, 1.0f));
                                 ImPlot3D::SetNextLineStyle(window->markerColor);
                                 ImPlot3D::PushStyleVar(ImPlotStyleVar_MarkerWeight, window->markerOutlineSize);
                                 //ImPlot::PushStyleVar(ImPlotStyleVar_FillAlpha, 0.25f);
@@ -1500,8 +1505,8 @@ int imgui_main(int, char**)
                                     enabledParticles = false;
                                     playingParticles = false;
 
-#define IGNOREOUTOFREACH    if (stepX < 0 || stepX >= KERNEL.variables[sizing.map->indexX].TrueStepCount()) break; \
-                            if (stepY < 0 || stepY >= KERNEL.variables[sizing.map->indexY].TrueStepCount()) break;
+#define IGNOREOUTOFREACH    if (stepX < 0 || stepX >= (sizing.map->typeX == VARIABLE ? KERNEL.variables[sizing.map->indexX].TrueStepCount() : KERNEL.parameters[sizing.map->indexX].TrueStepCount())) break; \
+                            if (stepY < 0 || stepY >= (sizing.map->typeY == VARIABLE ? KERNEL.variables[sizing.map->indexY].TrueStepCount() : KERNEL.parameters[sizing.map->indexY].TrueStepCount())) break;
 
                                     switch (sizing.map->typeX)
                                     {
