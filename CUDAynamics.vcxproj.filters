@@ -51,6 +51,12 @@
     <ClCompile Include="gui\plotWindowMenu.cpp">
       <Filter>gui</Filter>
     </ClCompile>
+    <ClCompile Include="gui\img_loading.cpp">
+      <Filter>gui</Filter>
+    </ClCompile>
+    <ClCompile Include="gui\map_img.cpp">
+      <Filter>gui</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="imgui">
@@ -140,6 +146,18 @@
       <Filter>implot3d</Filter>
     </ClInclude>
     <ClInclude Include="gui\plotWindowMenu.h">
+      <Filter>gui</Filter>
+    </ClInclude>
+    <ClInclude Include="gui\img_loading.h">
+      <Filter>gui</Filter>
+    </ClInclude>
+    <ClInclude Include="gui\stb_image.h">
+      <Filter>gui</Filter>
+    </ClInclude>
+    <ClInclude Include="gui\d3dx11tex.h">
+      <Filter>gui</Filter>
+    </ClInclude>
+    <ClInclude Include="gui\map_img.h">
       <Filter>gui</Filter>
     </ClInclude>
   </ItemGroup>

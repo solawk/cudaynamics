@@ -103,6 +103,8 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="dbscan\dbscan.cpp" />
+    <ClCompile Include="gui\img_loading.cpp" />
+    <ClCompile Include="gui\map_img.cpp" />
     <ClCompile Include="gui\plotWindowMenu.cpp" />
     <ClCompile Include="imgui\backends\imgui_impl_dx11.cpp" />
     <ClCompile Include="imgui\backends\imgui_impl_win32.cpp" />
@@ -130,7 +132,11 @@
     <ClInclude Include="computation_struct.h" />
     <ClInclude Include="cuda_macros.h" />
     <ClInclude Include="dbscan\dbscan.h" />
+    <ClInclude Include="gui\d3dx11tex.h" />
+    <ClInclude Include="gui\img_loading.h" />
+    <ClInclude Include="gui\map_img.h" />
     <ClInclude Include="gui\plotWindowMenu.h" />
+    <ClInclude Include="gui\stb_image.h" />
     <ClInclude Include="heatmapSizing_struct.h" />
     <ClInclude Include="imgui\backends\imgui_impl_dx11.h" />
     <ClInclude Include="imgui\backends\imgui_impl_win32.h" />

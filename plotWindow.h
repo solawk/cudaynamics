@@ -1,4 +1,7 @@
 #pragma once
+#include "d3d11.h"
+#pragma comment( lib, "d3d11.lib" )
+
 #include <string>
 
 using namespace std;
@@ -48,6 +51,8 @@ public:
 	float heatmapMax;
 	float heatmapMin;
 	bool areHeatmapLimitsDefined;
+	bool isHeatmapDirty;
+	ID3D11ShaderResourceView* my_texture;
 
 	bool showAxis;
 	bool showAxisNames;
@@ -56,6 +61,9 @@ public:
 
 	bool showHeatmapValues;
 	bool showActualDiapasons;
+
+	unsigned char* pixelBuffer;
+	int lastBufferSize;
 
 	PlotWindow(int _id, string _name = "plot", bool _is3d = false)
 	{
@@ -89,6 +97,9 @@ public:
 		isImplot3d = false;
 		areHeatmapLimitsDefined = false;
 
+		isHeatmapDirty = false;
+		my_texture = nullptr;
+
 		showAxis = true;
 		showAxisNames = true;
 		showRuler = true;
@@ -96,6 +107,9 @@ public:
 
 		showHeatmapValues = false;
 		showActualDiapasons = true;
+
+		pixelBuffer = nullptr;
+		lastBufferSize = -1;
 	}
 
 	void AssignVariables(int* variablesArray)
