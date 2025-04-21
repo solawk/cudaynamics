@@ -2,10 +2,14 @@
 
 #define i4(o) i * 4 + o
 
+#define KEYS_JET_COUNT 8
 ImVec4 KeysJet[] = {	ImVec4(0.5f, 0.0f, 0.5f, 1.0f), ImVec4(0.0f, 0.0f, 1.0f, 1.0f),
 						ImVec4(1.0f, 1.0f, 0.0f, 1.0f), ImVec4(1.0f, 1.0f, 0.0f, 1.0f),
 						ImVec4(0.0f, 1.0f, 0.0f, 1.0f), ImVec4(1.0f, 1.0f, 0.0f, 1.0f),
 						ImVec4(1.0f, 0.5f, 0.0f, 1.0f), ImVec4(1.0f, 0.0f, 0.0f, 1.0f) };
+
+#define KEYS_MONOCHROME_COUNT 2
+ImVec4 KeysMonochrome[] =	{	ImVec4(1.0f, 1.0f, 1.0f, 1.0f), ImVec4(0.0f, 0.0f, 0.0f, 1.0f) };
 
 ImVec4 vec4lerp(ImVec4 v0, ImVec4 v1, float t)
 {
@@ -45,11 +49,11 @@ void MapToImg(numb* mapBuffer, unsigned char** dataBuffer, int width, int height
 		}
 		else if (v >= max)
 		{
-			c = KeysJet[7];
+			c = KeysJet[KEYS_JET_COUNT - 1];
 		}
 		else
 		{
-			c = colorLerp(KeysJet, 8, (v - min) / (max - min));
+			c = colorLerp(KeysJet, KEYS_JET_COUNT, (v - min) / (max - min));
 		}
 
 		(*dataBuffer)[i4(0)] = (int)(c.x * 255);
