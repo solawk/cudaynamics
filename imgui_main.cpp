@@ -1624,7 +1624,7 @@ int imgui_main(int, char**)
                                         window->isHeatmapDirty = true;
                                     }
 
-                                    /*void* cutoffHeatmap = new numb[sizing.cutHeight * sizing.cutWidth];
+                                    void* cutoffHeatmap = new numb[sizing.cutHeight * sizing.cutWidth];
 
                                     cutoff2D(mapData, (numb*)cutoffHeatmap,
                                         sizing.map->xSize, sizing.map->ySize, sizing.cutMinX, sizing.cutMinY, sizing.cutMaxX, sizing.cutMaxY);
@@ -1632,7 +1632,7 @@ int imgui_main(int, char**)
                                     void* compressedHeatmap = new numb[(int)ceil((float)sizing.cutWidth / heatStride) * (int)ceil((float)sizing.cutHeight / heatStride)];
 
                                     compress2D((numb*)cutoffHeatmap, (numb*)compressedHeatmap,
-                                        sizing.cutWidth, sizing.cutHeight, heatStride);*/
+                                        sizing.cutWidth, sizing.cutHeight, heatStride);
 
                                     int rows = heatStride > 1 ? (int)ceil((float)sizing.cutHeight / heatStride) : sizing.cutHeight;
                                     int cols = heatStride > 1 ? (int)ceil((float)sizing.cutWidth / heatStride) : sizing.cutWidth;
@@ -1642,8 +1642,6 @@ int imgui_main(int, char**)
                                         ImPlotPoint(sizing.mapX1Cut, sizing.mapY1Cut), ImPlotPoint(sizing.mapX2Cut, sizing.mapY2Cut)); // %3f*/
 
                                     // Image init
-                                    //std::chrono::steady_clock::time_point preinit, postmap, postinit, postplot;
-                                    //preinit = std::chrono::steady_clock::now();
                                     window->my_texture = nullptr;
                                     if (window->lastBufferSize != sizing.map->xSize * sizing.map->ySize)
                                     {
@@ -1656,22 +1654,21 @@ int imgui_main(int, char**)
                                         MapToImg(mapData, &(window->pixelBuffer), sizing.map->xSize, sizing.map->ySize, window->heatmapMin, window->heatmapMax);
                                         window->isHeatmapDirty = false;
                                     }
-                                    //postmap = std::chrono::steady_clock::now();
-                                    bool ret = LoadTextureFromRaw(&(window->pixelBuffer), sizing.map->xSize, sizing.map->ySize, &(window->my_texture), g_pd3dDevice);
+                                    bool ret = LoadTextureFromRaw(&(window->pixelBuffer), sizing.map->xSize, sizing.map->ySize, (ID3D11ShaderResourceView**)&(window->my_texture), g_pd3dDevice);
                                     IM_ASSERT(ret);
-                                    //postinit = std::chrono::steady_clock::now();
+
+                                    ImPlotPoint from = window->showActualDiapasons ? ImPlotPoint(sizing.minX, sizing.maxY + sizing.stepY) : ImPlotPoint(0, sizing.map->ySize);
+                                    ImPlotPoint to = window->showActualDiapasons ? ImPlotPoint(sizing.maxX + sizing.stepX, sizing.minY) : ImPlotPoint(sizing.map->xSize, 0);
 
                                     ImPlot::PlotImage(("Map " + std::to_string(mapIndex) + "##" + plotName + std::to_string(0)).c_str(), (ImTextureID)(window->my_texture),
-                                        window->showActualDiapasons ? ImPlotPoint(sizing.minX, sizing.maxY + sizing.stepY) : ImPlotPoint(0, sizing.map->ySize),
-                                        window->showActualDiapasons ? ImPlotPoint(sizing.maxX + sizing.stepX, sizing.minY) : ImPlotPoint(sizing.map->xSize, 0),
-                                        ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f), ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
-                                    //postplot = std::chrono::steady_clock::now();
-                                    //printf("Map time: %Ii ms\n", std::chrono::duration_cast<std::chrono::milliseconds>(postmap - preinit).count());
-                                    //printf("Init time: %Ii ms\n", std::chrono::duration_cast<std::chrono::milliseconds>(postinit - postmap).count());
-                                    //printf("Plot time: %Ii ms\n", std::chrono::duration_cast<std::chrono::milliseconds>(postplot - postinit).count());
+                                        from, to, ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f), ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
 
-                                    //delete[] cutoffHeatmap;
-                                    //delete[] compressedHeatmap;
+                                    ImPlot::PlotHeatmap(("MapLabels " + std::to_string(mapIndex) + "##" + plotName + std::to_string(0)).c_str(),
+                                        (numb*)compressedHeatmap, rows, cols, -1234.0, 1.0, window->showHeatmapValues ? "%.3f" : nullptr,
+                                        ImPlotPoint(sizing.mapX1Cut, sizing.mapY1Cut), ImPlotPoint(sizing.mapX2Cut, sizing.mapY2Cut));
+
+                                    delete[] cutoffHeatmap;
+                                    delete[] compressedHeatmap;
                                 }
 
                                 ImGui::TableSetColumnIndex(1);
@@ -1734,7 +1731,7 @@ int imgui_main(int, char**)
         //HRESULT hr = g_pSwapChain->Present(0, 0); // Present without vsync
         g_SwapChainOccluded = (hr == DXGI_STATUS_OCCLUDED);
 
-        for (int i = 0; i < plotWindows.size(); i++) if (plotWindows[i].my_texture != nullptr) { plotWindows[i].my_texture->Release(); plotWindows[i].my_texture = nullptr; };
+        for (int i = 0; i < plotWindows.size(); i++) if (plotWindows[i].my_texture != nullptr) { ((ID3D11ShaderResourceView*)plotWindows[i].my_texture)->Release(); plotWindows[i].my_texture = nullptr; };
     }
 
     saveWindows();

@@ -2435,13 +2435,16 @@ void RenderHeatmap(ImDrawList& draw_list, const T* values, int rows, int cols, d
     }
     const double yref = reverse_y ? bounds_max.y : bounds_min.y;
     const double ydir = reverse_y ? -1 : 1;
-    if (col_maj) {
-        GetterHeatmapColMaj<T> getter(values, rows, cols, scale_min, scale_max, (bounds_max.x - bounds_min.x) / cols, (bounds_max.y - bounds_min.y) / rows, bounds_min.x, yref, ydir);
-        RenderPrimitives1<RendererRectC>(getter);
-    }
-    else {
-        GetterHeatmapRowMaj<T> getter(values, rows, cols, scale_min, scale_max, (bounds_max.x - bounds_min.x) / cols, (bounds_max.y - bounds_min.y) / rows, bounds_min.x, yref, ydir);
-        RenderPrimitives1<RendererRectC>(getter);
+    if (scale_min != -1234.0) // USE scale_min == -1234.0 TO ONLY SHOW LABELS
+    {
+        if (col_maj) {
+            GetterHeatmapColMaj<T> getter(values, rows, cols, scale_min, scale_max, (bounds_max.x - bounds_min.x) / cols, (bounds_max.y - bounds_min.y) / rows, bounds_min.x, yref, ydir);
+            RenderPrimitives1<RendererRectC>(getter);
+        }
+        else {
+            GetterHeatmapRowMaj<T> getter(values, rows, cols, scale_min, scale_max, (bounds_max.x - bounds_min.x) / cols, (bounds_max.y - bounds_min.y) / rows, bounds_min.x, yref, ydir);
+            RenderPrimitives1<RendererRectC>(getter);
+        }
     }
     // labels
     if (fmt != nullptr) {
@@ -2490,8 +2493,10 @@ void RenderHeatmap(ImDrawList& draw_list, const T* values, int rows, int cols, d
 
 template <typename T>
 void PlotHeatmap(const char* label_id, const T* values, int rows, int cols, double scale_min, double scale_max, const char* fmt, const ImPlotPoint& bounds_min, const ImPlotPoint& bounds_max, ImPlotHeatmapFlags flags) {
-    if (BeginItemEx(label_id, FitterRect(bounds_min, bounds_max))) {
-        if (rows <= 0 || cols <= 0) {
+    if (BeginItemEx(label_id, FitterRect(bounds_min, bounds_max)))
+    {
+        if (rows <= 0 || cols <= 0)
+        {
             EndItem();
             return;
         }

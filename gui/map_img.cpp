@@ -30,7 +30,7 @@ void MapToImg(numb* mapBuffer, unsigned char** dataBuffer, int width, int height
 	{
 		v = mapBuffer[i];
 
-		if (isnan(v))
+		if (isnan(v) || isinf(v))
 		{
 			(*dataBuffer)[i4(0)] = 0;
 			(*dataBuffer)[i4(1)] = 0;
