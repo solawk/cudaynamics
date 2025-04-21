@@ -28,35 +28,17 @@ __device__ void LLE(Computation* data, LLE_Settings settings, int variation, int
 
         if (s % L == 0)
         {
-            // TODO: Rework into any dimension count up to MAX_LLE_NORM_VARIABLES
-            numb norm;
-            if (settings.normVariables[1] == -1)
+            numb norm = 0.0;
+            for (int i = 0; i < MAX_LLE_NORM_VARIABLES; i++)
             {
-                // 1D
-                norm = NORM_3D(
-                    LLE_array[0], CUDA_marshal.trajectory[stepStart + 0],
-                    LLE_array[1], CUDA_marshal.trajectory[stepStart + 1],
-                    LLE_array[2], CUDA_marshal.trajectory[stepStart + 2]
-                );
+                if (settings.normVariables[i] == -1) break;
+
+                numb x1 = LLE_array[settings.normVariables[i]];
+                numb x2 = CUDA_marshal.trajectory[stepStart + settings.normVariables[i]];
+                norm += (x2 - x1) * (x2 - x1);
             }
-            else if (settings.normVariables[2] == -1)
-            {
-                // 2D
-                norm = NORM_3D(
-                    LLE_array[0], CUDA_marshal.trajectory[stepStart + 0],
-                    LLE_array[1], CUDA_marshal.trajectory[stepStart + 1],
-                    LLE_array[2], CUDA_marshal.trajectory[stepStart + 2]
-                );
-            }
-            else
-            {
-                // 3D
-                norm = NORM_3D(
-                    LLE_array[0], CUDA_marshal.trajectory[stepStart + 0],
-                    LLE_array[1], CUDA_marshal.trajectory[stepStart + 1],
-                    LLE_array[2], CUDA_marshal.trajectory[stepStart + 2]
-                );
-            }
+
+            norm = sqrt(norm);
 
             numb growth = norm / r; // How many times the deflection has grown
             if (growth > 0.0f) LLE_value += log(growth);

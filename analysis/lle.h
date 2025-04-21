@@ -11,7 +11,7 @@ struct LLE_Settings
 	int L;			// Deflection observation duration (steps)
 
 	int variableToDeflect;	// Variable to initially deflect
-	int normVariables[MAX_LLE_NORM_VARIABLES];	// Variables to count the norm from (-1 if not counting)
+	int normVariables[MAX_LLE_NORM_VARIABLES];	// Variables to count the norm with (-1 if not counting)
 
 	__device__ LLE_Settings(numb _r, int _L, int _varToDeflect)
 	{
