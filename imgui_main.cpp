@@ -1,4 +1,4 @@
-#include "imgui_main.h"
+#include "imgui_main.hpp"
 
 #include "gui/plotWindowMenu.h"
 #include "gui/img_loading.h"

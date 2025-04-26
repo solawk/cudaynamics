@@ -1,5 +1,5 @@
 #pragma once
-#include "../imgui_main.h"
+#include "../imgui_main.hpp"
 
 bool LoadTextureFromRaw(unsigned char** data, int width, int height, ID3D11ShaderResourceView** out_srv, ID3D11Device* g_pd3dDevice);
 

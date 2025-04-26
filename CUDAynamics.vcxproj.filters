@@ -109,7 +109,6 @@
     <ClInclude Include="imgui\backends\imgui_impl_win32.h">
       <Filter>imgui\backends</Filter>
     </ClInclude>
-    <ClInclude Include="imgui_main.h" />
     <ClInclude Include="main.h" />
     <ClInclude Include="implot\implot.h">
       <Filter>implot</Filter>
@@ -160,6 +159,7 @@
     <ClInclude Include="gui\map_img.h">
       <Filter>gui</Filter>
     </ClInclude>
+    <ClInclude Include="imgui_main.hpp" />
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="main.cu" />

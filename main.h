@@ -2,7 +2,7 @@
 #include <map>
 #include <string>
 
-#include "imgui_main.h"
+#include "imgui_main.hpp"
 #include "main_utils.h"
 #include <objects.h>
 #include "analysis.h"

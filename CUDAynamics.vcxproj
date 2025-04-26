@@ -146,7 +146,7 @@
     <ClInclude Include="imgui\imstb_rectpack.h" />
     <ClInclude Include="imgui\imstb_textedit.h" />
     <ClInclude Include="imgui\imstb_truetype.h" />
-    <ClInclude Include="imgui_main.h" />
+    <ClInclude Include="imgui_main.hpp" />
     <ClInclude Include="imgui_utils.h" />
     <ClInclude Include="implot3d\implot3d.h" />
     <ClInclude Include="implot3d\implot3d_internal.h" />
