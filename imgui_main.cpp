@@ -48,16 +48,6 @@ bool selectOrbitTab = true;
 
 bool computeAfterShiftSelect = false;
 
-// Plot graph settings
-/*
-bool markerSettingsWindowEnabled = true;
-float markerSize = 1.0f;
-float markerOutlineSize = 0.0f;
-ImVec4 markerColor = ImVec4(1.0f, 1.0f, 1.0f, 0.5f);
-ImPlotMarker markerShape = ImPlotMarker_Circle;
-float gridAlpha = 0.15f;
-*/
-
 // Temporary variables
 int variation = 0;
 int stride = 1;
@@ -76,9 +66,6 @@ ImVec4 unsavedBackgroundColorActive = ImVec4(0.427f * 1.5f, 0.427f * 1.5f, 0.137
 ImVec4 disabledColor = ImVec4(0.137f * 0.5f, 0.271f * 0.5f, 0.427f * 0.5f, 1.0f);
 ImVec4 disabledTextColor = ImVec4(1.0f, 1.0f, 1.0f, 0.5f);
 ImVec4 disabledBackgroundColor = ImVec4(0.137f * 0.35f, 0.271f * 0.35f, 0.427f * 0.35f, 1.0f);
-/*ImVec4 xAxisBackgroundColor = ImVec4(0.5f, 0.25f, 0.25f, 1.0f);
-ImVec4 yAxisBackgroundColor = ImVec4(0.25f, 0.5f, 0.25f, 1.0f);
-ImVec4 zAxisBackgroundColor = ImVec4(0.25f, 0.25f, 0.5f, 1.0f);*/
 ImVec4 xAxisColor = ImVec4(0.75f, 0.3f, 0.3f, 1.0f);
 ImVec4 yAxisColor = ImVec4(0.33f, 0.67f, 0.4f, 1.0f);
 ImVec4 zAxisColor = ImVec4(0.3f, 0.45f, 0.7f, 1.0f);
@@ -92,8 +79,6 @@ std::string rangingDescriptions[] =
     "Uniform random distribution of values between 'min' and 'max'",
     "Normal random distribution of values around 'mu' with standard deviation 'sigma'"
 };
-
-//std::future<int> computationFutures[2];
 
 bool rangingWindowEnabled = true;
 bool graphBuilderWindowEnabled = true;
@@ -236,7 +221,6 @@ void initializeKernel(bool needTerminate)
     computations[0].Clear();
     computations[1].Clear();
 
-    //attributeValueIndices.clear();
     initAVI();
 
     particleStep = 0;
@@ -269,7 +253,7 @@ void switchPlayedBuffer()
     }
     else
     {
-        ImGui::Text("Next buffer not ready for switching yet!");
+        //ImGui::Text("Next buffer not ready for switching yet!");
     }
 }
 
@@ -374,46 +358,12 @@ int imgui_main(int, char**)
     
     initializeKernel(false);
 
-    try
-    {
-        loadWindows();
-    }
-    catch (exception e)
-    {
-        printf(e.what());
-    }
+    try { loadWindows(); }
+    catch (exception e) { printf(e.what()); }
 
     while (work)
     {
-        MSG msg;
-        while (::PeekMessage(&msg, nullptr, 0U, 0U, PM_REMOVE))
-        {
-            ::TranslateMessage(&msg);
-            ::DispatchMessage(&msg);
-            if (msg.message == WM_QUIT)
-                work = false;
-        }
-        if (!work)
-            break;
-
-        if (g_SwapChainOccluded && g_pSwapChain->Present(0, DXGI_PRESENT_TEST) == DXGI_STATUS_OCCLUDED)
-        {
-            ::Sleep(10);
-            continue;
-        }
-        g_SwapChainOccluded = false;
-
-        if (g_ResizeWidth != 0 && g_ResizeHeight != 0)
-        {
-            CleanupRenderTarget();
-            g_pSwapChain->ResizeBuffers(0, g_ResizeWidth, g_ResizeHeight, DXGI_FORMAT_UNKNOWN, 0);
-            g_ResizeWidth = g_ResizeHeight = 0;
-            CreateRenderTarget();
-        }
-
-        ImGui_ImplDX11_NewFrame();
-        ImGui_ImplWin32_NewFrame();
-        ImGui::NewFrame();
+        IMGUI_WORK_BEGIN;
 
         timeElapsed += frameTime;
         float breath = (cosf(timeElapsed * 6.0f) + 1.0f) / 2.0f;
@@ -551,191 +501,166 @@ int imgui_main(int, char**)
                 PUSH_UNSAVED_FRAME;
                 popStyle = true;
             }
-            //float tempStepSize = (float)kernelNew.stepSize;
             ImGui::InputFloat("Step size", &(kernelNew.stepSize), 0.0f, 0.0f, "%f");
             TOOLTIP("Step size of the simulation, h");
-            //kernelNew.stepSize = (numb)tempStepSize;
             ImGui::PopItemWidth();
             if (popStyle) POP_FRAME(3);
-            
-            /*bool tempEnabledParticles = enabledParticles;
-            if (ImGui::Checkbox("Particles mode", &(tempEnabledParticles)))
-            {
-                enabledParticles = !enabledParticles;
-            }*/
 
             variation = 0;
 
             ImGui::NewLine();
-            //if (ImGui::BeginTabBar("SimulationSettingsModes"))
+
+            //enabledParticles = true;
+            bool tempParticlesMode = enabledParticles;
+            if (ImGui::Checkbox("Orbits/Particles", &(tempParticlesMode)))
             {
-                //if (ImGui::BeginTabItem("Particles Mode", NULL, selectParticleTab ? ImGuiTabItemFlags_SetSelected : 0))
+                enabledParticles = !enabledParticles;
+            }
+
+            // PARTICLES MODE
+            ImGui::PushItemWidth(200.0f);
+            ImGui::DragFloat("Animation speed, steps/s", &(particleSpeed), 1.0f);
+            TOOLTIP("Playback speed of the evolution in Particles mode");
+            if (particleSpeed < 0.0f) particleSpeed = 0.0f;
+            ImGui::PopItemWidth();
+
+            if (computations[playedBufferIndex].timeElapsed > 0.0f)
+            {
+                float buffersPerSecond = 1000.0f / computations[playedBufferIndex].timeElapsed;
+                int stepsPerSecond = (int)(computedSteps * buffersPerSecond);
+
+                ImGui::SameLine();
+                ImGui::Text(("(max " + to_string(stepsPerSecond) + " before stalling)").c_str());
+                TOOLTIP("Predicted speed that allows for seamless playback");
+            }
+
+            ImGui::PushItemWidth(200.0f);
+            ImGui::DragInt("##Animation step", &(particleStep), 1.0f, 0, KERNEL.steps);
+            ImGui::PopItemWidth();
+            ImGui::SameLine();
+            ImGui::Text(("Animation step" + (continuousComputingEnabled ? " (total step " + to_string(bufferNo * KERNEL.steps + particleStep) + ")" : "")).c_str());
+
+            if (ImGui::Button("Reset to step 0"))
+            {
+                particleStep = 0;
+            }
+
+            if (anyChanged)
+            {
+                ImGui::PushStyleColor(ImGuiCol_Text, disabledTextColor);
+                PUSH_DISABLED_FRAME;
+            }
+
+            ImGui::Spacing();
+
+            if (ImGui::Button(playingParticles ? "PAUSE" : "PLAY") && !anyChanged)
+            {
+                if (computations[0].ready || playingParticles)
                 {
-                    //enabledParticles = true;
-                    bool tempParticlesMode = enabledParticles;
-                    if (ImGui::Checkbox("Orbits/Particles", &(tempParticlesMode)))
-                    {
-                        enabledParticles = !enabledParticles;
-                    }
-
-                    // PARTICLES MODE
-                    if (/*tempEnabledParticles*/1)
-                    {
-                        ImGui::PushItemWidth(200.0f);
-                        ImGui::DragFloat("Animation speed, steps/s", &(particleSpeed), 1.0f);
-                        TOOLTIP("Playback speed of the evolution in Particles mode");
-                        if (particleSpeed < 0.0f) particleSpeed = 0.0f;
-                        ImGui::PopItemWidth();
-
-                        if (computations[playedBufferIndex].timeElapsed > 0.0f)
-                        {
-                            float buffersPerSecond = 1000.0f / computations[playedBufferIndex].timeElapsed;
-                            int stepsPerSecond = (int)(computedSteps * buffersPerSecond);
-
-                            ImGui::SameLine();
-                            ImGui::Text(("(max " + to_string(stepsPerSecond) + " before stalling)").c_str());
-                            TOOLTIP("Predicted speed that allows for seamless playback");
-                        }
-
-                        ImGui::PushItemWidth(200.0f);
-                        ImGui::DragInt("##Animation step", &(particleStep), 1.0f, 0, KERNEL.steps);
-                        ImGui::PopItemWidth();
-                        ImGui::SameLine();
-                        ImGui::Text(("Animation step" + (continuousComputingEnabled ? " (total step " + to_string(bufferNo * KERNEL.steps + particleStep) + ")" : "")).c_str());
-
-                        if (ImGui::Button("Reset to step 0"))
-                        {
-                            particleStep = 0;
-                        }
-
-                        if (anyChanged)
-                        {
-                            ImGui::PushStyleColor(ImGuiCol_Text, disabledTextColor);
-                            PUSH_DISABLED_FRAME;
-                        }
-
-                        ImGui::Spacing();
-
-                        if (ImGui::Button(playingParticles ? "PAUSE" : "PLAY") && !anyChanged)
-                        {
-                            if (computations[0].ready || playingParticles)
-                            {
-                                playingParticles = !playingParticles;
-                                kernelNew.CopyFrom(&KERNEL);
-                            }
-
-                            if (!playingParticles)
-                            {
-                                KERNEL.CopyFrom(&kernelNew);
-                            }
-                        }
-                        if (anyChanged) POP_FRAME(4);
-
-                        bool tempContinuous = continuousComputingEnabled;
-                        if (ImGui::Checkbox("Continuous computing", &(tempContinuous)))
-                        {
-                            // Flags of having buffers computed, to not interrupt computations in progress when switching
-                            bool noncont = !continuousComputingEnabled && computations[0].ready;
-                            bool cont = continuousComputingEnabled && computations[0].ready && computations[1].ready;
-
-                            if (noComputedData || noncont || cont)
-                            {
-                                continuousComputingEnabled = !continuousComputingEnabled;
-
-                                bufferNo = 0;
-                                deleteBothBuffers();
-                                playingParticles = false;
-                                particleStep = 0;
-                            }
-                        }
-                        TOOLTIP("Keep computing next buffers for continuous playback");
-                    }
-
-                    // PARTICLES MODE
-                    if (playingParticles && enabledParticles)
-                    {
-                        particlePhase += frameTime * particleSpeed;
-                        int passedSteps = (int)floor(particlePhase);
-                        particlePhase -= (float)passedSteps;
-
-                        particleStep += passedSteps;
-                        if (particleStep > KERNEL.steps) // Reached the end of animation
-                        {
-                            if (continuousComputingEnabled)
-                            {
-                                // Starting from another buffer
-
-                                switchPlayedBuffer();
-                            }
-                            else
-                            {
-                                // Stopping
-                                particleStep = KERNEL.steps;
-                                playingParticles = false;
-                            }
-                        }
-                    }
-
-                    // Auto-loading
-                    if (playingParticles)
-                    {
-                        bool tempAutoLoadNewParams = autoLoadNewParams;
-                        if (ImGui::Checkbox("Apply parameter changes automatically", &(tempAutoLoadNewParams)))
-                        {
-                            autoLoadNewParams = !autoLoadNewParams;
-                            if (autoLoadNewParams) kernelNew.CopyParameterValuesFrom(&KERNEL);
-                            else KERNEL.CopyParameterValuesFrom(&kernelNew);
-                        }
-                        TOOLTIP("Automatically applies new parameter values to the new buffers mid-playback");
-                    }
-
-                    ImGui::PushItemWidth(200.0f);
-                    ImGui::InputFloat("Value drag speed", &(dragChangeSpeed));
-                    TOOLTIP("Drag speed of attribute values, allows for precise automatic parameter setting");
-
-                    //ImGui::EndTabItem();
+                    playingParticles = !playingParticles;
+                    kernelNew.CopyFrom(&KERNEL);
                 }
 
-                //if (ImGui::BeginTabItem("Orbit Mode", NULL, selectOrbitTab ? ImGuiTabItemFlags_SetSelected : 0))
-                ImGui::NewLine();
+                if (!playingParticles)
                 {
-                    //enabledParticles = false;
+                    KERNEL.CopyFrom(&kernelNew);
+                }
+            }
+            if (anyChanged) POP_FRAME(4);
 
-                    // RANGING, ORBIT MODE
-                    if (computations[playedBufferIndex].ready)
+            bool tempContinuous = continuousComputingEnabled;
+            if (ImGui::Checkbox("Continuous computing", &(tempContinuous)))
+            {
+                // Flags of having buffers computed, to not interrupt computations in progress when switching
+                bool noncont = !continuousComputingEnabled && computations[0].ready;
+                bool cont = continuousComputingEnabled && computations[0].ready && computations[1].ready;
+
+                if (noComputedData || noncont || cont)
+                {
+                    continuousComputingEnabled = !continuousComputingEnabled;
+
+                    bufferNo = 0;
+                    deleteBothBuffers();
+                    playingParticles = false;
+                    particleStep = 0;
+                }
+            }
+            TOOLTIP("Keep computing next buffers for continuous playback");
+
+            // PARTICLES MODE
+            if (playingParticles && enabledParticles)
+            {
+                particlePhase += frameTime * particleSpeed;
+                int passedSteps = (int)floor(particlePhase);
+                particlePhase -= (float)passedSteps;
+
+                particleStep += passedSteps;
+                if (particleStep > KERNEL.steps) // Reached the end of animation
+                {
+                    if (continuousComputingEnabled)
                     {
-                        for (int i = 0; i < KERNEL.VAR_COUNT + KERNEL.PARAM_COUNT; i++)
-                        {
-                            bool isVar = i < KERNEL.VAR_COUNT;
-                            Attribute* attr = isVar ? &(computations[playedBufferIndex].marshal.kernel.variables[i]) : &(computations[playedBufferIndex].marshal.kernel.parameters[i - KERNEL.VAR_COUNT]);
-                            Attribute* kernelNewAttr = isVar ? &(kernelNew.variables[i]) : &(kernelNew.parameters[i - KERNEL.VAR_COUNT]);
+                        // Starting from another buffer
 
-                            if (attr->TrueStepCount() == 1) continue;
-
-                            ImGui::Text(padString(attr->name, maxNameLength).c_str()); ImGui::SameLine();
-                            int index = attributeValueIndices[i];
-                            ImGui::PushItemWidth(150.0f);
-                            ImGui::SliderInt(("##RangingNo_" + std::to_string(i)).c_str(), &index, 0, attr->stepCount - 1, "Step: %d");
-                            ImGui::PopItemWidth();
-                            attributeValueIndices[i] = index;
-                            ImGui::SameLine(); ImGui::Text(("Value: " + std::to_string(calculateValue(attr->min, attr->step, index))).c_str());
-                            bool tempSelForMaps = kernelNewAttr->selectedForMaps;
-                            ImGui::SameLine(); if (ImGui::Checkbox(("##RangingUseInMaps_" + std::to_string(i)).c_str(), &tempSelForMaps)) { kernelNewAttr->selectedForMaps = !kernelNewAttr->selectedForMaps; }
-                            ImGui::SameLine(); ImGui::Text("Map axis");
-                        }
-
-                        steps2Variation(&variation, &(attributeValueIndices.data()[0]), &KERNEL);
-                    }
-
-                    if (ImGui::Button("Next buffer"))
-                    {
                         switchPlayedBuffer();
                     }
+                    else
+                    {
+                        // Stopping
+                        particleStep = KERNEL.steps;
+                        playingParticles = false;
+                    }
+                }
+            }
 
-                    //ImGui::EndTabItem();
+            // Auto-loading
+            if (playingParticles)
+            {
+                bool tempAutoLoadNewParams = autoLoadNewParams;
+                if (ImGui::Checkbox("Apply parameter changes automatically", &(tempAutoLoadNewParams)))
+                {
+                    autoLoadNewParams = !autoLoadNewParams;
+                    if (autoLoadNewParams) kernelNew.CopyParameterValuesFrom(&KERNEL);
+                    else KERNEL.CopyParameterValuesFrom(&kernelNew);
+                }
+                TOOLTIP("Automatically applies new parameter values to the new buffers mid-playback");
+            }
+
+            ImGui::PushItemWidth(200.0f);
+            ImGui::InputFloat("Value drag speed", &(dragChangeSpeed));
+            TOOLTIP("Drag speed of attribute values, allows for precise automatic parameter setting");
+
+            //if (ImGui::BeginTabItem("Orbit Mode", NULL, selectOrbitTab ? ImGuiTabItemFlags_SetSelected : 0))
+            ImGui::NewLine();
+
+            // RANGING, ORBIT MODE
+            if (computations[playedBufferIndex].ready)
+            {
+                for (int i = 0; i < KERNEL.VAR_COUNT + KERNEL.PARAM_COUNT; i++)
+                {
+                    bool isVar = i < KERNEL.VAR_COUNT;
+                    Attribute* attr = isVar ? &(computations[playedBufferIndex].marshal.kernel.variables[i]) : &(computations[playedBufferIndex].marshal.kernel.parameters[i - KERNEL.VAR_COUNT]);
+                    Attribute* kernelNewAttr = isVar ? &(kernelNew.variables[i]) : &(kernelNew.parameters[i - KERNEL.VAR_COUNT]);
+
+                    if (attr->TrueStepCount() == 1) continue;
+
+                    ImGui::Text(padString(attr->name, maxNameLength).c_str()); ImGui::SameLine();
+                    int index = attributeValueIndices[i];
+                    ImGui::PushItemWidth(150.0f);
+                    ImGui::SliderInt(("##RangingNo_" + std::to_string(i)).c_str(), &index, 0, attr->stepCount - 1, "Step: %d");
+                    ImGui::PopItemWidth();
+                    attributeValueIndices[i] = index;
+                    ImGui::SameLine(); ImGui::Text(("Value: " + std::to_string(calculateValue(attr->min, attr->step, index))).c_str());
+                    bool tempSelForMaps = kernelNewAttr->selectedForMaps;
+                    ImGui::SameLine(); if (ImGui::Checkbox(("##RangingUseInMaps_" + std::to_string(i)).c_str(), &tempSelForMaps)) { kernelNewAttr->selectedForMaps = !kernelNewAttr->selectedForMaps; }
+                    ImGui::SameLine(); ImGui::Text("Map axis");
                 }
 
-                //ImGui::EndTabBar();
+                steps2Variation(&variation, &(attributeValueIndices.data()[0]), &KERNEL);
+            }
+
+            if (ImGui::Button("Next buffer"))
+            {
+                switchPlayedBuffer();
             }
 
             selectParticleTab = selectOrbitTab = false;
@@ -772,10 +697,6 @@ int imgui_main(int, char**)
             if (graphBuilderWindowEnabled)
             {
                 ImGui::Begin("Graph Builder", &graphBuilderWindowEnabled);
-
-                //ImGui::PushItemWidth(300.0f);
-                //ImGui::InputText("##Plot name input", plotNameBuffer, 64, ImGuiInputTextFlags_None);
-                //ImGui::PopItemWidth();
 
                 // Type
                 std::string plottypes[] = { "Time series", "3D Phase diagram", "2D Phase diagram", "Orbit diagram", "Heatmap" };
@@ -827,6 +748,7 @@ int imgui_main(int, char**)
                         {
                             selectedPlotVarsSet.erase(v);
                             break; // temporary workaround (hahaha)
+                            // What workaround? Why was it temporary?
                             // I forgor what was the original problem and I'm too afraid to find out what'll happen if I remove this workaround :skull:
                         }
                         ImGui::SameLine();
@@ -994,17 +916,6 @@ int imgui_main(int, char**)
                     if (window->markerSize < 0.0f) window->markerSize = 0.0f;
                     ImGui::ColorEdit4(("##" + windowName + "_markerColor").c_str(), (float*)(&(window->markerColor)));                      ImGui::SameLine(); ImGui::Text("Marker color");
 
-                    /*std::string shapeNames[]{ "Circle", "Square", "Diamond", "Up", "Down", "Left", "Right", "Cross", "Plus", "Asterisk" };
-                    if (ImGui::BeginCombo(("##" + windowName + "_markerShape").c_str(), shapeNames[window->markerShape].c_str()))
-                    {
-                        for (ImPlotMarker i = 0; i < ImPlotMarker_COUNT; i++)
-                        {
-                            bool isSelected = window->markerShape == i;
-                            if (ImGui::Selectable(shapeNames[i].c_str(), isSelected)) window->markerShape = i;
-                        }
-                        ImGui::EndCombo();
-                    }                                                                                                               ImGui::SameLine(); ImGui::Text("Marker shape");*/
-
                     bool tempShowAxis = window->showAxis; if (ImGui::Checkbox(("##" + windowName + "showAxis").c_str(), &tempShowAxis)) window->showAxis = !window->showAxis;
                     ImGui::SameLine(); ImGui::Text("Show axis"); ImGui::SameLine();
                     bool tempShowAxisNames = window->showAxisNames; if (ImGui::Checkbox(("##" + windowName + "showAxisNames").c_str(), &tempShowAxisNames)) window->showAxisNames = !window->showAxisNames;
@@ -1058,7 +969,6 @@ int imgui_main(int, char**)
             {
             case Series:
 
-                //printf("Begin series\n");
                 if (window->whiteBg) ImPlot::PushStyleColor(ImPlotCol_PlotBg, ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
                 if (ImPlot::BeginPlot(plotName.c_str(), "", "", ImVec2(-1, -1), ImPlotFlags_NoTitle, axisFlags, axisFlags))
                 {
@@ -1073,17 +983,13 @@ int imgui_main(int, char**)
                         void* computedVariation = (numb*)(computations[playedBufferIndex].marshal.trajectory) + (variationSize * variation);
                         memcpy(dataBuffer, computedVariation, variationSize * sizeof(numb));
 
-                        //void PlotLine(const char* label_id, const T* values, int count, double xscale, double x0, ImPlotLineFlags flags, int offset, int stride)
-
                         for (int v = 0; v < window->variableCount; v++)
                         {
-                            //ImPlot::SetNextLineStyle(ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
                             ImPlot::PlotLine((KERNEL.variables[window->variables[v]].name + "##" + plotName + std::to_string(v)).c_str(),
                                 &((dataBuffer)[window->variables[v]]), computedSteps + 1, 1.0f, 0.0f, ImPlotLineFlags_None, 0, sizeof(numb) * KERNEL.VAR_COUNT);
                         }
                     }
 
-                    //printf("End series\n");
                     ImPlot::EndPlot();
                 }
                 if (window->whiteBg) ImPlot::PopStyleColor();
@@ -1148,7 +1054,6 @@ int imgui_main(int, char**)
 
                 axisFlags |= ImPlotAxisFlags_NoGridLines | ImPlotAxisFlags_NoTickMarks | ImPlotAxisFlags_NoTickLabels;
 
-                //printf("Begin phase\n");
                 if (window->whiteBg) { ImPlot::PushStyleColor(ImPlotCol_PlotBg, ImVec4(1.0f, 1.0f, 1.0f, 1.0f)); ImPlot::PushStyleColor(ImPlotCol_AxisGrid, ImVec4(0.2f, 0.2f, 0.2f, 1.0f)); }
 
                 bool isPlotBegan;
@@ -1201,7 +1106,6 @@ int imgui_main(int, char**)
                             window->quatRot.y = quat.c();
                             window->quatRot.z = quat.d();
                         }
-                        //printf("%f %f %f %f\n", window->quatRot.x, window->quatRot.y, window->quatRot.z, window->quatRot.w);
                         rotationEuler = ToEulerAngles(window->quatRot);
 
                         populateAxisBuffer(axisBuffer, plotRangeSize / 10.0f, plotRangeSize / 10.0f, plotRangeSize / 10.0f);
@@ -1266,8 +1170,6 @@ int imgui_main(int, char**)
 
                     if (computations[playedBufferIndex].ready)
                     {
-                        //int variationSize = KERNEL.VAR_COUNT * (computedSteps + 1);
-
                         if (!enabledParticles) // Trajectory - one variation, all steps
                         {
                             numb* computedVariation = computations[playedBufferIndex].marshal.trajectory + (computations[playedBufferIndex].marshal.variationSize * variation);
@@ -1281,7 +1183,6 @@ int imgui_main(int, char**)
 
                                 getMinMax2D(dataBuffer, computedSteps + 1, &(plot->dataMin), &(plot->dataMax));
                                 getMinMax2D(computedVariation, computedSteps + 1, &(plot->dataMin), &(plot->dataMax));
-                                //printf("%f:%f %f:%f\n", plot->dataMin.x, plot->dataMin.y, plot->dataMax.x, plot->dataMax.y);
 
                                 ImPlot::SetNextLineStyle(window->plotColor);
                                 ImPlot::PlotLine(plotName.c_str(), &(dataBuffer[0]), &(dataBuffer[1]), computedSteps + 1, 0, 0, sizeof(numb) * KERNEL.VAR_COUNT);
@@ -1320,7 +1221,6 @@ int imgui_main(int, char**)
 
                                 ImPlot::SetNextLineStyle(window->markerColor);
                                 ImPlot::PushStyleVar(ImPlotStyleVar_MarkerWeight, window->markerOutlineSize);
-                                //ImPlot::PushStyleVar(ImPlotStyleVar_FillAlpha, 0.25f);
                                 ImPlot::SetNextMarkerStyle(window->markerShape, window->markerSize);
                                 ImPlot::PlotScatter(plotName.c_str(), &((particleBuffer)[window->variables[0]]), &((particleBuffer)[window->variables[1]]),
                                     computations[playedBufferIndex].marshal.totalVariations, 0, 0, sizeof(numb)* KERNEL.VAR_COUNT);
@@ -1330,7 +1230,6 @@ int imgui_main(int, char**)
                                 ImPlot3D::PushStyleColor(ImPlot3DCol_FrameBg, ImVec4(0.07f, 0.07f, 0.07f, 1.0f));
                                 ImPlot3D::SetNextLineStyle(window->markerColor);
                                 ImPlot3D::PushStyleVar(ImPlotStyleVar_MarkerWeight, window->markerOutlineSize);
-                                //ImPlot::PushStyleVar(ImPlotStyleVar_FillAlpha, 0.25f);
                                 ImPlot3D::SetNextMarkerStyle(window->markerShape, window->markerSize);
                                 ImPlot3D::PlotScatter(plotName.c_str(), &((particleBuffer)[window->variables[0]]), &((particleBuffer)[window->variables[1]]), &((particleBuffer)[window->variables[2]]),
                                     computations[playedBufferIndex].marshal.totalVariations, 0, 0, sizeof(numb)* KERNEL.VAR_COUNT);
@@ -1357,7 +1256,6 @@ int imgui_main(int, char**)
                         rotationEuler = ToEulerAngles(window->quatRot);
                     }
 
-                    //printf("Begin phase\n");
                     if (window->whiteBg) { ImPlot::PushStyleColor(ImPlotCol_PlotBg, ImVec4(1.0f, 1.0f, 1.0f, 1.0f)); ImPlot::PushStyleColor(ImPlotCol_AxisGrid, ImVec4(0.2f, 0.2f, 0.2f, 1.0f)); }
 
                     if (ImPlot::BeginPlot(plotName.c_str(), "", "", ImVec2(-1, -1), ImPlotFlags_NoLegend | ImPlotFlags_NoTitle, axisFlags, axisFlags))
@@ -1407,8 +1305,6 @@ int imgui_main(int, char**)
 
                         if (computations[playedBufferIndex].ready)
                         {
-                            //int variationSize = KERNEL.VAR_COUNT * (computedSteps + 1);
-
                             int xIndex = window->variables[0];
                             int yIndex = window->variables[1];
 
@@ -1456,7 +1352,6 @@ int imgui_main(int, char**)
                     if (ImGui::BeginTable((plotName + "_table").c_str(), 2, ImGuiTableFlags_Reorderable, ImVec2(-1, 0)))
                     {
                         int heatStride = window->stride;
-                        //if (autofitHeatmap) axisFlags |= ImPlotAxisFlags_AutoFit;
                         axisFlags = 0;
 
                         ImGui::TableSetupColumn(nullptr);
@@ -1536,73 +1431,10 @@ int imgui_main(int, char**)
                                     }
                                 }
 
-                                // Selecting new ranging
                                 if (plot->shiftSelected)
                                 {
-                                    int stepX1 = 0;
-                                    int stepY1 = 0;
-                                    int stepX2 = 0;
-                                    int stepY2 = 0;
-
-                                    if (window->showActualDiapasons)
-                                    {
-                                        // Values
-                                        stepX1 = stepFromValue(sizing.minX, sizing.stepX, plot->shiftSelect1Location.x);
-                                        stepY1 = stepFromValue(sizing.minY, sizing.stepY, plot->shiftSelect1Location.y);
-                                        stepX2 = stepFromValue(sizing.minX, sizing.stepX, plot->shiftSelect2Location.x);
-                                        stepY2 = stepFromValue(sizing.minY, sizing.stepY, plot->shiftSelect2Location.y);
-                                    }
-                                    else
-                                    {
-                                        // Steps
-                                        stepX1 = (int)floor(plot->shiftSelect1Location.x);
-                                        stepY1 = (int)floor(plot->shiftSelect1Location.y);
-                                        stepX2 = (int)floor(plot->shiftSelect2Location.x);
-                                        stepY2 = (int)floor(plot->shiftSelect2Location.y);
-                                    }
-
-                                    enabledParticles = false;
-                                    playingParticles = false;
-
-                                    int xMaxStep = sizing.map->typeX == PARAMETER ? KERNEL.parameters[sizing.map->indexX].TrueStepCount() : (sizing.map->typeX == VARIABLE ? KERNEL.variables[sizing.map->indexX].TrueStepCount() : 0);
-                                    int yMaxStep = sizing.map->typeY == PARAMETER ? KERNEL.parameters[sizing.map->indexY].TrueStepCount() : (sizing.map->typeY == VARIABLE ? KERNEL.variables[sizing.map->indexY].TrueStepCount() : 0);
-
-                                    // If inside the heatmap
-                                    /*if (stepX1 >= 0 && stepX1 < xMaxStep && stepY1 >= 0 && stepY1 < yMaxStep
-                                        && stepX2 >= 0 && stepX2 < xMaxStep && stepY2 >= 0 && stepY2 < yMaxStep)*/
-                                    {
-                                        if (sizing.map->typeX == VARIABLE)
-                                        {
-                                            kernelNew.variables[sizing.map->indexX].min = calculateValue(KERNEL.variables[sizing.map->indexX].min, KERNEL.variables[sizing.map->indexX].step, stepX1);
-                                            kernelNew.variables[sizing.map->indexX].max = calculateValue(KERNEL.variables[sizing.map->indexX].min, KERNEL.variables[sizing.map->indexX].step, stepX2);
-                                            kernelNew.variables[sizing.map->indexX].rangingType = Linear;
-                                        }
-                                        else
-                                        {
-                                            kernelNew.parameters[sizing.map->indexX].min = calculateValue(KERNEL.parameters[sizing.map->indexX].min, KERNEL.parameters[sizing.map->indexX].step, stepX1);
-                                            kernelNew.parameters[sizing.map->indexX].max = calculateValue(KERNEL.parameters[sizing.map->indexX].min, KERNEL.parameters[sizing.map->indexX].step, stepX2);
-                                            kernelNew.parameters[sizing.map->indexX].rangingType = Linear;
-                                        }
-
-                                        if (sizing.map->typeY == VARIABLE)
-                                        {
-                                            kernelNew.variables[sizing.map->indexY].min = calculateValue(KERNEL.variables[sizing.map->indexY].min, KERNEL.variables[sizing.map->indexY].step, stepY1);
-                                            kernelNew.variables[sizing.map->indexY].max = calculateValue(KERNEL.variables[sizing.map->indexY].min, KERNEL.variables[sizing.map->indexY].step, stepY2);
-                                            kernelNew.variables[sizing.map->indexY].rangingType = Linear;
-                                        }
-                                        else
-                                        {
-                                            kernelNew.parameters[sizing.map->indexY].min = calculateValue(KERNEL.parameters[sizing.map->indexY].min, KERNEL.parameters[sizing.map->indexY].step, stepY1);
-                                            kernelNew.parameters[sizing.map->indexY].max = calculateValue(KERNEL.parameters[sizing.map->indexY].min, KERNEL.parameters[sizing.map->indexY].step, stepY2);
-                                            kernelNew.parameters[sizing.map->indexY].rangingType = Linear;
-                                        }
-
-                                        autoLoadNewParams = false; // Otherwise the map immediately starts drawing the cut region
-
-                                        if (window->isHeatmapAutoComputeOn) computeAfterShiftSelect = true;
-                                    }
+                                    heatmapRangingSelection(window, plot, &sizing);
                                 }
-                                // end of selecting new ranging
 
                                 if (autofitHeatmap || toAutofit)
                                 {
@@ -1612,63 +1444,64 @@ int imgui_main(int, char**)
                                     plot->Axes[plot->CurrentY].Range.Max = sizing.mapY2;
                                 }
 
+                                // Drawing
+
+                                numb* mapData = computations[playedBufferIndex].marshal.maps + sizing.map->offset;
+
+                                if (!window->areHeatmapLimitsDefined)
+                                {
+                                    getMinMax(mapData, sizing.map->xSize * sizing.map->ySize, &window->heatmapMin, &window->heatmapMax);
+                                    window->areHeatmapLimitsDefined = true;
+                                    window->isHeatmapDirty = true;
+                                }
+
+                                // Image init
+                                window->myTexture = nullptr;
+                                if (window->lastBufferSize != sizing.map->xSize * sizing.map->ySize)
+                                {
+                                    if (window->pixelBuffer != nullptr) delete[] window->pixelBuffer;
+                                    window->pixelBuffer = new unsigned char[sizing.map->xSize * sizing.map->ySize * 4];
+                                    window->lastBufferSize = sizing.map->xSize * sizing.map->ySize;
+                                }
+                                if (window->isHeatmapDirty)
+                                {
+                                    MapToImg(mapData, &(window->pixelBuffer), sizing.map->xSize, sizing.map->ySize, window->heatmapMin, window->heatmapMax);
+                                    window->isHeatmapDirty = false;
+                                }
+                                bool ret = LoadTextureFromRaw(&(window->pixelBuffer), sizing.map->xSize, sizing.map->ySize, (ID3D11ShaderResourceView**)&(window->myTexture), g_pd3dDevice);
+                                IM_ASSERT(ret);
+
+                                ImPlotPoint from = window->showActualDiapasons ? ImPlotPoint(sizing.minX, sizing.maxY + sizing.stepY) : ImPlotPoint(0, sizing.map->ySize);
+                                ImPlotPoint to = window->showActualDiapasons ? ImPlotPoint(sizing.maxX + sizing.stepX, sizing.minY) : ImPlotPoint(sizing.map->xSize, 0);
+
+                                ImPlot::PlotImage(("Map " + std::to_string(mapIndex) + "##" + plotName + std::to_string(0)).c_str(), (ImTextureID)(window->myTexture),
+                                    from, to, ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f), ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
+
                                 // Actual drawing of the heatmap
                                 if (sizing.cutWidth > 0 && sizing.cutHeight > 0)
                                 {
-                                    numb* mapData = computations[playedBufferIndex].marshal.maps + sizing.map->offset;
-
-                                    if (!window->areHeatmapLimitsDefined)
+                                    if (window->showHeatmapValues)
                                     {
-                                        getMinMax(mapData, sizing.map->xSize * sizing.map->ySize, &window->heatmapMin, &window->heatmapMax);
-                                        window->areHeatmapLimitsDefined = true;
-                                        window->isHeatmapDirty = true;
+                                        void* cutoffHeatmap = new numb[sizing.cutHeight * sizing.cutWidth];
+
+                                        cutoff2D(mapData, (numb*)cutoffHeatmap,
+                                            sizing.map->xSize, sizing.map->ySize, sizing.cutMinX, sizing.cutMinY, sizing.cutMaxX, sizing.cutMaxY);
+
+                                        void* compressedHeatmap = new numb[(int)ceil((float)sizing.cutWidth / heatStride) * (int)ceil((float)sizing.cutHeight / heatStride)];
+
+                                        compress2D((numb*)cutoffHeatmap, (numb*)compressedHeatmap,
+                                            sizing.cutWidth, sizing.cutHeight, heatStride);
+
+                                        int rows = heatStride > 1 ? (int)ceil((float)sizing.cutHeight / heatStride) : sizing.cutHeight;
+                                        int cols = heatStride > 1 ? (int)ceil((float)sizing.cutWidth / heatStride) : sizing.cutWidth;
+
+                                        ImPlot::PlotHeatmap(("MapLabels " + std::to_string(mapIndex) + "##" + plotName + std::to_string(0)).c_str(),
+                                            (numb*)compressedHeatmap, rows, cols, -1234.0, 1.0, "%.3f",
+                                            ImPlotPoint(sizing.mapX1Cut, sizing.mapY1Cut), ImPlotPoint(sizing.mapX2Cut, sizing.mapY2Cut));
+
+                                        delete[] cutoffHeatmap;
+                                        delete[] compressedHeatmap;
                                     }
-
-                                    void* cutoffHeatmap = new numb[sizing.cutHeight * sizing.cutWidth];
-
-                                    cutoff2D(mapData, (numb*)cutoffHeatmap,
-                                        sizing.map->xSize, sizing.map->ySize, sizing.cutMinX, sizing.cutMinY, sizing.cutMaxX, sizing.cutMaxY);
-
-                                    void* compressedHeatmap = new numb[(int)ceil((float)sizing.cutWidth / heatStride) * (int)ceil((float)sizing.cutHeight / heatStride)];
-
-                                    compress2D((numb*)cutoffHeatmap, (numb*)compressedHeatmap,
-                                        sizing.cutWidth, sizing.cutHeight, heatStride);
-
-                                    int rows = heatStride > 1 ? (int)ceil((float)sizing.cutHeight / heatStride) : sizing.cutHeight;
-                                    int cols = heatStride > 1 ? (int)ceil((float)sizing.cutWidth / heatStride) : sizing.cutWidth;
-
-                                    /*ImPlot::PlotHeatmap(("Map " + std::to_string(mapIndex) + "##" + plotName + std::to_string(0)).c_str(),
-                                        (numb*)compressedHeatmap, rows, cols, window->heatmapMin, window->heatmapMax, window->showHeatmapValues ? "%.3f" : nullptr,
-                                        ImPlotPoint(sizing.mapX1Cut, sizing.mapY1Cut), ImPlotPoint(sizing.mapX2Cut, sizing.mapY2Cut)); // %3f*/
-
-                                    // Image init
-                                    window->my_texture = nullptr;
-                                    if (window->lastBufferSize != sizing.map->xSize * sizing.map->ySize)
-                                    {
-                                        if (window->pixelBuffer != nullptr) delete[] window->pixelBuffer;
-                                        window->pixelBuffer = new unsigned char[sizing.map->xSize * sizing.map->ySize * 4];
-                                        window->lastBufferSize = sizing.map->xSize * sizing.map->ySize;
-                                    }
-                                    if (window->isHeatmapDirty)
-                                    {
-                                        MapToImg(mapData, &(window->pixelBuffer), sizing.map->xSize, sizing.map->ySize, window->heatmapMin, window->heatmapMax);
-                                        window->isHeatmapDirty = false;
-                                    }
-                                    bool ret = LoadTextureFromRaw(&(window->pixelBuffer), sizing.map->xSize, sizing.map->ySize, (ID3D11ShaderResourceView**)&(window->my_texture), g_pd3dDevice);
-                                    IM_ASSERT(ret);
-
-                                    ImPlotPoint from = window->showActualDiapasons ? ImPlotPoint(sizing.minX, sizing.maxY + sizing.stepY) : ImPlotPoint(0, sizing.map->ySize);
-                                    ImPlotPoint to = window->showActualDiapasons ? ImPlotPoint(sizing.maxX + sizing.stepX, sizing.minY) : ImPlotPoint(sizing.map->xSize, 0);
-
-                                    ImPlot::PlotImage(("Map " + std::to_string(mapIndex) + "##" + plotName + std::to_string(0)).c_str(), (ImTextureID)(window->my_texture),
-                                        from, to, ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f), ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
-
-                                    ImPlot::PlotHeatmap(("MapLabels " + std::to_string(mapIndex) + "##" + plotName + std::to_string(0)).c_str(),
-                                        (numb*)compressedHeatmap, rows, cols, -1234.0, 1.0, window->showHeatmapValues ? "%.3f" : nullptr,
-                                        ImPlotPoint(sizing.mapX1Cut, sizing.mapY1Cut), ImPlotPoint(sizing.mapX2Cut, sizing.mapY2Cut));
-
-                                    delete[] cutoffHeatmap;
-                                    delete[] compressedHeatmap;
                                 }
 
                                 ImGui::TableSetColumnIndex(1);
@@ -1709,29 +1542,16 @@ int imgui_main(int, char**)
             ImGui::End();
         }
 
-        //autofitAfterComputing = false;
-
         // Rendering
-        ImGui::Render();
-        ImVec4 clear_color = ImVec4(1.0f, 1.0f, 1.0f, 1.00f);
-        const float clear_color_with_alpha[4] = { clear_color.x * clear_color.w, clear_color.y * clear_color.w, clear_color.z * clear_color.w, clear_color.w };
-        g_pd3dDeviceContext->OMSetRenderTargets(1, &g_mainRenderTargetView, nullptr);
-        g_pd3dDeviceContext->ClearRenderTargetView(g_mainRenderTargetView, clear_color_with_alpha);
-        ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
+        IMGUI_WORK_END;
 
-        // Update and Render additional Platform Windows
-        if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
-        {
-            ImGui::UpdatePlatformWindows();
-            ImGui::RenderPlatformWindowsDefault();
-        }
-
-        // Present
-        HRESULT hr = g_pSwapChain->Present(1, 0);   // Present with vsync
-        //HRESULT hr = g_pSwapChain->Present(0, 0); // Present without vsync
-        g_SwapChainOccluded = (hr == DXGI_STATUS_OCCLUDED);
-
-        for (int i = 0; i < plotWindows.size(); i++) if (plotWindows[i].my_texture != nullptr) { ((ID3D11ShaderResourceView*)plotWindows[i].my_texture)->Release(); plotWindows[i].my_texture = nullptr; };
+        // Cleaning
+        for (int i = 0; i < plotWindows.size(); i++)
+            if (plotWindows[i].myTexture != nullptr)
+            {
+                ((ID3D11ShaderResourceView*)plotWindows[i].myTexture)->Release();
+                plotWindows[i].myTexture = nullptr;
+            }
     }
 
     saveWindows();
@@ -2022,4 +1842,67 @@ void listParameter(int i)
     }
 
     if (!changeAllowed) POP_FRAME(4); // disabledText popped as well
+}
+
+void heatmapRangingSelection(PlotWindow* window, ImPlotPlot* plot, HeatmapSizing* sizing)
+{
+    int stepX1 = 0;
+    int stepY1 = 0;
+    int stepX2 = 0;
+    int stepY2 = 0;
+
+    if (window->showActualDiapasons)
+    {
+        // Values
+        stepX1 = stepFromValue(sizing->minX, sizing->stepX, plot->shiftSelect1Location.x);
+        stepY1 = stepFromValue(sizing->minY, sizing->stepY, plot->shiftSelect1Location.y);
+        stepX2 = stepFromValue(sizing->minX, sizing->stepX, plot->shiftSelect2Location.x);
+        stepY2 = stepFromValue(sizing->minY, sizing->stepY, plot->shiftSelect2Location.y);
+    }
+    else
+    {
+        // Steps
+        stepX1 = (int)floor(plot->shiftSelect1Location.x);
+        stepY1 = (int)floor(plot->shiftSelect1Location.y);
+        stepX2 = (int)floor(plot->shiftSelect2Location.x);
+        stepY2 = (int)floor(plot->shiftSelect2Location.y);
+    }
+
+    enabledParticles = false;
+    playingParticles = false;
+
+    int xMaxStep = sizing->map->typeX == PARAMETER ? KERNEL.parameters[sizing->map->indexX].TrueStepCount() :
+        (sizing->map->typeX == VARIABLE ? KERNEL.variables[sizing->map->indexX].TrueStepCount() : 0);
+    int yMaxStep = sizing->map->typeY == PARAMETER ? KERNEL.parameters[sizing->map->indexY].TrueStepCount() :
+        (sizing->map->typeY == VARIABLE ? KERNEL.variables[sizing->map->indexY].TrueStepCount() : 0);
+
+    if (sizing->map->typeX == VARIABLE)
+    {
+        kernelNew.variables[sizing->map->indexX].min = calculateValue(KERNEL.variables[sizing->map->indexX].min, KERNEL.variables[sizing->map->indexX].step, stepX1);
+        kernelNew.variables[sizing->map->indexX].max = calculateValue(KERNEL.variables[sizing->map->indexX].min, KERNEL.variables[sizing->map->indexX].step, stepX2);
+        kernelNew.variables[sizing->map->indexX].rangingType = Linear;
+    }
+    else
+    {
+        kernelNew.parameters[sizing->map->indexX].min = calculateValue(KERNEL.parameters[sizing->map->indexX].min, KERNEL.parameters[sizing->map->indexX].step, stepX1);
+        kernelNew.parameters[sizing->map->indexX].max = calculateValue(KERNEL.parameters[sizing->map->indexX].min, KERNEL.parameters[sizing->map->indexX].step, stepX2);
+        kernelNew.parameters[sizing->map->indexX].rangingType = Linear;
+    }
+
+    if (sizing->map->typeY == VARIABLE)
+    {
+        kernelNew.variables[sizing->map->indexY].min = calculateValue(KERNEL.variables[sizing->map->indexY].min, KERNEL.variables[sizing->map->indexY].step, stepY1);
+        kernelNew.variables[sizing->map->indexY].max = calculateValue(KERNEL.variables[sizing->map->indexY].min, KERNEL.variables[sizing->map->indexY].step, stepY2);
+        kernelNew.variables[sizing->map->indexY].rangingType = Linear;
+    }
+    else
+    {
+        kernelNew.parameters[sizing->map->indexY].min = calculateValue(KERNEL.parameters[sizing->map->indexY].min, KERNEL.parameters[sizing->map->indexY].step, stepY1);
+        kernelNew.parameters[sizing->map->indexY].max = calculateValue(KERNEL.parameters[sizing->map->indexY].min, KERNEL.parameters[sizing->map->indexY].step, stepY2);
+        kernelNew.parameters[sizing->map->indexY].rangingType = Linear;
+    }
+
+    autoLoadNewParams = false; // Otherwise the map immediately starts drawing the cut region
+
+    if (window->isHeatmapAutoComputeOn) computeAfterShiftSelect = true;
 }

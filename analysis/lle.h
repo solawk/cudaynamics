@@ -3,7 +3,8 @@
 #include "../computation_struct.h"
 #include "../mapData_struct.h"
 
-#define MAX_LLE_NORM_VARIABLES 8
+#define MAX_LLE_NORM_VARIABLES	8
+#define LLE_SETTINGS			(3 + MAX_LLE_NORM_VARIABLES)
 
 struct LLE_Settings
 {

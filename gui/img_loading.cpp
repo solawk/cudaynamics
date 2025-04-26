@@ -44,7 +44,7 @@ bool LoadTextureFromRaw(unsigned char** data, int width, int height, ID3D11Shade
 }
 
 // Simple helper function to load an image into a DX11 texture with common settings
-bool LoadTextureFromMemory(const void* data, size_t data_size, ID3D11ShaderResourceView** out_srv, int* out_width, int* out_height, ID3D11Device* g_pd3dDevice)
+/*bool LoadTextureFromMemory(const void* data, size_t data_size, ID3D11ShaderResourceView** out_srv, int* out_width, int* out_height, ID3D11Device* g_pd3dDevice)
 {
     // Load from disk into a raw RGBA buffer
     int image_width = 0;
@@ -117,4 +117,4 @@ bool LoadTextureFromFile(const char* file_name, ID3D11ShaderResourceView** out_s
     bool ret = LoadTextureFromMemory(file_data, file_size, out_srv, out_width, out_height, g_pd3dDevice);
     IM_FREE(file_data);
     return ret;
-}
+}*/

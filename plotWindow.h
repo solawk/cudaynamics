@@ -50,7 +50,7 @@ public:
 	float heatmapMin;
 	bool areHeatmapLimitsDefined;
 	bool isHeatmapDirty;
-	void* my_texture;
+	void* myTexture;
 
 	bool showAxis;
 	bool showAxisNames;
@@ -96,7 +96,7 @@ public:
 		areHeatmapLimitsDefined = false;
 
 		isHeatmapDirty = false;
-		my_texture = nullptr;
+		myTexture = nullptr;
 
 		showAxis = true;
 		showAxisNames = true;
