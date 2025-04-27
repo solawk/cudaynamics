@@ -2,7 +2,7 @@
 
 #define i4(o) i * 4 + o
 
-#define KEYS_JET_COUNT 8
+#define KEYS_JET_COUNT 7
 ImVec4 KeysJet[] = {	ImVec4(0.5f, 0.0f, 1.0f, 1.0f), ImVec4(0.0f, 0.0f, 1.0f, 1.0f),
 						ImVec4(0.0f, 1.0f, 1.0f, 1.0f),
 						ImVec4(0.0f, 1.0f, 0.0f, 1.0f), ImVec4(1.0f, 1.0f, 0.0f, 1.0f),

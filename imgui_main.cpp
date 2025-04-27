@@ -151,7 +151,7 @@ int asyncComputation()
     }
 
     computations[bufferToFillIndex].ready = true;
-    for (int i = 0; i < plotWindows.size(); i++) plotWindows[i].isHeatmapDirty = true;
+    for (int i = 0; i < plotWindows.size(); i++) plotWindows[i].hmp.isHeatmapDirty = true;
 
     if (continuousComputingEnabled) bufferToFillIndex = 1 - bufferToFillIndex;
     if (continuousComputingEnabled && bufferToFillIndex != playedBufferIndex)
@@ -170,11 +170,11 @@ void computing()
 // Windows configuration saving and loading
 void saveWindows()
 {
-    ofstream configFileStream((KERNEL.name + ".config").c_str(), ios::out);
+    std::ofstream configFileStream((KERNEL.name + ".config").c_str(), std::ios::out);
 
     for (PlotWindow w : plotWindows)
     {
-        string exportString = w.ExportAsString();
+        std::string exportString = w.ExportAsString();
         configFileStream.write(exportString.c_str(), exportString.length());
     }
 
@@ -183,7 +183,7 @@ void saveWindows()
 
 void loadWindows()
 {
-    ifstream configFileStream((KERNEL.name + ".config").c_str(), ios::in);
+    std::ifstream configFileStream((KERNEL.name + ".config").c_str(), std::ios::in);
 
     for (std::string line; getline(configFileStream, line); )
     {
@@ -261,7 +261,7 @@ void removeHeatmapLimits()
 {
     for (int i = 0; i < plotWindows.size(); i++)
     {
-        plotWindows[i].areHeatmapLimitsDefined = false;
+        plotWindows[i].hmp.areHeatmapLimitsDefined = false;
     }
 }
 
@@ -345,7 +345,7 @@ int imgui_main(int, char**)
 
     PlotType plotType = Series;
     int selectedPlotVars[3]; selectedPlotVars[0] = 0; for (int i = 1; i < 3; i++) selectedPlotVars[i] = -1;
-    set<int> selectedPlotVarsSet;
+    std::set<int> selectedPlotVarsSet;
     int selectedPlotMap = 0;
 
     computations[0].marshal.trajectory = computations[1].marshal.trajectory = nullptr;
@@ -359,7 +359,7 @@ int imgui_main(int, char**)
     initializeKernel(false);
 
     try { loadWindows(); }
-    catch (exception e) { printf(e.what()); }
+    catch (std::exception e) { printf(e.what()); }
 
     while (work)
     {
@@ -466,7 +466,7 @@ int imgui_main(int, char**)
             unsigned long long stepsNewLL = kernelNew.steps + 1;
             unsigned long long singleBufferNumberCount = ((tempTotalVariationsLL * varCountLL) * stepsNewLL);
             unsigned long long singleBufferNumbSize = singleBufferNumberCount * sizeof(numb);
-            ImGui::Text(("Single trajectory memory: " + memoryString(singleBufferNumbSize) + " (" + to_string(singleBufferNumbSize) + " bytes)").c_str());
+            ImGui::Text(("Single trajectory memory: " + memoryString(singleBufferNumbSize) + " (" + std::to_string(singleBufferNumbSize) + " bytes)").c_str());
 
             frameTime = 1.0f / io.Framerate; ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
 
@@ -530,7 +530,7 @@ int imgui_main(int, char**)
                 int stepsPerSecond = (int)(computedSteps * buffersPerSecond);
 
                 ImGui::SameLine();
-                ImGui::Text(("(max " + to_string(stepsPerSecond) + " before stalling)").c_str());
+                ImGui::Text(("(max " + std::to_string(stepsPerSecond) + " before stalling)").c_str());
                 TOOLTIP("Predicted speed that allows for seamless playback");
             }
 
@@ -538,7 +538,7 @@ int imgui_main(int, char**)
             ImGui::DragInt("##Animation step", &(particleStep), 1.0f, 0, KERNEL.steps);
             ImGui::PopItemWidth();
             ImGui::SameLine();
-            ImGui::Text(("Animation step" + (continuousComputingEnabled ? " (total step " + to_string(bufferNo * KERNEL.steps + particleStep) + ")" : "")).c_str());
+            ImGui::Text(("Animation step" + (continuousComputingEnabled ? " (total step " + std::to_string(bufferNo * KERNEL.steps + particleStep) + ")" : "")).c_str());
 
             if (ImGui::Button("Reset to step 0"))
             {
@@ -900,7 +900,7 @@ int imgui_main(int, char**)
                 bool tempWhiteBg = window->whiteBg; ImGui::SameLine(); if (ImGui::Checkbox(("##" + windowName + "whiteBG").c_str(), &tempWhiteBg)) window->whiteBg = !window->whiteBg;
                 ImGui::SameLine(); ImGui::Text("White background");
 
-                bool tempGrayscale = window->grayscaleHeatmap; ImGui::SameLine(); if (ImGui::Checkbox(("##" + windowName + "grayscale").c_str(), &tempGrayscale)) window->grayscaleHeatmap = !window->grayscaleHeatmap;
+                bool tempGrayscale = window->hmp.grayscaleHeatmap; ImGui::SameLine(); if (ImGui::Checkbox(("##" + windowName + "grayscale").c_str(), &tempGrayscale)) window->hmp.grayscaleHeatmap = !window->hmp.grayscaleHeatmap;
                 ImGui::SameLine(); ImGui::Text("Grayscale");
 
                 if (window->type == Phase)
@@ -933,23 +933,23 @@ int imgui_main(int, char**)
 
                 if (window->type == Heatmap)
                 {
-                    ImGui::DragInt(("##" + windowName + "_stride").c_str(), (int*)(&(window->stride)), 1.0f); ImGui::SameLine(); ImGui::Text("Stride");
-                    if (window->stride < 1) window->stride = 1;
+                    ImGui::DragInt(("##" + windowName + "_stride").c_str(), (int*)(&(window->hmp.stride)), 1.0f); ImGui::SameLine(); ImGui::Text("Stride");
+                    if (window->hmp.stride < 1) window->hmp.stride = 1;
 
-                    bool tempShowHeatmapValues = window->showHeatmapValues; if (ImGui::Checkbox(("##" + windowName + "showHeatmapValues").c_str(), &tempShowHeatmapValues)) window->showHeatmapValues = !window->showHeatmapValues;
+                    bool tempShowHeatmapValues = window->hmp.showHeatmapValues; if (ImGui::Checkbox(("##" + windowName + "showHeatmapValues").c_str(), &tempShowHeatmapValues)) window->hmp.showHeatmapValues = !window->hmp.showHeatmapValues;
                     ImGui::SameLine(); ImGui::Text("Show values");
 
-                    bool tempShowActualDiapasons = window->showActualDiapasons; if (ImGui::Checkbox(("##" + windowName + "showActualDiapasons").c_str(), &tempShowActualDiapasons))
+                    bool tempShowActualDiapasons = window->hmp.showActualDiapasons; if (ImGui::Checkbox(("##" + windowName + "showActualDiapasons").c_str(), &tempShowActualDiapasons))
                     {
-                        window->showActualDiapasons = !window->showActualDiapasons;
+                        window->hmp.showActualDiapasons = !window->hmp.showActualDiapasons;
                         autofitHeatmap = true;
                     }
                     ImGui::SameLine(); ImGui::Text("Value diapasons");
 
-                    bool tempHeatmapSelectionMode = window->isHeatmapSelectionModeOn; if (ImGui::Checkbox(("##" + windowName + "heatmapSelectionMode").c_str(), &tempHeatmapSelectionMode)) window->isHeatmapSelectionModeOn = !window->isHeatmapSelectionModeOn;
+                    bool tempHeatmapSelectionMode = window->hmp.isHeatmapSelectionModeOn; if (ImGui::Checkbox(("##" + windowName + "heatmapSelectionMode").c_str(), &tempHeatmapSelectionMode)) window->hmp.isHeatmapSelectionModeOn = !window->hmp.isHeatmapSelectionModeOn;
                     ImGui::SameLine(); ImGui::Text("Selection mode");
 
-                    bool tempHeatmapAutoCompute = window->isHeatmapAutoComputeOn; if (ImGui::Checkbox(("##" + windowName + "heatmapAutoCompute").c_str(), &tempHeatmapAutoCompute)) window->isHeatmapAutoComputeOn = !window->isHeatmapAutoComputeOn;
+                    bool tempHeatmapAutoCompute = window->hmp.isHeatmapAutoComputeOn; if (ImGui::Checkbox(("##" + windowName + "heatmapAutoCompute").c_str(), &tempHeatmapAutoCompute)) window->hmp.isHeatmapAutoComputeOn = !window->hmp.isHeatmapAutoComputeOn;
                     ImGui::SameLine(); ImGui::Text("Auto-compute on Shift+RMB");
                 }
 
@@ -961,7 +961,7 @@ int imgui_main(int, char**)
             ImPlotPlot* plot;
             ImPlot3DPlot* plot3d;
             int mapIndex;
-            ImPlotColormap heatmapColorMap = !window->grayscaleHeatmap ? ImPlotColormap_Jet : ImPlotColormap_Greys;
+            ImPlotColormap heatmapColorMap = !window->hmp.grayscaleHeatmap ? ImPlotColormap_Jet : ImPlotColormap_Greys;
             ImVec4 rotationEuler;
             ImVec4 rotationEulerEditable, rotationEulerBeforeEdit;
 
@@ -1351,7 +1351,7 @@ int imgui_main(int, char**)
 
                     if (ImGui::BeginTable((plotName + "_table").c_str(), 2, ImGuiTableFlags_Reorderable, ImVec2(-1, 0)))
                     {
-                        int heatStride = window->stride;
+                        int heatStride = window->hmp.stride;
                         axisFlags = 0;
 
                         ImGui::TableSetupColumn(nullptr);
@@ -1370,7 +1370,7 @@ int imgui_main(int, char**)
                         {
                             plot = ImPlot::GetPlot(plotName.c_str());
                             plot->is3d = false;
-                            plot->isHeatmapSelectionModeOn = window->isHeatmapSelectionModeOn;
+                            plot->isHeatmapSelectionModeOn = window->hmp.isHeatmapSelectionModeOn;
 
                             if (computations[playedBufferIndex].ready)
                             {
@@ -1379,7 +1379,7 @@ int imgui_main(int, char**)
                                 sizing.loadPointers(&(KERNEL.mapDatas[mapIndex]), &KERNEL);
                                 sizing.initValues();
                                 sizing.initCutoff((float)plot->Axes[plot->CurrentX].Range.Min, (float)plot->Axes[plot->CurrentY].Range.Min,
-                                    (float)plot->Axes[plot->CurrentX].Range.Max, (float)plot->Axes[plot->CurrentY].Range.Max, window->showActualDiapasons);
+                                    (float)plot->Axes[plot->CurrentX].Range.Max, (float)plot->Axes[plot->CurrentY].Range.Max, window->hmp.showActualDiapasons);
 
                                 // Choosing configuration
                                 if (plot->shiftClicked && plot->shiftClickLocation.x != 0.0)
@@ -1387,7 +1387,7 @@ int imgui_main(int, char**)
                                     int stepX = 0;
                                     int stepY = 0;
 
-                                    if (window->showActualDiapasons)
+                                    if (window->hmp.showActualDiapasons)
                                     {
                                         // Values
                                         stepX = stepFromValue(sizing.minX, sizing.stepX, plot->shiftClickLocation.x);
@@ -1448,39 +1448,38 @@ int imgui_main(int, char**)
 
                                 numb* mapData = computations[playedBufferIndex].marshal.maps + sizing.map->offset;
 
-                                if (!window->areHeatmapLimitsDefined)
+                                if (!window->hmp.areHeatmapLimitsDefined)
                                 {
-                                    getMinMax(mapData, sizing.map->xSize * sizing.map->ySize, &window->heatmapMin, &window->heatmapMax);
-                                    window->areHeatmapLimitsDefined = true;
-                                    window->isHeatmapDirty = true;
+                                    getMinMax(mapData, sizing.map->xSize * sizing.map->ySize, &window->hmp.heatmapMin, &window->hmp.heatmapMax);
+                                    window->hmp.areHeatmapLimitsDefined = true;
+                                    window->hmp.isHeatmapDirty = true;
                                 }
 
                                 // Image init
-                                window->myTexture = nullptr;
                                 if (window->lastBufferSize != sizing.map->xSize * sizing.map->ySize)
                                 {
                                     if (window->pixelBuffer != nullptr) delete[] window->pixelBuffer;
                                     window->pixelBuffer = new unsigned char[sizing.map->xSize * sizing.map->ySize * 4];
                                     window->lastBufferSize = sizing.map->xSize * sizing.map->ySize;
                                 }
-                                if (window->isHeatmapDirty)
+                                if (window->hmp.isHeatmapDirty)
                                 {
-                                    MapToImg(mapData, &(window->pixelBuffer), sizing.map->xSize, sizing.map->ySize, window->heatmapMin, window->heatmapMax);
-                                    window->isHeatmapDirty = false;
+                                    MapToImg(mapData, &(window->pixelBuffer), sizing.map->xSize, sizing.map->ySize, window->hmp.heatmapMin, window->hmp.heatmapMax);
+                                    window->hmp.isHeatmapDirty = false;
                                 }
-                                bool ret = LoadTextureFromRaw(&(window->pixelBuffer), sizing.map->xSize, sizing.map->ySize, (ID3D11ShaderResourceView**)&(window->myTexture), g_pd3dDevice);
+                                bool ret = LoadTextureFromRaw(&(window->pixelBuffer), sizing.map->xSize, sizing.map->ySize, (ID3D11ShaderResourceView**)&(window->hmp.myTexture), g_pd3dDevice);
                                 IM_ASSERT(ret);
 
-                                ImPlotPoint from = window->showActualDiapasons ? ImPlotPoint(sizing.minX, sizing.maxY + sizing.stepY) : ImPlotPoint(0, sizing.map->ySize);
-                                ImPlotPoint to = window->showActualDiapasons ? ImPlotPoint(sizing.maxX + sizing.stepX, sizing.minY) : ImPlotPoint(sizing.map->xSize, 0);
+                                ImPlotPoint from = window->hmp.showActualDiapasons ? ImPlotPoint(sizing.minX, sizing.maxY + sizing.stepY) : ImPlotPoint(0, sizing.map->ySize);
+                                ImPlotPoint to = window->hmp.showActualDiapasons ? ImPlotPoint(sizing.maxX + sizing.stepX, sizing.minY) : ImPlotPoint(sizing.map->xSize, 0);
 
-                                ImPlot::PlotImage(("Map " + std::to_string(mapIndex) + "##" + plotName + std::to_string(0)).c_str(), (ImTextureID)(window->myTexture),
+                                ImPlot::PlotImage(("Map " + std::to_string(mapIndex) + "##" + plotName + std::to_string(0)).c_str(), (ImTextureID)(window->hmp.myTexture),
                                     from, to, ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f), ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
 
                                 // Actual drawing of the heatmap
                                 if (sizing.cutWidth > 0 && sizing.cutHeight > 0)
                                 {
-                                    if (window->showHeatmapValues)
+                                    if (window->hmp.showHeatmapValues)
                                     {
                                         void* cutoffHeatmap = new numb[sizing.cutHeight * sizing.cutWidth];
 
@@ -1507,14 +1506,14 @@ int imgui_main(int, char**)
                                 ImGui::TableSetColumnIndex(1);
 
                                 ImGui::SetNextItemWidth(120);
-                                float minBefore = window->heatmapMin;
-                                float maxBefore = window->heatmapMax;
-                                ImGui::DragFloat("Max", &window->heatmapMax, 0.01f);
-                                ImPlot::ColormapScale("##HeatScale", window->heatmapMin, window->heatmapMax, ImVec2(120, ImPlot::GetPlotSize().y - 30.0f));
+                                float minBefore = window->hmp.heatmapMin;
+                                float maxBefore = window->hmp.heatmapMax;
+                                ImGui::DragFloat("Max", &window->hmp.heatmapMax, 0.01f);
+                                ImPlot::ColormapScale("##HeatScale", window->hmp.heatmapMin, window->hmp.heatmapMax, ImVec2(120, ImPlot::GetPlotSize().y - 30.0f));
                                 ImGui::SetNextItemWidth(120);
-                                ImGui::DragFloat("Min", &window->heatmapMin, 0.01f);
+                                ImGui::DragFloat("Min", &window->hmp.heatmapMin, 0.01f);
                                 
-                                if (minBefore != window->heatmapMin || maxBefore != window->heatmapMax) window->isHeatmapDirty = true;
+                                if (minBefore != window->hmp.heatmapMin || maxBefore != window->hmp.heatmapMax) window->hmp.isHeatmapDirty = true;
 
                                 ImPlot::PopColormap();
                             }
@@ -1547,10 +1546,10 @@ int imgui_main(int, char**)
 
         // Cleaning
         for (int i = 0; i < plotWindows.size(); i++)
-            if (plotWindows[i].myTexture != nullptr)
+            if (plotWindows[i].hmp.myTexture != nullptr)
             {
-                ((ID3D11ShaderResourceView*)plotWindows[i].myTexture)->Release();
-                plotWindows[i].myTexture = nullptr;
+                ((ID3D11ShaderResourceView*)plotWindows[i].hmp.myTexture)->Release();
+                plotWindows[i].hmp.myTexture = nullptr;
             }
     }
 
@@ -1851,7 +1850,7 @@ void heatmapRangingSelection(PlotWindow* window, ImPlotPlot* plot, HeatmapSizing
     int stepX2 = 0;
     int stepY2 = 0;
 
-    if (window->showActualDiapasons)
+    if (window->hmp.showActualDiapasons)
     {
         // Values
         stepX1 = stepFromValue(sizing->minX, sizing->stepX, plot->shiftSelect1Location.x);
@@ -1904,5 +1903,5 @@ void heatmapRangingSelection(PlotWindow* window, ImPlotPlot* plot, HeatmapSizing
 
     autoLoadNewParams = false; // Otherwise the map immediately starts drawing the cut region
 
-    if (window->isHeatmapAutoComputeOn) computeAfterShiftSelect = true;
+    if (window->hmp.isHeatmapAutoComputeOn) computeAfterShiftSelect = true;
 }

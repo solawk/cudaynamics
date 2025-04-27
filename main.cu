@@ -166,7 +166,7 @@ int compute(Computation* data)
 void fillAttributeBuffers(Computation* data)
 {
     unsigned long long varStride = CUDA_marshal.variationSize;    // Stride between variations in "trajectory"
-    unsigned long long paramStride = CUDA_kernel.PARAM_COUNT;                          // Stride between variations in "parameterVariations"
+    unsigned long long paramStride = CUDA_kernel.PARAM_COUNT;     // Stride between variations in "parameterVariations"
    
     std::vector<int> attributeStepIndices;
     int totalAttributes = CUDA_kernel.VAR_COUNT + CUDA_kernel.PARAM_COUNT;

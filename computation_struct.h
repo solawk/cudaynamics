@@ -9,7 +9,7 @@ struct Computation
 public:
 	Marshal marshal;
 	Marshal* otherMarshal;
-	atomic_bool ready;
+	std::atomic_bool ready;
 	std::future<int> future;
 	int threads_per_block;
 	float timeElapsed;

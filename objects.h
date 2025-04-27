@@ -106,7 +106,7 @@ public:
 		currentValue.clear();
 	}
 
-	int indexOfRangingEntity(string name)
+	int indexOfRangingEntity(std::string name)
 	{
 		for (int i = 0; i < rangingCount; i++)
 		{
@@ -120,7 +120,7 @@ public:
 	{
 		for (int i = 0; i < varCount; i++)
 		{
-			if (string(varNames[i]) == names[rangingIndex])
+			if (std::string(varNames[i]) == names[rangingIndex])
 			{
 				*isParam = false;
 				*entityIndex = i;
@@ -130,7 +130,7 @@ public:
 
 		for (int i = 0; i < paramCount; i++)
 		{
-			if (string(paramNames[i]) == names[rangingIndex])
+			if (std::string(paramNames[i]) == names[rangingIndex])
 			{
 				*isParam = true;
 				*entityIndex = i;

@@ -160,6 +160,7 @@
       <Filter>gui</Filter>
     </ClInclude>
     <ClInclude Include="imgui_main.hpp" />
+    <ClInclude Include="heatmapProperties.hpp" />
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="main.cu" />

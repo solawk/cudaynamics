@@ -5,22 +5,22 @@ std::string memoryString(unsigned long long bytes)
 	if (bytes < 1024)
 	{
 		// B
-		return to_string(bytes) + " B";
+		return std::to_string(bytes) + " B";
 	}
 	else if (bytes < 1024 * 1024)
 	{
 		// kB
-		return to_string((int)(bytes / 1024.0)) + " kB";
+		return std::to_string((int)(bytes / 1024.0)) + " kB";
 	}
 	else if (bytes < 1024 * 1024 * 1024)
 	{
 		// MB
-		return to_string((int)(bytes / (1024.0 * 1024))) + " MB";
+		return std::to_string((int)(bytes / (1024.0 * 1024))) + " MB";
 	}
 	else
 	{
 		// GB
-		return to_string((int)(bytes / (1024.0 * 1024 * 1024))) + " GB";
+		return std::to_string((int)(bytes / (1024.0 * 1024 * 1024))) + " GB";
 	}
 }
 

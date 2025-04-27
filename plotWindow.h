@@ -1,8 +1,7 @@
 #pragma once
 
 #include <string>
-
-using namespace std;
+#include "heatmapProperties.hpp"
 
 // Maximum amount of variables and parameters in the plot
 #define MAX_VARS_PARAMS 32
@@ -14,10 +13,10 @@ struct PlotWindow
 public:
 	bool active; // Deactivated window is removed
 	int id; // Unique id
-	string name; // Name of the window
+	std::string name; // Name of the window
 	PlotType type;
 	int variableCount;
-	vector<int> variables; // or map
+	std::vector<int> variables; // or map
 
 	// Plot rotation
 	ImVec4 offset;
@@ -40,30 +39,19 @@ public:
 	float rulerAlpha;
 	float gridAlpha;
 	bool whiteBg;
-	bool grayscaleHeatmap;
-	int stride;
-	bool isHeatmapSelectionModeOn;
-	bool isHeatmapAutoComputeOn;
 	bool isImplot3d;
 
-	float heatmapMax;
-	float heatmapMin;
-	bool areHeatmapLimitsDefined;
-	bool isHeatmapDirty;
-	void* myTexture;
+	HeatmapProperties hmp;
 
 	bool showAxis;
 	bool showAxisNames;
 	bool showRuler;
 	bool showGrid;
 
-	bool showHeatmapValues;
-	bool showActualDiapasons;
-
 	unsigned char* pixelBuffer;
 	int lastBufferSize;
 
-	PlotWindow(int _id, string _name = "plot", bool _is3d = false)
+	PlotWindow(int _id, std::string _name = "plot", bool _is3d = false)
 	{
 		active = true;
 		id = _id;
@@ -88,23 +76,12 @@ public:
 		rulerAlpha = 0.5f;
 		gridAlpha = 0.15f;
 		whiteBg = false;
-		grayscaleHeatmap = false;
-		stride = 1;
-		isHeatmapSelectionModeOn = false;
-		isHeatmapAutoComputeOn = false;
 		isImplot3d = false;
-		areHeatmapLimitsDefined = false;
-
-		isHeatmapDirty = false;
-		myTexture = nullptr;
 
 		showAxis = true;
 		showAxisNames = true;
 		showRuler = true;
 		showGrid = true;
-
-		showHeatmapValues = false;
-		showActualDiapasons = true;
 
 		pixelBuffer = nullptr;
 		lastBufferSize = -1;
@@ -124,7 +101,7 @@ public:
 		}
 	}
 
-	void AssignVariables(set<int>& variablesSet)
+	void AssignVariables(std::set<int>& variablesSet)
 	{
 		variableCount = 0;
 		for (const int& v : variablesSet)
@@ -140,29 +117,29 @@ public:
 		variables.push_back(singleVariable);
 	}
 
-	string ExportAsString()
+	std::string ExportAsString()
 	{
-		string exportString = name;
+		std::string exportString = name;
 
-		exportString += " " + to_string((int)type);
-		exportString += " " + to_string((int)isImplot3d);
+		exportString += " " + std::to_string((int)type);
+		exportString += " " + std::to_string((int)isImplot3d);
 
-		exportString += " " + to_string(quatRot.x) + " " + to_string(quatRot.y) + " " + to_string(quatRot.z) + " " + to_string(quatRot.w);
-		exportString += " " + to_string(autorotate.x) + " " + to_string(autorotate.y) + " " + to_string(autorotate.z);
-		exportString += " " + to_string(offset.x) + " " + to_string(offset.y) + " " + to_string(offset.z);
-		exportString += " " + to_string(scale.x) + " " + to_string(scale.y) + " " + to_string(scale.z);
-		exportString += " " + to_string((int)showAxis) + " " + to_string((int)showAxisNames) + " " + to_string((int)showRuler) + " " + to_string((int)showGrid);
+		exportString += " " + std::to_string(quatRot.x) + " " + std::to_string(quatRot.y) + " " + std::to_string(quatRot.z) + " " + std::to_string(quatRot.w);
+		exportString += " " + std::to_string(autorotate.x) + " " + std::to_string(autorotate.y) + " " + std::to_string(autorotate.z);
+		exportString += " " + std::to_string(offset.x) + " " + std::to_string(offset.y) + " " + std::to_string(offset.z);
+		exportString += " " + std::to_string(scale.x) + " " + std::to_string(scale.y) + " " + std::to_string(scale.z);
+		exportString += " " + std::to_string((int)showAxis) + " " + std::to_string((int)showAxisNames) + " " + std::to_string((int)showRuler) + " " + std::to_string((int)showGrid);
 
-		exportString += " " + to_string(variableCount);
+		exportString += " " + std::to_string(variableCount);
 		for (int v : variables)
-			exportString += " " + to_string(v);
+			exportString += " " + std::to_string(v);
 
 		exportString += "\n";
 
 		return exportString;
 	}
 
-	void ImportAsString(string input)
+	void ImportAsString(std::string input)
 	{
 		// string split by Arafat Hasan
 		// https://stackoverflow.com/questions/14265581/parse-split-a-string-in-c-using-string-delimiter-standard-c
