@@ -27,9 +27,7 @@ void steps2Variation(int* variation, int* steps, Kernel* kernel)
     int attrStride = 1;
     for (int i = kernel->VAR_COUNT + kernel->PARAM_COUNT - 1; i >= 0; i--)
     {
-        int stepCount = i >= kernel->VAR_COUNT ?
-            (kernel->parameters[i - kernel->VAR_COUNT].rangingType == None ? 1 : kernel->parameters[i - kernel->VAR_COUNT].stepCount) :
-            (kernel->variables[i].rangingType == None ? 1 : kernel->variables[i].stepCount);
+        int stepCount = i >= kernel->VAR_COUNT ? (kernel->parameters[i - kernel->VAR_COUNT].TrueStepCount()) : (kernel->variables[i].TrueStepCount());
 
         if (stepCount == 0) continue;
 

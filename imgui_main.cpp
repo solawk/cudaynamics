@@ -24,7 +24,7 @@ Kernel kernelNew;
 
 numb* dataBuffer = nullptr; // One variation local buffer
 numb* particleBuffer = nullptr; // One step local buffer
-numb* mapBuffer = nullptr;
+//numb* mapBuffer = nullptr;
 
 float axisBuffer[18]{}; // 3 axis, 2 points
 float rulerBuffer[153]{}; // 1 axis, 5 * 10 + 1 points
@@ -50,6 +50,7 @@ bool computeAfterShiftSelect = false;
 
 // Temporary variables
 int variation = 0;
+int prevVariation = 0;
 int stride = 1;
 float frameTime; // In seconds
 float timeElapsed = 0.0f; // Total time elapsed, in seconds
@@ -111,8 +112,8 @@ void resetTempBuffers(Computation* data)
     if (particleBuffer) delete[] particleBuffer;
     particleBuffer = new numb[CUDA_marshal.totalVariations * KERNEL.VAR_COUNT];
 
-    if (mapBuffer) delete[] mapBuffer;
-    mapBuffer = new numb[CUDA_marshal.mapsSize];
+    //if (mapBuffer) delete[] mapBuffer;
+    //mapBuffer = new numb[CUDA_marshal.mapsSize];
 }
 
 std::string padString(std::string str, int length)
@@ -203,7 +204,7 @@ void terminateBuffers()
     deleteBothBuffers();
     if (dataBuffer != nullptr)      { delete[] dataBuffer;      dataBuffer = nullptr; }
     if (particleBuffer != nullptr)  { delete[] particleBuffer;  particleBuffer = nullptr; }
-    if (mapBuffer != nullptr)       { delete[] mapBuffer;  mapBuffer = nullptr; }
+    //if (mapBuffer != nullptr)       { delete[] mapBuffer;  mapBuffer = nullptr; }
 
     executedOnLaunch = false;
     playedBufferIndex = bufferToFillIndex = 0;
@@ -650,9 +651,9 @@ int imgui_main(int, char**)
                     ImGui::PopItemWidth();
                     attributeValueIndices[i] = index;
                     ImGui::SameLine(); ImGui::Text(("Value: " + std::to_string(calculateValue(attr->min, attr->step, index))).c_str());
-                    bool tempSelForMaps = kernelNewAttr->selectedForMaps;
-                    ImGui::SameLine(); if (ImGui::Checkbox(("##RangingUseInMaps_" + std::to_string(i)).c_str(), &tempSelForMaps)) { kernelNewAttr->selectedForMaps = !kernelNewAttr->selectedForMaps; }
-                    ImGui::SameLine(); ImGui::Text("Map axis");
+                    //bool tempSelForMaps = kernelNewAttr->selectedForMaps;
+                    //ImGui::SameLine(); if (ImGui::Checkbox(("##RangingUseInMaps_" + std::to_string(i)).c_str(), &tempSelForMaps)) { kernelNewAttr->selectedForMaps = !kernelNewAttr->selectedForMaps; }
+                    //ImGui::SameLine(); ImGui::Text("Map axis");
                 }
 
                 steps2Variation(&variation, &(attributeValueIndices.data()[0]), &KERNEL);
@@ -954,6 +955,74 @@ int imgui_main(int, char**)
                 }
 
                 ImGui::EndCombo();
+            }
+
+            // Heatmap axes
+            if (window->type == Heatmap)
+            {
+                int prevIndexX = window->hmp.indexX;
+                int prevIndexY = window->hmp.indexY;
+                int prevTypeX = window->hmp.typeX;
+                int prevTypeY = window->hmp.typeY;
+
+                ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.485f);
+                if (ImGui::BeginCombo(("##" + windowName + "_axisX").c_str(),
+                    window->hmp.typeX == VARIABLE ? KERNEL.variables[window->hmp.indexX].name.c_str() : KERNEL.parameters[window->hmp.indexX].name.c_str(), 0))
+                {
+                    for (int v = 0; v < KERNEL.VAR_COUNT; v++)
+                    {
+                        if (ImGui::Selectable(KERNEL.variables[v].name.c_str()))
+                        {
+                            window->hmp.indexX = v;
+                            window->hmp.typeX = VARIABLE;
+                        }
+                    }
+
+                    for (int p = 0; p < KERNEL.PARAM_COUNT; p++)
+                    {
+                        if (ImGui::Selectable(KERNEL.parameters[p].name.c_str()))
+                        {
+                            window->hmp.indexX = p;
+                            window->hmp.typeX = PARAMETER;
+                        }
+                    }
+
+                    ImGui::EndCombo();
+                }
+
+                ImGui::SameLine();
+
+                if (ImGui::BeginCombo(("##" + windowName + "_axisY").c_str(),
+                    window->hmp.typeY == VARIABLE ? KERNEL.variables[window->hmp.indexY].name.c_str() : KERNEL.parameters[window->hmp.indexY].name.c_str(), 0))
+                {
+                    for (int v = 0; v < KERNEL.VAR_COUNT; v++)
+                    {
+                        if (ImGui::Selectable(KERNEL.variables[v].name.c_str()))
+                        {
+                            window->hmp.indexY = v;
+                            window->hmp.typeY = VARIABLE;
+                        }
+                    }
+
+                    for (int p = 0; p < KERNEL.PARAM_COUNT; p++)
+                    {
+                        if (ImGui::Selectable(KERNEL.parameters[p].name.c_str()))
+                        {
+                            window->hmp.indexY = p;
+                            window->hmp.typeY = PARAMETER;
+                        }
+                    }
+
+                    ImGui::EndCombo();
+                }
+
+                ImGui::PopItemWidth();
+
+                if (prevIndexX != window->hmp.indexX || prevIndexY != window->hmp.indexY || prevTypeX != window->hmp.typeX || prevTypeY != window->hmp.typeY)
+                {
+                    window->hmp.areValuesDirty = true;
+                    window->hmp.isHeatmapDirty = true;
+                }
             }
 
             // Common variables
@@ -1376,10 +1445,8 @@ int imgui_main(int, char**)
                             {
                                 ImPlot::PushColormap(heatmapColorMap);
 
-                                sizing.loadPointers(&(KERNEL.mapDatas[mapIndex]), &KERNEL);
+                                sizing.loadPointers(&KERNEL, &(window->hmp));
                                 sizing.initValues();
-                                sizing.initCutoff((float)plot->Axes[plot->CurrentX].Range.Min, (float)plot->Axes[plot->CurrentY].Range.Min,
-                                    (float)plot->Axes[plot->CurrentX].Range.Max, (float)plot->Axes[plot->CurrentY].Range.Max, window->hmp.showActualDiapasons);
 
                                 // Choosing configuration
                                 if (plot->shiftClicked && plot->shiftClickLocation.x != 0.0)
@@ -1403,30 +1470,30 @@ int imgui_main(int, char**)
                                     enabledParticles = false;
                                     playingParticles = false;
 
-#define IGNOREOUTOFREACH    if (stepX < 0 || stepX >= (sizing.map->typeX == VARIABLE ? KERNEL.variables[sizing.map->indexX].TrueStepCount() : KERNEL.parameters[sizing.map->indexX].TrueStepCount())) break; \
-                            if (stepY < 0 || stepY >= (sizing.map->typeY == VARIABLE ? KERNEL.variables[sizing.map->indexY].TrueStepCount() : KERNEL.parameters[sizing.map->indexY].TrueStepCount())) break;
+#define IGNOREOUTOFREACH    if (stepX < 0 || stepX >= (sizing.hmp->typeX == VARIABLE ? KERNEL.variables[sizing.hmp->indexX].TrueStepCount() : KERNEL.parameters[sizing.hmp->indexX].TrueStepCount())) break; \
+                            if (stepY < 0 || stepY >= (sizing.hmp->typeY == VARIABLE ? KERNEL.variables[sizing.hmp->indexY].TrueStepCount() : KERNEL.parameters[sizing.hmp->indexY].TrueStepCount())) break;
 
-                                    switch (sizing.map->typeX)
+                                    switch (sizing.hmp->typeX)
                                     {
                                     case VARIABLE:
                                         IGNOREOUTOFREACH;
-                                        attributeValueIndices[sizing.map->indexX] = stepX;
+                                        attributeValueIndices[sizing.hmp->indexX] = stepX;
                                         break;
                                     case PARAMETER:
                                         IGNOREOUTOFREACH;
-                                        attributeValueIndices[KERNEL.VAR_COUNT + sizing.map->indexX] = stepX;
+                                        attributeValueIndices[KERNEL.VAR_COUNT + sizing.hmp->indexX] = stepX;
                                         break;
                                     }
 
-                                    switch (sizing.map->typeY)
+                                    switch (sizing.hmp->typeY)
                                     {
                                     case VARIABLE:
                                         IGNOREOUTOFREACH;
-                                        attributeValueIndices[sizing.map->indexY] = stepY;
+                                        attributeValueIndices[sizing.hmp->indexY] = stepY;
                                         break;
                                     case PARAMETER:
                                         IGNOREOUTOFREACH;
-                                        attributeValueIndices[KERNEL.VAR_COUNT + sizing.map->indexY] = stepY;
+                                        attributeValueIndices[KERNEL.VAR_COUNT + sizing.hmp->indexY] = stepY;
                                         break;
                                     }
                                 }
@@ -1436,6 +1503,8 @@ int imgui_main(int, char**)
                                     heatmapRangingSelection(window, plot, &sizing);
                                 }
 
+                                sizing.initCutoff((float)plot->Axes[plot->CurrentX].Range.Min, (float)plot->Axes[plot->CurrentY].Range.Min,
+                                    (float)plot->Axes[plot->CurrentX].Range.Max, (float)plot->Axes[plot->CurrentY].Range.Max, window->hmp.showActualDiapasons);
                                 if (autofitHeatmap || toAutofit)
                                 {
                                     plot->Axes[plot->CurrentX].Range.Min = sizing.mapX1;
@@ -1446,32 +1515,55 @@ int imgui_main(int, char**)
 
                                 // Drawing
 
-                                numb* mapData = computations[playedBufferIndex].marshal.maps + sizing.map->offset;
+                                int mapSize = sizing.xSize * sizing.ySize;
+                                if (window->hmp.lastBufferSize != mapSize)
+                                {
+                                    if (window->hmp.valueBuffer != nullptr) delete[] window->hmp.valueBuffer;
+                                    if (window->hmp.pixelBuffer != nullptr) delete[] window->hmp.pixelBuffer;
+
+                                    window->hmp.lastBufferSize = mapSize;
+
+                                    window->hmp.valueBuffer = new numb[mapSize];
+                                    window->hmp.pixelBuffer = new unsigned char[mapSize * 4];
+                                    window->hmp.areValuesDirty = true;
+                                }
+
+                                if (variation != prevVariation) window->hmp.areValuesDirty = true;
+
+                                if (window->hmp.areValuesDirty)
+                                {
+                                    extractMap(computations[playedBufferIndex].marshal.maps2, window->hmp.valueBuffer, &(attributeValueIndices.data()[0]),
+                                        sizing.hmp->typeX == PARAMETER ? sizing.hmp->indexX + KERNEL.VAR_COUNT : sizing.hmp->indexX,
+                                        sizing.hmp->typeY == PARAMETER ? sizing.hmp->indexY + KERNEL.VAR_COUNT : sizing.hmp->indexY,
+                                        &KERNEL);
+                                }
+
+                                //numb* mapData = computations[playedBufferIndex].marshal.maps2 + sizing.map->offset;
 
                                 if (!window->hmp.areHeatmapLimitsDefined)
                                 {
-                                    getMinMax(mapData, sizing.map->xSize * sizing.map->ySize, &window->hmp.heatmapMin, &window->hmp.heatmapMax);
+                                    getMinMax(window->hmp.valueBuffer, sizing.xSize * sizing.ySize, &window->hmp.heatmapMin, &window->hmp.heatmapMax);
                                     window->hmp.areHeatmapLimitsDefined = true;
                                     window->hmp.isHeatmapDirty = true;
                                 }
 
-                                // Image init
-                                if (window->lastBufferSize != sizing.map->xSize * sizing.map->ySize)
+                                // TODO: Do not reload values when variating map axes (map values don't change anyway)
+                                if (variation != prevVariation)
                                 {
-                                    if (window->pixelBuffer != nullptr) delete[] window->pixelBuffer;
-                                    window->pixelBuffer = new unsigned char[sizing.map->xSize * sizing.map->ySize * 4];
-                                    window->lastBufferSize = sizing.map->xSize * sizing.map->ySize;
+                                    window->hmp.isHeatmapDirty = true;
                                 }
+
+                                // Image init
                                 if (window->hmp.isHeatmapDirty)
                                 {
-                                    MapToImg(mapData, &(window->pixelBuffer), sizing.map->xSize, sizing.map->ySize, window->hmp.heatmapMin, window->hmp.heatmapMax);
+                                    MapToImg(window->hmp.valueBuffer, &(window->hmp.pixelBuffer), sizing.xSize, sizing.ySize, window->hmp.heatmapMin, window->hmp.heatmapMax);
                                     window->hmp.isHeatmapDirty = false;
                                 }
-                                bool ret = LoadTextureFromRaw(&(window->pixelBuffer), sizing.map->xSize, sizing.map->ySize, (ID3D11ShaderResourceView**)&(window->hmp.myTexture), g_pd3dDevice);
+                                bool ret = LoadTextureFromRaw(&(window->hmp.pixelBuffer), sizing.xSize, sizing.ySize, (ID3D11ShaderResourceView**)&(window->hmp.myTexture), g_pd3dDevice);
                                 IM_ASSERT(ret);
 
-                                ImPlotPoint from = window->hmp.showActualDiapasons ? ImPlotPoint(sizing.minX, sizing.maxY + sizing.stepY) : ImPlotPoint(0, sizing.map->ySize);
-                                ImPlotPoint to = window->hmp.showActualDiapasons ? ImPlotPoint(sizing.maxX + sizing.stepX, sizing.minY) : ImPlotPoint(sizing.map->xSize, 0);
+                                ImPlotPoint from = window->hmp.showActualDiapasons ? ImPlotPoint(sizing.minX, sizing.maxY + sizing.stepY) : ImPlotPoint(0, sizing.ySize);
+                                ImPlotPoint to = window->hmp.showActualDiapasons ? ImPlotPoint(sizing.maxX + sizing.stepX, sizing.minY) : ImPlotPoint(sizing.xSize, 0);
 
                                 ImPlot::PlotImage(("Map " + std::to_string(mapIndex) + "##" + plotName + std::to_string(0)).c_str(), (ImTextureID)(window->hmp.myTexture),
                                     from, to, ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f), ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
@@ -1483,8 +1575,8 @@ int imgui_main(int, char**)
                                     {
                                         void* cutoffHeatmap = new numb[sizing.cutHeight * sizing.cutWidth];
 
-                                        cutoff2D(mapData, (numb*)cutoffHeatmap,
-                                            sizing.map->xSize, sizing.map->ySize, sizing.cutMinX, sizing.cutMinY, sizing.cutMaxX, sizing.cutMaxY);
+                                        cutoff2D(window->hmp.valueBuffer, (numb*)cutoffHeatmap,
+                                            sizing.xSize, sizing.ySize, sizing.cutMinX, sizing.cutMinY, sizing.cutMaxX, sizing.cutMaxY);
 
                                         void* compressedHeatmap = new numb[(int)ceil((float)sizing.cutWidth / heatStride) * (int)ceil((float)sizing.cutHeight / heatStride)];
 
@@ -1551,6 +1643,8 @@ int imgui_main(int, char**)
                 ((ID3D11ShaderResourceView*)plotWindows[i].hmp.myTexture)->Release();
                 plotWindows[i].hmp.myTexture = nullptr;
             }
+
+        prevVariation = variation;
     }
 
     saveWindows();
@@ -1567,7 +1661,7 @@ int imgui_main(int, char**)
     ::UnregisterClassW(wc.lpszClassName, wc.hInstance);
 
     terminateBuffers();
-    for (int i = 0; i < plotWindows.size(); i++) if (plotWindows[i].pixelBuffer != nullptr) delete[] plotWindows[i].pixelBuffer;
+    for (int i = 0; i < plotWindows.size(); i++) if (plotWindows[i].hmp.pixelBuffer != nullptr) delete[] plotWindows[i].hmp.pixelBuffer;
 
     return 0;
 }
@@ -1870,35 +1964,35 @@ void heatmapRangingSelection(PlotWindow* window, ImPlotPlot* plot, HeatmapSizing
     enabledParticles = false;
     playingParticles = false;
 
-    int xMaxStep = sizing->map->typeX == PARAMETER ? KERNEL.parameters[sizing->map->indexX].TrueStepCount() :
-        (sizing->map->typeX == VARIABLE ? KERNEL.variables[sizing->map->indexX].TrueStepCount() : 0);
-    int yMaxStep = sizing->map->typeY == PARAMETER ? KERNEL.parameters[sizing->map->indexY].TrueStepCount() :
-        (sizing->map->typeY == VARIABLE ? KERNEL.variables[sizing->map->indexY].TrueStepCount() : 0);
+    int xMaxStep = sizing->hmp->typeX == PARAMETER ? KERNEL.parameters[sizing->hmp->indexX].TrueStepCount() :
+        (sizing->hmp->typeX == VARIABLE ? KERNEL.variables[sizing->hmp->indexX].TrueStepCount() : 0);
+    int yMaxStep = sizing->hmp->typeY == PARAMETER ? KERNEL.parameters[sizing->hmp->indexY].TrueStepCount() :
+        (sizing->hmp->typeY == VARIABLE ? KERNEL.variables[sizing->hmp->indexY].TrueStepCount() : 0);
 
-    if (sizing->map->typeX == VARIABLE)
+    if (sizing->hmp->typeX == VARIABLE)
     {
-        kernelNew.variables[sizing->map->indexX].min = calculateValue(KERNEL.variables[sizing->map->indexX].min, KERNEL.variables[sizing->map->indexX].step, stepX1);
-        kernelNew.variables[sizing->map->indexX].max = calculateValue(KERNEL.variables[sizing->map->indexX].min, KERNEL.variables[sizing->map->indexX].step, stepX2);
-        kernelNew.variables[sizing->map->indexX].rangingType = Linear;
+        kernelNew.variables[sizing->hmp->indexX].min = calculateValue(KERNEL.variables[sizing->hmp->indexX].min, KERNEL.variables[sizing->hmp->indexX].step, stepX1);
+        kernelNew.variables[sizing->hmp->indexX].max = calculateValue(KERNEL.variables[sizing->hmp->indexX].min, KERNEL.variables[sizing->hmp->indexX].step, stepX2);
+        kernelNew.variables[sizing->hmp->indexX].rangingType = Linear;
     }
     else
     {
-        kernelNew.parameters[sizing->map->indexX].min = calculateValue(KERNEL.parameters[sizing->map->indexX].min, KERNEL.parameters[sizing->map->indexX].step, stepX1);
-        kernelNew.parameters[sizing->map->indexX].max = calculateValue(KERNEL.parameters[sizing->map->indexX].min, KERNEL.parameters[sizing->map->indexX].step, stepX2);
-        kernelNew.parameters[sizing->map->indexX].rangingType = Linear;
+        kernelNew.parameters[sizing->hmp->indexX].min = calculateValue(KERNEL.parameters[sizing->hmp->indexX].min, KERNEL.parameters[sizing->hmp->indexX].step, stepX1);
+        kernelNew.parameters[sizing->hmp->indexX].max = calculateValue(KERNEL.parameters[sizing->hmp->indexX].min, KERNEL.parameters[sizing->hmp->indexX].step, stepX2);
+        kernelNew.parameters[sizing->hmp->indexX].rangingType = Linear;
     }
 
-    if (sizing->map->typeY == VARIABLE)
+    if (sizing->hmp->typeY == VARIABLE)
     {
-        kernelNew.variables[sizing->map->indexY].min = calculateValue(KERNEL.variables[sizing->map->indexY].min, KERNEL.variables[sizing->map->indexY].step, stepY1);
-        kernelNew.variables[sizing->map->indexY].max = calculateValue(KERNEL.variables[sizing->map->indexY].min, KERNEL.variables[sizing->map->indexY].step, stepY2);
-        kernelNew.variables[sizing->map->indexY].rangingType = Linear;
+        kernelNew.variables[sizing->hmp->indexY].min = calculateValue(KERNEL.variables[sizing->hmp->indexY].min, KERNEL.variables[sizing->hmp->indexY].step, stepY1);
+        kernelNew.variables[sizing->hmp->indexY].max = calculateValue(KERNEL.variables[sizing->hmp->indexY].min, KERNEL.variables[sizing->hmp->indexY].step, stepY2);
+        kernelNew.variables[sizing->hmp->indexY].rangingType = Linear;
     }
     else
     {
-        kernelNew.parameters[sizing->map->indexY].min = calculateValue(KERNEL.parameters[sizing->map->indexY].min, KERNEL.parameters[sizing->map->indexY].step, stepY1);
-        kernelNew.parameters[sizing->map->indexY].max = calculateValue(KERNEL.parameters[sizing->map->indexY].min, KERNEL.parameters[sizing->map->indexY].step, stepY2);
-        kernelNew.parameters[sizing->map->indexY].rangingType = Linear;
+        kernelNew.parameters[sizing->hmp->indexY].min = calculateValue(KERNEL.parameters[sizing->hmp->indexY].min, KERNEL.parameters[sizing->hmp->indexY].step, stepY1);
+        kernelNew.parameters[sizing->hmp->indexY].max = calculateValue(KERNEL.parameters[sizing->hmp->indexY].min, KERNEL.parameters[sizing->hmp->indexY].step, stepY2);
+        kernelNew.parameters[sizing->hmp->indexY].rangingType = Linear;
     }
 
     autoLoadNewParams = false; // Otherwise the map immediately starts drawing the cut region

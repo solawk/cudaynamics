@@ -5,31 +5,36 @@
 
 struct HeatmapSizing
 {
-	MapData* map = nullptr;
 	Kernel* kernel = nullptr;
+	HeatmapProperties* hmp = nullptr;
 
 	numb minX, stepX, maxX;
 	numb minY, stepY, maxY;
 
-	void loadPointers(MapData* md, Kernel* krn)
+	int xSize, ySize;
+
+	void loadPointers(Kernel* krn, HeatmapProperties* hmpd)
 	{
-		map = md;
 		kernel = krn;
+		hmp = hmpd;
 	}
 
 	void initValues()
 	{
-		switch (map->typeX)
+		xSize = hmp->typeX == VARIABLE ? kernel->variables[hmp->indexX].TrueStepCount() : kernel->parameters[hmp->indexX].TrueStepCount();
+		ySize = hmp->typeY == VARIABLE ? kernel->variables[hmp->indexY].TrueStepCount() : kernel->parameters[hmp->indexY].TrueStepCount();
+
+		switch (hmp->typeX)
 		{
 		case PARAMETER:
-			minX = kernel->parameters[map->indexX].min;
-			stepX = kernel->parameters[map->indexX].step;
-			maxX = kernel->parameters[map->indexX].max;
+			minX = kernel->parameters[hmp->indexX].min;
+			stepX = kernel->parameters[hmp->indexX].step;
+			maxX = kernel->parameters[hmp->indexX].max;
 			break;
 		case VARIABLE:
-			minX = kernel->variables[map->indexX].min;
-			stepX = kernel->variables[map->indexX].step;
-			maxX = kernel->variables[map->indexX].max;
+			minX = kernel->variables[hmp->indexX].min;
+			stepX = kernel->variables[hmp->indexX].step;
+			maxX = kernel->variables[hmp->indexX].max;
 			break;
 		case STEP: // TODO
 			minX = 0;
@@ -38,17 +43,17 @@ struct HeatmapSizing
 			break;
 		}
 
-		switch (map->typeY)
+		switch (hmp->typeY)
 		{
 		case PARAMETER:
-			minY = kernel->parameters[map->indexY].min;
-			stepY = kernel->parameters[map->indexY].step;
-			maxY = kernel->parameters[map->indexY].max;
+			minY = kernel->parameters[hmp->indexY].min;
+			stepY = kernel->parameters[hmp->indexY].step;
+			maxY = kernel->parameters[hmp->indexY].max;
 			break;
 		case VARIABLE:
-			minY = kernel->variables[map->indexY].min;
-			stepY = kernel->variables[map->indexY].step;
-			maxY = kernel->variables[map->indexY].max;
+			minY = kernel->variables[hmp->indexY].min;
+			stepY = kernel->variables[hmp->indexY].step;
+			maxY = kernel->variables[hmp->indexY].max;
 			break;
 		case STEP: // TODO
 			minY = 0;
@@ -79,14 +84,14 @@ struct HeatmapSizing
 			// Step diapasons
 			cutMinX = (int)floor(plotRect.x) - 1;    if (cutMinX < 0) cutMinX = 0;
 			cutMinY = (int)floor(plotRect.y) - 1;    if (cutMinY < 0) cutMinY = 0;
-			cutMaxX = (int)ceil(plotRect.z);         if (cutMaxX > (int)map->xSize - 1) cutMaxX = (int)map->xSize - 1;
-			cutMaxY = (int)ceil(plotRect.w);         if (cutMaxY > (int)map->ySize - 1) cutMaxY = (int)map->ySize - 1;
+			cutMaxX = (int)ceil(plotRect.z);         if (cutMaxX > xSize - 1) cutMaxX = xSize - 1;
+			cutMaxY = (int)ceil(plotRect.w);         if (cutMaxY > ySize - 1) cutMaxY = ySize - 1;
 		}
 		else
 		{
 			// Value diapasons
-			stepCountX = calculateStepCount(minX, maxX, stepX);
-			stepCountY = calculateStepCount(minY, maxY, stepY);
+			stepCountX = xSize;
+			stepCountY = ySize;
 
 			cutMinX = stepFromValue(minX, stepX, plotRect.x);    if (cutMinX < 0) cutMinX = 0;
 			cutMinY = stepFromValue(minY, stepY, plotRect.y);    if (cutMinY < 0) cutMinY = 0;
@@ -103,9 +108,9 @@ struct HeatmapSizing
 		cutHeight = cutMaxY - cutMinY + 1;
 
 		mapX1 = actualDiapasons ? minX : 0;
-		mapX2 = actualDiapasons ? maxX + stepX : map->xSize;
+		mapX2 = actualDiapasons ? maxX + stepX : xSize;
 		mapY1 = actualDiapasons ? minY : 0;
-		mapY2 = actualDiapasons ? maxY + stepY : map->ySize;
+		mapY2 = actualDiapasons ? maxY + stepY : ySize;
 
 		mapX1Cut = actualDiapasons ? valueMinX : cutMinX;
 		mapX2Cut = actualDiapasons ? valueMaxX : cutMaxX + 1;

@@ -1,4 +1,5 @@
 #pragma once
+#include "mapData_struct.h"
 
 struct HeatmapProperties
 {
@@ -8,13 +9,24 @@ struct HeatmapProperties
 	float heatmapMax;
 	float heatmapMin;
 	bool areHeatmapLimitsDefined;
-	bool isHeatmapDirty;
 	void* myTexture;
+
+	bool areValuesDirty;
+	bool isHeatmapDirty;
 
 	bool showHeatmapValues;
 	bool showActualDiapasons;
 	bool isHeatmapSelectionModeOn;
 	bool isHeatmapAutoComputeOn;
+
+	numb* valueBuffer;
+	unsigned char* pixelBuffer;
+	int lastBufferSize;
+
+	int indexX;
+	int indexY;
+	MapDimensionType typeX;
+	MapDimensionType typeY;
 
 	HeatmapProperties()
 	{
@@ -27,10 +39,21 @@ struct HeatmapProperties
 		isHeatmapAutoComputeOn = false;
 		areHeatmapLimitsDefined = false;
 
+		areValuesDirty = false;
 		isHeatmapDirty = false;
 		myTexture = nullptr;
 
 		showHeatmapValues = false;
 		showActualDiapasons = true;
+
+		valueBuffer = nullptr;
+		pixelBuffer = nullptr;
+		lastBufferSize = -1;
+
+		indexX = 0;
+		indexY = 1;
+
+		typeX = VARIABLE;
+		typeY = VARIABLE;
 	}
 };

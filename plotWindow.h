@@ -48,9 +48,6 @@ public:
 	bool showRuler;
 	bool showGrid;
 
-	unsigned char* pixelBuffer;
-	int lastBufferSize;
-
 	PlotWindow(int _id, std::string _name = "plot", bool _is3d = false)
 	{
 		active = true;
@@ -82,9 +79,6 @@ public:
 		showAxisNames = true;
 		showRuler = true;
 		showGrid = true;
-
-		pixelBuffer = nullptr;
-		lastBufferSize = -1;
 	}
 
 	void AssignVariables(int* variablesArray)

@@ -91,32 +91,17 @@ public:
 
 	void AssessMapAttributes(std::vector<int>* avi)
 	{
-		int varyingAttribute1 = -1;
-		int varyingAttribute2 = -1;
-		bool tooManyVaryingAttributes = false;
-		MapDimensionType varyingType1 = VARIABLE;
-		MapDimensionType varyingType2 = VARIABLE;
+		//int varyingAttribute1 = -1;
+		//int varyingAttribute2 = -1;
+		//bool tooManyVaryingAttributes = false;
+		//MapDimensionType varyingType1 = VARIABLE;
+		//MapDimensionType varyingType2 = VARIABLE;
 
 		for (int i = 0; i < VAR_COUNT; i++)
 		{
 			if (variables[i].TrueStepCount() > 1)
 			{
 				for (int m = 0; m < MAP_COUNT; m++) mapDatas[m].varFixations[i] = variables[i].values[(*avi)[i]];
-			}
-
-			if (variables[i].selectedForMaps)
-			{
-				if (varyingAttribute1 == -1)
-				{
-					varyingAttribute1 = i;
-					varyingType1 = VARIABLE;
-				}
-				else if (varyingAttribute2 == -1)
-				{
-					varyingAttribute2 = i;
-					varyingType2 = VARIABLE;
-				}
-				else tooManyVaryingAttributes = true;
 			}
 		}
 
@@ -126,43 +111,9 @@ public:
 			{
 				for (int m = 0; m < MAP_COUNT; m++) mapDatas[m].paramFixations[i] = parameters[i].values[(*avi)[VAR_COUNT + i]];
 			}
-
-			if (parameters[i].selectedForMaps)
-			{
-				if (varyingAttribute1 == -1)
-				{
-					varyingAttribute1 = i;
-					varyingType1 = PARAMETER;
-				}
-				else if (varyingAttribute2 == -1)
-				{
-					varyingAttribute2 = i;
-					varyingType2 = PARAMETER;
-				}
-				else tooManyVaryingAttributes = true;
-			}
 		}
 
-		for (int i = 0; i < MAP_COUNT; i++) mapDatas[i].toCompute = false;
-
-		if (!tooManyVaryingAttributes && varyingAttribute1 > -1)
-		{
-			if (varyingAttribute2 > -1)
-			{
-				for (int i = 0; i < MAP_COUNT; i++)
-				{
-					mapDatas[i].indexX = varyingAttribute1;
-					mapDatas[i].indexY = varyingAttribute2;
-					mapDatas[i].typeX = varyingType1;
-					mapDatas[i].typeY = varyingType2;
-					mapDatas[i].toCompute = true;
-				}
-			}
-			else
-			{
-				// TODO: if step
-			}
-		}
+		for (int i = 0; i < MAP_COUNT; i++) mapDatas[i].toCompute = true;
 	}
 
 	void MapsSetSizes()

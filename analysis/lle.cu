@@ -1,8 +1,8 @@
 #include "lle.h"
 
-__device__ void LLE(Computation* data, LLE_Settings settings, int variation, int mapX, int mapY, void(* finiteDifferenceScheme)(numb*, numb*, numb*, numb))
+__device__ void LLE(Computation* data, LLE_Settings settings, int variation, void(* finiteDifferenceScheme)(numb*, numb*, numb*, numb))
 {
-    MapData* mapData = &(CUDA_kernel.mapDatas[0]);
+    //MapData* mapData = &(CUDA_kernel.mapDatas[0]);
     int variationStart = variation * CUDA_marshal.variationSize;
     int stepStart = variationStart;
 
@@ -50,6 +50,8 @@ __device__ void LLE(Computation* data, LLE_Settings settings, int variation, int
         }
     }
 
-    CUDA_marshal.maps[mapData->offset + mapY * mapData->xSize + mapX] = LLE_value / ((CUDA_kernel.steps + 1) * CUDA_kernel.stepSize);
+    //CUDA_marshal.maps[mapData->offset + mapY * mapData->xSize + mapX] = LLE_value / ((CUDA_kernel.steps + 1) * CUDA_kernel.stepSize);
+    CUDA_marshal.maps2[variation] = LLE_value / ((CUDA_kernel.steps + 1) * CUDA_kernel.stepSize);
+    //CUDA_marshal.maps2[variation] = variation;
     //CUDA_marshal.maps[mapData->offset + mapY * mapData->xSize + mapX] = CUDA_marshal.trajectory[variationStart + 2];
 }

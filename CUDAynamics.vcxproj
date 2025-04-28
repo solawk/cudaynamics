@@ -123,6 +123,7 @@
     <ClCompile Include="implot\implot_items.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="main_utils.cpp" />
+    <ClCompile Include="map_utils.cpp" />
     <ClCompile Include="variationSteps.cu" />
   </ItemGroup>
   <ItemGroup>
@@ -158,6 +159,7 @@
     <ClInclude Include="main.h" />
     <ClInclude Include="main_utils.h" />
     <ClInclude Include="mapData_struct.h" />
+    <ClInclude Include="map_utils.hpp" />
     <ClInclude Include="marshal_struct.h" />
     <ClInclude Include="objects.h" />
     <ClInclude Include="plotWindow.h" />

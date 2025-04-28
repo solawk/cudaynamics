@@ -57,6 +57,7 @@
     <ClCompile Include="gui\map_img.cpp">
       <Filter>gui</Filter>
     </ClCompile>
+    <ClCompile Include="map_utils.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="imgui">
@@ -161,6 +162,7 @@
     </ClInclude>
     <ClInclude Include="imgui_main.hpp" />
     <ClInclude Include="heatmapProperties.hpp" />
+    <ClInclude Include="map_utils.hpp" />
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="main.cu" />
