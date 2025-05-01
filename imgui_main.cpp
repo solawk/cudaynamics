@@ -1429,6 +1429,8 @@ int imgui_main(int, char**)
                         numb max = 0.0f;
 
                         ImGui::TableSetColumnIndex(0);
+                        ImPlot::PushColormap(heatmapColorMap);
+                        ImVec2 plotSize;
 
                         HeatmapSizing sizing;
 
@@ -1441,8 +1443,6 @@ int imgui_main(int, char**)
 
                             if (computations[playedBufferIndex].ready)
                             {
-                                ImPlot::PushColormap(heatmapColorMap);
-
                                 sizing.loadPointers(&KERNEL, &(window->hmp));
                                 sizing.initValues();
 
@@ -1596,32 +1596,25 @@ int imgui_main(int, char**)
                                     }
                                 }
 
-                                ImGui::TableSetColumnIndex(1);
-
-                                ImGui::SetNextItemWidth(120);
-                                float minBefore = window->hmp.heatmapMin;
-                                float maxBefore = window->hmp.heatmapMax;
-                                ImGui::DragFloat("Max", &window->hmp.heatmapMax, 0.01f);
-                                ImPlot::ColormapScale("##HeatScale", window->hmp.heatmapMin, window->hmp.heatmapMax, ImVec2(120, ImPlot::GetPlotSize().y - 30.0f));
-                                ImGui::SetNextItemWidth(120);
-                                ImGui::DragFloat("Min", &window->hmp.heatmapMin, 0.01f);
-                                
-                                if (minBefore != window->hmp.heatmapMin || maxBefore != window->hmp.heatmapMax) window->hmp.isHeatmapDirty = true;
-
-                                ImPlot::PopColormap();
+                                plotSize = ImPlot::GetPlotSize();
                             }
 
                             ImPlot::EndPlot();
                         }
 
-                        if (ImPlot::BeginPlot("ABC"))
-                        {
-                            plot = ImPlot::GetPlot("ABC");
-                            plot->is3d = false;
-                            ImPlot::PlotHeatmap("ABCD", (float*)nullptr, 0, 0);
+                        // Table column should be here
+                        ImGui::TableSetColumnIndex(1);
 
-                            ImPlot::EndPlot();
-                        }
+                        ImGui::SetNextItemWidth(120);
+                        float minBefore = window->hmp.heatmapMin;
+                        float maxBefore = window->hmp.heatmapMax;
+                        ImGui::DragFloat("Max", &window->hmp.heatmapMax, 0.01f);
+                        ImPlot::ColormapScale("##HeatScale", window->hmp.heatmapMin, window->hmp.heatmapMax, ImVec2(120, plotSize.y - 30.0f));
+                        ImGui::SetNextItemWidth(120);
+                        ImGui::DragFloat("Min", &window->hmp.heatmapMin, 0.01f);
+                        ImPlot::PopColormap();
+
+                        if (minBefore != window->hmp.heatmapMin || maxBefore != window->hmp.heatmapMax) window->hmp.isHeatmapDirty = true;
 
                         if (window->whiteBg) ImPlot::PopStyleColor(2);
 
