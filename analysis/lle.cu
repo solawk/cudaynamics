@@ -44,9 +44,8 @@ __device__ void LLE(Computation* data, LLE_Settings settings, int variation, voi
             if (growth > 0.0f) LLE_value += log(growth);
 
             // Reset
-            LLE_array[0] = CUDA_marshal.trajectory[stepStart + 0] + (LLE_array[0] - CUDA_marshal.trajectory[stepStart + 0]) / growth;
-            LLE_array[1] = CUDA_marshal.trajectory[stepStart + 1] + (LLE_array[1] - CUDA_marshal.trajectory[stepStart + 1]) / growth;
-            LLE_array[2] = CUDA_marshal.trajectory[stepStart + 2] + (LLE_array[2] - CUDA_marshal.trajectory[stepStart + 2]) / growth;
+            for (int i = 0; i < CUDA_kernel.VAR_COUNT; i++)
+                LLE_array[i] = CUDA_marshal.trajectory[stepStart + i] + (LLE_array[i] - CUDA_marshal.trajectory[stepStart + i]) / growth;
         }
     }
 

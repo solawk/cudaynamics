@@ -651,9 +651,6 @@ int imgui_main(int, char**)
                     ImGui::PopItemWidth();
                     attributeValueIndices[i] = index;
                     ImGui::SameLine(); ImGui::Text(("Value: " + std::to_string(calculateValue(attr->min, attr->step, index))).c_str());
-                    //bool tempSelForMaps = kernelNewAttr->selectedForMaps;
-                    //ImGui::SameLine(); if (ImGui::Checkbox(("##RangingUseInMaps_" + std::to_string(i)).c_str(), &tempSelForMaps)) { kernelNewAttr->selectedForMaps = !kernelNewAttr->selectedForMaps; }
-                    //ImGui::SameLine(); ImGui::Text("Map axis");
                 }
 
                 steps2Variation(&variation, &(attributeValueIndices.data()[0]), &KERNEL);
@@ -1021,7 +1018,8 @@ int imgui_main(int, char**)
                 if (prevIndexX != window->hmp.indexX || prevIndexY != window->hmp.indexY || prevTypeX != window->hmp.typeX || prevTypeY != window->hmp.typeY)
                 {
                     window->hmp.areValuesDirty = true;
-                    window->hmp.isHeatmapDirty = true;
+                    window->hmp.areHeatmapLimitsDefined = false; // Triggers isHeatmapDirty too
+                    //window->hmp.isHeatmapDirty = true;
                 }
             }
 
@@ -1404,7 +1402,7 @@ int imgui_main(int, char**)
                                 ImPlot::SetNextLineStyle(window->markerColor);
                                 ImPlot::PushStyleVar(ImPlotStyleVar_MarkerWeight, window->markerOutlineSize);
                                 ImPlot::SetNextMarkerStyle(window->markerShape, window->markerSize);
-                                ImPlot::PlotScatter(plotName.c_str(), &((particleBuffer)[xIndex]), &((particleBuffer)[yIndex]), computations[playedBufferIndex].marshal.totalVariations, 0, 0, sizeof(numb) * KERNEL.VAR_COUNT);
+                                ImPlot::PlotScatter(plotName.c_str(), &((particleBuffer)[xIndex]), &((particleBuffer)[yIndex]), totalVariations, 0, 0, sizeof(numb) * KERNEL.VAR_COUNT);
                             }
                         }
 
@@ -1564,6 +1562,9 @@ int imgui_main(int, char**)
 
                                 ImPlotPoint from = window->hmp.showActualDiapasons ? ImPlotPoint(sizing.minX, sizing.maxY + sizing.stepY) : ImPlotPoint(0, sizing.ySize);
                                 ImPlotPoint to = window->hmp.showActualDiapasons ? ImPlotPoint(sizing.maxX + sizing.stepX, sizing.minY) : ImPlotPoint(sizing.xSize, 0);
+
+                                ImPlot::SetupAxes(sizing.hmp->typeX == PARAMETER ? KERNEL.parameters[sizing.hmp->indexX].name.c_str() : KERNEL.variables[sizing.hmp->indexX].name.c_str(),
+                                    sizing.hmp->typeY == PARAMETER ? KERNEL.parameters[sizing.hmp->indexY].name.c_str() : KERNEL.variables[sizing.hmp->indexY].name.c_str());
 
                                 ImPlot::PlotImage(("Map " + std::to_string(mapIndex) + "##" + plotName + std::to_string(0)).c_str(), (ImTextureID)(window->hmp.myTexture),
                                     from, to, ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f), ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
