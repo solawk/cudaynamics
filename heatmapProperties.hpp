@@ -4,7 +4,7 @@
 struct HeatmapProperties
 {
 	bool grayscaleHeatmap;
-	int stride;
+	int stride; // deprecated
 
 	float heatmapMax;
 	float heatmapMin;
