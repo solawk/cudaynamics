@@ -8,6 +8,7 @@ struct Kernel
 public:
 	std::string name;
 	int steps;
+	int transientSteps;
 	numb stepSize;
 	bool executeOnLaunch;
 
@@ -30,6 +31,7 @@ public:
 	{
 		name = kernel->name;
 		steps = kernel->steps;
+		transientSteps = kernel->transientSteps;
 		stepSize = kernel->stepSize;
 		executeOnLaunch = kernel->executeOnLaunch;
 
@@ -162,6 +164,7 @@ struct MarshalledKernel : Kernel
 {
 public:
 	int steps;
+	int transientSteps;
 	numb stepSize;
 
 	Attribute variables[MAX_ATTRIBUTES];
@@ -175,6 +178,7 @@ public:
 	void CopyFrom(Kernel* kernel)
 	{
 		steps = kernel->steps;
+		transientSteps = kernel->transientSteps;
 		stepSize = kernel->stepSize;
 
 		for (int i = 0; i < kernel->VAR_COUNT; i++)
@@ -192,6 +196,7 @@ public:
 	void CopyTo(Kernel* kernel)
 	{
 		kernel->steps = steps;
+		kernel->transientSteps = transientSteps;
 		kernel->stepSize = stepSize;
 
 		for (Attribute& v : kernel->variables)	v.ClearValues(); kernel->variables.clear();

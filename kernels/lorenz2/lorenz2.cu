@@ -20,6 +20,23 @@ __global__ void kernelProgram_lorenz2(Computation* data)
 
     // Custom area (usually) starts here
 
+    // TRANSIENT //
+    if (data->isFirst)
+    {
+        numb transientBuffer[MAX_ATTRIBUTES];
+        for (int ts = 0; ts < CUDA_kernel.transientSteps; ts++)
+        {
+            finiteDifferenceScheme_lorenz2(&(CUDA_marshal.trajectory[variationStart]),
+                &(transientBuffer[0]),
+                &(CUDA_marshal.parameterVariations[variation * CUDA_kernel.PARAM_COUNT]),
+                CUDA_kernel.stepSize);
+
+            for (int v = 0; v < CUDA_kernel.VAR_COUNT; v++)
+                CUDA_marshal.trajectory[variationStart + v] = transientBuffer[v];
+        }
+    }
+    // TRANSIENT END //
+
     for (int s = 0; s < CUDA_kernel.steps; s++)
     {
         stepStart = variationStart + s * CUDA_kernel.VAR_COUNT;

@@ -46,6 +46,7 @@ Kernel readKernelText(std::string name)
 
 		if (str[0] == "Name:") { kernel.name = str[1]; continue; }
 		if (str[0] == "Steps:") { kernel.steps = atoi(str[1].c_str()); continue; }
+		if (str[0] == "Transient:") { kernel.transientSteps = atoi(str[1].c_str()); continue; }
 		if (str[0] == "Step") { kernel.stepSize = (numb)atof(str[2].c_str()); continue; }
 		if (str[0] == "Execute") { kernel.executeOnLaunch = str[3] == "yes"; continue; }
 

@@ -472,6 +472,7 @@ int imgui_main(int, char**)
 
             frameTime = 1.0f / io.Framerate; ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
 
+            // Steps
             ImGui::PushItemWidth(200.0f);
             if (playingParticles)
             {
@@ -488,6 +489,31 @@ int imgui_main(int, char**)
             }
             ImGui::InputInt("Steps", &(kernelNew.steps), 1, 1000, playingParticles ? ImGuiInputTextFlags_ReadOnly : 0);
             TOOLTIP("Amount of computed steps, the trajectory will be (1 + 'steps') steps long, including the initial state");
+            if (popStyle) POP_FRAME(3);
+            if (playingParticles)
+            {
+                ImGui::PopStyleColor();
+                ImGui::PopStyleColor();
+                ImGui::PopStyleColor();
+            }
+
+            // Transient steps
+            ImGui::PushItemWidth(200.0f);
+            if (playingParticles)
+            {
+                ImGui::PushStyleColor(ImGuiCol_FrameBg, disabledBackgroundColor);
+                ImGui::PushStyleColor(ImGuiCol_FrameBgActive, disabledBackgroundColor);
+                ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, disabledBackgroundColor);
+            }
+            popStyle = false;
+            if (kernelNew.transientSteps != KERNEL.transientSteps)
+            {
+                anyChanged = true;
+                PUSH_UNSAVED_FRAME;
+                popStyle = true;
+            }
+            ImGui::InputInt("Transient steps", &(kernelNew.transientSteps), 1, 1000, playingParticles ? ImGuiInputTextFlags_ReadOnly : 0);
+            TOOLTIP("Steps to skip, including the initial state");
             if (popStyle) POP_FRAME(3);
             if (playingParticles)
             {

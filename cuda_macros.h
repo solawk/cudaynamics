@@ -1,13 +1,5 @@
 #pragma once
 
-// Short kernel macros
-
-// Variable value in the current step and variation
-//#define dataV(n)		data[stepStart + n]
-
-// Starting value of the variable in the variation
-//#define initV(n)		dataV(n) = varValues[n]
-
 // Current variable value in the FDS
 #define V(n)			currentV[attributes::variables::n]
 
@@ -17,14 +9,8 @@
 // Parameter value in the FDS
 #define P(n)			parameters[attributes::parameters::n]
 
-// Map cell value (index, x, y)
-//#define M(i, x, y)		maps[mapData[i].offset + y * mapData[i].xSize + x]
-
 // Map
 #define M(n)			CUDA_kernel.mapDatas[attributes::maps::n]
-
-// Shift to next step
-//#define NEXT			+ kernel::VAR_COUNT
 
 // Computation access macros
 
