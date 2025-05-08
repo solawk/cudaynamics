@@ -42,6 +42,21 @@
 
 // Computation macros
 
+#define TRANSIENT_SKIP(FDS)      if (data->isFirst)  \
+                            {  \
+                                numb transientBuffer[MAX_ATTRIBUTES];  \
+                                for (int ts = 0; ts < CUDA_kernel.transientSteps; ts++)  \
+                                {  \
+                                    FDS(&(CUDA_marshal.trajectory[variationStart]),  \
+                                        &(transientBuffer[0]),  \
+                                        &(CUDA_marshal.parameterVariations[variation * CUDA_kernel.PARAM_COUNT]),  \
+                                        CUDA_kernel.stepSize);  \
+                                      \
+                                    for (int v = 0; v < CUDA_kernel.VAR_COUNT; v++)  \
+                                        CUDA_marshal.trajectory[variationStart + v] = transientBuffer[v];  \
+                                }  \
+                            }
+
 #define NORM_3D(x1, x2, y1, y2, z1, z2) sqrt((x2-x1)*(x2-x1) + (y2-y1)*(y2-y1) + (z2-z1)*(z2-z1))
 
 // == Largest Lyapunov Exponent (LLE) ==
