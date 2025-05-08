@@ -120,6 +120,7 @@
     <ClInclude Include="analysis\lle.h" />
     <ClInclude Include="cuda_macros.h" />
     <ClInclude Include="dbscan\dbscan.h" />
+    <ClInclude Include="iconfont.h" />
     <ClInclude Include="imgui\backends\imgui_impl_dx11.h" />
     <ClInclude Include="imgui\backends\imgui_impl_win32.h" />
     <ClInclude Include="imgui\imconfig.h" />

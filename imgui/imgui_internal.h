@@ -1909,6 +1909,13 @@ struct IMGUI_API ImGuiDockNode
     bool                    IsFocused               :1;
     bool                    IsBgDrawnThisFrame      :1;
     bool                    HasCloseButton          :1; // Provide space for a close button (if any of the docked window has one). Note that button may be hidden on window without one.
+    bool                    HasFullscreenButton     :1; // Provide space for a fullscreen button
+    bool                    First;                        
+    bool                    IsFullscreen;               // Currently isn't Fullscreen
+    bool                    IsFullscreenEnded;          // End of fullscreen
+    ImVec2                  OriginalPos;                // Pos of node before fullscreen
+    ImVec2                  OriginalSize;               // Size of node before fullscreen
+    bool                    OnParent;                   //
     bool                    HasWindowMenuButton     :1;
     bool                    HasCentralNodeChild     :1;
     bool                    WantCloseAll            :1; // Set when closing all tabs at once.
@@ -2702,6 +2709,9 @@ struct IMGUI_API ImGuiWindow
     bool                    IsFallbackWindow;                   // Set on the "Debug##Default" window.
     bool                    IsExplicitChild;                    // Set when passed _ChildWindow, left to false by BeginDocked()
     bool                    HasCloseButton;                     // Set when the window has a close button (p_open != NULL)
+    bool                    HasFullscreenButton;                // Set when the window has a fullscreen button
+    bool                    IsFullscreen;                       // Currently Fullscreen
+    bool                    IsFullscreenButtonPressed;          // Fullscreen button was pressed 
     signed char             ResizeBorderHovered;                // Current border being hovered for resize (-1: none, otherwise 0-3)
     signed char             ResizeBorderHeld;                   // Current border being held for resize (-1: none, otherwise 0-3)
     short                   BeginCount;                         // Number of Begin() during the current frame (generally 0 or 1, 1+ if appending via multiple Begin/End pairs)
@@ -3649,7 +3659,7 @@ namespace ImGui
     IMGUI_API ImVec2        TabItemCalcSize(const char* label, bool has_close_button_or_unsaved_marker);
     IMGUI_API ImVec2        TabItemCalcSize(ImGuiWindow* window);
     IMGUI_API void          TabItemBackground(ImDrawList* draw_list, const ImRect& bb, ImGuiTabItemFlags flags, ImU32 col);
-    IMGUI_API void          TabItemLabelAndCloseButton(ImDrawList* draw_list, const ImRect& bb, ImGuiTabItemFlags flags, ImVec2 frame_padding, const char* label, ImGuiID tab_id, ImGuiID close_button_id, bool is_contents_visible, bool* out_just_closed, bool* out_text_clipped);
+    IMGUI_API void          TabItemLabelAndCloseButton(ImDrawList* draw_list, const ImRect& bb, ImGuiTabItemFlags flags, ImVec2 frame_padding, const char* label, ImGuiID tab_id, ImGuiID close_button_id, bool is_contents_visible, bool* out_just_closed, bool* out_text_clipped, ImGuiID fullscreen_button_id);
 
     // Render helpers
     // AVOID USING OUTSIDE OF IMGUI.CPP! NOT FOR PUBLIC CONSUMPTION. THOSE FUNCTIONS ARE A MESS. THEIR SIGNATURE AND BEHAVIOR WILL CHANGE, THEY NEED TO BE REFACTORED INTO SOMETHING DECENT.
@@ -3691,6 +3701,8 @@ namespace ImGui
 
     // Widgets: Window Decorations
     IMGUI_API bool          CloseButton(ImGuiID id, const ImVec2& pos);
+    IMGUI_API bool          FullscreenButton(ImGuiID id, const ImVec2& pos);
+    IMGUI_API bool          FullscreenButtonForNode(ImGuiID id, const ImVec2& pos, ImGuiDockNode* node);
     IMGUI_API bool          CollapseButton(ImGuiID id, const ImVec2& pos, ImGuiDockNode* dock_node);
     IMGUI_API void          Scrollbar(ImGuiAxis axis);
     IMGUI_API bool          ScrollbarEx(const ImRect& bb, ImGuiID id, ImGuiAxis axis, ImS64* p_scroll_v, ImS64 avail_v, ImS64 contents_v, ImDrawFlags flags);

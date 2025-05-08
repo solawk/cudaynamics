@@ -101,6 +101,7 @@
     <ClInclude Include="analysis\lle.h">
       <Filter>analysis</Filter>
     </ClInclude>
+    <ClInclude Include="iconfont.h" />
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="main.cu" />

@@ -1160,6 +1160,9 @@ CODE
 #pragma GCC diagnostic ignored "-Wclass-memaccess"                  // [__GNUC__ >= 8] warning: 'memset/memcpy' clearing/writing an object of type 'xxxx' with no trivial copy-assignment; use assignment or value-initialization instead
 #endif
 
+
+
+
 // Debug options
 #define IMGUI_DEBUG_NAV_SCORING     0   // Display navigation scoring preview when hovering items. Hold CTRL to display for all candidates. CTRL+Arrow to change last direction.
 #define IMGUI_DEBUG_NAV_RECTS       0   // Display the reference navigation rectangle for each window
@@ -7134,6 +7137,7 @@ void ImGui::RenderWindowDecorations(ImGuiWindow* window, const ImRect& title_bar
 
 // When inside a dock node, this is handled in DockNodeCalcTabBarLayout() instead.
 // Render title text, collapse button, close button
+// And now render fullscreen button
 void ImGui::RenderWindowTitleBarContents(ImGuiWindow* window, const ImRect& title_bar_rect, const char* name, bool* p_open)
 {
     ImGuiContext& g = *GImGui;
@@ -7141,6 +7145,7 @@ void ImGui::RenderWindowTitleBarContents(ImGuiWindow* window, const ImRect& titl
     ImGuiWindowFlags flags = window->Flags;
 
     const bool has_close_button = (p_open != NULL);
+    const bool has_fullscreen_button = has_close_button;
     const bool has_collapse_button = !(flags & ImGuiWindowFlags_NoCollapse) && (style.WindowMenuButtonPosition != ImGuiDir_None);
 
     // Close & Collapse button are on the Menu NavLayer and don't default focus (unless there's nothing else on that layer)
@@ -7181,6 +7186,14 @@ void ImGui::RenderWindowTitleBarContents(ImGuiWindow* window, const ImRect& titl
     if (has_close_button)
         if (CloseButton(window->GetID("#CLOSE"), close_button_pos))
             *p_open = false;
+
+    // Fullscreen button
+    if(has_fullscreen_button)
+        if (FullscreenButton(window->GetID("#FULLSCREEN"), close_button_pos - ImVec2(button_sz, 0))) {
+            window->IsFullscreen = !window->IsFullscreen;
+            window->IsFullscreenButtonPressed = true;
+        }
+       
 
     window->DC.NavLayerCurrent = ImGuiNavLayer_Main;
     g.CurrentItemFlags = item_flags_backup;
@@ -17802,6 +17815,13 @@ static void ImGui::DockNodeUpdate(ImGuiDockNode* node)
     node->LastFrameAlive = g.FrameCount;
     node->IsBgDrawnThisFrame = false;
 
+    node->OnParent = node->ParentNode != NULL;  // set true if node has Parent
+    if (node->First) {
+        node->IsFullscreen = false;
+        node->IsFullscreenEnded = false;        // turn bools to false by default
+        node->First = false;
+    }
+
     node->CentralNode = node->OnlyNodeWithWindows = NULL;
     if (node->IsRootNode())
         DockNodeUpdateForRootNode(node);
@@ -17920,12 +17940,43 @@ static void ImGui::DockNodeUpdate(ImGuiDockNode* node)
                 SetNextWindowPos(ref_window->Pos);
             else if (node->AuthorityForPos == ImGuiDataAuthority_DockNode)
                 SetNextWindowPos(node->Pos);
+            else if (node->IsFullscreen) {                                          // sets fullscreen pos
+                SetNextWindowPos(ImVec2(0, 0));
+            }
+            else if (node->IsFullscreenEnded) {
+                SetNextWindowPos(node->OriginalPos);                                    // restores original pos
+            }
+            else if (node->OnParent) {
+                if (node->ParentNode->IsFullscreen) {                                          // sets fullscreen pos
+                    SetNextWindowPos(ImVec2(0, 0));
+                }
+                else if (node->ParentNode->IsFullscreenEnded) {
+                    SetNextWindowPos(node->ParentNode->OriginalPos);                                    // restores original pos
+                }
+            }
+                
 
             // Sync Size
             if (node->AuthorityForSize == ImGuiDataAuthority_Window && ref_window)
                 SetNextWindowSize(ref_window->SizeFull);
             else if (node->AuthorityForSize == ImGuiDataAuthority_DockNode)
                 SetNextWindowSize(node->Size);
+            else if (node->IsFullscreen) {                                                                      
+                SetNextWindowSize(ImVec2(GetSystemMetrics(SM_CXSCREEN), GetSystemMetrics(SM_CYSCREEN)));            // sets fullscreen size
+            }
+            else if (node->IsFullscreenEnded) {
+                node->IsFullscreenEnded = false;
+                SetNextWindowSize(node->OriginalSize);                                                              // restores original size
+            }
+            else if (node->OnParent) {
+                if (node->ParentNode->IsFullscreen) {                                         
+                    SetNextWindowSize(ImVec2(GetSystemMetrics(SM_CXSCREEN), GetSystemMetrics(SM_CYSCREEN)));            // sets fullscreen size
+                }
+                else if (node->ParentNode->IsFullscreenEnded) {
+                    node->IsFullscreenEnded = false;
+                    SetNextWindowSize(node->ParentNode->OriginalSize);                                                              // restores original size
+                }
+            }
 
             // Sync Collapsed
             if (node->AuthorityForSize == ImGuiDataAuthority_Window && ref_window)
@@ -18413,6 +18464,7 @@ static void ImGui::DockNodeUpdateTabBar(ImGuiDockNode* node, ImGuiWindow* host_w
     // Note that VisibleWindow may have been overrided by CTRL+Tabbing, so VisibleWindow->TabId may be != from tab_bar->SelectedTabId
     const bool close_button_is_enabled = node->HasCloseButton && node->VisibleWindow && node->VisibleWindow->HasCloseButton;
     const bool close_button_is_visible = node->HasCloseButton;
+    const bool fullscreen_button_is_visible = close_button_is_visible;
     //const bool close_button_is_visible = close_button_is_enabled; // Most people would expect this behavior of not even showing the button (leaving a hole since we can't claim that space as other windows in the tba bar have one)
     if (close_button_is_visible)
     {
@@ -18435,6 +18487,29 @@ static void ImGui::DockNodeUpdateTabBar(ImGuiDockNode* node, ImGuiWindow* host_w
             PopItemFlag();
         }
     }
+    if (fullscreen_button_is_visible) {
+        if (FullscreenButtonForNode(host_window->GetID("#FULLSCREEN"), close_button_pos - ImVec2(g.FontSize, 0), node))
+        {
+            if (!node->OnParent) {
+                node->IsFullscreen = !node->IsFullscreen;
+                if (!node->IsFullscreen) node->IsFullscreenEnded = true;
+                else {
+                    node->OriginalPos = node->Pos;
+                    node->OriginalSize = node->Size;
+                }
+            }
+            else {
+                node->ParentNode->IsFullscreen = !node->ParentNode->IsFullscreen;
+                if (!node->ParentNode->IsFullscreen) node->ParentNode->IsFullscreenEnded = true;
+                else {
+                    node->ParentNode->OriginalPos = node->ParentNode->Pos;
+                    node->ParentNode->OriginalSize = node->ParentNode->Size;
+                }
+            }
+        }
+    }
+
+
 
     // When clicking on the title bar outside of tabs, we still focus the selected tab for that node
     // FIXME: TabItems submitted earlier use AllowItemOverlap so we manually perform a more specific test for now (hovered || held) in order to not cover them.
@@ -18573,6 +18648,7 @@ static void ImGui::DockNodeCalcTabBarLayout(const ImGuiDockNode* node, ImRect* o
         if (out_close_button_pos) *out_close_button_pos = ImVec2(r.Max.x - button_sz, r.Min.y + style.FramePadding.y);
         r.Max.x -= button_sz + style.ItemInnerSpacing.x;
     }
+    if(node->HasFullscreenButton) r.Max.x -= button_sz + style.ItemInnerSpacing.x;
     if (node->HasWindowMenuButton && style.WindowMenuButtonPosition == ImGuiDir_Left)
     {
         r.Min.x += button_sz + style.ItemInnerSpacing.x;
@@ -18840,7 +18916,7 @@ static void ImGui::DockNodePreviewDockRender(ImGuiWindow* host_window, ImGuiDock
                 if (!tab_bar_rect.Contains(tab_bb))
                     overlay_draw_lists[overlay_n]->PushClipRect(tab_bar_rect.Min, tab_bar_rect.Max);
                 TabItemBackground(overlay_draw_lists[overlay_n], tab_bb, tab_flags, overlay_col_tabs);
-                TabItemLabelAndCloseButton(overlay_draw_lists[overlay_n], tab_bb, tab_flags, g.Style.FramePadding, payload_window->Name, 0, 0, false, NULL, NULL);
+                TabItemLabelAndCloseButton(overlay_draw_lists[overlay_n], tab_bb, tab_flags, g.Style.FramePadding, payload_window->Name, 0, 0, false, NULL, NULL, 0);
                 if (!tab_bar_rect.Contains(tab_bb))
                     overlay_draw_lists[overlay_n]->PopClipRect();
             }

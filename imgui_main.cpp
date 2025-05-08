@@ -197,6 +197,39 @@ void loadWindows()
     configFileStream.close();
 }
 
+
+
+// set position and size for fullcreen
+void FullscreenActLogic(int i, bool* isFullscreen, ImVec2 fullscreenSize, bool* isFullscreenEnd, ImVec2* originalPos, ImVec2* originalSize) {
+    if (isFullscreen[i])                                        
+    {                                                           
+        ImGui::SetNextWindowPos(ImVec2(0,0));                 
+        ImGui::SetNextWindowSize(fullscreenSize);               
+    }                                                           
+    if (isFullscreenEnd[i])                                     
+    {                                                           
+        ImGui::SetNextWindowPos(originalPos[i]);                
+        ImGui::SetNextWindowSize(originalSize[i]);              
+        isFullscreenEnd[i] = false;                             
+    }                                                           
+}
+
+
+void FullscreenButtonPressLogic(ImGuiWindow* window, int i, bool* isFullscreen, ImVec2* originalPos, ImVec2* originalSize, bool* isFullscreenEnd) {                              
+    isFullscreen[i] = window->IsFullscreen;                                     
+    if (window->IsFullscreenButtonPressed) {                                    
+        if (isFullscreen[i])                                                    
+        {                                                                       
+            originalPos[i] = ImGui::GetWindowPos();                             
+            originalSize[i] = ImGui::GetWindowSize();                           
+        }                                                                       
+        else isFullscreenEnd[i] = true;                                                                                                                 
+        window->IsFullscreenButtonPressed = false;                              
+    }                                                                           
+}
+
+
+
 // Main code
 int imgui_main(int, char**)
 {
@@ -253,17 +286,13 @@ int imgui_main(int, char**)
     LOAD_PARAMNEW;
     stepsNew = kernel::steps;
 
-    bool isFullscreen[9] = { false };                   //for fullscreen
-    bool isFullscreenEnd[9] = { false };                //
-    ImVec2 originalPos[9], originalSize[9];             //
-    ImVec2 fullscreenPos, fullscreenSize;               //
-    fullscreenPos.x = 0;                                //
-    fullscreenPos.y = 0;                                //
-    fullscreenSize.x = GetSystemMetrics(SM_CXSCREEN);   //
-    fullscreenSize.y = GetSystemMetrics(SM_CYSCREEN);   //
-    const char* textFullcreenMode = "to windowed mode"; //
-    const char* textWindowMode = "to fullscreen mode";  //
-    int buttonPadding;                                  //
+    bool isFullscreen[15] = { false };                                                              //for fullscreen
+    bool isFullscreenEnd[15] = { false };                                                           //
+    ImVec2 originalPos[15], originalSize[15];                                                       //
+    ImVec2 fullscreenSize;                                                                          //
+    fullscreenSize.x = GetSystemMetrics(SM_CXSCREEN);                                               //
+    fullscreenSize.y = GetSystemMetrics(SM_CYSCREEN);                                               //
+
 
     try
     {
@@ -318,52 +347,16 @@ int imgui_main(int, char**)
         {
             style.WindowMenuButtonPosition = ImGuiDir_Left;
 
-            if (isFullscreen[0])                                        // set position and size for fullcreen
-            {                                                           //
-                ImGui::SetNextWindowPos(fullscreenPos);                 //
-                ImGui::SetNextWindowSize(fullscreenSize);               //
-            }                                                           //
-            if (isFullscreenEnd[0])                                      //
-            {                                                           //
-                ImGui::SetNextWindowPos(originalPos[0]);                //
-                ImGui::SetNextWindowSize(originalSize[0]);              //
-                isFullscreenEnd[0] = false;                             //
-            }                                                           //
-            ImGui::Begin("CUDAynamics", &work);
+            FullscreenActLogic(0, isFullscreen, fullscreenSize, isFullscreenEnd, originalPos, originalSize);           // use fullscreen / windowed mode 
 
+            ImGui::Begin("CUDAynamics", &work);
+            FullscreenButtonPressLogic(ImGui::GetCurrentWindow(), 0, isFullscreen, originalPos, originalSize, isFullscreenEnd);              // precess fullscreen button press
 
             ImGui::Text(kernel::name);
             if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal))        //  tooltip
             {                                                               //
                 ImGui::SetTooltip("shows the name of nonlinear system");    //
             }                                                               //
-
-            if (isFullscreen[0])                                                        // fullcreen button
-            {                                                                           //
-                buttonPadding = 195;                                                    //
-            }                                                                           //
-            else                                                                        //
-            {                                                                           //
-                buttonPadding = 220;                                                    //
-            }                                                                           //
-            ImGui::SameLine(ImGui::GetContentRegionAvail().x - buttonPadding);          //
-            if (ImGui::Button(isFullscreen[0] ? textFullcreenMode : textWindowMode)) {  //
-                isFullscreen[0] = !isFullscreen[0];                                     //
-                if (isFullscreen[0])                                                    //
-                {                                                                       //
-                    originalPos[0] = ImGui::GetWindowPos();                             //
-                    originalSize[0] = ImGui::GetWindowSize();                           //
-                }                                                                       //
-                else                                                                    //
-                {                                                                       //
-                    isFullscreenEnd[0] = true;                                          //
-                }                                                                       //
-            }                                                                           //
-
-            if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal))                                                //  tooltip
-            {                                                                                                       //
-                ImGui::SetTooltip(isFullscreen[0] ? "switches to windowed mode" : "switches to a fullscreen mode"); //
-            }                                                                                                       //
 
             int tempTotalVariations = 1;
             for (int v = 0; v < kernel::VAR_COUNT; v++) if (varNew.RANGING[v]) tempTotalVariations *= (calculateStepCount(varNew.MIN[v], varNew.MAX[v], varNew.STEP[v]));
@@ -968,19 +961,11 @@ int imgui_main(int, char**)
 
                 if (rangingWindowEnabled)
                 {
-                    if (isFullscreen[1])                                        // set position and size for fullcreen
-                    {                                                           //
-                        ImGui::SetNextWindowPos(fullscreenPos);                 //
-                        ImGui::SetNextWindowSize(fullscreenSize);               //
-                    }                                                           //
-                    if (isFullscreenEnd[1])                                     //
-                    {                                                           //
-                        ImGui::SetNextWindowPos(originalPos[1]);                //
-                        ImGui::SetNextWindowSize(originalSize[1]);              //
-                        isFullscreenEnd[1] = false;                             //
-                    }                                                           //
+                    FullscreenActLogic(1, isFullscreen, fullscreenSize, isFullscreenEnd, originalPos, originalSize);        // use fullscreen / windowed mode 
 
                     ImGui::Begin("Ranging", &rangingWindowEnabled);
+
+                    FullscreenButtonPressLogic(ImGui::GetCurrentWindow(), 1, isFullscreen, originalPos, originalSize, isFullscreenEnd);          // precess fullscreen button press
 
                     for (int r = 0; r < rangingData[playedBufferIndex].rangingCount; r++)
                     {
@@ -1000,32 +985,6 @@ int imgui_main(int, char**)
                         {                                                                               //
                             ImGui::SetTooltip("shows the name of a parameter and it's value");          //
                         }                                                                               //
-                        if (r == 0)
-                        {
-                            if (isFullscreen[1])                                                        // fullcreen button
-                            {                                                                           //
-                                buttonPadding = 195;                                                    //
-                            }                                                                           //
-                            else                                                                        //
-                            {                                                                           //
-                                buttonPadding = 220;                                                    //
-                            }                                                                           //
-                            ImGui::SameLine(ImGui::GetContentRegionAvail().x - buttonPadding);          //
-                            if (ImGui::Button(isFullscreen[1] ? textFullcreenMode : textWindowMode)) {  //
-                                isFullscreen[1] = !isFullscreen[1];                                     //
-                                if (isFullscreen[1]) {                                                  //
-                                    originalPos[1] = ImGui::GetWindowPos();                             //
-                                    originalSize[1] = ImGui::GetWindowSize();                           //
-                                }                                                                       //
-                                else {                                                                  //
-                                    isFullscreenEnd[1] = true;                                          //
-                                }                                                                       //
-                            }                                                                           //
-                            if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal))                                                //  tooltip
-                            {                                                                                                       //
-                                ImGui::SetTooltip(isFullscreen[1] ? "switches to windowed mode" : "switches to a fullscreen mode"); //
-                            }                                                                                                       //
-                        }
                     }
 
                     ImGui::Text(("Current variations: " + std::to_string(currentTotalVariations)).c_str());
@@ -1073,19 +1032,12 @@ int imgui_main(int, char**)
 
             if (graphBuilderWindowEnabled)
             {
-                if (isFullscreen[2])                                        // set position and size for fullcreen
-                {                                                           //
-                    ImGui::SetNextWindowPos(fullscreenPos);                 //
-                    ImGui::SetNextWindowSize(fullscreenSize);               //
-                }                                                           //
-                if (isFullscreenEnd[2])                                     //
-                {                                                           //
-                    ImGui::SetNextWindowPos(originalPos[2]);                //
-                    ImGui::SetNextWindowSize(originalSize[2]);              //
-                    isFullscreenEnd[2] = false;                             //
-                }                                                           //
+                FullscreenActLogic(2, isFullscreen, fullscreenSize, isFullscreenEnd, originalPos, originalSize);          // use fullscreen
 
                 ImGui::Begin("Graph Builder", &graphBuilderWindowEnabled);
+
+                FullscreenButtonPressLogic(ImGui::GetCurrentWindow(), 2, isFullscreen, originalPos, originalSize, isFullscreenEnd);                   // precess fullscreen button press
+
 
                 //ImGui::PushItemWidth(300.0f);
                 //ImGui::InputText("##Plot name input", plotNameBuffer, 64, ImGuiInputTextFlags_None);
@@ -1113,30 +1065,7 @@ int imgui_main(int, char**)
                     ImGui::SetTooltip("selects plot type for the new graph");                        //
                 }                                                                                    //
 
-                if (isFullscreen[2])                                                        // fullcreen button
-                {                                                                           //
-                    buttonPadding = 195;                                                    //
-                }                                                                           //
-                else                                                                        //
-                {                                                                           //
-                    buttonPadding = 220;                                                    //
-                }                                                                           //
-                ImGui::SameLine(ImGui::GetContentRegionAvail().x - buttonPadding);          //
-                if (ImGui::Button(isFullscreen[2] ? textFullcreenMode : textWindowMode)) {  //
-                    isFullscreen[2] = !isFullscreen[2];                                     //
-                    if (isFullscreen[2]) {                                                  //
-                        originalPos[2] = ImGui::GetWindowPos();                             //
-                        originalSize[2] = ImGui::GetWindowSize();                           //
-                    }                                                                       //
-                    else {                                                                  //
-                        isFullscreenEnd[2] = true;                                          //
-                    }                                                                       //
-                }                                                                           //
-                if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal))                                                //  tooltip
-                {                                                                                                       //
-                    ImGui::SetTooltip(isFullscreen[2] ? "switches to windowed mode" : "switches to a fullscreen mode"); //
-                }                                                                                                       //
-
+                
                 std::string variablexyz[] = { "x", "y", "z" };
 
                 switch (plotType)
@@ -1289,19 +1218,12 @@ int imgui_main(int, char**)
             std::string windowName = window->name + std::to_string(window->id);
             std::string plotName = windowName + "_plot";
 
-            if (isFullscreen[3 + w])                                    // set position and size for fullcreen
-            {                                                           //
-                ImGui::SetNextWindowPos(fullscreenPos);                 //
-                ImGui::SetNextWindowSize(fullscreenSize);               //
-            }                                                           //
-            if (isFullscreenEnd[3 + w])                                 //
-            {                                                           //
-                ImGui::SetNextWindowPos(originalPos[3 + w]);            //
-                ImGui::SetNextWindowSize(originalSize[3 + w]);          //
-                isFullscreenEnd[3 + w] = false;                         //
-            }                                                           //
+            FullscreenActLogic(3+w, isFullscreen, fullscreenSize, isFullscreenEnd, originalPos, originalSize);        // use fullscreen
 
             ImGui::Begin(windowName.c_str(), &(window->active));
+
+            FullscreenButtonPressLogic(ImGui::GetCurrentWindow(), 3 + w, isFullscreen, originalPos, originalSize, isFullscreenEnd);        // precess fullscreen button press
+
 
             bool autofitHeatmap = false;
 
@@ -1373,30 +1295,7 @@ int imgui_main(int, char**)
                 ImGui::SetTooltip("opens controls for the plot area");                           //
             }                                                                                    //
 
-            if (isFullscreen[3 + w])                                                           // fullcreen button
-            {                                                                                //
-                buttonPadding = 195;                                                         //
-            }                                                                                //
-            else                                                                             //
-            {                                                                                //
-                buttonPadding = 220;                                                         //
-            }                                                                                //
-            ImGui::SameLine(ImGui::GetContentRegionAvail().x - buttonPadding);               //
-            if (ImGui::Button(isFullscreen[3 + w] ? textFullcreenMode : textWindowMode)) {   //
-                isFullscreen[3 + w] = !isFullscreen[3 + w];                                  //
-                if (isFullscreen[3 + w]) {                                                   //
-                    originalPos[3 + w] = ImGui::GetWindowPos();                              //
-                    originalSize[3 + w] = ImGui::GetWindowSize();                            //
-                }                                                                            //
-                else {                                                                       //
-                    isFullscreenEnd[3 + w] = true;                                           //
-                }                                                                            //
-            }                                                                                //
-            if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal))                                                  //  tooltip
-            {                                                                                                         //
-                ImGui::SetTooltip(isFullscreen[3 + w] ? "switches to windowed mode" : "switches to a fullscreen mode"); //
-            }                                                                                                         //
-
+            
             // Common variables
             ImPlotAxisFlags axisFlags = (toAutofit ? ImPlotAxisFlags_AutoFit : 0);
             ImPlotPlot* plot;
