@@ -42,6 +42,7 @@
 
 // Computation macros
 
+// Skip transient steps using the provided finite difference scheme, akin to computing but without recording the trajectory
 #define TRANSIENT_SKIP(FDS)      if (data->isFirst)  \
                             {  \
                                 numb transientBuffer[MAX_ATTRIBUTES];  \

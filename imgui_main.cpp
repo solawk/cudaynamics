@@ -596,7 +596,7 @@ int imgui_main(int, char**)
             }
             if (anyChanged) POP_FRAME(4);
 
-            bool tempContinuous = continuousComputingEnabled;
+            /*bool tempContinuous = continuousComputingEnabled;
             if (ImGui::Checkbox("Continuous computing", &(tempContinuous)))
             {
                 // Flags of having buffers computed, to not interrupt computations in progress when switching
@@ -613,10 +613,10 @@ int imgui_main(int, char**)
                     particleStep = 0;
                 }
             }
-            TOOLTIP("Keep computing next buffers for continuous playback");
+            TOOLTIP("Keep computing next buffers for continuous playback");*/
 
             // PARTICLES MODE
-            if (playingParticles && enabledParticles)
+            if (playingParticles/* && enabledParticles*/)
             {
                 particlePhase += frameTime * particleSpeed;
                 int passedSteps = (int)floor(particlePhase);
