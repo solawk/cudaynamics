@@ -280,6 +280,7 @@ void prepareAndCompute()
         bufferToFillIndex = 0;
         playedBufferIndex = 0;
         bufferNo = 0;
+        particleStep = 0;
         deleteBothBuffers();
         removeHeatmapLimits();
 
@@ -1462,7 +1463,7 @@ int imgui_main(int, char**)
                                             stepY = (int)floor(plot->shiftClickLocation.y);
                                         }
 
-                                        enabledParticles = false;
+                                        //enabledParticles = false;
                                         playingParticles = false;
 
 #define IGNOREOUTOFREACH    if (stepX < 0 || stepX >= (sizing.hmp->typeX == VARIABLE ? KERNEL.variables[sizing.hmp->indexX].TrueStepCount() : KERNEL.parameters[sizing.hmp->indexX].TrueStepCount())) break; \
@@ -1959,7 +1960,7 @@ void heatmapRangingSelection(PlotWindow* window, ImPlotPlot* plot, HeatmapSizing
         stepY2 = (int)floor(plot->shiftSelect2Location.y);
     }
 
-    enabledParticles = false;
+    //enabledParticles = false;
     playingParticles = false;
 
     int xMaxStep = sizing->hmp->typeX == PARAMETER ? KERNEL.parameters[sizing->hmp->indexX].TrueStepCount() :
