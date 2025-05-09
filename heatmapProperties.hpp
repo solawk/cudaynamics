@@ -28,6 +28,9 @@ struct HeatmapProperties
 	MapDimensionType typeX;
 	MapDimensionType typeY;
 
+	bool initClickedLocation;
+	ImVec2 lastClickedLocation;
+
 	HeatmapProperties()
 	{
 		stride = 1;
@@ -55,5 +58,8 @@ struct HeatmapProperties
 
 		typeX = VARIABLE;
 		typeY = VARIABLE;
+
+		initClickedLocation = false;
+		lastClickedLocation = ImVec2(0.0f, 0.0f);
 	}
 };

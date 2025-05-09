@@ -153,7 +153,11 @@ int asyncComputation()
     }
 
     computations[bufferToFillIndex].ready = true;
-    for (int i = 0; i < plotWindows.size(); i++) plotWindows[i].hmp.isHeatmapDirty = true;
+    for (int i = 0; i < plotWindows.size(); i++)
+    {
+        plotWindows[i].hmp.initClickedLocation = true;
+        plotWindows[i].hmp.isHeatmapDirty = true;
+    }
 
     if (continuousComputingEnabled) bufferToFillIndex = 1 - bufferToFillIndex;
     if (continuousComputingEnabled && bufferToFillIndex != playedBufferIndex)
@@ -1444,6 +1448,12 @@ int imgui_main(int, char**)
                                     sizing.loadPointers(&KERNEL, &(window->hmp));
                                     sizing.initValues();
 
+                                    if (window->hmp.initClickedLocation)
+                                    {
+                                        window->hmp.lastClickedLocation = ImVec2(sizing.minX, sizing.minY);
+                                        window->hmp.initClickedLocation = false;
+                                    }
+
                                     // Choosing configuration
                                     if (plot->shiftClicked && plot->shiftClickLocation.x != 0.0)
                                     {
@@ -1474,10 +1484,12 @@ int imgui_main(int, char**)
                                         case VARIABLE:
                                             IGNOREOUTOFREACH;
                                             attributeValueIndices[sizing.hmp->indexX] = stepX;
+                                            window->hmp.lastClickedLocation.x = plot->shiftClickLocation.x;
                                             break;
                                         case PARAMETER:
                                             IGNOREOUTOFREACH;
                                             attributeValueIndices[KERNEL.VAR_COUNT + sizing.hmp->indexX] = stepX;
+                                            window->hmp.lastClickedLocation.x = plot->shiftClickLocation.x;
                                             break;
                                         }
 
@@ -1486,10 +1498,12 @@ int imgui_main(int, char**)
                                         case VARIABLE:
                                             IGNOREOUTOFREACH;
                                             attributeValueIndices[sizing.hmp->indexY] = stepY;
+                                            window->hmp.lastClickedLocation.y = plot->shiftClickLocation.y;
                                             break;
                                         case PARAMETER:
                                             IGNOREOUTOFREACH;
                                             attributeValueIndices[KERNEL.VAR_COUNT + sizing.hmp->indexY] = stepY;
+                                            window->hmp.lastClickedLocation.y = plot->shiftClickLocation.y;
                                             break;
                                         }
                                     }
@@ -1567,7 +1581,7 @@ int imgui_main(int, char**)
                                     ImPlot::PlotImage(("Map " + std::to_string(mapIndex) + "##" + plotName + std::to_string(0)).c_str(), (ImTextureID)(window->hmp.myTexture),
                                         from, to, ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f), ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
 
-                                    // Actual drawing of the heatmap
+                                    // Value labels
                                     if (sizing.cutWidth > 0 && sizing.cutHeight > 0)
                                     {
                                         if (window->hmp.showHeatmapValues)
@@ -1593,6 +1607,12 @@ int imgui_main(int, char**)
                                             delete[] compressedHeatmap;
                                         }
                                     }
+
+                                    double valueX = (double)window->hmp.lastClickedLocation.x;
+                                    double valueY = (double)window->hmp.lastClickedLocation.y;
+
+                                    ImPlot::DragLineX(0, &valueX, ImVec4(1.0f, 1.0f, 1.0f, 1.0f), 2.0f, ImPlotDragToolFlags_NoInputs);
+                                    ImPlot::DragLineY(1, &valueY, ImVec4(1.0f, 1.0f, 1.0f, 1.0f), 2.0f, ImPlotDragToolFlags_NoInputs);
 
                                     plotSize = ImPlot::GetPlotSize();
                                 }
