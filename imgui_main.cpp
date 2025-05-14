@@ -1272,12 +1272,12 @@ int imgui_main(int, char**)
                                     particleBuffer[v * varCount + var] = trajectory[(variationSize * v) + (varCount * particleStep) + var];
                             }
 
+                            getMinMax2D(particleBuffer, computations[playedBufferIndex].marshal.totalVariations, &(plot->dataMin), &(plot->dataMax));
+
                             if (!window->isImplot3d)
                             {
                                 rotateOffsetBuffer(particleBuffer, computations[playedBufferIndex].marshal.totalVariations, KERNEL.VAR_COUNT, window->variables[0], window->variables[1], window->variables[2],
                                 rotationEuler, window->offset, window->scale);
-
-                                getMinMax2D(particleBuffer, computations[playedBufferIndex].marshal.totalVariations, &(plot->dataMin), &(plot->dataMax));
 
                                 ImPlot::SetNextLineStyle(window->markerColor);
                                 ImPlot::PushStyleVar(ImPlotStyleVar_MarkerWeight, window->markerOutlineSize);
@@ -1452,6 +1452,19 @@ int imgui_main(int, char**)
                                     {
                                         window->hmp.lastClickedLocation = ImVec2(sizing.minX, sizing.minY);
                                         window->hmp.initClickedLocation = false;
+                                    }
+
+                                    if (window->hmp.showActualDiapasons)
+                                    {
+                                        // Values
+                                        window->hmp.lastClickedLocation.x = valueFromStep(sizing.minX, sizing.stepX, attributeValueIndices[sizing.hmp->indexX]);
+                                        window->hmp.lastClickedLocation.y = valueFromStep(sizing.minY, sizing.stepY, attributeValueIndices[sizing.hmp->indexY]);
+                                    }
+                                    else
+                                    {
+                                        // Steps
+                                        window->hmp.lastClickedLocation.x = attributeValueIndices[sizing.hmp->indexX];
+                                        window->hmp.lastClickedLocation.y = attributeValueIndices[sizing.hmp->indexY];
                                     }
 
                                     // Choosing configuration

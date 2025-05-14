@@ -19,6 +19,7 @@
 #define calculateValue(_min, _step, _currentStep) ((_min) + (_step) * (_currentStep))
 // Calculate step from value, floored int
 #define stepFromValue(_min, _step, _value) (int)((_value - _min) / _step)
+#define valueFromStep(_min, _step, _index) (_min + _step * _index)
 
 // None - no ranging, only the min value
 // Linear - fixed step values from min (inclusive) to max (not necessarily inclusive)
