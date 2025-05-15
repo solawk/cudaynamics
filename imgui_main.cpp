@@ -1488,14 +1488,16 @@ int imgui_main(int, char**)
                                     if (window->hmp.showActualDiapasons)
                                     {
                                         // Values
-                                        window->hmp.lastClickedLocation.x = valueFromStep(sizing.minX, sizing.stepX, attributeValueIndices[sizing.hmp->indexX]);
-                                        window->hmp.lastClickedLocation.y = valueFromStep(sizing.minY, sizing.stepY, attributeValueIndices[sizing.hmp->indexY]);
+                                        window->hmp.lastClickedLocation.x = valueFromStep(sizing.minX, sizing.stepX,
+                                            attributeValueIndices[sizing.hmp->indexX + (sizing.hmp->typeX == VARIABLE ? 0 : KERNEL.VAR_COUNT)]);
+                                        window->hmp.lastClickedLocation.y = valueFromStep(sizing.minY, sizing.stepY,
+                                            attributeValueIndices[sizing.hmp->indexY + (sizing.hmp->typeY == VARIABLE ? 0 : KERNEL.VAR_COUNT)]);
                                     }
                                     else
                                     {
                                         // Steps
-                                        window->hmp.lastClickedLocation.x = (float)attributeValueIndices[sizing.hmp->indexX];
-                                        window->hmp.lastClickedLocation.y = (float)attributeValueIndices[sizing.hmp->indexY];
+                                        window->hmp.lastClickedLocation.x = (float)attributeValueIndices[sizing.hmp->indexX + (sizing.hmp->typeX == VARIABLE ? 0 : KERNEL.VAR_COUNT)];
+                                        window->hmp.lastClickedLocation.y = (float)attributeValueIndices[sizing.hmp->indexY + (sizing.hmp->typeY == VARIABLE ? 0 : KERNEL.VAR_COUNT)];
                                     }
 
                                     // Choosing configuration
