@@ -1272,18 +1272,49 @@ int imgui_main(int, char**)
                                     particleBuffer[v * varCount + var] = trajectory[(variationSize * v) + (varCount * particleStep) + var];
                             }
 
-                            getMinMax2D(particleBuffer, computations[playedBufferIndex].marshal.totalVariations, &(plot->dataMin), &(plot->dataMax));
-
                             if (!window->isImplot3d)
                             {
+                                getMinMax2D(particleBuffer, computations[playedBufferIndex].marshal.totalVariations, &(plot->dataMin), &(plot->dataMax));
+
                                 rotateOffsetBuffer(particleBuffer, computations[playedBufferIndex].marshal.totalVariations, KERNEL.VAR_COUNT, window->variables[0], window->variables[1], window->variables[2],
-                                rotationEuler, window->offset, window->scale);
+                                    rotationEuler, window->offset, window->scale);
 
                                 ImPlot::SetNextLineStyle(window->markerColor);
-                                ImPlot::PushStyleVar(ImPlotStyleVar_MarkerWeight, window->markerOutlineSize);
-                                ImPlot::SetNextMarkerStyle(window->markerShape, window->markerSize);
                                 ImPlot::PlotScatter(plotName.c_str(), &((particleBuffer)[window->variables[0]]), &((particleBuffer)[window->variables[1]]),
                                     computations[playedBufferIndex].marshal.totalVariations, 0, 0, sizeof(numb)* KERNEL.VAR_COUNT);
+
+                                /*if (plotWindows[1].hmp.lut != nullptr)
+                                {
+                                    for (int g = 0; g < 6; g++)
+                                    {
+                                        int lutsize = plotWindows[1].hmp.lutSizes[g];
+                                        for (int v = 0; v < lutsize; v++)
+                                        {
+                                            for (int var = 0; var < varCount; var++)
+                                                particleBuffer[v * varCount + var] = trajectory[(variationSize * plotWindows[1].hmp.lut[g][v]) + (varCount * particleStep) + var];
+                                        }
+
+                                        rotateOffsetBuffer(particleBuffer, lutsize, KERNEL.VAR_COUNT, window->variables[0], window->variables[1], window->variables[2],
+                                            rotationEuler, window->offset, window->scale);
+
+                                        ImPlot::PushStyleVar(ImPlotStyleVar_MarkerWeight, window->markerOutlineSize);
+                                        ImPlot::SetNextMarkerStyle(window->markerShape, window->markerSize);
+
+                                        ImVec4 clr = ImVec4(0.5f, 0.0f, 0.5f, 1.0f);
+                                        switch (g)
+                                        {
+                                        case 1: clr = ImVec4(0.0f, 0.0f, 1.0f, 1.0f); break;
+                                        case 2: clr = ImVec4(0.0f, 1.0f, 1.0f, 1.0f); break;
+                                        case 3: clr = ImVec4(0.0f, 1.0f, 1.0f, 1.0f); break;
+                                        case 4: clr = ImVec4(1.0f, 1.0f, 0.0f, 1.0f); break;
+                                        case 5: clr = ImVec4(1.0f, 0.0f, 0.0f, 1.0f); break;
+                                        }
+
+                                        ImPlot::SetNextLineStyle(clr);
+                                        ImPlot::PlotScatter(plotName.c_str(), &((particleBuffer)[window->variables[0]]), &((particleBuffer)[window->variables[1]]),
+                                            lutsize, 0, 0, sizeof(numb) * KERNEL.VAR_COUNT);
+                                    }
+                                }*/
                             }
                             else
                             {
@@ -1463,8 +1494,8 @@ int imgui_main(int, char**)
                                     else
                                     {
                                         // Steps
-                                        window->hmp.lastClickedLocation.x = attributeValueIndices[sizing.hmp->indexX];
-                                        window->hmp.lastClickedLocation.y = attributeValueIndices[sizing.hmp->indexY];
+                                        window->hmp.lastClickedLocation.x = (float)attributeValueIndices[sizing.hmp->indexX];
+                                        window->hmp.lastClickedLocation.y = (float)attributeValueIndices[sizing.hmp->indexY];
                                     }
 
                                     // Choosing configuration
@@ -1581,6 +1612,15 @@ int imgui_main(int, char**)
                                     {
                                         MapToImg(window->hmp.valueBuffer, &(window->hmp.pixelBuffer), sizing.xSize, sizing.ySize, window->hmp.heatmapMin, window->hmp.heatmapMax);
                                         window->hmp.isHeatmapDirty = false;
+
+                                        // WIP
+                                        /*
+                                        window->hmp.lut = new int* [6];
+                                        for (int i = 0; i < 6; i++) window->hmp.lut[i] = new int[computations[playedBufferIndex].marshal.totalVariations];
+                                        window->hmp.lutSizes = new int[6];
+
+                                        setupLUT(window->hmp.valueBuffer, computations[playedBufferIndex].marshal.totalVariations, window->hmp.lut, window->hmp.lutSizes, 6, window->hmp.heatmapMin, window->hmp.heatmapMax);
+                                        */
                                     }
                                     bool ret = LoadTextureFromRaw(&(window->hmp.pixelBuffer), sizing.xSize, sizing.ySize, (ID3D11ShaderResourceView**)&(window->hmp.myTexture), g_pd3dDevice);
                                     IM_ASSERT(ret);
@@ -1670,11 +1710,13 @@ int imgui_main(int, char**)
 
         // Cleaning
         for (int i = 0; i < plotWindows.size(); i++)
+        {
             if (plotWindows[i].hmp.myTexture != nullptr)
             {
                 ((ID3D11ShaderResourceView*)plotWindows[i].hmp.myTexture)->Release();
                 plotWindows[i].hmp.myTexture = nullptr;
             }
+        }
 
         prevVariation = variation;
     }

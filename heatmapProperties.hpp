@@ -23,6 +23,9 @@ struct HeatmapProperties
 	unsigned char* pixelBuffer;
 	int lastBufferSize;
 
+	int** lut;
+	int* lutSizes;
+
 	int indexX;
 	int indexY;
 	MapDimensionType typeX;
@@ -52,6 +55,9 @@ struct HeatmapProperties
 		valueBuffer = nullptr;
 		pixelBuffer = nullptr;
 		lastBufferSize = -1;
+
+		lut = nullptr;
+		lutSizes = nullptr;
 
 		indexX = 0;
 		indexY = 1;
