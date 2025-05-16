@@ -952,14 +952,10 @@ bool ImGui::FullscreenButtonForNode(ImGuiID id, const ImVec2& pos, ImGuiDockNode
     ImU32 cross_col = GetColorU32(ImGuiCol_Text);
     ImVec2 cross_center = bb.GetCenter() - ImVec2(0.5f, 0.5f);
     float cross_extent = g.FontSize * 0.5f * 0.7071f - 1.0f;
-    if (!node->IsFullscreen) {
-        window->DrawList->AddLine(cross_center + ImVec2(+cross_extent, +cross_extent), cross_center + ImVec2(+cross_extent, -cross_extent), cross_col, 1.0f);
-        window->DrawList->AddLine(cross_center + ImVec2(+cross_extent, -cross_extent), cross_center + ImVec2(-cross_extent, -cross_extent), cross_col, 1.0f);
-        window->DrawList->AddLine(cross_center + ImVec2(-cross_extent, -cross_extent), cross_center + ImVec2(-cross_extent, +cross_extent), cross_col, 1.0f);
-        window->DrawList->AddLine(cross_center + ImVec2(-cross_extent, +cross_extent), cross_center + ImVec2(+cross_extent, +cross_extent), cross_col, 1.0f);
 
-    }
-    else {
+    bool full_on_parent = node->OnParent && node->TopMostParentNode->IsFullscreen;
+
+    if (full_on_parent || node->IsFullscreen) {
         window->DrawList->AddLine(cross_center + ImVec2(+cross_extent * 0.5, +cross_extent * 0.5), cross_center + ImVec2(+cross_extent, +cross_extent * 0.5), cross_col, 1.0f);
         window->DrawList->AddLine(cross_center + ImVec2(+cross_extent, +cross_extent * 0.5), cross_center + ImVec2(+cross_extent, -cross_extent), cross_col, 1.0f);
         window->DrawList->AddLine(cross_center + ImVec2(+cross_extent, -cross_extent), cross_center + ImVec2(-cross_extent * 0.5, -cross_extent), cross_col, 1.0f);
@@ -969,6 +965,12 @@ bool ImGui::FullscreenButtonForNode(ImGuiID id, const ImVec2& pos, ImGuiDockNode
         window->DrawList->AddLine(cross_center + ImVec2(+cross_extent * 0.5, +cross_extent), cross_center + ImVec2(-cross_extent, +cross_extent), cross_col, 1.0f);
         window->DrawList->AddLine(cross_center + ImVec2(-cross_extent, +cross_extent), cross_center + ImVec2(-cross_extent, -cross_extent * 0.5), cross_col, 1.0f);
         window->DrawList->AddLine(cross_center + ImVec2(-cross_extent, -cross_extent * 0.5), cross_center + ImVec2(-cross_extent * 0.5, -cross_extent * 0.5), cross_col, 1.0f);
+    }
+    else {
+        window->DrawList->AddLine(cross_center + ImVec2(+cross_extent, +cross_extent), cross_center + ImVec2(+cross_extent, -cross_extent), cross_col, 1.0f);
+        window->DrawList->AddLine(cross_center + ImVec2(+cross_extent, -cross_extent), cross_center + ImVec2(-cross_extent, -cross_extent), cross_col, 1.0f);
+        window->DrawList->AddLine(cross_center + ImVec2(-cross_extent, -cross_extent), cross_center + ImVec2(-cross_extent, +cross_extent), cross_col, 1.0f);
+        window->DrawList->AddLine(cross_center + ImVec2(-cross_extent, +cross_extent), cross_center + ImVec2(+cross_extent, +cross_extent), cross_col, 1.0f);
     }
     return pressed;
 }

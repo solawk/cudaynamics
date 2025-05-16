@@ -17816,6 +17816,13 @@ static void ImGui::DockNodeUpdate(ImGuiDockNode* node)
     node->IsBgDrawnThisFrame = false;
 
     node->OnParent = node->ParentNode != NULL;  // set true if node has Parent
+    if (node->OnParent) {
+        node->TopMostParentNode = node->ParentNode;
+        while (node->TopMostParentNode->ParentNode != NULL) {
+            node->TopMostParentNode = node->TopMostParentNode->ParentNode;
+        }
+    }
+
     if (node->First) {
         node->IsFullscreen = false;
         node->IsFullscreenEnded = false;        // turn bools to false by default
@@ -17947,11 +17954,11 @@ static void ImGui::DockNodeUpdate(ImGuiDockNode* node)
                 SetNextWindowPos(node->OriginalPos);                                    // restores original pos
             }
             else if (node->OnParent) {
-                if (node->ParentNode->IsFullscreen) {                                          // sets fullscreen pos
+                if (node->TopMostParentNode->IsFullscreen) {                                          // sets fullscreen pos
                     SetNextWindowPos(ImVec2(0, 0));
                 }
-                else if (node->ParentNode->IsFullscreenEnded) {
-                    SetNextWindowPos(node->ParentNode->OriginalPos);                                    // restores original pos
+                else if (node->TopMostParentNode->IsFullscreenEnded) {
+                    SetNextWindowPos(node->TopMostParentNode->OriginalPos);                                    // restores original pos
                 }
             }
                 
@@ -17969,12 +17976,12 @@ static void ImGui::DockNodeUpdate(ImGuiDockNode* node)
                 SetNextWindowSize(node->OriginalSize);                                                              // restores original size
             }
             else if (node->OnParent) {
-                if (node->ParentNode->IsFullscreen) {                                         
+                if (node->TopMostParentNode->IsFullscreen) {
                     SetNextWindowSize(ImVec2(GetSystemMetrics(SM_CXSCREEN), GetSystemMetrics(SM_CYSCREEN)));            // sets fullscreen size
                 }
-                else if (node->ParentNode->IsFullscreenEnded) {
-                    node->IsFullscreenEnded = false;
-                    SetNextWindowSize(node->ParentNode->OriginalSize);                                                              // restores original size
+                else if (node->TopMostParentNode->IsFullscreenEnded) {
+                    node->TopMostParentNode->IsFullscreenEnded = false;
+                    SetNextWindowSize(node->TopMostParentNode->OriginalSize);                                                              // restores original size
                 }
             }
 
@@ -18499,11 +18506,15 @@ static void ImGui::DockNodeUpdateTabBar(ImGuiDockNode* node, ImGuiWindow* host_w
                 }
             }
             else {
-                node->ParentNode->IsFullscreen = !node->ParentNode->IsFullscreen;
-                if (!node->ParentNode->IsFullscreen) node->ParentNode->IsFullscreenEnded = true;
+                node->TopMostParentNode = node->ParentNode;
+                while (node->TopMostParentNode->ParentNode != NULL) {
+                    node->TopMostParentNode = node->TopMostParentNode->ParentNode;
+                }
+                node->TopMostParentNode->IsFullscreen = !node->TopMostParentNode->IsFullscreen;
+                if (!node->TopMostParentNode->IsFullscreen) node->TopMostParentNode->IsFullscreenEnded = true;
                 else {
-                    node->ParentNode->OriginalPos = node->ParentNode->Pos;
-                    node->ParentNode->OriginalSize = node->ParentNode->Size;
+                    node->TopMostParentNode->OriginalPos = node->TopMostParentNode->Pos;
+                    node->TopMostParentNode->OriginalSize = node->TopMostParentNode->Size;
                 }
             }
         }

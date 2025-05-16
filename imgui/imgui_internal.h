@@ -1915,7 +1915,8 @@ struct IMGUI_API ImGuiDockNode
     bool                    IsFullscreenEnded;          // End of fullscreen
     ImVec2                  OriginalPos;                // Pos of node before fullscreen
     ImVec2                  OriginalSize;               // Size of node before fullscreen
-    bool                    OnParent;                   //
+    bool                    OnParent;                   // is node a part of larger window
+    ImGuiDockNode*          TopMostParentNode;          // the largest parent node
     bool                    HasWindowMenuButton     :1;
     bool                    HasCentralNodeChild     :1;
     bool                    WantCloseAll            :1; // Set when closing all tabs at once.
