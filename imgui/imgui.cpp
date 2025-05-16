@@ -7145,7 +7145,7 @@ void ImGui::RenderWindowTitleBarContents(ImGuiWindow* window, const ImRect& titl
     ImGuiWindowFlags flags = window->Flags;
 
     const bool has_close_button = (p_open != NULL);
-    const bool has_fullscreen_button = has_close_button;
+    const bool has_fullscreen_button = has_close_button; // could be changed in future to not give a fullscreen option
     const bool has_collapse_button = !(flags & ImGuiWindowFlags_NoCollapse) && (style.WindowMenuButtonPosition != ImGuiDir_None);
 
     // Close & Collapse button are on the Menu NavLayer and don't default focus (unless there's nothing else on that layer)
@@ -17817,7 +17817,7 @@ static void ImGui::DockNodeUpdate(ImGuiDockNode* node)
 
     node->OnParent = node->ParentNode != NULL;  // set true if node has Parent
     if (node->OnParent) {
-        node->TopMostParentNode = node->ParentNode;
+        node->TopMostParentNode = node->ParentNode;                            // get main parent of the current node
         while (node->TopMostParentNode->ParentNode != NULL) {
             node->TopMostParentNode = node->TopMostParentNode->ParentNode;
         }
@@ -17954,11 +17954,11 @@ static void ImGui::DockNodeUpdate(ImGuiDockNode* node)
                 SetNextWindowPos(node->OriginalPos);                                    // restores original pos
             }
             else if (node->OnParent) {
-                if (node->TopMostParentNode->IsFullscreen) {                                          // sets fullscreen pos
+                if (node->TopMostParentNode->IsFullscreen) {                                          // sets fullscreen pos of the main node parent
                     SetNextWindowPos(ImVec2(0, 0));
                 }
                 else if (node->TopMostParentNode->IsFullscreenEnded) {
-                    SetNextWindowPos(node->TopMostParentNode->OriginalPos);                                    // restores original pos
+                    SetNextWindowPos(node->TopMostParentNode->OriginalPos);                                    // restores original pos of the main node parent
                 }
             }
                 
@@ -17977,11 +17977,11 @@ static void ImGui::DockNodeUpdate(ImGuiDockNode* node)
             }
             else if (node->OnParent) {
                 if (node->TopMostParentNode->IsFullscreen) {
-                    SetNextWindowSize(ImVec2(GetSystemMetrics(SM_CXSCREEN), GetSystemMetrics(SM_CYSCREEN)));            // sets fullscreen size
+                    SetNextWindowSize(ImVec2(GetSystemMetrics(SM_CXSCREEN), GetSystemMetrics(SM_CYSCREEN)));            // sets fullscreen size of the main node parent
                 }
                 else if (node->TopMostParentNode->IsFullscreenEnded) {
                     node->TopMostParentNode->IsFullscreenEnded = false;
-                    SetNextWindowSize(node->TopMostParentNode->OriginalSize);                                                              // restores original size
+                    SetNextWindowSize(node->TopMostParentNode->OriginalSize);                                          // restores original size of the main node parent
                 }
             }
 
@@ -18495,7 +18495,7 @@ static void ImGui::DockNodeUpdateTabBar(ImGuiDockNode* node, ImGuiWindow* host_w
         }
     }
     if (fullscreen_button_is_visible) {
-        if (FullscreenButtonForNode(host_window->GetID("#FULLSCREEN"), close_button_pos - ImVec2(g.FontSize, 0), node))
+        if (FullscreenButtonForNode(host_window->GetID("#FULLSCREEN"), close_button_pos - ImVec2(g.FontSize, 0), node))     // main fullscreen button when docked
         {
             if (!node->OnParent) {
                 node->IsFullscreen = !node->IsFullscreen;
@@ -18659,7 +18659,7 @@ static void ImGui::DockNodeCalcTabBarLayout(const ImGuiDockNode* node, ImRect* o
         if (out_close_button_pos) *out_close_button_pos = ImVec2(r.Max.x - button_sz, r.Min.y + style.FramePadding.y);
         r.Max.x -= button_sz + style.ItemInnerSpacing.x;
     }
-    if(node->HasFullscreenButton) r.Max.x -= button_sz + style.ItemInnerSpacing.x;
+    if(node->HasFullscreenButton) r.Max.x -= button_sz + style.ItemInnerSpacing.x;      // make space for fullscreen button
     if (node->HasWindowMenuButton && style.WindowMenuButtonPosition == ImGuiDir_Left)
     {
         r.Min.x += button_sz + style.ItemInnerSpacing.x;
@@ -18927,7 +18927,7 @@ static void ImGui::DockNodePreviewDockRender(ImGuiWindow* host_window, ImGuiDock
                 if (!tab_bar_rect.Contains(tab_bb))
                     overlay_draw_lists[overlay_n]->PushClipRect(tab_bar_rect.Min, tab_bar_rect.Max);
                 TabItemBackground(overlay_draw_lists[overlay_n], tab_bb, tab_flags, overlay_col_tabs);
-                TabItemLabelAndCloseButton(overlay_draw_lists[overlay_n], tab_bb, tab_flags, g.Style.FramePadding, payload_window->Name, 0, 0, false, NULL, NULL, 0);
+                TabItemLabelAndCloseButton(overlay_draw_lists[overlay_n], tab_bb, tab_flags, g.Style.FramePadding, payload_window->Name, 0, 0, false, NULL, NULL, 0, 0);
                 if (!tab_bar_rect.Contains(tab_bb))
                     overlay_draw_lists[overlay_n]->PopClipRect();
             }

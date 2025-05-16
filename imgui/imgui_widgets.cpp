@@ -870,7 +870,7 @@ bool ImGui::CloseButton(ImGuiID id, const ImVec2& pos)
 }
 
 
-
+// fullscreen button used for single window while not in dock
 bool ImGui::FullscreenButton(ImGuiID id, const ImVec2& pos)
 {
     ImGuiContext& g = *GImGui;
@@ -901,6 +901,7 @@ bool ImGui::FullscreenButton(ImGuiID id, const ImVec2& pos)
     ImU32 cross_col = GetColorU32(ImGuiCol_Text);
     ImVec2 cross_center = bb.GetCenter() - ImVec2(0.5f, 0.5f);
     float cross_extent = g.FontSize * 0.5f * 0.7071f - 1.0f;
+
     if (!window->IsFullscreen) {
         window->DrawList->AddLine(cross_center + ImVec2(+cross_extent, +cross_extent), cross_center + ImVec2(+cross_extent, -cross_extent), cross_col, 1.0f);
         window->DrawList->AddLine(cross_center + ImVec2(+cross_extent, -cross_extent), cross_center + ImVec2(-cross_extent, -cross_extent), cross_col, 1.0f);
@@ -922,6 +923,7 @@ bool ImGui::FullscreenButton(ImGuiID id, const ImVec2& pos)
     return pressed;
 }
 
+// fullscreen button used in host window while docked
 bool ImGui::FullscreenButtonForNode(ImGuiID id, const ImVec2& pos, ImGuiDockNode* node)
 {
     ImGuiContext& g = *GImGui;
@@ -972,6 +974,46 @@ bool ImGui::FullscreenButtonForNode(ImGuiID id, const ImVec2& pos, ImGuiDockNode
         window->DrawList->AddLine(cross_center + ImVec2(-cross_extent, -cross_extent), cross_center + ImVec2(-cross_extent, +cross_extent), cross_col, 1.0f);
         window->DrawList->AddLine(cross_center + ImVec2(-cross_extent, +cross_extent), cross_center + ImVec2(+cross_extent, +cross_extent), cross_col, 1.0f);
     }
+    return pressed;
+}
+
+// fullscreen button used in each tab
+bool ImGui::FullscreenButtonForTab(ImGuiID id, const ImVec2& pos)
+{
+    ImGuiContext& g = *GImGui;
+    ImGuiWindow* window = g.CurrentWindow;
+
+    // Tweak 1: Shrink hit-testing area if button covers an abnormally large proportion of the visible region. That's in order to facilitate moving the window away. (#3825)
+    // This may better be applied as a general hit-rect reduction mechanism for all widgets to ensure the area to move window is always accessible?
+    const ImRect bb(pos, pos + ImVec2(g.FontSize, g.FontSize));
+    ImRect bb_interact = bb;
+    const float area_to_visible_ratio = window->OuterRectClipped.GetArea() / bb.GetArea();
+    if (area_to_visible_ratio < 1.5f)
+        bb_interact.Expand(ImTrunc(bb_interact.GetSize() * -0.25f));
+
+    // Tweak 2: We intentionally allow interaction when clipped so that a mechanical Alt,Right,Activate sequence can always close a window.
+    // (this isn't the common behavior of buttons, but it doesn't affect the user because navigation tends to keep items visible in scrolling layer).
+    bool is_clipped = !ItemAdd(bb_interact, id);
+
+    bool hovered, held;
+    bool pressed = ButtonBehavior(bb_interact, id, &hovered, &held);
+    if (is_clipped)
+        return pressed;
+
+    // Render
+    ImU32 bg_col = GetColorU32(held ? ImGuiCol_ButtonActive : ImGuiCol_ButtonHovered);
+    if (hovered)
+        window->DrawList->AddRectFilled(bb.Min, bb.Max, bg_col);
+    RenderNavCursor(bb, id, ImGuiNavRenderCursorFlags_Compact);
+    ImU32 cross_col = GetColorU32(ImGuiCol_Text);
+    ImVec2 cross_center = bb.GetCenter() - ImVec2(0.5f, 0.5f);
+    float cross_extent = g.FontSize * 0.5f * 0.7071f - 1.0f;
+
+    window->DrawList->AddLine(cross_center + ImVec2(+cross_extent, +cross_extent), cross_center + ImVec2(+cross_extent, -cross_extent), cross_col, 1.0f);
+    window->DrawList->AddLine(cross_center + ImVec2(+cross_extent, -cross_extent), cross_center + ImVec2(-cross_extent, -cross_extent), cross_col, 1.0f);
+    window->DrawList->AddLine(cross_center + ImVec2(-cross_extent, -cross_extent), cross_center + ImVec2(-cross_extent, +cross_extent), cross_col, 1.0f);
+    window->DrawList->AddLine(cross_center + ImVec2(-cross_extent, +cross_extent), cross_center + ImVec2(+cross_extent, +cross_extent), cross_col, 1.0f);
+
     return pressed;
 }
 
@@ -10350,15 +10392,21 @@ bool    ImGui::TabItemEx(ImGuiTabBar* tab_bar, const char* label, bool* p_open, 
 
     // Render tab label, process close button
     const ImGuiID close_button_id = p_open ? GetIDWithSeed("#CLOSE", NULL, docked_window ? docked_window->ID : id) : 0;
-    const ImGuiID fullscreen_button_id = GetIDWithSeed("#FULLSCREEN", NULL, docked_window ? docked_window->ID : id);
+    const ImGuiID fullscreen_button_id = GetIDWithSeed("#FULLSCREENTAB", NULL, docked_window ? docked_window->ID : id); //get ID for each fullscreen button on the Tab
     bool just_closed;
+    bool just_fullscreen;      // check if fullscreen button was pressed on the tab
     bool text_clipped;
-    TabItemLabelAndCloseButton(display_draw_list, bb, tab_just_unsaved ? (flags & ~ImGuiTabItemFlags_UnsavedDocument) : flags, tab_bar->FramePadding, label, id, close_button_id, tab_contents_visible, &just_closed, &text_clipped, fullscreen_button_id);
+    TabItemLabelAndCloseButton(display_draw_list, bb, tab_just_unsaved ? (flags & ~ImGuiTabItemFlags_UnsavedDocument) : flags, tab_bar->FramePadding, label, id, close_button_id, tab_contents_visible, &just_closed, &text_clipped, fullscreen_button_id, &just_fullscreen);
     if (just_closed && p_open != NULL)
     {
         *p_open = false;
         TabBarCloseTab(tab_bar, tab);
     }
+    if (just_fullscreen) {
+        tab->Window->IsFullscreen = true;               // set tab to a fullscreen
+        tab->Window->IsFullscreenButtonPressed = true;
+    }
+
 
     // Forward Hovered state so IsItemHovered() after Begin() can work (even though we are technically hovering our parent)
     // That state is copied to window->DockTabItemStatusFlags by our caller.
@@ -10455,7 +10503,7 @@ void ImGui::TabItemBackground(ImDrawList* draw_list, const ImRect& bb, ImGuiTabI
 
 // Render text label (with custom clipping) + Unsaved Document marker + Close Button logic
 // We tend to lock style.FramePadding for a given tab-bar, hence the 'frame_padding' parameter.
-void ImGui::TabItemLabelAndCloseButton(ImDrawList* draw_list, const ImRect& bb, ImGuiTabItemFlags flags, ImVec2 frame_padding, const char* label, ImGuiID tab_id, ImGuiID close_button_id, bool is_contents_visible, bool* out_just_closed, bool* out_text_clipped, ImGuiID fullscreen_button_id)
+void ImGui::TabItemLabelAndCloseButton(ImDrawList* draw_list, const ImRect& bb, ImGuiTabItemFlags flags, ImVec2 frame_padding, const char* label, ImGuiID tab_id, ImGuiID close_button_id, bool is_contents_visible, bool* out_just_closed, bool* out_text_clipped, ImGuiID fullscreen_button_id, bool* out_just_fullscreen)
 {
     ImGuiContext& g = *GImGui;
     ImVec2 label_size = CalcTextSize(label, NULL, true);
@@ -10463,7 +10511,9 @@ void ImGui::TabItemLabelAndCloseButton(ImDrawList* draw_list, const ImRect& bb, 
     if (out_just_closed)
         *out_just_closed = false;
     if (out_text_clipped)
-        *out_text_clipped = false;
+        *out_text_clipped = false;          
+    if (out_just_fullscreen)            // default values to false
+        *out_just_fullscreen = false;
 
     if (bb.GetWidth() <= 1.0f)
         return;
@@ -10499,16 +10549,15 @@ void ImGui::TabItemLabelAndCloseButton(ImDrawList* draw_list, const ImRect& bb, 
     bool close_button_visible = false;
     if (close_button_id != 0)
         if (is_contents_visible || bb.GetWidth() >= ImMax(button_sz, g.Style.TabMinWidthForCloseButton))
-            if (g.HoveredId == tab_id || g.HoveredId == close_button_id || g.ActiveId == tab_id || g.ActiveId == close_button_id || g.ActiveId == fullscreen_button_id)
+            if (g.HoveredId == tab_id || g.HoveredId == close_button_id || g.ActiveId == tab_id || g.ActiveId == close_button_id || g.ActiveId == fullscreen_button_id) // check if active
                 close_button_visible = true;
     bool unsaved_marker_visible = (flags & ImGuiTabItemFlags_UnsavedDocument) != 0 && (button_pos.x + button_sz <= bb.Max.x);
 
     if (close_button_visible)
     {
 
-        if (FullscreenButton(fullscreen_button_id, button_pos - ImVec2(button_sz, 0))) {
-            g.CurrentWindow->IsFullscreen = !g.CurrentWindow->IsFullscreen;
-            g.CurrentWindow->IsFullscreenButtonPressed = true;
+        if (FullscreenButtonForTab(fullscreen_button_id, button_pos - ImVec2(button_sz, 0))) {      // fullscreen button on the Tab
+            *out_just_fullscreen = true;
         }
 
         ImGuiLastItemData last_item_backup = g.LastItemData;
