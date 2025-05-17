@@ -2,12 +2,11 @@
 
 __device__ void LLE(Computation* data, LLE_Settings settings, int variation, void(* finiteDifferenceScheme)(numb*, numb*, numb*, numb))
 {
-    //MapData* mapData = &(CUDA_kernel.mapDatas[0]);
     int variationStart = variation * CUDA_marshal.variationSize;
     int stepStart = variationStart;
 
-    numb LLE_array[MAX_ATTRIBUTES];
-    numb LLE_array_temp[MAX_ATTRIBUTES];
+    numb LLE_array[MAX_ATTRIBUTES]; // The deflected trajectory
+    numb LLE_array_temp[MAX_ATTRIBUTES]; // Buffer for the next step of the deflected trajectory
     numb LLE_value = 0.0f;
 
     for (int i = 0; i < CUDA_kernel.VAR_COUNT; i++)
@@ -49,8 +48,5 @@ __device__ void LLE(Computation* data, LLE_Settings settings, int variation, voi
         }
     }
 
-    //CUDA_marshal.maps[mapData->offset + mapY * mapData->xSize + mapX] = LLE_value / ((CUDA_kernel.steps + 1) * CUDA_kernel.stepSize);
     CUDA_marshal.maps2[variation] = LLE_value / ((CUDA_kernel.steps + 1) * CUDA_kernel.stepSize);
-    //CUDA_marshal.maps2[variation] = variation;
-    //CUDA_marshal.maps[mapData->offset + mapY * mapData->xSize + mapX] = CUDA_marshal.trajectory[variationStart + 2];
 }

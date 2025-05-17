@@ -3,6 +3,8 @@
 #include "attribute_struct.h"
 #include "mapData_struct.h"
 
+#define MAX_MAP_SETTINGS 256
+
 struct Kernel
 {
 public:
@@ -19,6 +21,9 @@ public:
 	int VAR_COUNT;
 	int PARAM_COUNT;
 	int MAP_COUNT;
+
+	// An array of map setting values
+	numb mapSettings[MAX_MAP_SETTINGS];
 
 	void calcAttributeCounts()
 	{
@@ -103,7 +108,7 @@ public:
 		{
 			if (variables[i].TrueStepCount() > 1)
 			{
-				for (int m = 0; m < MAP_COUNT; m++) mapDatas[m].varFixations[i] = variables[i].values[(*avi)[i]];
+				//for (int m = 0; m < MAP_COUNT; m++) mapDatas[m].varFixations[i] = variables[i].values[(*avi)[i]];
 			}
 		}
 
@@ -111,7 +116,7 @@ public:
 		{
 			if (parameters[i].TrueStepCount() > 1)
 			{
-				for (int m = 0; m < MAP_COUNT; m++) mapDatas[m].paramFixations[i] = parameters[i].values[(*avi)[VAR_COUNT + i]];
+				//for (int m = 0; m < MAP_COUNT; m++) mapDatas[m].paramFixations[i] = parameters[i].values[(*avi)[VAR_COUNT + i]];
 			}
 		}
 
@@ -175,6 +180,8 @@ public:
 	int PARAM_COUNT;
 	int MAP_COUNT;
 
+	numb mapSettings[MAX_MAP_SETTINGS];
+
 	void CopyFrom(Kernel* kernel)
 	{
 		steps = kernel->steps;
@@ -191,6 +198,8 @@ public:
 		VAR_COUNT = kernel->VAR_COUNT;
 		PARAM_COUNT = kernel->PARAM_COUNT;
 		MAP_COUNT = kernel->MAP_COUNT;
+
+		memcpy(mapSettings, kernel->mapSettings, MAX_MAP_SETTINGS * sizeof(numb));
 	}
 
 	void CopyTo(Kernel* kernel)

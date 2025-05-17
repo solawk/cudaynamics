@@ -26,4 +26,4 @@ param eps Linear -2.0 0.0 0.01 100 0.0 0.0
 param delta Fixed 1.0 29.0 0.1 0 0.0 0.0
 param s Fixed 0.5 29.0 0.1 0 0.0 0.0
 // Defining maps:
-map LLE
+map LLE 11 0.01 50 0 -1

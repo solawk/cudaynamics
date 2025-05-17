@@ -16,7 +16,6 @@ __global__ void kernelProgram_lorenz2(Computation* data)
     if (variation >= CUDA_marshal.totalVariations) return;      // Shutdown thread if there isn't a variation to compute
     int variationStart = variation * CUDA_marshal.variationSize;         // Start index to store the modelling data for the variation
     int stepStart = variationStart;                         // Start index for the current modelling step
-    //int indicesStart = variation * (CUDA_kernel.VAR_COUNT + CUDA_kernel.PARAM_COUNT);   // Start index for the step indices of the attributes in the current variation
 
     // Custom area (usually) starts here
 
@@ -36,7 +35,7 @@ __global__ void kernelProgram_lorenz2(Computation* data)
 
     if (M(LLE).toCompute)
     {
-        LLE_Settings lle_settings(0.01f, 50, 0);
+        LLE_Settings lle_settings(MS(LLE, 0), MS(LLE, 1), MS(LLE, 2));
         lle_settings.Use3DNorm();
         LLE(data, lle_settings, variation, &finiteDifferenceScheme_lorenz2);
     }

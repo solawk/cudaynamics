@@ -24,4 +24,5 @@ param sigma Fixed 10.0 50.0 0.1 250 0.0 0.0
 param rho Fixed 28.0 50.0 0.1 250 0.0 0.0
 param beta Fixed 2.666667 29.0 0.1 0 0.0 0.0
 // Defining maps:
-map LLE
+// map <name> <map settings>
+map LLE 11 0.01 50 0 -1

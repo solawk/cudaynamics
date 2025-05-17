@@ -38,6 +38,8 @@ Kernel readKernelText(std::string name)
 	Attribute tempAttribute;
 	MapData tempMapData;
 
+	int mapSettingsCount = 0;
+
 	for (std::string line; std::getline(fileStream, line); )
 	{
 		str = splitString(line);
@@ -76,6 +78,16 @@ Kernel readKernelText(std::string name)
 		if (str[0] == "map")
 		{
 			tempMapData.name = str[1];
+			int structSettingsCount = atoi(str[2].c_str()); // Settings by the struct
+			int currentSettingsCount = mapSettingsCount;
+			tempMapData.settingsOffset = mapSettingsCount;
+			mapSettingsCount += structSettingsCount;
+			int writtenSettingsCount = (int)str.size() - 3; // Settings in the config file
+
+			for (int i = 0; i < writtenSettingsCount; i++)
+			{
+				kernel.mapSettings[currentSettingsCount++] = (numb)atof(str[i + 3].c_str());
+			}
 
 			kernel.mapDatas.push_back(tempMapData);
 		}

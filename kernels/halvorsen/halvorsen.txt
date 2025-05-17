@@ -18,4 +18,4 @@ var y Fixed -1.51 29.0 0.1 0 0.0 0.0
 var z Fixed 2.04 29.0 0.1 0 0.0 0.0
 param alpha Fixed 1.89 29.0 0.1 0 0.0 0.0
 // Defining maps:
-map LLE
+map LLE 11 0.01 50 0 -1

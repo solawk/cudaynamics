@@ -864,7 +864,7 @@ int imgui_main(int, char**)
 
                         ImGui::Text("Index");
                         ImGui::SameLine();
-                        /*if (ImGui::BeginCombo("##Plot builder map index selection", kernel::MAP_NAMES[selectedPlotMap]))
+                        if (ImGui::BeginCombo("##Plot builder map index selection", KERNEL.mapDatas[selectedPlotMap].name.c_str()))
                         {
                             for (int m = 0; m < KERNEL.MAP_COUNT; m++)
                             {
@@ -872,10 +872,10 @@ int imgui_main(int, char**)
                                 ImGuiSelectableFlags selectableFlags = 0;
 
                                 if (selectedPlotMap == m) selectableFlags = ImGuiSelectableFlags_Disabled;
-                                if (ImGui::Selectable(kernel::MAP_NAMES[m], isSelected, selectableFlags)) selectedPlotMap = m;
+                                if (ImGui::Selectable(KERNEL.mapDatas[m].name.c_str(), isSelected, selectableFlags)) selectedPlotMap = m;
                             }
                             ImGui::EndCombo();
-                        }*/ // TODO
+                        } // TODO
 
                         ImGui::PopItemWidth();
                     }
