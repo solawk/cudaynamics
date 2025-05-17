@@ -1663,8 +1663,8 @@ int imgui_main(int, char**)
                                         }
                                     }
 
-                                    double valueX = (double)window->hmp.lastClickedLocation.x;
-                                    double valueY = (double)window->hmp.lastClickedLocation.y;
+                                    double valueX = (double)window->hmp.lastClickedLocation.x + (window->hmp.showActualDiapasons ? sizing.stepX * 0.5 : 0.5);
+                                    double valueY = (double)window->hmp.lastClickedLocation.y + (window->hmp.showActualDiapasons ? sizing.stepY * 0.5 : 0.5);
 
                                     ImPlot::DragLineX(0, &valueX, ImVec4(1.0f, 1.0f, 1.0f, 1.0f), 2.0f, ImPlotDragToolFlags_NoInputs);
                                     ImPlot::DragLineY(1, &valueY, ImVec4(1.0f, 1.0f, 1.0f, 1.0f), 2.0f, ImPlotDragToolFlags_NoInputs);

@@ -163,6 +163,7 @@
     <ClInclude Include="imgui_main.hpp" />
     <ClInclude Include="heatmapProperties.hpp" />
     <ClInclude Include="map_utils.hpp" />
+    <ClInclude Include="colorLUT_struct.h" />
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="main.cu" />

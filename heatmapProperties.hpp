@@ -1,5 +1,6 @@
 #pragma once
 #include "mapData_struct.h"
+#include "colorLUT_struct.h"
 
 struct HeatmapProperties
 {
@@ -23,8 +24,8 @@ struct HeatmapProperties
 	unsigned char* pixelBuffer;
 	int lastBufferSize;
 
-	int** lut;
-	int* lutSizes;
+	colorLUT dynamicLUT;
+	colorLUT staticLUT;
 
 	int indexX;
 	int indexY;
@@ -55,9 +56,6 @@ struct HeatmapProperties
 		valueBuffer = nullptr;
 		pixelBuffer = nullptr;
 		lastBufferSize = -1;
-
-		lut = nullptr;
-		lutSizes = nullptr;
 
 		indexX = 0;
 		indexY = 1;

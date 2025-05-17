@@ -130,6 +130,7 @@
     <ClInclude Include="analysis.h" />
     <ClInclude Include="analysis\lle.h" />
     <ClInclude Include="attribute_struct.h" />
+    <ClInclude Include="colorLUT_struct.h" />
     <ClInclude Include="computation_struct.h" />
     <ClInclude Include="cuda_macros.h" />
     <ClInclude Include="dbscan\dbscan.h" />
