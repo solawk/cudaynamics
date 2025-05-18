@@ -34,6 +34,11 @@ struct HeatmapProperties
 
 	bool initClickedLocation;
 	ImVec2 lastClickedLocation;
+	bool showDragLines;
+	bool showLegend;
+
+	bool ignoreLimitsRecalculationOnSelection;
+	bool ignoreNextLimitsRecalculation;
 
 	HeatmapProperties()
 	{
@@ -65,5 +70,10 @@ struct HeatmapProperties
 
 		initClickedLocation = false;
 		lastClickedLocation = ImVec2(0.0f, 0.0f);
+		showDragLines = true;
+		showLegend = true;
+
+		ignoreLimitsRecalculationOnSelection = false;
+		ignoreNextLimitsRecalculation = false;
 	}
 };

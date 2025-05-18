@@ -85,6 +85,12 @@ void plotWindowMenu_HeatmapPlot(PlotWindow* window)
 		bool tempShowHeatmapValues = window->hmp.showHeatmapValues; if (ImGui::Checkbox(("##" + windowName + "showHeatmapValues").c_str(), &tempShowHeatmapValues)) window->hmp.showHeatmapValues = !window->hmp.showHeatmapValues;
 		ImGui::SameLine(); ImGui::Text("Show values");
 
+		bool tempShowDragLines = window->hmp.showDragLines; if (ImGui::Checkbox(("##" + windowName + "showDragLines").c_str(), &tempShowDragLines)) window->hmp.showDragLines = !window->hmp.showDragLines;
+		ImGui::SameLine(); ImGui::Text("Show crosshair lines");
+
+		bool tempShowLegend = window->hmp.showDragLines; if (ImGui::Checkbox(("##" + windowName + "showLegend").c_str(), &tempShowLegend)) window->hmp.showLegend = !window->hmp.showLegend;
+		ImGui::SameLine(); ImGui::Text("Show colormap");
+
 		std::string diapasonsStrings[] = { "Values", "Steps" };
 		bool tempShowActualDiapasons = window->hmp.showActualDiapasons;
 		if (ImGui::BeginCombo(("##" + windowName + "diapasons").c_str(), (window->hmp.showActualDiapasons ? diapasonsStrings[0] : diapasonsStrings[1]).c_str()))
@@ -96,6 +102,9 @@ void plotWindowMenu_HeatmapPlot(PlotWindow* window)
 
 		bool tempHeatmapAutoCompute = window->hmp.isHeatmapAutoComputeOn; if (ImGui::Checkbox(("##" + windowName + "heatmapAutoCompute").c_str(), &tempHeatmapAutoCompute)) window->hmp.isHeatmapAutoComputeOn = !window->hmp.isHeatmapAutoComputeOn;
 		ImGui::SameLine(); ImGui::Text("Auto-compute on Shift+RMB");
+
+		bool tempIgnoreLimitsRecalc = window->hmp.ignoreLimitsRecalculationOnSelection; if (ImGui::Checkbox(("##" + windowName + "heatmapignoreLimitsRecalc").c_str(), &tempIgnoreLimitsRecalc)) window->hmp.ignoreLimitsRecalculationOnSelection = !window->hmp.ignoreLimitsRecalculationOnSelection;
+		ImGui::SameLine(); ImGui::Text("Auto-compute does not update limits");
 
 		ImGui::EndMenu();
 	}

@@ -875,7 +875,7 @@ int imgui_main(int, char**)
                                 if (ImGui::Selectable(KERNEL.mapDatas[m].name.c_str(), isSelected, selectableFlags)) selectedPlotMap = m;
                             }
                             ImGui::EndCombo();
-                        } // TODO
+                        }
 
                         ImGui::PopItemWidth();
                     }
@@ -1449,13 +1449,14 @@ int imgui_main(int, char**)
 
                     if (axisXisRanging && axisYisRanging && !sameAxis)
                     {
-                        if (ImGui::BeginTable((plotName + "_table").c_str(), 2, ImGuiTableFlags_Reorderable, ImVec2(-1, 0)))
+                        if (ImGui::BeginTable((plotName + "_table").c_str(), window->hmp.showLegend ? 2 : 1, ImGuiTableFlags_Reorderable, ImVec2(-1, 0)))
                         {
                             int heatStride = window->hmp.stride;
                             axisFlags = 0;
 
                             ImGui::TableSetupColumn(nullptr);
-                            ImGui::TableSetupColumn(nullptr, ImGuiTableColumnFlags_WidthFixed, 160.0f);
+                            if (window->hmp.showLegend)
+                                ImGui::TableSetupColumn(nullptr, ImGuiTableColumnFlags_WidthFixed, 160.0f);
                             ImGui::TableNextRow();
 
                             numb min = 0.0f;
@@ -1598,9 +1599,12 @@ int imgui_main(int, char**)
 
                                     if (!window->hmp.areHeatmapLimitsDefined)
                                     {
-                                        getMinMax(window->hmp.valueBuffer, sizing.xSize * sizing.ySize, &window->hmp.heatmapMin, &window->hmp.heatmapMax);
+                                        if (!window->hmp.ignoreNextLimitsRecalculation)
+                                            getMinMax(window->hmp.valueBuffer, sizing.xSize * sizing.ySize, &window->hmp.heatmapMin, &window->hmp.heatmapMax);
+
+                                        window->hmp.ignoreNextLimitsRecalculation = false;
                                         window->hmp.areHeatmapLimitsDefined = true;
-                                        window->hmp.isHeatmapDirty = true;
+                                        //window->hmp.isHeatmapDirty = true;
                                     }
 
                                     // TODO: Do not reload values when variating map axes (map values don't change anyway)
@@ -1663,11 +1667,14 @@ int imgui_main(int, char**)
                                         }
                                     }
 
-                                    double valueX = (double)window->hmp.lastClickedLocation.x + (window->hmp.showActualDiapasons ? sizing.stepX * 0.5 : 0.5);
-                                    double valueY = (double)window->hmp.lastClickedLocation.y + (window->hmp.showActualDiapasons ? sizing.stepY * 0.5 : 0.5);
+                                    if (window->hmp.showDragLines)
+                                    {
+                                        double valueX = (double)window->hmp.lastClickedLocation.x + (window->hmp.showActualDiapasons ? sizing.stepX * 0.5 : 0.5);
+                                        double valueY = (double)window->hmp.lastClickedLocation.y + (window->hmp.showActualDiapasons ? sizing.stepY * 0.5 : 0.5);
 
-                                    ImPlot::DragLineX(0, &valueX, ImVec4(1.0f, 1.0f, 1.0f, 1.0f), 2.0f, ImPlotDragToolFlags_NoInputs);
-                                    ImPlot::DragLineY(1, &valueY, ImVec4(1.0f, 1.0f, 1.0f, 1.0f), 2.0f, ImPlotDragToolFlags_NoInputs);
+                                        ImPlot::DragLineX(0, &valueX, ImVec4(1.0f, 1.0f, 1.0f, 1.0f), 2.0f, ImPlotDragToolFlags_NoInputs);
+                                        ImPlot::DragLineY(1, &valueY, ImVec4(1.0f, 1.0f, 1.0f, 1.0f), 2.0f, ImPlotDragToolFlags_NoInputs);
+                                    }
 
                                     plotSize = ImPlot::GetPlotSize();
                                 }
@@ -1676,16 +1683,21 @@ int imgui_main(int, char**)
                             }
 
                             // Table column should be here
-                            ImGui::TableSetColumnIndex(1);
 
-                            ImGui::SetNextItemWidth(120);
                             float minBefore = window->hmp.heatmapMin;
                             float maxBefore = window->hmp.heatmapMax;
-                            ImGui::DragFloat("Max", &window->hmp.heatmapMax, 0.01f);
-                            ImPlot::ColormapScale("##HeatScale", window->hmp.heatmapMin, window->hmp.heatmapMax, ImVec2(120, plotSize.y - 30.0f));
-                            ImGui::SetNextItemWidth(120);
-                            ImGui::DragFloat("Min", &window->hmp.heatmapMin, 0.01f);
-                            ImPlot::PopColormap();
+
+                            if (window->hmp.showLegend)
+                            {
+                                ImGui::TableSetColumnIndex(1);
+
+                                ImGui::SetNextItemWidth(120);
+                                ImGui::DragFloat("Max", &window->hmp.heatmapMax, 0.01f);
+                                ImPlot::ColormapScale("##HeatScale", window->hmp.heatmapMin, window->hmp.heatmapMax, ImVec2(120, plotSize.y - 30.0f));
+                                ImGui::SetNextItemWidth(120);
+                                ImGui::DragFloat("Min", &window->hmp.heatmapMin, 0.01f);
+                                ImPlot::PopColormap();
+                            }
 
                             if (minBefore != window->hmp.heatmapMin || maxBefore != window->hmp.heatmapMax) window->hmp.isHeatmapDirty = true;
 
@@ -2073,5 +2085,9 @@ void heatmapRangingSelection(PlotWindow* window, ImPlotPlot* plot, HeatmapSizing
 
     autoLoadNewParams = false; // Otherwise the map immediately starts drawing the cut region
 
-    if (window->hmp.isHeatmapAutoComputeOn) computeAfterShiftSelect = true;
+    if (window->hmp.isHeatmapAutoComputeOn)
+    {
+        if (window->hmp.ignoreLimitsRecalculationOnSelection) window->hmp.ignoreNextLimitsRecalculation = true;
+        computeAfterShiftSelect = true;
+    }
 }
