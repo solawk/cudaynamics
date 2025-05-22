@@ -3,6 +3,7 @@
 #include "gui/plotWindowMenu.h"
 #include "gui/img_loading.h"
 #include "gui/map_img.h"
+#include "gui/fullscreen_funcs.h"
 
 static ID3D11Device* g_pd3dDevice = nullptr;
 static ID3D11DeviceContext* g_pd3dDeviceContext = nullptr;
@@ -25,6 +26,10 @@ Kernel kernelNew;
 numb* dataBuffer = nullptr; // One variation local buffer
 numb* particleBuffer = nullptr; // One step local buffer
 //numb* mapBuffer = nullptr;
+
+// To use with fullscreen functionality
+PlotWindow mainWindow(-1), graphBuilderWindow(-2);
+ImVec2 fullscreenSize = ImVec2((float)GetSystemMetrics(SM_CXSCREEN), (float)GetSystemMetrics(SM_CYSCREEN));
 
 float axisBuffer[18]{}; // 3 axis, 2 points
 float rulerBuffer[153]{}; // 1 axis, 5 * 10 + 1 points
@@ -382,7 +387,10 @@ int imgui_main(int, char**)
         // MAIN WINDOW
         {
             style.WindowMenuButtonPosition = ImGuiDir_Left;
+
+            //FullscreenActLogic(&mainWindow, &fullscreenSize);
             ImGui::Begin("CUDAynamics", &work);
+            //FullscreenButtonPressLogic(&mainWindow, ImGui::GetCurrentWindow());
 
             // Selecting kernel
             if (ImGui::BeginCombo("##selectingKernel", KERNEL.name.c_str()))
@@ -726,7 +734,9 @@ int imgui_main(int, char**)
 
             if (graphBuilderWindowEnabled)
             {
+                //FullscreenActLogic(&graphBuilderWindow, &fullscreenSize);
                 ImGui::Begin("Graph Builder", &graphBuilderWindowEnabled);
+                //FullscreenButtonPressLogic(&graphBuilderWindow, ImGui::GetCurrentWindow());
 
                 // Type
                 std::string plottypes[] = { "Time series", "3D Phase diagram", "2D Phase diagram", "Orbit diagram", "Heatmap" };
@@ -917,7 +927,10 @@ int imgui_main(int, char**)
             style.WindowMenuButtonPosition = ImGuiDir_None;
             std::string windowName = window->name + std::to_string(window->id);
             std::string plotName = windowName + "_plot";
+
+            //FullscreenActLogic(window, &fullscreenSize);
             ImGui::Begin(windowName.c_str(), &(window->active), ImGuiWindowFlags_MenuBar);
+            //FullscreenButtonPressLogic(window, ImGui::GetCurrentWindow());
 
             autofitHeatmap = false;
 

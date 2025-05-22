@@ -48,6 +48,9 @@ public:
 	bool showRuler;
 	bool showGrid;
 
+	bool isFullscreen, isFullscreenEnd;
+	ImVec2 originalPos, originalSize;
+
 	PlotWindow(int _id, std::string _name = "plot", bool _is3d = false)
 	{
 		active = true;
@@ -79,6 +82,9 @@ public:
 		showAxisNames = true;
 		showRuler = true;
 		showGrid = true;
+
+		isFullscreen = isFullscreenEnd = false;
+		originalPos = originalSize = ImVec2(0.0f, 0.0f);
 	}
 
 	void AssignVariables(int* variablesArray)

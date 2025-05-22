@@ -58,6 +58,9 @@
       <Filter>gui</Filter>
     </ClCompile>
     <ClCompile Include="map_utils.cpp" />
+    <ClCompile Include="gui\fullscreen_funcs.cpp">
+      <Filter>gui</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="imgui">
@@ -164,6 +167,10 @@
     <ClInclude Include="heatmapProperties.hpp" />
     <ClInclude Include="map_utils.hpp" />
     <ClInclude Include="colorLUT_struct.h" />
+    <ClInclude Include="iconfont.h" />
+    <ClInclude Include="gui\fullscreen_funcs.h">
+      <Filter>gui</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="main.cu" />
