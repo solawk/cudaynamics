@@ -22,6 +22,8 @@ struct MapData
 
 	int settingsOffset;
 
+	int settingsCount;
+	std::string settingName[MAX_SETTINGS_PER_MAP];
 	bool isSettingNumb[MAX_SETTINGS_PER_MAP];
 
 	// Map can be calculated even with >2 varying attributes, as long as we fixate the rest with a certain value

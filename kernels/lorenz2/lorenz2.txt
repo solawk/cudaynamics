@@ -22,4 +22,4 @@ param beta Fixed 2.666667 29.0 0.1 0 0.0 0.0
 //
 // Defining maps:
 // map <name> <map settings count (inside its struct)> <map settings, beginning with "n" for numbs and "i" for ints>
-map LLE 7 n0.01 i50 i0 i0 i1 i2 i-1
+map LLE 7 r n0.01 L i50 variableToDeflect i0 norm0 i0 norm1 i1 norm2 i2 norm3 i-1

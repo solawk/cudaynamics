@@ -82,13 +82,16 @@ Kernel readKernelText(std::string name)
 			int currentSettingsCount = mapSettingsCount;
 			tempMapData.settingsOffset = mapSettingsCount;
 			mapSettingsCount += structSettingsCount;
-			int writtenSettingsCount = (int)str.size() - 3; // Settings in the config file
+			tempMapData.settingsCount = structSettingsCount;
+			int writtenSettingsCount = ((int)str.size() - 3) / 2; // Settings in the config file
 
 			for (int i = 0; i < writtenSettingsCount; i++)
 			{
-				tempMapData.isSettingNumb[i] = str[i + 3][0] == 'n';
-				str[i + 3] = str[i + 3].substr(1);
-				kernel.mapSettings[currentSettingsCount++] = (numb)atof(str[i + 3].c_str());
+				tempMapData.settingName[i] = str[3 + i * 2 + 0];
+
+				tempMapData.isSettingNumb[i] = str[3 + i * 2 + 1][0] == 'n';
+				str[3 + i * 2 + 1] = str[3 + i * 2 + 1].substr(1);
+				kernel.mapSettings[currentSettingsCount++] = (numb)atof(str[3 + i * 2 + 1].c_str());
 			}
 
 			kernel.mapDatas.push_back(tempMapData);

@@ -905,6 +905,34 @@ int imgui_main(int, char**)
         {
             ImGui::Begin("Map Settings", nullptr);
 
+            for (int m = 0; m < KERNEL.MAP_COUNT; m++)
+            {
+                if (ImGui::TreeNode(std::string(KERNEL.mapDatas[m].name + "##MapSettings_" + KERNEL.mapDatas[m].name).c_str()))
+                {
+                    for (int s = 0; s < KERNEL.mapDatas[m].settingsCount; s++)
+                    {
+                        ImGui::Text(KERNEL.mapDatas[m].settingName[s].c_str());
+                        ImGui::SameLine();
+                        ImGui::PushItemWidth(150.0f);
+                        if (KERNEL.mapDatas[m].isSettingNumb[s])
+                        {
+                            double setting = (double)KERNEL.mapSettings[KERNEL.mapDatas[m].settingsOffset + s];
+                            ImGui::InputDouble(("##Setting" + KERNEL.mapDatas[m].settingName[s] + "_" + KERNEL.mapDatas[m].name).c_str(), &setting);
+                            KERNEL.mapSettings[KERNEL.mapDatas[m].settingsOffset + s] = (numb)setting;
+                        }
+                        else
+                        {
+                            int setting = (int)KERNEL.mapSettings[KERNEL.mapDatas[m].settingsOffset + s];
+                            ImGui::InputInt(("##Setting" + KERNEL.mapDatas[m].settingName[s] + "_" + KERNEL.mapDatas[m].name).c_str(), &setting);
+                            KERNEL.mapSettings[KERNEL.mapDatas[m].settingsOffset + s] = (numb)setting;
+                        }
+                        ImGui::PopItemWidth();
+                    }
+
+                    ImGui::TreePop();
+                }
+            }
+
             ImGui::End();
         }
 
