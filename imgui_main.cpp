@@ -1287,12 +1287,15 @@ int imgui_main(int, char**)
 
                             if (!window->isImplot3d)
                             {
+
                                 getMinMax2D(particleBuffer, computations[playedBufferIndex].marshal.totalVariations, &(plot->dataMin), &(plot->dataMax));
 
                                 rotateOffsetBuffer(particleBuffer, computations[playedBufferIndex].marshal.totalVariations, KERNEL.VAR_COUNT, window->variables[0], window->variables[1], window->variables[2],
                                     rotationEuler, window->offset, window->scale);
 
+                                ImPlot::PushStyleVar(ImPlotStyleVar_MarkerWeight, window->markerOutlineSize);
                                 ImPlot::SetNextLineStyle(window->markerColor);
+                                ImPlot::SetNextMarkerStyle(window->markerShape, window->markerSize);
                                 ImPlot::PlotScatter(plotName.c_str(), &((particleBuffer)[window->variables[0]]), &((particleBuffer)[window->variables[1]]),
                                     computations[playedBufferIndex].marshal.totalVariations, 0, 0, sizeof(numb)* KERNEL.VAR_COUNT);
 
@@ -1331,10 +1334,10 @@ int imgui_main(int, char**)
                             }
                             else
                             {
-                                ImPlot3D::PushStyleColor(ImPlot3DCol_FrameBg, ImVec4(0.07f, 0.07f, 0.07f, 1.0f));
-                                ImPlot3D::SetNextLineStyle(window->markerColor);
                                 ImPlot3D::PushStyleVar(ImPlotStyleVar_MarkerWeight, window->markerOutlineSize);
+                                ImPlot3D::SetNextLineStyle(window->markerColor);
                                 ImPlot3D::SetNextMarkerStyle(window->markerShape, window->markerSize);
+                                ImPlot3D::PushStyleColor(ImPlot3DCol_FrameBg, ImVec4(0.07f, 0.07f, 0.07f, 1.0f));
                                 ImPlot3D::PlotScatter(plotName.c_str(), &((particleBuffer)[window->variables[0]]), &((particleBuffer)[window->variables[1]]), &((particleBuffer)[window->variables[2]]),
                                     computations[playedBufferIndex].marshal.totalVariations, 0, 0, sizeof(numb)* KERNEL.VAR_COUNT);
                                 ImPlot3D::PopStyleColor(1);
