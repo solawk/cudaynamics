@@ -86,6 +86,8 @@ Kernel readKernelText(std::string name)
 
 			for (int i = 0; i < writtenSettingsCount; i++)
 			{
+				tempMapData.isSettingNumb[i] = str[i + 3][0] == 'n';
+				str[i + 3] = str[i + 3].substr(1);
 				kernel.mapSettings[currentSettingsCount++] = (numb)atof(str[i + 3].c_str());
 			}
 

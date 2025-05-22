@@ -1,5 +1,7 @@
 #pragma once
 
+#define MAX_SETTINGS_PER_MAP 32
+
 enum MapDimensionType { VARIABLE, PARAMETER, STEP };
 
 struct MapData
@@ -19,6 +21,8 @@ struct MapData
 	MapDimensionType typeY;
 
 	int settingsOffset;
+
+	bool isSettingNumb[MAX_SETTINGS_PER_MAP];
 
 	// Map can be calculated even with >2 varying attributes, as long as we fixate the rest with a certain value
 	// The fixed values of the varying attributes are stored in these arrays
