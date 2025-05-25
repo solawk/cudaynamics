@@ -429,7 +429,13 @@ int imgui_main(int, char**)
 
         bool applicationProhibited = false;
         ImGui::SeparatorText("Parameters");
-        for (int i = 0; i < KERNEL.PARAM_COUNT; i++) listParameter(i);
+        for (int i = 0; i < KERNEL.PARAM_COUNT; i++)
+        {
+            if (KERNEL.parameters[i].rangingType != Enum)
+                listParameter(i);
+            else
+                listEnum(i);
+        }
 
         if (playingParticles && anyChanged)
         {
@@ -681,7 +687,12 @@ int imgui_main(int, char**)
                 ImGui::SliderInt(("##RangingNo_" + std::to_string(i)).c_str(), &index, 0, attr->stepCount - 1, "Step: %d");
                 ImGui::PopItemWidth();
                 attributeValueIndices[i] = index;
-                ImGui::SameLine(); ImGui::Text(("Value: " + std::to_string(calculateValue(attr->min, attr->step, index))).c_str());
+
+                if (attr->rangingType != Enum)
+                {
+                    ImGui::SameLine();
+                    ImGui::Text(("Value: " + std::to_string(calculateValue(attr->min, attr->step, index))).c_str());
+                }
             }
 
             steps2Variation(&variation, &(attributeValueIndices.data()[0]), &KERNEL);
@@ -2063,6 +2074,71 @@ void listParameter(int i)
     if (kernelNew.parameters[i].rangingType == None)
     {
         listAttrNumb(&(kernelNew.parameters[i]), &(kernelNew.parameters[i].min), "", "", kernelNew.parameters[i].min != KERNEL.parameters[i].min);
+    }
+
+    if (!changeAllowed) POP_FRAME(4); // disabledText popped as well
+}
+
+// TODO: changing enabled enums should force recomputation
+void listEnum(int i)
+{
+    bool changeAllowed = kernelNew.parameters[i].rangingType == None || !playingParticles || !autoLoadNewParams;
+
+    thisChanged = false;
+    if (kernelNew.parameters[i].IsDifferentFrom(&(KERNEL.parameters[i]))) { anyChanged = true; thisChanged = true; }
+
+    ImGui::Text(padString(KERNEL.parameters[i].name, maxNameLength).c_str());
+
+    if (!changeAllowed)
+    {
+        ImGui::PushStyleColor(ImGuiCol_Text, disabledTextColor); // disabledText push
+        PUSH_DISABLED_FRAME;
+    }
+
+    // Ranging
+    if (playingParticles)
+    {
+        ImGui::PushStyleColor(ImGuiCol_Text, disabledTextColor);
+        PUSH_DISABLED_FRAME;
+    }
+
+    dragFlag = (!playingParticles || kernelNew.parameters[i].rangingType == None) ? 0 : ImGuiSliderFlags_ReadOnly;
+
+    int selectedCount = 0;
+    std::string selectedKernelsString;
+    for (int e = 0; e < kernelNew.parameters[i].enumCount; e++) if (kernelNew.parameters[i].enumEnabled[e])
+    {
+        selectedKernelsString += (selectedCount == 0 ? "" : ", ") + kernelNew.parameters[i].enumNames[e];
+        selectedCount++;
+    }
+
+    if (selectedKernelsString.length() > 52)
+        selectedKernelsString = selectedKernelsString.substr(0, 52) + "...";
+
+    ImGui::SameLine();
+    ImGui::PushItemWidth(740.0f);
+    if (ImGui::BeginCombo(("##ENUMSELECT_" + kernelNew.parameters[i].name).c_str(), selectedCount == 0 ? "None" : selectedKernelsString.c_str()))
+    {
+        for (int e = 0; e < kernelNew.parameters[i].enumCount; e++)
+        {
+            bool isSelected = kernelNew.parameters[i].enumEnabled[e];
+            if (ImGui::Checkbox(kernelNew.parameters[i].enumNames[e].c_str(), &(isSelected)) && dragFlag == 0)
+            {
+                kernelNew.parameters[i].enumEnabled[e] = !kernelNew.parameters[i].enumEnabled[e];
+            }
+            TOOLTIP("Enable this method in computations");
+        }
+
+        ImGui::EndCombo();
+    }
+    ImGui::PopItemWidth();
+
+    ImGui::SameLine(); ImGui::Text((std::to_string(selectedCount) + " method" + ((selectedCount % 10 != 1 || selectedCount == 11) ? "s" : "")).c_str());
+
+    if (playingParticles)
+    {
+        ImGui::PopStyleColor();
+        POP_FRAME(3);
     }
 
     if (!changeAllowed) POP_FRAME(4); // disabledText popped as well

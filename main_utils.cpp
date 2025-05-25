@@ -75,6 +75,28 @@ Kernel readKernelText(std::string name)
 				kernel.parameters.push_back(tempAttribute);
 		}
 
+		if (str[0] == "enum")
+		{
+			tempAttribute.name = str[1];
+			tempAttribute.values = nullptr;
+			tempAttribute.rangingType = Enum;
+
+			tempAttribute.CalcStep();
+			tempAttribute.CalcStepCount();
+
+			tempAttribute.enumCount = (int)str.size() - 2;
+			for (int i = 0; i < tempAttribute.enumCount && i < MAX_ENUMS; i++)
+			{
+				tempAttribute.enumEnabled[i] = str[2 + i][0] == '1';
+				str[2 + i] = str[2 + i].substr(1);
+				tempAttribute.enumNames[i] = str[2 + i];
+			}
+
+			if (tempAttribute.stepCount < 2) tempAttribute.stepCount = 2;
+
+			kernel.parameters.push_back(tempAttribute);
+		}
+
 		if (str[0] == "map")
 		{
 			tempMapData.name = str[1];
