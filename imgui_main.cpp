@@ -48,6 +48,10 @@ bool continuousComputingEnabled = true; // Continuously compute next batch of st
 float dragChangeSpeed = 1.0f;
 int bufferNo = 0;
 
+PlotWindow* colorsLUTfrom = nullptr;
+int staticLUTsize = 32;
+int dynamicLUTsize = 4;
+
 bool selectParticleTab = false;
 bool selectOrbitTab = true;
 
@@ -220,10 +224,21 @@ void terminateBuffers()
     playedBufferIndex = bufferToFillIndex = 0;
 }
 
+void unloadPlotWindows()
+{
+    for (PlotWindow w : plotWindows)
+    {
+        w.hmp.staticLUT.Clear();
+        w.hmp.dynamicLUT.Clear();
+        if (w.hmp.pixelBuffer != nullptr) delete[] w.hmp.pixelBuffer;
+    }
+}
+
 void initializeKernel(bool needTerminate)
 {
     if (needTerminate) terminateBuffers();
 
+    unloadPlotWindows();
     plotWindows.clear();
     uniqueIds = 0;
 
@@ -1295,7 +1310,29 @@ int imgui_main(int, char**)
                                 getMinMax2D(dataBuffer, computedSteps + 1, &(plot->dataMin), &(plot->dataMax));
                                 getMinMax2D(computedVariation, computedSteps + 1, &(plot->dataMin), &(plot->dataMax));
 
-                                ImPlot::SetNextLineStyle(window->plotColor);
+                                if (colorsLUTfrom == nullptr)
+                                {
+                                    ImPlot::SetNextLineStyle(window->plotColor);
+                                }
+                                else
+                                {
+                                    colorLUT* lut = playingParticles ? &(colorsLUTfrom->hmp.dynamicLUT) : &(colorsLUTfrom->hmp.staticLUT);
+                                    int variationGroup = -1;
+                                    int lutsize;
+                                    for (int g = 0; g < lut->lutGroups && variationGroup < 0; g++)
+                                    {
+                                        lutsize = lut->lutSizes[g];
+                                        for (int v = 0; v < lutsize && variationGroup < 0; v++)
+                                        {
+                                            if (variation == lut->lut[g][v])
+                                            {
+                                                variationGroup = g;
+                                            }
+                                        }
+                                    }
+
+                                    ImPlot::SetNextLineStyle(ImPlot::SampleColormap((float)variationGroup / (lut->lutGroups - 1), ImPlotColormap_Jet));
+                                }
                                 ImPlot::PlotLine(plotName.c_str(), &(dataBuffer[0]), &(dataBuffer[1]), computedSteps + 1, 0, 0, sizeof(numb) * KERNEL.VAR_COUNT);
                             }
                             else
@@ -1325,27 +1362,31 @@ int imgui_main(int, char**)
 
                             if (!window->isImplot3d)
                             {
-
                                 getMinMax2D(particleBuffer, computations[playedBufferIndex].marshal.totalVariations, &(plot->dataMin), &(plot->dataMax));
 
                                 rotateOffsetBuffer(particleBuffer, computations[playedBufferIndex].marshal.totalVariations, KERNEL.VAR_COUNT, window->variables[0], window->variables[1], window->variables[2],
                                     rotationEuler, window->offset, window->scale);
 
                                 ImPlot::PushStyleVar(ImPlotStyleVar_MarkerWeight, window->markerOutlineSize);
-                                ImPlot::SetNextLineStyle(window->markerColor);
                                 ImPlot::SetNextMarkerStyle(window->markerShape, window->markerSize);
-                                ImPlot::PlotScatter(plotName.c_str(), &((particleBuffer)[window->variables[0]]), &((particleBuffer)[window->variables[1]]),
-                                    computations[playedBufferIndex].marshal.totalVariations, 0, 0, sizeof(numb)* KERNEL.VAR_COUNT);
 
-                                /*if (plotWindows[1].hmp.lut != nullptr)
+                                if (colorsLUTfrom == nullptr)
                                 {
-                                    for (int g = 0; g < 6; g++)
+                                    ImPlot::SetNextLineStyle(window->markerColor);
+                                    ImPlot::PlotScatter(plotName.c_str(), &((particleBuffer)[window->variables[0]]), &((particleBuffer)[window->variables[1]]),
+                                        computations[playedBufferIndex].marshal.totalVariations, 0, 0, sizeof(numb) * KERNEL.VAR_COUNT);
+                                }
+                                else if (!colorsLUTfrom->hmp.isHeatmapDirty)
+                                {
+                                    colorLUT* lut = playingParticles ? &(colorsLUTfrom->hmp.dynamicLUT) : &(colorsLUTfrom->hmp.staticLUT);
+
+                                    for (int g = 0; g < lut->lutGroups; g++)
                                     {
-                                        int lutsize = plotWindows[1].hmp.lutSizes[g];
+                                        int lutsize = lut->lutSizes[g];
                                         for (int v = 0; v < lutsize; v++)
                                         {
                                             for (int var = 0; var < varCount; var++)
-                                                particleBuffer[v * varCount + var] = trajectory[(variationSize * plotWindows[1].hmp.lut[g][v]) + (varCount * particleStep) + var];
+                                                particleBuffer[v * varCount + var] = trajectory[(variationSize * lut->lut[g][v]) + (varCount * particleStep) + var];
                                         }
 
                                         rotateOffsetBuffer(particleBuffer, lutsize, KERNEL.VAR_COUNT, window->variables[0], window->variables[1], window->variables[2],
@@ -1354,21 +1395,13 @@ int imgui_main(int, char**)
                                         ImPlot::PushStyleVar(ImPlotStyleVar_MarkerWeight, window->markerOutlineSize);
                                         ImPlot::SetNextMarkerStyle(window->markerShape, window->markerSize);
 
-                                        ImVec4 clr = ImVec4(0.5f, 0.0f, 0.5f, 1.0f);
-                                        switch (g)
-                                        {
-                                        case 1: clr = ImVec4(0.0f, 0.0f, 1.0f, 1.0f); break;
-                                        case 2: clr = ImVec4(0.0f, 1.0f, 1.0f, 1.0f); break;
-                                        case 3: clr = ImVec4(0.0f, 1.0f, 1.0f, 1.0f); break;
-                                        case 4: clr = ImVec4(1.0f, 1.0f, 0.0f, 1.0f); break;
-                                        case 5: clr = ImVec4(1.0f, 0.0f, 0.0f, 1.0f); break;
-                                        }
+                                        ImVec4 clr = ImPlot::SampleColormap((float)g / (lut->lutGroups - 1), ImPlotColormap_Jet);
 
                                         ImPlot::SetNextLineStyle(clr);
                                         ImPlot::PlotScatter(plotName.c_str(), &((particleBuffer)[window->variables[0]]), &((particleBuffer)[window->variables[1]]),
                                             lutsize, 0, 0, sizeof(numb) * KERNEL.VAR_COUNT);
                                     }
-                                }*/
+                                }
                             }
                             else
                             {
@@ -1673,15 +1706,23 @@ int imgui_main(int, char**)
                                         MapToImg(window->hmp.valueBuffer, &(window->hmp.pixelBuffer), sizing.xSize, sizing.ySize, window->hmp.heatmapMin, window->hmp.heatmapMax);
                                         window->hmp.isHeatmapDirty = false;
 
-                                        // WIP
-                                        /*
-                                        window->hmp.lut = new int* [6];
-                                        for (int i = 0; i < 6; i++) window->hmp.lut[i] = new int[computations[playedBufferIndex].marshal.totalVariations];
-                                        window->hmp.lutSizes = new int[6];
+                                        // COLORS
+                                        window->hmp.staticLUT.Clear();
+                                        window->hmp.dynamicLUT.Clear();
 
-                                        setupLUT(window->hmp.valueBuffer, computations[playedBufferIndex].marshal.totalVariations, window->hmp.lut, window->hmp.lutSizes, 6, window->hmp.heatmapMin, window->hmp.heatmapMax);
-                                        */
+                                        window->hmp.staticLUT.lutGroups = staticLUTsize;
+                                        window->hmp.dynamicLUT.lutGroups = dynamicLUTsize;
+                                        window->hmp.staticLUT.lut = new int*[staticLUTsize];
+                                        window->hmp.dynamicLUT.lut = new int*[dynamicLUTsize];
+                                        for (int i = 0; i < staticLUTsize; i++) window->hmp.staticLUT.lut[i] = new int[computations[playedBufferIndex].marshal.totalVariations];
+                                        for (int i = 0; i < dynamicLUTsize; i++) window->hmp.dynamicLUT.lut[i] = new int[computations[playedBufferIndex].marshal.totalVariations];
+                                        window->hmp.staticLUT.lutSizes = new int[staticLUTsize];
+                                        window->hmp.dynamicLUT.lutSizes = new int[dynamicLUTsize];
+
+                                        setupLUT(window->hmp.valueBuffer, computations[playedBufferIndex].marshal.totalVariations, window->hmp.staticLUT.lut, window->hmp.staticLUT.lutSizes, staticLUTsize, window->hmp.heatmapMin, window->hmp.heatmapMax);
+                                        setupLUT(window->hmp.valueBuffer, computations[playedBufferIndex].marshal.totalVariations, window->hmp.dynamicLUT.lut, window->hmp.dynamicLUT.lutSizes, dynamicLUTsize, window->hmp.heatmapMin, window->hmp.heatmapMax);
                                     }
+
                                     bool ret = LoadTextureFromRaw(&(window->hmp.pixelBuffer), sizing.xSize, sizing.ySize, (ID3D11ShaderResourceView**)&(window->hmp.myTexture), g_pd3dDevice);
                                     IM_ASSERT(ret);
 
@@ -1803,7 +1844,7 @@ int imgui_main(int, char**)
     ::UnregisterClassW(wc.lpszClassName, wc.hInstance);
 
     terminateBuffers();
-    for (int i = 0; i < plotWindows.size(); i++) if (plotWindows[i].hmp.pixelBuffer != nullptr) delete[] plotWindows[i].hmp.pixelBuffer;
+    unloadPlotWindows();
 
     return 0;
 }

@@ -1,64 +1,45 @@
 #include "map_img.h"
 
-#define i4(o) i * 4 + o
-
-#define KEYS_JET_COUNT 7
-ImVec4 KeysJet[] = {	ImVec4(0.5f, 0.0f, 1.0f, 1.0f), ImVec4(0.0f, 0.0f, 1.0f, 1.0f),
-						ImVec4(0.0f, 1.0f, 1.0f, 1.0f),
-						ImVec4(0.0f, 1.0f, 0.0f, 1.0f), ImVec4(1.0f, 1.0f, 0.0f, 1.0f),
-						ImVec4(1.0f, 0.5f, 0.0f, 1.0f), ImVec4(1.0f, 0.0f, 0.0f, 1.0f) };
-
-#define KEYS_MONOCHROME_COUNT 2
-ImVec4 KeysMonochrome[] =	{	ImVec4(1.0f, 1.0f, 1.0f, 1.0f), ImVec4(0.0f, 0.0f, 0.0f, 1.0f) };
-
-ImVec4 vec4lerp(ImVec4 v0, ImVec4 v1, float t)
-{
-	return ImVec4(v0.x + (v1.x - v0.x) * t, v0.y + (v1.y - v0.y) * t, v0.z + (v1.z - v0.z) * t, v0.w + (v1.w - v0.w) * t);
-}
-
-ImVec4 colorLerp(ImVec4* keys, int keyCount, float t)
-{
-	float keyRange = 1.0f / (keyCount - 1);
-	int key0 = (int)(t / keyRange);
-	int key1 = key0 + 1;
-	float tBetween = (t - key0 * keyRange) / keyRange;
-	return vec4lerp(keys[key0], keys[key1], tBetween);
-}
+#define i4(o) i1 * 4 + o
 
 void MapToImg(numb* mapBuffer, unsigned char** dataBuffer, int width, int height, numb min, numb max)
 {
 	numb v;
 	ImVec4 c;
+	int i1, i2;
 
-	for (int i = 0; i < width * height; i++)
-	{
-		v = mapBuffer[i];
+	for (int y = 0; y < height; y++)
+		for (int x = 0; x < width; x++)
+		{
+			i2 = x * height + y;
+			i1 = y * width + x;
+			v = mapBuffer[i2];
 
-		if (isnan(v) || isinf(v))
-		{
-			(*dataBuffer)[i4(0)] = 0;
-			(*dataBuffer)[i4(1)] = 0;
-			(*dataBuffer)[i4(2)] = 0;
-			(*dataBuffer)[i4(3)] = 0;
-			continue;
-		}
+			if (isnan(v) || isinf(v))
+			{
+				(*dataBuffer)[i4(0)] = 0;
+				(*dataBuffer)[i4(1)] = 0;
+				(*dataBuffer)[i4(2)] = 0;
+				(*dataBuffer)[i4(3)] = 0;
+				continue;
+			}
 
-		if (v <= min)
-		{
-			c = KeysJet[0];
-		}
-		else if (v >= max)
-		{
-			c = KeysJet[KEYS_JET_COUNT - 1];
-		}
-		else
-		{
-			c = colorLerp(KeysJet, KEYS_JET_COUNT, (v - min) / (max - min));
-		}
+			if (v <= min)
+			{
+				c = ImPlot::SampleColormap(0.0f, ImPlotColormap_Jet);
+			}
+			else if (v >= max)
+			{
+				c = ImPlot::SampleColormap(1.0f, ImPlotColormap_Jet);
+			}
+			else
+			{
+				c = ImPlot::SampleColormap((v - min) / (max - min), ImPlotColormap_Jet);
+			}
 
-		(*dataBuffer)[i4(0)] = (int)(c.x * 255);
-		(*dataBuffer)[i4(1)] = (int)(c.y * 255);
-		(*dataBuffer)[i4(2)] = (int)(c.z * 255);
-		(*dataBuffer)[i4(3)] = (int)(c.w * 255);
-	}
+			(*dataBuffer)[i4(0)] = (int)(c.x * 255);
+			(*dataBuffer)[i4(1)] = (int)(c.y * 255);
+			(*dataBuffer)[i4(2)] = (int)(c.z * 255);
+			(*dataBuffer)[i4(3)] = (int)(c.w * 255);
+		}
 }

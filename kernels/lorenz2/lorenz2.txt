@@ -13,7 +13,7 @@ Execute on launch: yes
 //
 // Defining variables/parameters:
 // var/param <name> <ranging type> <minimum value> <maximum value> <step> <step count> <normal mean> <normal deviation>
-var x Linear 10.0 50.0 1.0 50 0.0 0.0
+var x Linear 10.0 50.0 1.0 100 0.0 0.0
 var y Linear 10.0 50.0 0.1 50 0.0 0.0
 var z Fixed 10.0 29.0 0.1 0 0.0 0.0
 param sigma Fixed 10.0 50.0 0.1 250 0.0 0.0

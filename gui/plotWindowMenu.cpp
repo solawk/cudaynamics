@@ -6,9 +6,13 @@
 void plotWindowMenu_File(PlotWindow* window);
 void plotWindowMenu_PhasePlot(PlotWindow* window);
 void plotWindowMenu_HeatmapPlot(PlotWindow* window);
+void plotWindowMenu_HeatmapColors(PlotWindow* window);
 
 extern bool enabledParticles;
 extern bool autofitHeatmap;
+extern PlotWindow* colorsLUTfrom;
+extern int staticLUTsize;
+extern int dynamicLUTsize;
 
 void plotWindowMenu(PlotWindow* window)
 {
@@ -17,6 +21,7 @@ void plotWindowMenu(PlotWindow* window)
 		plotWindowMenu_File(window);
 		if (window->type == Phase || window->type == Phase2D) plotWindowMenu_PhasePlot(window);
 		if (window->type == Heatmap || window->type == Phase2D) plotWindowMenu_HeatmapPlot(window);
+		if (window->type == Heatmap) plotWindowMenu_HeatmapColors(window);
 
 		ImGui::EndMenuBar();
 	}
@@ -105,6 +110,42 @@ void plotWindowMenu_HeatmapPlot(PlotWindow* window)
 
 		bool tempIgnoreLimitsRecalc = window->hmp.ignoreLimitsRecalculationOnSelection; if (ImGui::Checkbox(("##" + windowName + "heatmapignoreLimitsRecalc").c_str(), &tempIgnoreLimitsRecalc)) window->hmp.ignoreLimitsRecalculationOnSelection = !window->hmp.ignoreLimitsRecalculationOnSelection;
 		ImGui::SameLine(); ImGui::Text("Auto-compute does not update limits");
+
+		ImGui::EndMenu();
+	}
+}
+
+void plotWindowMenu_HeatmapColors(PlotWindow* window)
+{
+	if (ImGui::BeginMenu("Painting"))
+	{
+		std::string windowName = window->name + std::to_string(window->id);
+
+		if (colorsLUTfrom != window)
+		{
+			if (ImGui::Button("Use heatmap for painting"))
+			{
+				colorsLUTfrom = window;
+			}
+		}
+		else
+		{
+			if (ImGui::Button("Stop using heatmap for painting"))
+			{
+				colorsLUTfrom = nullptr;
+			}
+		}
+
+		int tempDLS = dynamicLUTsize;
+		int tempSLS = staticLUTsize;
+
+		ImGui::DragInt(("##" + windowName + "_dynamicLUT").c_str(), &(dynamicLUTsize));	ImGui::SameLine(); ImGui::Text("Colors when playing");
+		ImGui::DragInt(("##" + windowName + "_staticLUT").c_str(), &(staticLUTsize));	ImGui::SameLine(); ImGui::Text("Colors when paused");
+
+		if (dynamicLUTsize < 2) dynamicLUTsize = 2;
+		if (staticLUTsize < 2) staticLUTsize = 2;
+
+		if (tempDLS != dynamicLUTsize || tempSLS != staticLUTsize) window->hmp.isHeatmapDirty = true;
 
 		ImGui::EndMenu();
 	}

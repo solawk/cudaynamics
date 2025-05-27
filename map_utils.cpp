@@ -43,7 +43,7 @@ void setupLUT(numb* src, int particleCount, int** lut, int* groupSizes, int grou
 	{
 		for (int g = 0; g < groupCount; g++)
 		{
-			if (src[i] <= thresholds[g])
+			if (src[i] <= thresholds[g] || g == groupCount - 1)
 			{
 				lut[g][groupSizes[g]] = i;
 				groupSizes[g] = groupSizes[g] + 1;
