@@ -11,9 +11,9 @@ void MapToImg(numb* mapBuffer, unsigned char** dataBuffer, int width, int height
 	for (int y = 0; y < height; y++)
 		for (int x = 0; x < width; x++)
 		{
-			i2 = x * height + y;
+			//i2 = x * height + y;
 			i1 = y * width + x;
-			v = mapBuffer[i2];
+			v = mapBuffer[i1];
 
 			if (isnan(v) || isinf(v))
 			{

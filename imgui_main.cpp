@@ -1664,11 +1664,13 @@ int imgui_main(int, char**)
                                     {
                                         if (window->hmp.valueBuffer != nullptr) delete[] window->hmp.valueBuffer;
                                         if (window->hmp.pixelBuffer != nullptr) delete[] window->hmp.pixelBuffer;
+                                        if (window->hmp.indexBuffer != nullptr) delete[] window->hmp.indexBuffer;
 
                                         window->hmp.lastBufferSize = mapSize;
 
                                         window->hmp.valueBuffer = new numb[mapSize];
                                         window->hmp.pixelBuffer = new unsigned char[mapSize * 4];
+                                        window->hmp.indexBuffer = new int[mapSize];
                                         window->hmp.areValuesDirty = true;
                                     }
 
@@ -1676,7 +1678,7 @@ int imgui_main(int, char**)
 
                                     if (window->hmp.areValuesDirty)
                                     {
-                                        extractMap(computations[playedBufferIndex].marshal.maps2, window->hmp.valueBuffer, &(attributeValueIndices.data()[0]),
+                                        extractMap(computations[playedBufferIndex].marshal.maps2, window->hmp.valueBuffer, window->hmp.indexBuffer, &(attributeValueIndices.data()[0]),
                                             sizing.hmp->typeX == PARAMETER ? sizing.hmp->indexX + KERNEL.VAR_COUNT : sizing.hmp->indexX,
                                             sizing.hmp->typeY == PARAMETER ? sizing.hmp->indexY + KERNEL.VAR_COUNT : sizing.hmp->indexY,
                                             &KERNEL);
@@ -1719,8 +1721,8 @@ int imgui_main(int, char**)
                                         window->hmp.staticLUT.lutSizes = new int[staticLUTsize];
                                         window->hmp.dynamicLUT.lutSizes = new int[dynamicLUTsize];
 
-                                        setupLUT(window->hmp.valueBuffer, computations[playedBufferIndex].marshal.totalVariations, window->hmp.staticLUT.lut, window->hmp.staticLUT.lutSizes, staticLUTsize, window->hmp.heatmapMin, window->hmp.heatmapMax);
-                                        setupLUT(window->hmp.valueBuffer, computations[playedBufferIndex].marshal.totalVariations, window->hmp.dynamicLUT.lut, window->hmp.dynamicLUT.lutSizes, dynamicLUTsize, window->hmp.heatmapMin, window->hmp.heatmapMax);
+                                        setupLUT(window->hmp.valueBuffer, window->hmp.indexBuffer, computations[playedBufferIndex].marshal.totalVariations, window->hmp.staticLUT.lut, window->hmp.staticLUT.lutSizes, staticLUTsize, window->hmp.heatmapMin, window->hmp.heatmapMax);
+                                        setupLUT(window->hmp.valueBuffer, window->hmp.indexBuffer, computations[playedBufferIndex].marshal.totalVariations, window->hmp.dynamicLUT.lut, window->hmp.dynamicLUT.lutSizes, dynamicLUTsize, window->hmp.heatmapMin, window->hmp.heatmapMax);
                                     }
 
                                     bool ret = LoadTextureFromRaw(&(window->hmp.pixelBuffer), sizing.xSize, sizing.ySize, (ID3D11ShaderResourceView**)&(window->hmp.myTexture), g_pd3dDevice);

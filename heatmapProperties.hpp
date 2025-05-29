@@ -22,6 +22,7 @@ struct HeatmapProperties
 
 	numb* valueBuffer;
 	unsigned char* pixelBuffer;
+	int* indexBuffer;
 	int lastBufferSize;
 
 	colorLUT dynamicLUT;
@@ -60,6 +61,7 @@ struct HeatmapProperties
 
 		valueBuffer = nullptr;
 		pixelBuffer = nullptr;
+		indexBuffer = nullptr;
 		lastBufferSize = -1;
 
 		indexX = 0;

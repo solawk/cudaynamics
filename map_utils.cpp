@@ -1,6 +1,6 @@
 #include "map_utils.hpp"
 
-void extractMap(numb* src, numb* dst, int* steps, int axisXattr, int axisYattr, Kernel* kernel)
+void extractMap(numb* src, numb* dst, int* indeces, int* steps, int axisXattr, int axisYattr, Kernel* kernel)
 {
 	bool isXparam = axisXattr >= kernel->VAR_COUNT;
 	bool isYparam = axisYattr >= kernel->VAR_COUNT;
@@ -23,12 +23,13 @@ void extractMap(numb* src, numb* dst, int* steps, int axisXattr, int axisYattr, 
 
 			steps2Variation(&variation, localSteps, kernel);
 			dst[y * xCount + x] = src[variation];
+			indeces[y * xCount + x] = variation;
 		}
 
 	delete[] localSteps;
 }
 
-void setupLUT(numb* src, int particleCount, int** lut, int* groupSizes, int groupCount, float min, float max)
+void setupLUT(numb* src, int* indeces, int particleCount, int** lut, int* groupSizes, int groupCount, float min, float max)
 {
 	float* thresholds = new float[groupCount];
 
@@ -45,7 +46,7 @@ void setupLUT(numb* src, int particleCount, int** lut, int* groupSizes, int grou
 		{
 			if (src[i] <= thresholds[g] || g == groupCount - 1)
 			{
-				lut[g][groupSizes[g]] = i;
+				lut[g][groupSizes[g]] = indeces[i];
 				groupSizes[g] = groupSizes[g] + 1;
 				break;
 			}
