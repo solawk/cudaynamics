@@ -29,7 +29,7 @@ void extractMap(numb* src, numb* dst, int* indeces, int* steps, int axisXattr, i
 	delete[] localSteps;
 }
 
-void setupLUT(numb* src, int* indeces, int particleCount, int** lut, int* groupSizes, int groupCount, float min, float max)
+void setupLUT(numb* src, int particleCount, int** lut, int* groupSizes, int groupCount, float min, float max)
 {
 	float* thresholds = new float[groupCount];
 
@@ -46,7 +46,7 @@ void setupLUT(numb* src, int* indeces, int particleCount, int** lut, int* groupS
 		{
 			if (src[i] <= thresholds[g] || g == groupCount - 1)
 			{
-				lut[g][groupSizes[g]] = indeces[i];
+				lut[g][groupSizes[g]] = i;
 				groupSizes[g] = groupSizes[g] + 1;
 				break;
 			}

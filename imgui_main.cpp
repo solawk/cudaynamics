@@ -1670,7 +1670,7 @@ int imgui_main(int, char**)
 
                                         window->hmp.valueBuffer = new numb[mapSize];
                                         window->hmp.pixelBuffer = new unsigned char[mapSize * 4];
-                                        window->hmp.indexBuffer = new int[mapSize];
+                                        window->hmp.indexBuffer = new int[computations[playedBufferIndex].marshal.totalVariations];
                                         window->hmp.areValuesDirty = true;
                                     }
 
@@ -1721,8 +1721,8 @@ int imgui_main(int, char**)
                                         window->hmp.staticLUT.lutSizes = new int[staticLUTsize];
                                         window->hmp.dynamicLUT.lutSizes = new int[dynamicLUTsize];
 
-                                        setupLUT(window->hmp.valueBuffer, window->hmp.indexBuffer, computations[playedBufferIndex].marshal.totalVariations, window->hmp.staticLUT.lut, window->hmp.staticLUT.lutSizes, staticLUTsize, window->hmp.heatmapMin, window->hmp.heatmapMax);
-                                        setupLUT(window->hmp.valueBuffer, window->hmp.indexBuffer, computations[playedBufferIndex].marshal.totalVariations, window->hmp.dynamicLUT.lut, window->hmp.dynamicLUT.lutSizes, dynamicLUTsize, window->hmp.heatmapMin, window->hmp.heatmapMax);
+                                        setupLUT(computations[playedBufferIndex].marshal.maps2, computations[playedBufferIndex].marshal.totalVariations, window->hmp.staticLUT.lut, window->hmp.staticLUT.lutSizes, staticLUTsize, window->hmp.heatmapMin, window->hmp.heatmapMax);
+                                        setupLUT(computations[playedBufferIndex].marshal.maps2, computations[playedBufferIndex].marshal.totalVariations, window->hmp.dynamicLUT.lut, window->hmp.dynamicLUT.lutSizes, dynamicLUTsize, window->hmp.heatmapMin, window->hmp.heatmapMax);
                                     }
 
                                     bool ret = LoadTextureFromRaw(&(window->hmp.pixelBuffer), sizing.xSize, sizing.ySize, (ID3D11ShaderResourceView**)&(window->hmp.myTexture), g_pd3dDevice);
