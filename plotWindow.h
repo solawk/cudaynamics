@@ -67,9 +67,9 @@ public:
 
 		markerSize = 1.0f;
 		markerOutlineSize = 0.0f;
-		markerColor = ImVec4(1.0f, 1.0f, 1.0f, 0.5f);
+		markerColor = ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
 
-		plotColor = ImVec4(1.0f, 1.0f, 1.0f, 0.5f);
+		plotColor = ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
 
 		markerShape = ImPlotMarker_Circle;
 

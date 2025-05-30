@@ -1331,7 +1331,9 @@ int imgui_main(int, char**)
                                         }
                                     }
 
-                                    ImPlot::SetNextLineStyle(ImPlot::SampleColormap((float)variationGroup / (lut->lutGroups - 1), ImPlotColormap_Jet));
+                                    ImVec4 clr = ImPlot::SampleColormap((float)variationGroup / (lut->lutGroups - 1), ImPlotColormap_Jet);
+                                    clr.w = window->plotColor.w;
+                                    ImPlot::SetNextLineStyle(clr);
                                 }
                                 ImPlot::PlotLine(plotName.c_str(), &(dataBuffer[0]), &(dataBuffer[1]), computedSteps + 1, 0, 0, sizeof(numb) * KERNEL.VAR_COUNT);
                             }
@@ -1396,7 +1398,7 @@ int imgui_main(int, char**)
                                         ImPlot::SetNextMarkerStyle(window->markerShape, window->markerSize);
 
                                         ImVec4 clr = ImPlot::SampleColormap((float)g / (lut->lutGroups - 1), ImPlotColormap_Jet);
-
+                                        clr.w = window->markerColor.w;
                                         ImPlot::SetNextLineStyle(clr);
                                         ImPlot::PlotScatter(plotName.c_str(), &((particleBuffer)[window->variables[0]]), &((particleBuffer)[window->variables[1]]),
                                             lutsize, 0, 0, sizeof(numb) * KERNEL.VAR_COUNT);
