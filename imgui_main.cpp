@@ -1340,10 +1340,39 @@ int imgui_main(int, char**)
                             else
                             {
                                 ImPlot3D::PushStyleColor(ImPlot3DCol_FrameBg, ImVec4(0.07f, 0.07f, 0.07f, 1.0f));
-                                ImPlot3D::SetNextLineStyle(window->plotColor);
+                                //ImPlot3D::SetNextLineStyle(window->plotColor);
                                 ImPlot3D::SetupAxes(KERNEL.variables[window->variables[0]].name.c_str(), KERNEL.variables[window->variables[1]].name.c_str(), KERNEL.variables[window->variables[2]].name.c_str());
+                                
+                                if (colorsLUTfrom == nullptr)
+                                {
+                                    ImPlot3D::SetNextLineStyle(window->plotColor);
+                                }
+                                else
+                                {
+                                    colorLUT* lut = playingParticles ? &(colorsLUTfrom->hmp.dynamicLUT) : &(colorsLUTfrom->hmp.staticLUT);
+                                    int variationGroup = -1;
+                                    int lutsize;
+                                    for (int g = 0; g < lut->lutGroups && variationGroup < 0; g++)
+                                    {
+                                        lutsize = lut->lutSizes[g];
+                                        for (int v = 0; v < lutsize && variationGroup < 0; v++)
+                                        {
+                                            if (variation == lut->lut[g][v])
+                                            {
+                                                variationGroup = g;
+                                            }
+                                        }
+                                    }
+
+                                    ImVec4 clr = ImPlot3D::SampleColormap((float)variationGroup / (lut->lutGroups - 1), ImPlotColormap_Jet);
+                                    clr.w = window->plotColor.w;
+                                    ImPlot3D::SetNextLineStyle(clr);
+                                }
+
                                 ImPlot3D::PlotLine(plotName.c_str(), &(computedVariation[window->variables[0]]), &(computedVariation[window->variables[1]]), &(computedVariation[window->variables[2]]),
                                     computedSteps + 1, 0, 0, sizeof(numb)* KERNEL.VAR_COUNT);
+
+
                                 ImPlot3D::PopStyleColor(1);
                             }
                         }
@@ -1408,11 +1437,43 @@ int imgui_main(int, char**)
                             else
                             {
                                 ImPlot3D::PushStyleVar(ImPlotStyleVar_MarkerWeight, window->markerOutlineSize);
-                                ImPlot3D::SetNextLineStyle(window->markerColor);
                                 ImPlot3D::SetNextMarkerStyle(window->markerShape, window->markerSize);
                                 ImPlot3D::PushStyleColor(ImPlot3DCol_FrameBg, ImVec4(0.07f, 0.07f, 0.07f, 1.0f));
+
+                                if (colorsLUTfrom == nullptr)
+                                {
+                                    ImPlot3D::SetNextLineStyle(window->markerColor);
+                                    ImPlot3D::PlotScatter(plotName.c_str(), &((particleBuffer)[window->variables[0]]), &((particleBuffer)[window->variables[1]]), &((particleBuffer)[window->variables[2]]),
+                                        computations[playedBufferIndex].marshal.totalVariations, 0, 0, sizeof(numb) * KERNEL.VAR_COUNT);
+                                }
+                                else if (!colorsLUTfrom->hmp.isHeatmapDirty)
+                                {
+                                    colorLUT* lut = playingParticles ? &(colorsLUTfrom->hmp.dynamicLUT) : &(colorsLUTfrom->hmp.staticLUT);
+
+                                    for (int g = 0; g < lut->lutGroups; g++)
+                                    {
+                                        int lutsize = lut->lutSizes[g];
+                                        for (int v = 0; v < lutsize; v++)
+                                        {
+                                            for (int var = 0; var < varCount; var++)
+                                                particleBuffer[v * varCount + var] = trajectory[(variationSize * lut->lut[g][v]) + (varCount * particleStep) + var];
+                                        }
+
+                                        ImPlot3D::PushStyleVar(ImPlotStyleVar_MarkerWeight, window->markerOutlineSize);
+                                        ImPlot3D::SetNextMarkerStyle(window->markerShape, window->markerSize);
+
+                                        ImVec4 clr = ImPlot::SampleColormap((float)g / (lut->lutGroups - 1), ImPlotColormap_Jet);
+                                        clr.w = window->markerColor.w;
+                                        ImPlot3D::SetNextLineStyle(clr);
+                                        ImPlot3D::PlotScatter(plotName.c_str(), &((particleBuffer)[window->variables[0]]), &((particleBuffer)[window->variables[1]]), &((particleBuffer)[window->variables[2]]),
+                                            lutsize, 0, 0, sizeof(numb) * KERNEL.VAR_COUNT);
+                                    }
+                                }
+
+                                /*ImPlot3D::SetNextLineStyle(window->markerColor);
                                 ImPlot3D::PlotScatter(plotName.c_str(), &((particleBuffer)[window->variables[0]]), &((particleBuffer)[window->variables[1]]), &((particleBuffer)[window->variables[2]]),
-                                    computations[playedBufferIndex].marshal.totalVariations, 0, 0, sizeof(numb)* KERNEL.VAR_COUNT);
+                                    computations[playedBufferIndex].marshal.totalVariations, 0, 0, sizeof(numb)* KERNEL.VAR_COUNT);*/
+
                                 ImPlot3D::PopStyleColor(1);
                             }
                         }
