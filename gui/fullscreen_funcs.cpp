@@ -30,5 +30,6 @@ void FullscreenButtonPressLogic(PlotWindow* plotWindow, ImGuiWindow* window)
     else
         plotWindow->isFullscreenEnd = true;
 
+    plotWindow->isFullscreen = window->IsFullscreen;
     window->IsFullscreenButtonPressed = false;
 }

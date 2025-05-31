@@ -1,19 +1,18 @@
 #include "map_img.h"
 
-#define i4(o) i1 * 4 + o
+#define i4(o) i * 4 + o
 
 void MapToImg(numb* mapBuffer, unsigned char** dataBuffer, int width, int height, numb min, numb max)
 {
 	numb v;
 	ImVec4 c;
-	int i1, i2;
+	int i;
 
 	for (int y = 0; y < height; y++)
 		for (int x = 0; x < width; x++)
 		{
-			//i2 = x * height + y;
-			i1 = y * width + x;
-			v = mapBuffer[i1];
+			i = y * width + x;
+			v = mapBuffer[i];
 
 			if (isnan(v) || isinf(v))
 			{

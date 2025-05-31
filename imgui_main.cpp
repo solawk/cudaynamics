@@ -28,8 +28,8 @@ numb* particleBuffer = nullptr; // One step local buffer
 //numb* mapBuffer = nullptr;
 
 // To use with fullscreen functionality
-PlotWindow mainWindow(-1), graphBuilderWindow(-2);
-ImVec2 fullscreenSize = ImVec2((float)GetSystemMetrics(SM_CXSCREEN), (float)GetSystemMetrics(SM_CYSCREEN));
+PlotWindow mainWindow(-1), graphBuilderWindow(-2), mapSettingsWindow(-3);
+ImVec2 fullscreenSize;
 
 float axisBuffer[18]{}; // 3 axis, 2 points
 float rulerBuffer[153]{}; // 1 axis, 5 * 10 + 1 points
@@ -241,6 +241,7 @@ void initializeKernel(bool needTerminate)
     unloadPlotWindows();
     plotWindows.clear();
     uniqueIds = 0;
+    colorsLUTfrom = nullptr;
 
     kernelNew.CopyFrom(&KERNEL);
 
@@ -388,6 +389,8 @@ int imgui_main(int, char**)
     try { loadWindows(); }
     catch (std::exception e) { printf(e.what()); }
 
+    fullscreenSize = ImVec2((float)GetSystemMetrics(SM_CXSCREEN), (float)GetSystemMetrics(SM_CYSCREEN));
+
     while (work)
     {
         IMGUI_WORK_BEGIN;
@@ -403,9 +406,9 @@ int imgui_main(int, char**)
 
         style.WindowMenuButtonPosition = ImGuiDir_Left;
 
-        //FullscreenActLogic(&mainWindow, &fullscreenSize);
+        FullscreenActLogic(&mainWindow, &fullscreenSize);
         ImGui::Begin("CUDAynamics", &work);
-        //FullscreenButtonPressLogic(&mainWindow, ImGui::GetCurrentWindow());
+        FullscreenButtonPressLogic(&mainWindow, ImGui::GetCurrentWindow());
 
         // Selecting kernel
         if (ImGui::BeginCombo("##selectingKernel", KERNEL.name.c_str()))
@@ -751,9 +754,9 @@ int imgui_main(int, char**)
 
         if (/*graphBuilderWindowEnabled*/ 1)
         {
-            //FullscreenActLogic(&graphBuilderWindow, &fullscreenSize);
+            FullscreenActLogic(&graphBuilderWindow, &fullscreenSize);
             ImGui::Begin("Graph Builder", &graphBuilderWindowEnabled);
-            //FullscreenButtonPressLogic(&graphBuilderWindow, ImGui::GetCurrentWindow());
+            FullscreenButtonPressLogic(&graphBuilderWindow, ImGui::GetCurrentWindow());
 
             // Type
             std::string plottypes[] = { "Time series", "3D Phase diagram", "2D Phase diagram", "Orbit diagram", "Heatmap" };
@@ -929,7 +932,9 @@ int imgui_main(int, char**)
 
         if (1)
         {
+            FullscreenActLogic(&mapSettingsWindow, &fullscreenSize);
             ImGui::Begin("Map Settings", nullptr);
+            FullscreenButtonPressLogic(&mapSettingsWindow, ImGui::GetCurrentWindow());
 
             for (int m = 0; m < KERNEL.MAP_COUNT; m++)
             {
@@ -981,37 +986,14 @@ int imgui_main(int, char**)
             std::string windowName = window->name + std::to_string(window->id);
             std::string plotName = windowName + "_plot";
 
-            //FullscreenActLogic(window, &fullscreenSize);
+            FullscreenActLogic(window, &fullscreenSize);
             ImGui::Begin(windowName.c_str(), &(window->active), ImGuiWindowFlags_MenuBar);
-            //FullscreenButtonPressLogic(window, ImGui::GetCurrentWindow());
+            FullscreenButtonPressLogic(window, ImGui::GetCurrentWindow());
 
             autofitHeatmap = false;
 
             // Menu
             plotWindowMenu(window);
-
-            // Plot variables
-            /*if (ImGui::BeginCombo(("##" + windowName + "_plotSettings").c_str(), "Plot settings"))
-            {
-                if (window->type == Phase || window->type == Series)
-                {
-                    bool tempShowAxis = window->showAxis; if (ImGui::Checkbox(("##" + windowName + "showAxis").c_str(), &tempShowAxis)) window->showAxis = !window->showAxis;
-                    ImGui::SameLine(); ImGui::Text("Show axis"); ImGui::SameLine();
-                    bool tempShowAxisNames = window->showAxisNames; if (ImGui::Checkbox(("##" + windowName + "showAxisNames").c_str(), &tempShowAxisNames)) window->showAxisNames = !window->showAxisNames;
-                    ImGui::SameLine(); ImGui::Text("Show axis names");
-
-                    ImGui::DragFloat(("##" + windowName + "_rulerAlpha").c_str(), &(window->rulerAlpha), 0.01f);
-                    bool tempShowRuler = window->showRuler; ImGui::SameLine(); if (ImGui::Checkbox(("##" + windowName + "showRuler").c_str(), &tempShowRuler)) window->showRuler = !window->showRuler;
-                    ImGui::SameLine(); ImGui::Text("Ruler alpha");
-                    CLAMP01(window->rulerAlpha);
-                    ImGui::DragFloat(("##" + windowName + "_gridAlpha").c_str(), &(window->gridAlpha), 0.01f);
-                    bool tempShowGrid = window->showGrid; ImGui::SameLine(); if (ImGui::Checkbox(("##" + windowName + "showGrid").c_str(), &tempShowGrid)) window->showGrid = !window->showGrid;
-                    ImGui::SameLine(); ImGui::Text("Grid alpha");
-                    CLAMP01(window->gridAlpha);
-                }
-
-                ImGui::EndCombo();
-            }*/
 
             // Heatmap axes
             if (window->type == Heatmap)
@@ -1308,7 +1290,7 @@ int imgui_main(int, char**)
                                     rotationEuler, window->offset, window->scale);
 
                                 getMinMax2D(dataBuffer, computedSteps + 1, &(plot->dataMin), &(plot->dataMax));
-                                getMinMax2D(computedVariation, computedSteps + 1, &(plot->dataMin), &(plot->dataMax));
+                                //getMinMax2D(computedVariation, computedSteps + 1, &(plot->dataMin), &(plot->dataMax));
 
                                 if (colorsLUTfrom == nullptr)
                                 {
@@ -1393,10 +1375,10 @@ int imgui_main(int, char**)
 
                             if (!window->isImplot3d)
                             {
-                                getMinMax2D(particleBuffer, computations[playedBufferIndex].marshal.totalVariations, &(plot->dataMin), &(plot->dataMax));
-
                                 rotateOffsetBuffer(particleBuffer, computations[playedBufferIndex].marshal.totalVariations, KERNEL.VAR_COUNT, window->variables[0], window->variables[1], window->variables[2],
                                     rotationEuler, window->offset, window->scale);
+
+                                getMinMax2D(particleBuffer, computations[playedBufferIndex].marshal.totalVariations, &(plot->dataMin), &(plot->dataMax));
 
                                 ImPlot::PushStyleVar(ImPlotStyleVar_MarkerWeight, window->markerOutlineSize);
                                 ImPlot::SetNextMarkerStyle(window->markerShape, window->markerSize);

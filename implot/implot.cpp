@@ -3278,16 +3278,19 @@ void EndPlot() {
             plot.Axes[ImAxis_X1].Range.Max = plot.dataMax.x;
             plot.Axes[ImAxis_Y1].Range.Max = plot.dataMax.y;
 
+
             if (rangeX == 0.0f)
             {
-                plot.Axes[ImAxis_X1].Range.Min -= 0.5f;
-                plot.Axes[ImAxis_X1].Range.Max += 0.5f;
+                double dstToZero = fmax(fabs(plot.Axes[ImAxis_X1].Range.Min), fabs(plot.Axes[ImAxis_X1].Range.Max));
+                plot.Axes[ImAxis_X1].Range.Min = -dstToZero * 2.0;
+                plot.Axes[ImAxis_X1].Range.Max = dstToZero * 2.0;
             }
 
             if (rangeY == 0.0f)
             {
-                plot.Axes[ImAxis_Y1].Range.Min -= 0.5f;
-                plot.Axes[ImAxis_Y1].Range.Max += 0.5f;
+                double dstToZero = fmax(fabs(plot.Axes[ImAxis_Y1].Range.Min), fabs(plot.Axes[ImAxis_Y1].Range.Max));
+                plot.Axes[ImAxis_Y1].Range.Min = -dstToZero * 2.0;
+                plot.Axes[ImAxis_Y1].Range.Max = dstToZero * 2.0;
             }
         }
     }

@@ -52,8 +52,8 @@ struct HeatmapProperties
 		isHeatmapAutoComputeOn = false;
 		areHeatmapLimitsDefined = false;
 
-		areValuesDirty = false;
-		isHeatmapDirty = false;
+		areValuesDirty = true;
+		isHeatmapDirty = true;
 		myTexture = nullptr;
 
 		showHeatmapValues = false;
