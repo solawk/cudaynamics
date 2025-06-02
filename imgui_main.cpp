@@ -922,7 +922,18 @@ int imgui_main(int, char**)
                 if (plotType == Phase2D) plotWindow.AssignVariables(selectedPlotVars);
                 if (plotType == Heatmap) plotWindow.AssignVariables(selectedPlotMap);
 
+                int indexOfColorsLutFrom = -1;
+                if (colorsLUTfrom != nullptr)
+                {
+                    for (int i = 0; i < plotWindows.size() && indexOfColorsLutFrom == -1; i++)
+                    {
+                        if (&(plotWindows[i]) == colorsLUTfrom) indexOfColorsLutFrom = i;
+                    }
+                }
+
                 plotWindows.push_back(plotWindow);
+
+                if (indexOfColorsLutFrom != -1) colorsLUTfrom = &(plotWindows[indexOfColorsLutFrom]);
             }
 
             ImGui::End();
