@@ -12,8 +12,15 @@
 #include "variationSteps.h"
 
 #include "kernels/lorenz2/lorenz2.h"
-#include "kernels/halvorsen/halvorsen.h"
 #include "kernels/mrlcs_jj/mrlcs_jj.h"
+#include "kernels/chen/chen.h"
+#include "kernels/dadras/dadras.h"
+#include "kernels/fourwing/fourwing.h"
+#include "kernels/halvorsen/halvorsen.h"
+#include "kernels/langford/langford.h"
+#include "kernels/rossler/rossler.h"
+#include "kernels/sprott/sprott.h"
+#include "kernels/three_scroll/three_scroll.h"
 
 extern std::map<std::string, Kernel> kernels;
 extern std::map<std::string, int> kernelTPBs;

@@ -17,8 +17,15 @@ std::string selectedKernel;
 void common_main()
 {
     addKernel(lorenz2);
-    addKernel(halvorsen);
     addKernel(mrlcs_jj);
+    addKernel(chen);
+    addKernel(dadras);
+    addKernel(fourwing);
+    addKernel(halvorsen);
+    addKernel(langford);
+    addKernel(rossler);
+    addKernel(sprott);
+    addKernel(three_scroll);
 
     //selectKernel(kernels.begin()->first);
     selectKernel(lorenz2);

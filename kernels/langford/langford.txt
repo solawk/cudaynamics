@@ -1,7 +1,7 @@
-Name: Halvorsen system
+Name: Langford
 Steps: 1000
 Transient: 0
-Step size: 0.01
+Step size: 0.001
 // Compute on CUDAynamics launch: yes/no
 Execute on launch: yes
 // Ranging types:
@@ -13,15 +13,21 @@ Execute on launch: yes
 //
 // Defining variables/parameters:
 // var/param <name> <ranging type> <minimum value> <maximum value> <step> <step count> <normal mean> <normal deviation>
-var x Linear -2.5 2.5 0.1 250 0.0 0.0
-var y Linear -2.51 2.5 0.1 250 0.0 0.0
-var z Fixed 2.04 5.0 0.2 250 0.0 0.0
-param alpha Fixed 1.89 29.0 0.1 0 0.0 0.0
-param beta Fixed 4 29.0 0.1 0 0.0 0.0
+var x Linear -1.0 1.0 0.01 40 0.0 0.0
+var y Linear -1.0 1.0 0.08 40 0.0 0.0
+var z Linear -1.0 1.0 0.008 40 0.0 0.0
+param a Fixed 0.95 50.0 0.1 250 0.0 0.0
+param b Fixed 0.7 50.0 0.1 250 0.0 0.0
+param c Fixed 0.6 29.0 0.1 0 0.0 0.0
+param d Fixed 3.5 50.0 0.1 250 0.0 0.0
+param e Fixed 0.25 50.0 0.1 250 0.0 0.0
+param f Fixed 0.1 50.0 0.1 250 0.0 0.0
+param g Fixed 3.0 50.0 0.1 250 0.0 0.0
 param symmetry Fixed 0.0 50.0 0.1 250 0.0 0.0
 // Defining enumerated parameters (useful for methods):
 // enum <name> <ranging type> <minimum value> <maximum value> <step> <step count> <normal mean> <normal deviation> <enum names, no spaces>
 enum method 0ExplicitEuler 0ExplicitMidpoint 1ExplicitRungeKutta4 0VariableSymmetryCD
 //
 // Defining maps:
-map LLE 11 0.01 50 0 -1
+// map <name> <map settings count (inside its struct)> <map settings, beginning with "n" for numbs and "i" for ints>
+map LLE 7 r n0.01 L i50 variableToDeflect i0 norm0 i0 norm1 i1 norm2 i2 norm3 i-1

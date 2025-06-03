@@ -173,9 +173,16 @@
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="analysis\lle.cu" />
+    <CudaCompile Include="kernels\chen\chen.cu" />
+    <CudaCompile Include="kernels\dadras\dadras.cu" />
+    <CudaCompile Include="kernels\fourwing\fourwing.cu" />
     <CudaCompile Include="kernels\halvorsen\halvorsen.cu" />
+    <CudaCompile Include="kernels\langford\langford.cu" />
     <CudaCompile Include="kernels\lorenz2\lorenz2.cu" />
     <CudaCompile Include="kernels\mrlcs_jj\mrlcs_jj.cu" />
+    <CudaCompile Include="kernels\rossler\rossler.cu" />
+    <CudaCompile Include="kernels\sprott\sprott.cu" />
+    <CudaCompile Include="kernels\three_scroll\three_scroll.cu" />
     <CudaCompile Include="main.cu" />
   </ItemGroup>
   <ItemGroup>
