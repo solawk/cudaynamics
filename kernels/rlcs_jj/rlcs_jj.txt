@@ -1,4 +1,4 @@
-Name: mRLC_Shunted_Josephson_Junction
+Name: RLC_Shunted_Josephson_Junction
 Steps: 5000
 Transient: 0
 Step size: 0.01
@@ -13,16 +13,15 @@ Execute on launch: yes
 //
 // Defining variables/parameters:
 // var/param <name> <ranging type> <minimum value> <maximum value> <step> <step count> <normal mean> <normal deviation>
-var sin_theta Fixed 0.0 50.0 0.1 50 0.0 0.0
-var theta Fixed -0.31 50.0 1.0 50 0.0 0.0
-var theta_true Fixed 0.0 50.0 1.0 50 0.0 0.0
-var V Fixed 3.3 29.0 0.1 0 0.0 0.0
-var IL Fixed 0.76 29.0 0.1 0 0.0 0.0
-param betaL Fixed 50.0 50.0 0.1 250 0.0 0.0
-param betaC Fixed 0.5 50.0 0.1 250 0.0 0.0
+var x1 Linear 0.0 1.0 0.1 100 0.0 0.0
+var sin_x1 Fixed -0.31 50.0 1.0 50 0.0 0.0
+var x2 Linear 3.3 4.3 0.1 100 0.0 0.0
+var x3 Fixed 0.76 29.0 0.1 0 0.0 0.0
+param betaL Fixed 29.215 50.0 0.1 250 0.0 0.0
+param betaC Fixed 0.707 50.0 0.1 250 0.0 0.0
 param betaM Fixed 1.0 29.0 0.1 0 0.0 0.0
-param i Linear 0.9 1.5 0.01 100 0.0 0.0
-param eps Linear -2.0 0.0 0.01 100 0.0 0.0
+param i Fixed 1.25 1.5 0.01 100 0.0 0.0
+param eps Fixed -1.0 0.0 0.01 100 0.0 0.0
 param delta Fixed 1.0 29.0 0.1 0 0.0 0.0
 param s Fixed 0.5 29.0 0.1 0 0.0 0.0
 // Defining maps:

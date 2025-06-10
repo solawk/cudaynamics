@@ -17,7 +17,9 @@ std::string selectedKernel;
 void common_main()
 {
     addKernel(lorenz2);
+    addKernel(lorenzMod);
     addKernel(mrlcs_jj);
+    addKernel(rlcs_jj);
     addKernel(chen);
     addKernel(dadras);
     addKernel(fourwing);

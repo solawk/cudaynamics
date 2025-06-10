@@ -207,6 +207,12 @@
     <CudaCompile Include="kernels\three_scroll\three_scroll.cu">
       <Filter>kernels</Filter>
     </CudaCompile>
+    <CudaCompile Include="kernels\rlcs_jj\rlcs_jj.cu">
+      <Filter>kernels</Filter>
+    </CudaCompile>
+    <CudaCompile Include="kernels\lorenzMod\lorenzMod.cu">
+      <Filter>kernels</Filter>
+    </CudaCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="CUDAynamics.rc" />

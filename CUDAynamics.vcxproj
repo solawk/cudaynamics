@@ -179,7 +179,9 @@
     <CudaCompile Include="kernels\halvorsen\halvorsen.cu" />
     <CudaCompile Include="kernels\langford\langford.cu" />
     <CudaCompile Include="kernels\lorenz2\lorenz2.cu" />
+    <CudaCompile Include="kernels\lorenzMod\lorenzMod.cu" />
     <CudaCompile Include="kernels\mrlcs_jj\mrlcs_jj.cu" />
+    <CudaCompile Include="kernels\rlcs_jj\rlcs_jj.cu" />
     <CudaCompile Include="kernels\rossler\rossler.cu" />
     <CudaCompile Include="kernels\sprott\sprott.cu" />
     <CudaCompile Include="kernels\three_scroll\three_scroll.cu" />

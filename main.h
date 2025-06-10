@@ -12,7 +12,9 @@
 #include "variationSteps.h"
 
 #include "kernels/lorenz2/lorenz2.h"
+#include "kernels/lorenzMod/lorenzMod.h"
 #include "kernels/mrlcs_jj/mrlcs_jj.h"
+#include "kernels/rlcs_jj/rlcs_jj.h"
 #include "kernels/chen/chen.h"
 #include "kernels/dadras/dadras.h"
 #include "kernels/fourwing/fourwing.h"
