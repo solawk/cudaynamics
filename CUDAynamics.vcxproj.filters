@@ -213,6 +213,15 @@
     <CudaCompile Include="kernels\lorenzMod\lorenzMod.cu">
       <Filter>kernels</Filter>
     </CudaCompile>
+    <CudaCompile Include="kernels\wilson\wilson.cu">
+      <Filter>kernels</Filter>
+    </CudaCompile>
+    <CudaCompile Include="kernels\msprottj\msprottj.cu">
+      <Filter>kernels</Filter>
+    </CudaCompile>
+    <CudaCompile Include="kernels\thomas\thomas.cu">
+      <Filter>kernels</Filter>
+    </CudaCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="CUDAynamics.rc" />

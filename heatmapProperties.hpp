@@ -7,8 +7,8 @@ struct HeatmapProperties
 	bool grayscaleHeatmap;
 	int stride; // deprecated
 
-	float heatmapMax;
-	float heatmapMin;
+	numb heatmapMax;
+	numb heatmapMin;
 	bool areHeatmapLimitsDefined;
 	void* myTexture;
 

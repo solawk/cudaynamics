@@ -28,6 +28,9 @@ void common_main()
     addKernel(rossler);
     addKernel(sprott);
     addKernel(three_scroll);
+    addKernel(wilson);
+    addKernel(msprottj);
+    addKernel(thomas);
 
     //selectKernel(kernels.begin()->first);
     selectKernel(lorenz2);

@@ -31,8 +31,8 @@ numb* particleBuffer = nullptr; // One step local buffer
 PlotWindow mainWindow(-1), graphBuilderWindow(-2), mapSettingsWindow(-3);
 ImVec2 fullscreenSize;
 
-float axisBuffer[18]{}; // 3 axis, 2 points
-float rulerBuffer[153]{}; // 1 axis, 5 * 10 + 1 points
+numb axisBuffer[18]{}; // 3 axis, 2 points
+numb rulerBuffer[153]{}; // 1 axis, 5 * 10 + 1 points
 
 int computedSteps = 0; // Step count for the current computation
 bool autofitAfterComputing = false; // Temporary flag to autofit computed data
@@ -183,6 +183,7 @@ int asyncComputation()
 
 void computing()
 {
+    computations[bufferToFillIndex].bufferNo += 2;
     computations[bufferToFillIndex].future = std::async(asyncComputation);
 }
 
@@ -248,6 +249,7 @@ void initializeKernel(bool needTerminate)
     colorsLUTfrom = nullptr;
 
     kernelNew.CopyFrom(&KERNEL);
+    kernelNew.continuousMaps = false;
 
     computations[0].Clear();
     computations[1].Clear();
@@ -312,6 +314,9 @@ void prepareAndCompute()
         particleStep = 0;
         deleteBothBuffers();
         removeHeatmapLimits();
+
+        computations[0].bufferNo = -2;
+        computations[1].bufferNo = -1;
 
         KERNEL.CopyFrom(&kernelNew);
         KERNEL.PrepareAttributes();
@@ -561,7 +566,9 @@ int imgui_main(int, char**)
             PUSH_UNSAVED_FRAME;
             popStyle = true;
         }
-        ImGui::InputFloat("Step size", &(kernelNew.stepSize), 0.0f, 0.0f, "%f");
+        float stepSizeFloat = (float)kernelNew.stepSize;
+        ImGui::InputFloat("Step size", &stepSizeFloat, 0.0f, 0.0f, "%f");
+        kernelNew.stepSize = (numb)stepSizeFloat;
         TOOLTIP("Step size of the simulation, h");
         ImGui::PopItemWidth();
         if (popStyle) POP_FRAME(3);
@@ -673,17 +680,30 @@ int imgui_main(int, char**)
         }
 
         // Auto-loading
-        if (playingParticles)
+        bool tempAutoLoadNewParams = autoLoadNewParams;
+        if (ImGui::Checkbox("Apply parameter changes automatically", &(tempAutoLoadNewParams)))
         {
-            bool tempAutoLoadNewParams = autoLoadNewParams;
-            if (ImGui::Checkbox("Apply parameter changes automatically", &(tempAutoLoadNewParams)))
-            {
-                autoLoadNewParams = !autoLoadNewParams;
-                if (autoLoadNewParams) kernelNew.CopyParameterValuesFrom(&KERNEL);
-                else KERNEL.CopyParameterValuesFrom(&kernelNew);
-            }
-            TOOLTIP("Automatically applies new parameter values to the new buffers mid-playback");
+            autoLoadNewParams = !autoLoadNewParams;
+            if (autoLoadNewParams) kernelNew.CopyParameterValuesFrom(&KERNEL);
+            else KERNEL.CopyParameterValuesFrom(&kernelNew);
         }
+        TOOLTIP("Automatically applies new parameter values to the new buffers mid-playback");
+
+        // Map continuous computing
+        popStyle = false;
+        if (kernelNew.continuousMaps != KERNEL.continuousMaps)
+        {
+            anyChanged = true;
+            PUSH_UNSAVED_FRAME;
+            popStyle = true;
+        }
+        bool tempContinuousMaps = kernelNew.continuousMaps;
+        if (ImGui::Checkbox("Continuous map computation", &(tempContinuousMaps)))
+        {
+            kernelNew.continuousMaps = !kernelNew.continuousMaps;
+        }
+        TOOLTIP("Shaping maps continuously. When off, map is fully redrawn for each buffer");
+        if (popStyle) POP_FRAME(3);
 
         ImGui::PushItemWidth(200.0f);
         ImGui::InputFloat("Value drag speed", &(dragChangeSpeed));
@@ -1500,6 +1520,8 @@ int imgui_main(int, char**)
                     {
                         plot = ImPlot::GetPlot(plotName.c_str());
 
+                        ImPlot::SetupAxes(KERNEL.variables[window->variables[0]].name.c_str(), KERNEL.variables[window->variables[1]].name.c_str());
+
                         float plotRangeSize = ((float)plot->Axes[ImAxis_X1].Range.Max - (float)plot->Axes[ImAxis_X1].Range.Min);
 
                         if (!computations[playedBufferIndex].ready)
@@ -1551,7 +1573,7 @@ int imgui_main(int, char**)
                                 numb* computedVariation = computations[playedBufferIndex].marshal.trajectory + (computations[playedBufferIndex].marshal.variationSize * variation);
 
                                 ImPlot::SetNextLineStyle(ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
-                                ImPlot::PlotLine(plotName.c_str(), &(computedVariation[0]), &(computedVariation[1]), computedSteps + 1, 0, 0, sizeof(numb) * KERNEL.VAR_COUNT);
+                                ImPlot::PlotLine(plotName.c_str(), &(computedVariation[xIndex]), &(computedVariation[yIndex]), computedSteps + 1, 0, 0, sizeof(numb) * KERNEL.VAR_COUNT);
                             }
                             else // Particles - all variations, one certain step
                             {
@@ -1849,10 +1871,13 @@ int imgui_main(int, char**)
                                 ImGui::TableSetColumnIndex(1);
 
                                 ImGui::SetNextItemWidth(120);
-                                ImGui::DragFloat("Max", &window->hmp.heatmapMax, 0.01f);
+                                float heatMinFloat = window->hmp.heatmapMin, heatMaxFloat = window->hmp.heatmapMax;
+                                ImGui::DragFloat("Max", &heatMaxFloat, 0.01f);
                                 ImPlot::ColormapScale("##HeatScale", window->hmp.heatmapMin, window->hmp.heatmapMax, ImVec2(120, plotSize.y - 30.0f));
                                 ImGui::SetNextItemWidth(120);
-                                ImGui::DragFloat("Min", &window->hmp.heatmapMin, 0.01f);
+                                ImGui::DragFloat("Min", &heatMinFloat, 0.01f);
+                                window->hmp.heatmapMin = (numb)heatMinFloat;
+                                window->hmp.heatmapMax = (numb)heatMaxFloat;
                                 ImPlot::PopColormap();
                             }
 

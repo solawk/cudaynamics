@@ -3,7 +3,7 @@
 
 namespace attributes
 {
-    enum variables { sin_theta, theta, theta_true, Vvar, IL };
+    enum variables { sin_x0, x0, x0true, x1, x2 };
     enum parameters { p0, p1, p2, p3, p4, p5, p6 };
     enum maps { LLE };
 }
@@ -46,22 +46,22 @@ __device__ void finiteDifferenceScheme_mrlcs_jj(numb* currentV, numb* nextV, num
 {
     numb hs = (1.0f - P(p6)) * h;
 
-    Vnext(theta) = fmodf(V(theta) + hs * V(Vvar), 2.0f * 3.141592f);
-    Vnext(sin_theta) = sinf(Vnext(theta));
-    Vnext(theta_true) = V(theta_true) + hs * V(Vvar);
-    Vnext(IL) = V(IL) + hs * ((1.0f / P(p0)) * (V(Vvar) - V(IL)));
-    Vnext(Vvar) = V(Vvar) + hs * ((1.0f / P(p1)) * (P(p3) - P(p2) * (1 + P(p4) * cosf(Vnext(theta))) * V(Vvar) - sinf(Vnext(theta)) - P(p5) * Vnext(IL)));
+    Vnext(x0) = fmodf(V(x0) + hs * V(x1), 2.0f * 3.141592f);
+    Vnext(sin_x0) = sinf(Vnext(x0));
+    Vnext(x0true) = V(x0true) + hs * V(x1);
+    Vnext(x2) = V(x2) + hs * ((1.0f / P(p0)) * (V(x1) - V(x2)));
+    Vnext(x1) = V(x1) + hs * ((1.0f / P(p1)) * (P(p3) - P(p2) * (1 + P(p4) * cosf(Vnext(x0))) * V(x1) - sinf(Vnext(x0)) - P(p5) * Vnext(x2)));
 
     hs = P(p6) * h;
-    V(theta) = Vnext(theta);
-    V(sin_theta) = sinf(V(theta));
-    V(Vvar) = Vnext(Vvar);
-    V(IL) = Vnext(IL);
+    V(x0) = Vnext(x0);
+    V(sin_x0) = sinf(V(x0));
+    V(x1) = Vnext(x1);
+    V(x2) = Vnext(x2);
 
-    Vnext(theta) = fmodf(V(theta) + hs * V(Vvar), 2.0f * 3.141592f);
-    Vnext(sin_theta) = sinf(Vnext(theta));
-    Vnext(theta_true) = V(theta_true) + hs * V(Vvar);
-    Vnext(IL) = V(IL) + hs * (1.0f / P(p0)) * (V(Vvar) - V(IL)) / (1.0f + hs * (1.0f / P(p0)));
-    Vnext(Vvar) = V(Vvar) + hs * ((1.0f / P(p1)) * (P(p3) - P(p2) * (1 + P(p4) * cosf(Vnext(theta))) * V(Vvar) - sinf(Vnext(theta)) - P(p5) * Vnext(IL)));
-    Vnext(Vvar) = V(Vvar) + hs * ((1.0f / P(p1)) * (P(p3) - P(p2) * (1 + P(p4) * cosf(Vnext(theta))) * Vnext(Vvar) - sinf(Vnext(theta)) - P(p5) * Vnext(IL)));
+    Vnext(x0) = fmodf(V(x0) + hs * V(x1), 2.0f * 3.141592f);
+    Vnext(sin_x0) = sinf(Vnext(x0));
+    Vnext(x0true) = V(x0true) + hs * V(x1);
+    Vnext(x2) = V(x2) + hs * (1.0f / P(p0)) * (V(x1) - V(x2)) / (1.0f + hs * (1.0f / P(p0)));
+    Vnext(x1) = V(x1) + hs * ((1.0f / P(p1)) * (P(p3) - P(p2) * (1 + P(p4) * cosf(Vnext(x0))) * V(x1) - sinf(Vnext(x0)) - P(p5) * Vnext(x2)));
+    Vnext(x1) = V(x1) + hs * ((1.0f / P(p1)) * (P(p3) - P(p2) * (1 + P(p4) * cosf(Vnext(x0))) * Vnext(x1) - sinf(Vnext(x0)) - P(p5) * Vnext(x2)));
 }

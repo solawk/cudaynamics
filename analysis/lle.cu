@@ -48,5 +48,15 @@ __device__ void LLE(Computation* data, LLE_Settings settings, int variation, voi
         }
     }
 
-    CUDA_marshal.maps2[variation] = LLE_value / ((CUDA_kernel.steps + 1) * CUDA_kernel.stepSize);
+    numb mapValue = LLE_value / ((CUDA_kernel.steps + 1) * CUDA_kernel.stepSize);
+
+    if (CUDA_kernel.continuousMaps)
+    {
+        numb existingValue = CUDA_marshal.maps2[variation] * data->bufferNo;
+        CUDA_marshal.maps2[variation] = (existingValue + mapValue) / (data->bufferNo + 1);
+    }
+    else
+    {
+        CUDA_marshal.maps2[variation] = mapValue;
+    }
 }

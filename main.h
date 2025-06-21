@@ -23,6 +23,9 @@
 #include "kernels/rossler/rossler.h"
 #include "kernels/sprott/sprott.h"
 #include "kernels/three_scroll/three_scroll.h"
+#include "kernels/wilson/wilson.h"
+#include "kernels/msprottj/msprottj.h"
+#include "kernels/thomas/thomas.h"
 
 extern std::map<std::string, Kernel> kernels;
 extern std::map<std::string, int> kernelTPBs;
@@ -44,3 +47,6 @@ int compute(Computation*);
 
 // Fill trajectory and parameter buffers with initial values
 void fillAttributeBuffers(Computation*);
+
+// Set and copy map buffers for continuous map computation
+void setMapValues(Computation*);

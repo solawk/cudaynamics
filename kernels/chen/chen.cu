@@ -109,21 +109,7 @@ __device__ void finiteDifferenceScheme_chen(numb* currentV, numb* nextV, numb* p
 
     ifMETHOD(P(method), VariableSymmetryCD)
     {
-        float s = 0;
-        float h1 = h * 0.5 - s;      
-        float h2 = h * 0.5 + s;
-
-        numb x1 = V(x) + h1*(P(alpha) * V(x) - V(y) * V(z));
-        numb y1 = V(y) + h1*(P(beta) * V(y) + x1 * V(z));
-        numb z1 = V(z) + h1*(P(delta) * V(z) + x1 * y1 / P(gamma));
-
-        numb z2 = (z1 + h2 * y1 * x1 / P(gamma)) / (1 - h2 * P(delta));
-        numb y2 = (y1 + h2 * x1 * z2) / (1 - h2 * P(beta));
-        numb x2 = (x1 - h2 * y2 * z2) / (1 - h2 * P(alpha));
-
-        Vnext(z) = z2;
-        Vnext(y) = y2;
-        Vnext(x) = x2;
+        
 
     }
 

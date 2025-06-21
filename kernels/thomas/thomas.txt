@@ -1,5 +1,5 @@
-Name: mRLC_Shunted_Josephson_Junction
-Steps: 5000
+Name: Thomas_Cyclical_Oscillator
+Steps: 1000
 Transient: 0
 Step size: 0.01
 // Compute on CUDAynamics launch: yes/no
@@ -13,17 +13,14 @@ Execute on launch: yes
 //
 // Defining variables/parameters:
 // var/param <name> <ranging type> <minimum value> <maximum value> <step> <step count> <normal mean> <normal deviation>
-var sin_theta Fixed 0.0 50.0 0.1 50 0.0 0.0
-var theta Fixed -0.31 50.0 1.0 50 0.0 0.0
-var theta_true Fixed -0.31 50.0 1.0 50 0.0 0.0
-var V Fixed 3.3 29.0 0.1 0 0.0 0.0
-var IL Fixed 0.76 29.0 0.1 0 0.0 0.0
-param betaL Fixed 50.0 50.0 0.1 250 0.0 0.0
-param betaC Fixed 0.5 50.0 0.1 250 0.0 0.0
-param betaM Fixed 1.0 29.0 0.1 0 0.0 0.0
-param i Fixed 1.15 1.5 0.01 100 0.0 0.0
-param eps Fixed -1.0 0.0 0.01 100 0.0 0.0
-param delta Fixed 1.0 29.0 0.1 0 0.0 0.0
-param s Fixed 0.5 29.0 0.1 0 0.0 0.0
+var x Linear -5.0 5.0 1.0 200 0.0 0.0
+var y Linear -5.0 5.0 0.1 200 0.0 0.0
+var z Fixed 10.0 29.0 0.1 0 0.0 0.0
+param b Fixed 0.1665 50.0 0.1 250 0.0 0.0
+// Defining enumerated parameters (useful for methods):
+// enum <name> <ranging type> <minimum value> <maximum value> <step> <step count> <normal mean> <normal deviation> <enum names, no spaces>
+enum method 0ExplicitEuler 1ExplicitMidpoint
+//
 // Defining maps:
+// map <name> <map settings count (inside its struct)> <map settings, beginning with "n" for numbs and "i" for ints>
 map LLE 7 r n0.01 L i50 variableToDeflect i0 norm0 i0 norm1 i1 norm2 i2 norm3 i-1

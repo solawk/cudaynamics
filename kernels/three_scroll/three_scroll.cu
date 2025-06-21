@@ -108,21 +108,6 @@ __device__ void finiteDifferenceScheme_three_scroll(numb* currentV, numb* nextV,
 
     ifMETHOD(P(method), VariableSymmetryCD)
     {
-        float s = 0;
-        float h1 = h * 0.5 - s;
-        float h2 = h * 0.5 + s;
-
-        numb x1 = V(x) + h1 * (P(a) * (V(y) - V(x)) + P(d) * V(x) * V(z));
-        numb y1 = V(y) + h1 * (x1 * (P(b) - V(z)) + P(f) * V(y));
-        numb z1 = V(z) + h1 * (P(c) * V(z) + x1 * (y1 - P(e) * x1));
-
-        numb z2 = (z1 + h2 * x1 * (y1 - P(e) * x1)) / (1 - h2 * P(c));
-        numb y2 = (y1 + h2 * x1 * (P(b) - z2)) / (1 - h2 * P(f));
-        numb x2 = (x1 + h2 * P(a) * y2) / (1 + h2 * (P(a) - P(d) * z2));
-
-        Vnext(z) = z2;
-        Vnext(y) = y2;
-        Vnext(x) = x2;
+        
     }
-
 }
