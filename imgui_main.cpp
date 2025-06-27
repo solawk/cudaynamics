@@ -16,6 +16,7 @@ std::vector<PlotWindow> plotWindows;
 int uniqueIds = 0; // Unique window IDs
 
 Computation computations[2];
+Computation computationHires;
 int playedBufferIndex = 0; // Buffer currently shown
 int bufferToFillIndex = 0; // Buffer to send computations to
 std::vector<int> attributeValueIndices;
@@ -220,6 +221,7 @@ void terminateBuffers()
 {
     if (computations[0].future.valid()) computations[0].future.wait();
     if (computations[1].future.valid()) computations[1].future.wait();
+    if (computationHires.future.valid()) computationHires.future.wait();
     deleteBothBuffers();
     if (dataBuffer != nullptr)      { delete[] dataBuffer;      dataBuffer = nullptr; }
     if (particleBuffer != nullptr)  { delete[] particleBuffer;  particleBuffer = nullptr; }
@@ -253,6 +255,7 @@ void initializeKernel(bool needTerminate)
 
     computations[0].Clear();
     computations[1].Clear();
+    computationHires.Clear();
 
     initAVI();
 
@@ -300,7 +303,9 @@ void removeHeatmapLimits()
 
 void prepareAndCompute()
 {
-    if ((!computations[0].ready && computations[0].marshal.trajectory != nullptr) || (!computations[1].ready && computations[1].marshal.trajectory != nullptr))
+    if ((!computations[0].ready && computations[0].marshal.trajectory != nullptr)
+        || (!computations[1].ready && computations[1].marshal.trajectory != nullptr)
+        || (!computationHires.ready && computationHires.marshal.trajectory != nullptr))
     {
         printf("Preventing computing too fast!\n");
     }
@@ -387,6 +392,8 @@ int imgui_main(int, char**)
 
     computations[0].marshal.trajectory = computations[1].marshal.trajectory = nullptr;
     computations[0].marshal.parameterVariations = computations[1].marshal.parameterVariations = nullptr;
+    computations[0].isHires = computations[1].isHires = false;
+    computationHires.isHires = true;
 
     computations[0].index = 0;
     computations[1].index = 1;
@@ -1807,7 +1814,7 @@ int imgui_main(int, char**)
                                         setupLUT(computations[playedBufferIndex].marshal.maps2, computations[playedBufferIndex].marshal.totalVariations, window->hmp.dynamicLUT.lut, window->hmp.dynamicLUT.lutSizes, dynamicLUTsize, window->hmp.heatmapMin, window->hmp.heatmapMax);
                                     }
 
-                                    bool ret = LoadTextureFromRaw(&(window->hmp.pixelBuffer), sizing.xSize, sizing.ySize, (ID3D11ShaderResourceView**)&(window->hmp.myTexture), g_pd3dDevice);
+                                    bool ret = LoadTextureFromRaw(&(window->hmp.pixelBuffer), sizing.xSize, sizing.ySize, (ID3D11ShaderResourceView**)&(window->hmp.texture), g_pd3dDevice);
                                     IM_ASSERT(ret);
 
                                     ImPlotPoint from = window->hmp.showActualDiapasons ? ImPlotPoint(sizing.minX, sizing.maxY + sizing.stepY) : ImPlotPoint(0, sizing.ySize);
@@ -1816,7 +1823,7 @@ int imgui_main(int, char**)
                                     ImPlot::SetupAxes(sizing.hmp->typeX == PARAMETER ? KERNEL.parameters[sizing.hmp->indexX].name.c_str() : KERNEL.variables[sizing.hmp->indexX].name.c_str(),
                                         sizing.hmp->typeY == PARAMETER ? KERNEL.parameters[sizing.hmp->indexY].name.c_str() : KERNEL.variables[sizing.hmp->indexY].name.c_str());
 
-                                    ImPlot::PlotImage(("Map " + std::to_string(mapIndex) + "##" + plotName + std::to_string(0)).c_str(), (ImTextureID)(window->hmp.myTexture),
+                                    ImPlot::PlotImage(("Map " + std::to_string(mapIndex) + "##" + plotName + std::to_string(0)).c_str(), (ImTextureID)(window->hmp.texture),
                                         from, to, ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f), ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
 
                                     // Value labels
@@ -1907,10 +1914,10 @@ int imgui_main(int, char**)
         // Cleaning
         for (int i = 0; i < plotWindows.size(); i++)
         {
-            if (plotWindows[i].hmp.myTexture != nullptr)
+            if (plotWindows[i].hmp.texture != nullptr)
             {
-                ((ID3D11ShaderResourceView*)plotWindows[i].hmp.myTexture)->Release();
-                plotWindows[i].hmp.myTexture = nullptr;
+                ((ID3D11ShaderResourceView*)plotWindows[i].hmp.texture)->Release();
+                plotWindows[i].hmp.texture = nullptr;
             }
         }
 

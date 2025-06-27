@@ -10,7 +10,7 @@ struct HeatmapProperties
 	numb heatmapMax;
 	numb heatmapMin;
 	bool areHeatmapLimitsDefined;
-	void* myTexture;
+	void* texture;
 
 	bool areValuesDirty;
 	bool isHeatmapDirty;
@@ -20,8 +20,8 @@ struct HeatmapProperties
 	bool isHeatmapSelectionModeOn;
 	bool isHeatmapAutoComputeOn;
 
-	numb* valueBuffer;
-	unsigned char* pixelBuffer;
+	numb* valueBuffer;			// values of the heatmap
+	unsigned char* pixelBuffer;	// pixel RGBA values of the heatmap
 	int* indexBuffer;
 	int lastBufferSize;
 
@@ -43,7 +43,6 @@ struct HeatmapProperties
 
 	HeatmapProperties()
 	{
-		stride = 1;
 		heatmapMax = 0.0f;
 		heatmapMin = 0.0f;
 
@@ -54,7 +53,7 @@ struct HeatmapProperties
 
 		areValuesDirty = true;
 		isHeatmapDirty = true;
-		myTexture = nullptr;
+		texture = nullptr;
 
 		showHeatmapValues = false;
 		showActualDiapasons = true;

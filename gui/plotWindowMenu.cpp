@@ -105,6 +105,9 @@ void plotWindowMenu_HeatmapPlot(PlotWindow* window)
 			ImGui::EndCombo();
 		}
 
+		bool tempHiresMode = window->isHiresModeOn; if (ImGui::Checkbox(("##" + windowName + "isHiresMode").c_str(), &tempHiresMode)) window->isHiresModeOn = !window->isHiresModeOn;
+		ImGui::SameLine(); ImGui::Text("Hi-Res mode");
+
 		bool tempHeatmapAutoCompute = window->hmp.isHeatmapAutoComputeOn; if (ImGui::Checkbox(("##" + windowName + "heatmapAutoCompute").c_str(), &tempHeatmapAutoCompute)) window->hmp.isHeatmapAutoComputeOn = !window->hmp.isHeatmapAutoComputeOn;
 		ImGui::SameLine(); ImGui::Text("Auto-compute on Shift+RMB");
 

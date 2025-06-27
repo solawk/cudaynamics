@@ -13,20 +13,26 @@ public:
 	std::future<int> future;
 	int threads_per_block;
 	float timeElapsed;
-	int index;
+	int index; // 0 or 1
+
 	bool isFirst;
-	int bufferNo;
+	int bufferNo; // When computing starts, this holds the continuous index of the current buffer
+
+	// Hi-res gizmos
+	bool isHires; // True only for the hi-res computation
+	unsigned long long variationsPerParallelization; // How many variations are launched in parallel during hi-res computation
+	int buffersPerVariation; // How many times is one variation repeated (steps * buffersPerVariation equals total steps per variation)
 
 	void Clear()
 	{
 		if (marshal.trajectory != nullptr)				{ delete[] marshal.trajectory; marshal.trajectory = nullptr; }
 		if (marshal.parameterVariations != nullptr)		{ delete[] marshal.parameterVariations; marshal.parameterVariations = nullptr; }
 		if (marshal.stepIndices != nullptr)				{ delete[] marshal.stepIndices; marshal.stepIndices = nullptr; }
-		//if (marshal.maps != nullptr)					{ delete[] marshal.maps; marshal.maps = nullptr; }
 		if (marshal.maps2 != nullptr)					{ delete[] marshal.maps2; marshal.maps2 = nullptr; }
 
 		ready = false;
 		timeElapsed = 0.0f;
+
 		isFirst = false;
 		bufferNo = -1;
 	}
