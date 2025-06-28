@@ -22,7 +22,10 @@ int bufferToFillIndex = 0; // Buffer to send computations to
 std::vector<int> attributeValueIndices;
 
 bool autoLoadNewParams = false;
-Kernel kernelNew;
+PlotWindow* hiresHeatmapWindow = nullptr;
+#define HIRES_ON (hiresHeatmapWindow != nullptr)
+Kernel kernelNew, kernelHires;
+#define KERNELNEWCURRENT (HIRES_ON ? kernelHires : kernelNew)
 
 numb* dataBuffer = nullptr; // One variation local buffer
 numb* particleBuffer = nullptr; // One step local buffer
@@ -51,7 +54,7 @@ int bufferNo = 0;
 
 PlotWindow* colorsLUTfrom = nullptr;
 int staticLUTsize = 32;
-int dynamicLUTsize = 4;
+int dynamicLUTsize = 16;
 
 bool selectParticleTab = false;
 bool selectOrbitTab = true;
@@ -78,6 +81,7 @@ ImVec4 unsavedBackgroundColorActive = ImVec4(0.427f * 1.5f, 0.427f * 1.5f, 0.137
 ImVec4 disabledColor = ImVec4(0.137f * 0.5f, 0.271f * 0.5f, 0.427f * 0.5f, 1.0f);
 ImVec4 disabledTextColor = ImVec4(1.0f, 1.0f, 1.0f, 0.5f);
 ImVec4 disabledBackgroundColor = ImVec4(0.137f * 0.35f, 0.271f * 0.35f, 0.427f * 0.35f, 1.0f);
+ImVec4 hiresBackgroundColor = ImVec4(0.427f, 0.137f, 0.427f, 1.0f);
 ImVec4 xAxisColor = ImVec4(0.75f, 0.3f, 0.3f, 1.0f);
 ImVec4 yAxisColor = ImVec4(0.33f, 0.67f, 0.4f, 1.0f);
 ImVec4 zAxisColor = ImVec4(0.3f, 0.45f, 0.7f, 1.0f);
@@ -102,6 +106,9 @@ bool graphBuilderWindowEnabled = true;
 #define PUSH_UNSAVED_FRAME  {ImGui::PushStyleColor(ImGuiCol_FrameBg, unsavedBackgroundColor); \
                             ImGui::PushStyleColor(ImGuiCol_FrameBgActive, unsavedBackgroundColorActive); \
                             ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, unsavedBackgroundColorHovered);}
+#define PUSH_HIRES_FRAME  {ImGui::PushStyleColor(ImGuiCol_FrameBg, hiresBackgroundColor); \
+                            ImGui::PushStyleColor(ImGuiCol_FrameBgActive, hiresBackgroundColor); \
+                            ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, hiresBackgroundColor);}
 #define POP_FRAME(n)        {ImGui::PopStyleColor(n);}
 #define CLAMP01(x)          if (x < 0.0f) x = 0.0f; if (x > 1.0f) x = 1.0f;
 #define TOOLTIP(text)       if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal)) ImGui::SetTooltip(text);
@@ -136,11 +143,16 @@ std::string padString(std::string str, int length)
 }
 
 // Initialize the Attribute Value Indeces vector for ranging
-void initAVI()
+void initAVI(bool hires)
 {
     attributeValueIndices.clear();
-    for (int i = 0; i < kernelNew.VAR_COUNT + kernelNew.PARAM_COUNT; i++) attributeValueIndices.push_back(0);
+    if (!hires)
+        for (int i = 0; i < kernelNew.VAR_COUNT + kernelNew.PARAM_COUNT; i++) attributeValueIndices.push_back(0);
+    else
+        for (int i = 0; i < kernelHires.VAR_COUNT + kernelHires.PARAM_COUNT; i++) attributeValueIndices.push_back(0);
 }
+
+// Normal computing
 
 void computing();
 
@@ -159,7 +171,7 @@ int asyncComputation()
     {
         autofitAfterComputing = true;
         resetTempBuffers(&(computations[bufferToFillIndex]));
-        initAVI();
+        initAVI(false);
     }
 
     computations[bufferToFillIndex].ready = true;
@@ -186,6 +198,33 @@ void computing()
 {
     computations[bufferToFillIndex].bufferNo += 2;
     computations[bufferToFillIndex].future = std::async(asyncComputation);
+}
+
+// Hi-res computing
+
+void hiresComputing();
+
+int hiresAsyncComputation()
+{
+    computationHires.ready = false;
+
+    int computationResult = compute(&computationHires);
+
+    autofitAfterComputing = true;
+    resetTempBuffers(&computationHires);
+    initAVI(true);
+
+    computationHires.ready = true;
+
+    hiresHeatmapWindow->hireshmp.initClickedLocation = true;
+    hiresHeatmapWindow->hireshmp.isHeatmapDirty = true;
+
+    return computationResult;
+}
+
+void hiresComputing()
+{
+    computationHires.future = std::async(hiresAsyncComputation);
 }
 
 // Windows configuration saving and loading
@@ -252,12 +291,14 @@ void initializeKernel(bool needTerminate)
 
     kernelNew.CopyFrom(&KERNEL);
     kernelNew.continuousMaps = false;
+    kernelHires.CopyFrom(&KERNEL);
 
     computations[0].Clear();
     computations[1].Clear();
     computationHires.Clear();
 
-    initAVI();
+    initAVI(false);
+    initAVI(true);
 
     particleStep = 0;
     computeAfterShiftSelect = false;
@@ -332,6 +373,15 @@ void prepareAndCompute()
         // Done I guess? I forgor
         //initAVI();
         computing();
+    }
+}
+
+void releaseHeatmap(PlotWindow* window)
+{
+    if (window->hmp.texture != nullptr)
+    {
+        ((ID3D11ShaderResourceView*)window->hmp.texture)->Release();
+        window->hmp.texture = nullptr;
     }
 }
 
@@ -1785,7 +1835,7 @@ int imgui_main(int, char**)
                                         //window->hmp.isHeatmapDirty = true;
                                     }
 
-                                    // TODO: Do not reload values when variating map axes (map values don't change anyway)
+                                    // Do not reload values when variating map axes (map values don't change anyway)
                                     if (variation != prevVariation)
                                     {
                                         window->hmp.isHeatmapDirty = true;
@@ -1812,10 +1862,15 @@ int imgui_main(int, char**)
 
                                         setupLUT(computations[playedBufferIndex].marshal.maps2, computations[playedBufferIndex].marshal.totalVariations, window->hmp.staticLUT.lut, window->hmp.staticLUT.lutSizes, staticLUTsize, window->hmp.heatmapMin, window->hmp.heatmapMax);
                                         setupLUT(computations[playedBufferIndex].marshal.maps2, computations[playedBufferIndex].marshal.totalVariations, window->hmp.dynamicLUT.lut, window->hmp.dynamicLUT.lutSizes, dynamicLUTsize, window->hmp.heatmapMin, window->hmp.heatmapMax);
+                                    
+                                        releaseHeatmap(window);
                                     }
 
-                                    bool ret = LoadTextureFromRaw(&(window->hmp.pixelBuffer), sizing.xSize, sizing.ySize, (ID3D11ShaderResourceView**)&(window->hmp.texture), g_pd3dDevice);
-                                    IM_ASSERT(ret);
+                                    if (window->hmp.texture == nullptr)
+                                    {
+                                        bool ret = LoadTextureFromRaw(&(window->hmp.pixelBuffer), sizing.xSize, sizing.ySize, (ID3D11ShaderResourceView**)&(window->hmp.texture), g_pd3dDevice);
+                                        IM_ASSERT(ret);
+                                    }
 
                                     ImPlotPoint from = window->hmp.showActualDiapasons ? ImPlotPoint(sizing.minX, sizing.maxY + sizing.stepY) : ImPlotPoint(0, sizing.ySize);
                                     ImPlotPoint to = window->hmp.showActualDiapasons ? ImPlotPoint(sizing.maxX + sizing.stepX, sizing.minY) : ImPlotPoint(sizing.xSize, 0);
@@ -1827,7 +1882,7 @@ int imgui_main(int, char**)
                                         from, to, ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f), ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
 
                                     // Value labels
-                                    if (sizing.cutWidth > 0 && sizing.cutHeight > 0)
+                                    if (sizing.cutWidth > 0 && sizing.cutHeight > 0) // If there's anything to be shown in the plot
                                     {
                                         if (window->hmp.showHeatmapValues)
                                         {
@@ -1910,16 +1965,6 @@ int imgui_main(int, char**)
 
         // Rendering
         IMGUI_WORK_END;
-
-        // Cleaning
-        for (int i = 0; i < plotWindows.size(); i++)
-        {
-            if (plotWindows[i].hmp.texture != nullptr)
-            {
-                ((ID3D11ShaderResourceView*)plotWindows[i].hmp.texture)->Release();
-                plotWindows[i].hmp.texture = nullptr;
-            }
-        }
 
         prevVariation = variation;
     }
@@ -2045,7 +2090,9 @@ LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 
 // Non-ImGui functions
 
-#define ATTR_BEGIN  ImGui::SameLine(); popStyle = false; if (isChanged && !autoLoadNewParams) { PUSH_UNSAVED_FRAME; popStyle = true; }
+#define ATTR_BEGIN  ImGui::SameLine(); popStyle = false; \
+    if (hiresHeatmapWindow == nullptr) { if (isChanged && !autoLoadNewParams) { PUSH_UNSAVED_FRAME; popStyle = true; } } \
+    else { PUSH_HIRES_FRAME; popStyle = true; }
 #define ATTR_END    ImGui::PopItemWidth(); if (popStyle) POP_FRAME(3);
 
 void listAttrRanging(Attribute* attr, bool isChanged)
@@ -2091,7 +2138,7 @@ void listAttrInt(Attribute* attr, int* field, std::string name, std::string inne
 void listVariable(int i)
 {
     thisChanged = false;
-    if (kernelNew.variables[i].IsDifferentFrom(&(KERNEL.variables[i]))) { anyChanged = true; thisChanged = true; }
+    if (KERNELNEWCURRENT.variables[i].IsDifferentFrom(&(KERNEL.variables[i]))) { anyChanged = true; thisChanged = true; }
     //if (thisChanged) varNew.recountSteps(i); // TODO
 
     ImGui::Text(padString(KERNEL.variables[i].name, maxNameLength).c_str());
@@ -2103,38 +2150,38 @@ void listVariable(int i)
     }
 
     // Ranging
-    listAttrRanging(&(kernelNew.variables[i]), kernelNew.variables[i].rangingType != KERNEL.variables[i].rangingType);
+    listAttrRanging(&(KERNELNEWCURRENT.variables[i]), KERNELNEWCURRENT.variables[i].rangingType != KERNEL.variables[i].rangingType);
 
     dragFlag = !playingParticles ? 0 : ImGuiSliderFlags_ReadOnly;
 
-    switch (kernelNew.variables[i].rangingType)
+    switch (KERNELNEWCURRENT.variables[i].rangingType)
     {
     case None:
-        listAttrNumb(&(kernelNew.variables[i]), &(kernelNew.variables[i].min), "", "", kernelNew.variables[i].min != KERNEL.variables[i].min);
+        listAttrNumb(&(KERNELNEWCURRENT.variables[i]), &(KERNELNEWCURRENT.variables[i].min), "", "", KERNELNEWCURRENT.variables[i].min != KERNEL.variables[i].min);
         break;
     case Step:
-        listAttrNumb(&(kernelNew.variables[i]), &(kernelNew.variables[i].min), "", "Min: ", kernelNew.variables[i].min != KERNEL.variables[i].min);
-        listAttrNumb(&(kernelNew.variables[i]), &(kernelNew.variables[i].max), "MAX", "Max: ", kernelNew.variables[i].max != KERNEL.variables[i].max);
-        listAttrNumb(&(kernelNew.variables[i]), &(kernelNew.variables[i].step), "STEP", "Step: ", kernelNew.variables[i].step != KERNEL.variables[i].step);
-        kernelNew.variables[i].CalcStepCount();
-        ImGui::SameLine(); ImGui::Text((std::to_string(kernelNew.variables[i].stepCount) + " steps").c_str());
+        listAttrNumb(&(KERNELNEWCURRENT.variables[i]), &(KERNELNEWCURRENT.variables[i].min), "", "Min: ", KERNELNEWCURRENT.variables[i].min != KERNEL.variables[i].min);
+        listAttrNumb(&(KERNELNEWCURRENT.variables[i]), &(KERNELNEWCURRENT.variables[i].max), "MAX", "Max: ", KERNELNEWCURRENT.variables[i].max != KERNEL.variables[i].max);
+        listAttrNumb(&(KERNELNEWCURRENT.variables[i]), &(KERNELNEWCURRENT.variables[i].step), "STEP", "Step: ", KERNELNEWCURRENT.variables[i].step != KERNEL.variables[i].step);
+        KERNELNEWCURRENT.variables[i].CalcStepCount();
+        ImGui::SameLine(); ImGui::Text((std::to_string(KERNELNEWCURRENT.variables[i].stepCount) + " steps").c_str());
         break;
     case Linear:
-        listAttrNumb(&(kernelNew.variables[i]), &(kernelNew.variables[i].min), "", "Min: ", kernelNew.variables[i].min != KERNEL.variables[i].min);
-        listAttrNumb(&(kernelNew.variables[i]), &(kernelNew.variables[i].max), "MAX", "Max: ", kernelNew.variables[i].max != KERNEL.variables[i].max);
-        listAttrInt(&(kernelNew.variables[i]), &(kernelNew.variables[i].stepCount), "STEPCOUNT", "Count: ", kernelNew.variables[i].stepCount != KERNEL.variables[i].stepCount);
-        kernelNew.variables[i].CalcStep();
-        ImGui::SameLine(); ImGui::Text(("Step: " + (std::to_string(kernelNew.variables[i].step))).c_str());
+        listAttrNumb(&(KERNELNEWCURRENT.variables[i]), &(KERNELNEWCURRENT.variables[i].min), "", "Min: ", KERNELNEWCURRENT.variables[i].min != KERNEL.variables[i].min);
+        listAttrNumb(&(KERNELNEWCURRENT.variables[i]), &(KERNELNEWCURRENT.variables[i].max), "MAX", "Max: ", KERNELNEWCURRENT.variables[i].max != KERNEL.variables[i].max);
+        listAttrInt(&(KERNELNEWCURRENT.variables[i]), &(KERNELNEWCURRENT.variables[i].stepCount), "STEPCOUNT", "Count: ", KERNELNEWCURRENT.variables[i].stepCount != KERNEL.variables[i].stepCount);
+        KERNELNEWCURRENT.variables[i].CalcStep();
+        ImGui::SameLine(); ImGui::Text(("Step: " + (std::to_string(KERNELNEWCURRENT.variables[i].step))).c_str());
         break;
     case UniformRandom:
-        listAttrNumb(&(kernelNew.variables[i]), &(kernelNew.variables[i].mean), "MEAN", "Mean: ", kernelNew.variables[i].mean != KERNEL.variables[i].mean);
-        listAttrNumb(&(kernelNew.variables[i]), &(kernelNew.variables[i].deviation), "DEV", "Dev: ", kernelNew.variables[i].deviation != KERNEL.variables[i].deviation);
-        listAttrInt(&(kernelNew.variables[i]), &(kernelNew.variables[i].stepCount), "STEPCOUNT", "Count: ", kernelNew.variables[i].stepCount != KERNEL.variables[i].stepCount);
+        listAttrNumb(&(KERNELNEWCURRENT.variables[i]), &(KERNELNEWCURRENT.variables[i].mean), "MEAN", "Mean: ", KERNELNEWCURRENT.variables[i].mean != KERNEL.variables[i].mean);
+        listAttrNumb(&(KERNELNEWCURRENT.variables[i]), &(KERNELNEWCURRENT.variables[i].deviation), "DEV", "Dev: ", KERNELNEWCURRENT.variables[i].deviation != KERNEL.variables[i].deviation);
+        listAttrInt(&(KERNELNEWCURRENT.variables[i]), &(KERNELNEWCURRENT.variables[i].stepCount), "STEPCOUNT", "Count: ", KERNELNEWCURRENT.variables[i].stepCount != KERNEL.variables[i].stepCount);
         break;
     case NormalRandom:
-        listAttrNumb(&(kernelNew.variables[i]), &(kernelNew.variables[i].mean), "MU", "Mu: ", kernelNew.variables[i].mean != KERNEL.variables[i].mean);
-        listAttrNumb(&(kernelNew.variables[i]), &(kernelNew.variables[i].deviation), "SIGMA", "Sigma: ", kernelNew.variables[i].deviation != KERNEL.variables[i].deviation);
-        listAttrInt(&(kernelNew.variables[i]), &(kernelNew.variables[i].stepCount), "STEPCOUNT", "Count: ", kernelNew.variables[i].stepCount != KERNEL.variables[i].stepCount);
+        listAttrNumb(&(KERNELNEWCURRENT.variables[i]), &(KERNELNEWCURRENT.variables[i].mean), "MU", "Mu: ", KERNELNEWCURRENT.variables[i].mean != KERNEL.variables[i].mean);
+        listAttrNumb(&(KERNELNEWCURRENT.variables[i]), &(KERNELNEWCURRENT.variables[i].deviation), "SIGMA", "Sigma: ", KERNELNEWCURRENT.variables[i].deviation != KERNEL.variables[i].deviation);
+        listAttrInt(&(KERNELNEWCURRENT.variables[i]), &(KERNELNEWCURRENT.variables[i].stepCount), "STEPCOUNT", "Count: ", KERNELNEWCURRENT.variables[i].stepCount != KERNEL.variables[i].stepCount);
         break;
     }
 
@@ -2147,10 +2194,10 @@ void listVariable(int i)
 
 void listParameter(int i)
 {
-    bool changeAllowed = kernelNew.parameters[i].rangingType == None || !playingParticles || !autoLoadNewParams;
+    bool changeAllowed = KERNELNEWCURRENT.parameters[i].rangingType == None || !playingParticles || !autoLoadNewParams;
 
     thisChanged = false;
-    if (kernelNew.parameters[i].IsDifferentFrom(&(KERNEL.parameters[i]))) { anyChanged = true; thisChanged = true; }
+    if (KERNELNEWCURRENT.parameters[i].IsDifferentFrom(&(KERNEL.parameters[i]))) { anyChanged = true; thisChanged = true; }
     //if (thisChanged) paramNew.recountSteps(i); // TODO
 
     ImGui::Text(padString(KERNEL.parameters[i].name, maxNameLength).c_str());
@@ -2168,35 +2215,35 @@ void listParameter(int i)
         PUSH_DISABLED_FRAME;
     }
 
-    listAttrRanging(&(kernelNew.parameters[i]), kernelNew.parameters[i].rangingType != KERNEL.parameters[i].rangingType);
+    listAttrRanging(&(KERNELNEWCURRENT.parameters[i]), KERNELNEWCURRENT.parameters[i].rangingType != KERNEL.parameters[i].rangingType);
 
-    dragFlag = (!playingParticles || kernelNew.parameters[i].rangingType == None) ? 0 : ImGuiSliderFlags_ReadOnly;
+    dragFlag = (!playingParticles || KERNELNEWCURRENT.parameters[i].rangingType == None) ? 0 : ImGuiSliderFlags_ReadOnly;
 
-    switch (kernelNew.parameters[i].rangingType)
+    switch (KERNELNEWCURRENT.parameters[i].rangingType)
     {
     case Step:
-        listAttrNumb(&(kernelNew.parameters[i]), &(kernelNew.parameters[i].min), "", "Min: ", kernelNew.parameters[i].min != KERNEL.parameters[i].min);
-        listAttrNumb(&(kernelNew.parameters[i]), &(kernelNew.parameters[i].max), "MAX", "Max: ", kernelNew.parameters[i].max != KERNEL.parameters[i].max);
-        listAttrNumb(&(kernelNew.parameters[i]), &(kernelNew.parameters[i].step), "STEP", "Step: ", kernelNew.parameters[i].step != KERNEL.parameters[i].step);
-        kernelNew.parameters[i].CalcStepCount();
-        ImGui::SameLine(); ImGui::Text((std::to_string(kernelNew.parameters[i].stepCount) + " steps").c_str());
+        listAttrNumb(&(KERNELNEWCURRENT.parameters[i]), &(KERNELNEWCURRENT.parameters[i].min), "", "Min: ", KERNELNEWCURRENT.parameters[i].min != KERNEL.parameters[i].min);
+        listAttrNumb(&(KERNELNEWCURRENT.parameters[i]), &(KERNELNEWCURRENT.parameters[i].max), "MAX", "Max: ", KERNELNEWCURRENT.parameters[i].max != KERNEL.parameters[i].max);
+        listAttrNumb(&(KERNELNEWCURRENT.parameters[i]), &(KERNELNEWCURRENT.parameters[i].step), "STEP", "Step: ", KERNELNEWCURRENT.parameters[i].step != KERNEL.parameters[i].step);
+        KERNELNEWCURRENT.parameters[i].CalcStepCount();
+        ImGui::SameLine(); ImGui::Text((std::to_string(KERNELNEWCURRENT.parameters[i].stepCount) + " steps").c_str());
         break;
     case Linear:
-        listAttrNumb(&(kernelNew.parameters[i]), &(kernelNew.parameters[i].min), "", "Min: ", kernelNew.parameters[i].min != KERNEL.parameters[i].min);
-        listAttrNumb(&(kernelNew.parameters[i]), &(kernelNew.parameters[i].max), "MAX", "Max: ", kernelNew.parameters[i].max != KERNEL.parameters[i].max);
-        listAttrInt(&(kernelNew.parameters[i]), &(kernelNew.parameters[i].stepCount), "STEPCOUNT", "Count: ", kernelNew.parameters[i].stepCount != KERNEL.parameters[i].stepCount);
-        kernelNew.parameters[i].CalcStep();
-        ImGui::SameLine(); ImGui::Text(("Step: " + (std::to_string(kernelNew.parameters[i].step))).c_str());
+        listAttrNumb(&(KERNELNEWCURRENT.parameters[i]), &(KERNELNEWCURRENT.parameters[i].min), "", "Min: ", KERNELNEWCURRENT.parameters[i].min != KERNEL.parameters[i].min);
+        listAttrNumb(&(KERNELNEWCURRENT.parameters[i]), &(KERNELNEWCURRENT.parameters[i].max), "MAX", "Max: ", KERNELNEWCURRENT.parameters[i].max != KERNEL.parameters[i].max);
+        listAttrInt(&(KERNELNEWCURRENT.parameters[i]), &(KERNELNEWCURRENT.parameters[i].stepCount), "STEPCOUNT", "Count: ", KERNELNEWCURRENT.parameters[i].stepCount != KERNEL.parameters[i].stepCount);
+        KERNELNEWCURRENT.parameters[i].CalcStep();
+        ImGui::SameLine(); ImGui::Text(("Step: " + (std::to_string(KERNELNEWCURRENT.parameters[i].step))).c_str());
         break;
     case UniformRandom:
-        listAttrNumb(&(kernelNew.parameters[i]), &(kernelNew.parameters[i].mean), "MEAN", "Mean: ", kernelNew.parameters[i].mean != KERNEL.parameters[i].mean);
-        listAttrNumb(&(kernelNew.parameters[i]), &(kernelNew.parameters[i].deviation), "DEV", "Dev: ", kernelNew.parameters[i].deviation != KERNEL.parameters[i].deviation);
-        listAttrInt(&(kernelNew.parameters[i]), &(kernelNew.parameters[i].stepCount), "STEPCOUNT", "Count: ", kernelNew.parameters[i].stepCount != KERNEL.parameters[i].stepCount);
+        listAttrNumb(&(KERNELNEWCURRENT.parameters[i]), &(KERNELNEWCURRENT.parameters[i].mean), "MEAN", "Mean: ", KERNELNEWCURRENT.parameters[i].mean != KERNEL.parameters[i].mean);
+        listAttrNumb(&(KERNELNEWCURRENT.parameters[i]), &(KERNELNEWCURRENT.parameters[i].deviation), "DEV", "Dev: ", KERNELNEWCURRENT.parameters[i].deviation != KERNEL.parameters[i].deviation);
+        listAttrInt(&(KERNELNEWCURRENT.parameters[i]), &(KERNELNEWCURRENT.parameters[i].stepCount), "STEPCOUNT", "Count: ", KERNELNEWCURRENT.parameters[i].stepCount != KERNEL.parameters[i].stepCount);
         break;
     case NormalRandom:
-        listAttrNumb(&(kernelNew.parameters[i]), &(kernelNew.parameters[i].mean), "MU", "Mu: ", kernelNew.parameters[i].mean != KERNEL.parameters[i].mean);
-        listAttrNumb(&(kernelNew.parameters[i]), &(kernelNew.parameters[i].deviation), "SIGMA", "Sigma: ", kernelNew.parameters[i].deviation != KERNEL.parameters[i].deviation);
-        listAttrInt(&(kernelNew.parameters[i]), &(kernelNew.parameters[i].stepCount), "STEPCOUNT", "Count: ", kernelNew.parameters[i].stepCount != KERNEL.parameters[i].stepCount);
+        listAttrNumb(&(KERNELNEWCURRENT.parameters[i]), &(KERNELNEWCURRENT.parameters[i].mean), "MU", "Mu: ", KERNELNEWCURRENT.parameters[i].mean != KERNEL.parameters[i].mean);
+        listAttrNumb(&(KERNELNEWCURRENT.parameters[i]), &(KERNELNEWCURRENT.parameters[i].deviation), "SIGMA", "Sigma: ", KERNELNEWCURRENT.parameters[i].deviation != KERNEL.parameters[i].deviation);
+        listAttrInt(&(KERNELNEWCURRENT.parameters[i]), &(KERNELNEWCURRENT.parameters[i].stepCount), "STEPCOUNT", "Count: ", KERNELNEWCURRENT.parameters[i].stepCount != KERNEL.parameters[i].stepCount);
         break;
     }
 
@@ -2206,9 +2253,9 @@ void listParameter(int i)
         POP_FRAME(3);
     }
 
-    if (kernelNew.parameters[i].rangingType == None)
+    if (KERNELNEWCURRENT.parameters[i].rangingType == None)
     {
-        listAttrNumb(&(kernelNew.parameters[i]), &(kernelNew.parameters[i].min), "", "", kernelNew.parameters[i].min != KERNEL.parameters[i].min);
+        listAttrNumb(&(KERNELNEWCURRENT.parameters[i]), &(KERNELNEWCURRENT.parameters[i].min), "", "", KERNELNEWCURRENT.parameters[i].min != KERNEL.parameters[i].min);
     }
 
     if (!changeAllowed) POP_FRAME(4); // disabledText popped as well
@@ -2217,10 +2264,10 @@ void listParameter(int i)
 // TODO: changing enabled enums should force recomputation
 void listEnum(int i)
 {
-    bool changeAllowed = kernelNew.parameters[i].rangingType == None || !playingParticles || !autoLoadNewParams;
+    bool changeAllowed = KERNELNEWCURRENT.parameters[i].rangingType == None || !playingParticles || !autoLoadNewParams;
 
     thisChanged = false;
-    if (kernelNew.parameters[i].IsDifferentFrom(&(KERNEL.parameters[i]))) { anyChanged = true; thisChanged = true; }
+    if (KERNELNEWCURRENT.parameters[i].IsDifferentFrom(&(KERNEL.parameters[i]))) { anyChanged = true; thisChanged = true; }
 
     ImGui::Text(padString(KERNEL.parameters[i].name, maxNameLength).c_str());
 
@@ -2237,13 +2284,13 @@ void listEnum(int i)
         PUSH_DISABLED_FRAME;
     }
 
-    dragFlag = (!playingParticles || kernelNew.parameters[i].rangingType == None) ? 0 : ImGuiSliderFlags_ReadOnly;
+    dragFlag = (!playingParticles || KERNELNEWCURRENT.parameters[i].rangingType == None) ? 0 : ImGuiSliderFlags_ReadOnly;
 
     int selectedCount = 0;
     std::string selectedKernelsString;
-    for (int e = 0; e < kernelNew.parameters[i].enumCount; e++) if (kernelNew.parameters[i].enumEnabled[e])
+    for (int e = 0; e < KERNELNEWCURRENT.parameters[i].enumCount; e++) if (KERNELNEWCURRENT.parameters[i].enumEnabled[e])
     {
-        selectedKernelsString += (selectedCount == 0 ? "" : ", ") + kernelNew.parameters[i].enumNames[e];
+        selectedKernelsString += (selectedCount == 0 ? "" : ", ") + KERNELNEWCURRENT.parameters[i].enumNames[e];
         selectedCount++;
     }
 
@@ -2252,21 +2299,24 @@ void listEnum(int i)
 
     ImGui::SameLine();
     ImGui::PushItemWidth(740.0f);
-    if (ImGui::BeginCombo(("##ENUMSELECT_" + kernelNew.parameters[i].name).c_str(), selectedCount == 0 ? "None" : selectedKernelsString.c_str()))
+    bool isChanged = false;
+    ATTR_BEGIN;
+    if (ImGui::BeginCombo(("##ENUMSELECT_" + KERNELNEWCURRENT.parameters[i].name).c_str(), selectedCount == 0 ? "None" : selectedKernelsString.c_str()))
     {
-        for (int e = 0; e < kernelNew.parameters[i].enumCount; e++)
+        for (int e = 0; e < KERNELNEWCURRENT.parameters[i].enumCount; e++)
         {
-            bool isSelected = kernelNew.parameters[i].enumEnabled[e];
-            if (ImGui::Checkbox(kernelNew.parameters[i].enumNames[e].c_str(), &(isSelected)) && dragFlag == 0)
+            bool isSelected = KERNELNEWCURRENT.parameters[i].enumEnabled[e];
+            if (ImGui::Checkbox(KERNELNEWCURRENT.parameters[i].enumNames[e].c_str(), &(isSelected)) && dragFlag == 0)
             {
-                kernelNew.parameters[i].enumEnabled[e] = !kernelNew.parameters[i].enumEnabled[e];
+                KERNELNEWCURRENT.parameters[i].enumEnabled[e] = !KERNELNEWCURRENT.parameters[i].enumEnabled[e];
             }
             TOOLTIP("Enable this method in computations");
         }
 
         ImGui::EndCombo();
     }
-    ImGui::PopItemWidth();
+    ATTR_END;
+    //ImGui::PopItemWidth();
 
     ImGui::SameLine(); ImGui::Text((std::to_string(selectedCount) + " method" + ((selectedCount % 10 != 1 || selectedCount == 11) ? "s" : "")).c_str());
 

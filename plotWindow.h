@@ -41,7 +41,6 @@ public:
 	bool whiteBg;
 	bool isImplot3d;
 
-	bool isHiresModeOn;
 	HeatmapProperties hmp;
 	HeatmapProperties hireshmp;
 
@@ -79,7 +78,6 @@ public:
 		gridAlpha = 0.15f;
 		whiteBg = false;
 		isImplot3d = false;
-		isHiresModeOn = false;
 
 		showAxis = true;
 		showAxisNames = true;

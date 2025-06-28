@@ -49,6 +49,8 @@
 #pragma comment(lib, "d3dcompiler") // Automatically link with d3dcompiler.lib as we are using D3DCompile() below.
 #endif
 
+bool pointFiltering;
+
 // DirectX11 data
 struct ImGui_ImplDX11_Data
 {
@@ -62,6 +64,7 @@ struct ImGui_ImplDX11_Data
     ID3D11Buffer*               pVertexConstantBuffer;
     ID3D11PixelShader*          pPixelShader;
     ID3D11SamplerState*         pFontSampler;
+    ID3D11SamplerState*         pTextureSampler;
     ID3D11ShaderResourceView*   pFontTextureView;
     ID3D11RasterizerState*      pRasterizerState;
     ID3D11BlendState*           pBlendState;
@@ -113,7 +116,7 @@ static void ImGui_ImplDX11_SetupRenderState(ImDrawData* draw_data, ID3D11DeviceC
     device_ctx->VSSetShader(bd->pVertexShader, nullptr, 0);
     device_ctx->VSSetConstantBuffers(0, 1, &bd->pVertexConstantBuffer);
     device_ctx->PSSetShader(bd->pPixelShader, nullptr, 0);
-    device_ctx->PSSetSamplers(0, 1, &bd->pFontSampler);
+    device_ctx->PSSetSamplers(0, 1, pointFiltering ? &bd->pTextureSampler : &bd->pFontSampler);
     device_ctx->GSSetShader(nullptr, nullptr, 0);
     device_ctx->HSSetShader(nullptr, nullptr, 0); // In theory we should backup and restore this as well.. very infrequently used..
     device_ctx->DSSetShader(nullptr, nullptr, 0); // In theory we should backup and restore this as well.. very infrequently used..
@@ -270,6 +273,11 @@ void ImGui_ImplDX11_RenderDrawData(ImDrawData* draw_data)
     for (int n = 0; n < draw_data->CmdListsCount; n++)
     {
         const ImDrawList* draw_list = draw_data->CmdLists[n];
+        if (draw_list->usePointFiltering)
+        {
+            pointFiltering = true;
+            ImGui_ImplDX11_SetupRenderState(draw_data, device);
+        }
         for (int cmd_i = 0; cmd_i < draw_list->CmdBuffer.Size; cmd_i++)
         {
             const ImDrawCmd* pcmd = &draw_list->CmdBuffer[cmd_i];
@@ -299,6 +307,11 @@ void ImGui_ImplDX11_RenderDrawData(ImDrawData* draw_data)
                 device->PSSetShaderResources(0, 1, &texture_srv);
                 device->DrawIndexed(pcmd->ElemCount, pcmd->IdxOffset + global_idx_offset, pcmd->VtxOffset + global_vtx_offset);
             }
+        }
+        if (draw_list->usePointFiltering)
+        {
+            pointFiltering = false;
+            ImGui_ImplDX11_SetupRenderState(draw_data, device);
         }
         global_idx_offset += draw_list->IdxBuffer.Size;
         global_vtx_offset += draw_list->VtxBuffer.Size;
@@ -375,7 +388,7 @@ static void ImGui_ImplDX11_CreateFontsTexture()
     {
         D3D11_SAMPLER_DESC desc;
         ZeroMemory(&desc, sizeof(desc));
-        desc.Filter = D3D11_FILTER_MIN_MAG_MIP_POINT;
+        desc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
         desc.AddressU = D3D11_TEXTURE_ADDRESS_CLAMP;
         desc.AddressV = D3D11_TEXTURE_ADDRESS_CLAMP;
         desc.AddressW = D3D11_TEXTURE_ADDRESS_CLAMP;
@@ -384,6 +397,21 @@ static void ImGui_ImplDX11_CreateFontsTexture()
         desc.MinLOD = 0.f;
         desc.MaxLOD = 0.f;
         bd->pd3dDevice->CreateSamplerState(&desc, &bd->pFontSampler);
+    }
+
+    // My custom texture sampler
+    {
+        D3D11_SAMPLER_DESC desc;
+        ZeroMemory(&desc, sizeof(desc));
+        desc.Filter = D3D11_FILTER_MIN_MAG_MIP_POINT;
+        desc.AddressU = D3D11_TEXTURE_ADDRESS_CLAMP;
+        desc.AddressV = D3D11_TEXTURE_ADDRESS_CLAMP;
+        desc.AddressW = D3D11_TEXTURE_ADDRESS_CLAMP;
+        desc.MipLODBias = 0.f;
+        desc.ComparisonFunc = D3D11_COMPARISON_ALWAYS;
+        desc.MinLOD = 0.f;
+        desc.MaxLOD = 0.f;
+        bd->pd3dDevice->CreateSamplerState(&desc, &bd->pTextureSampler);
     }
 }
 
@@ -413,6 +441,7 @@ bool    ImGui_ImplDX11_CreateDeviceObjects()
               float2 pos : POSITION;\
               float4 col : COLOR0;\
               float2 uv  : TEXCOORD0;\
+              float4 pointv  : POINT0;\
             };\
             \
             struct PS_INPUT\
@@ -420,6 +449,7 @@ bool    ImGui_ImplDX11_CreateDeviceObjects()
               float4 pos : SV_POSITION;\
               float4 col : COLOR0;\
               float2 uv  : TEXCOORD0;\
+              float4 pointp : POINT0;\
             };\
             \
             PS_INPUT main(VS_INPUT input)\
@@ -428,12 +458,18 @@ bool    ImGui_ImplDX11_CreateDeviceObjects()
               output.pos = mul( ProjectionMatrix, float4(input.pos.xy, 0.f, 1.f));\
               output.col = input.col;\
               output.uv  = input.uv;\
+              output.pointp = input.pointv;\
               return output;\
             }";
 
         ID3DBlob* vertexShaderBlob;
-        if (FAILED(D3DCompile(vertexShader, strlen(vertexShader), nullptr, nullptr, nullptr, "main", "vs_4_0", 0, 0, &vertexShaderBlob, nullptr)))
+        ID3DBlob* errorMsgBlob;
+        if (FAILED(D3DCompile(vertexShader, strlen(vertexShader), nullptr, nullptr, nullptr, "main", "vs_4_0", 0, 0, &vertexShaderBlob, &errorMsgBlob)))
+        {
+            for (int i = 0; i < errorMsgBlob->GetBufferSize(); i++) printf("%c", *((char*)(errorMsgBlob->GetBufferPointer()) + i));
+            printf("\n");
             return false; // NB: Pass ID3DBlob* pErrorBlob to D3DCompile() to get error showing in (const char*)pErrorBlob->GetBufferPointer(). Make sure to Release() the blob!
+        }
         if (bd->pd3dDevice->CreateVertexShader(vertexShaderBlob->GetBufferPointer(), vertexShaderBlob->GetBufferSize(), nullptr, &bd->pVertexShader) != S_OK)
         {
             vertexShaderBlob->Release();
@@ -446,8 +482,9 @@ bool    ImGui_ImplDX11_CreateDeviceObjects()
             { "POSITION", 0, DXGI_FORMAT_R32G32_FLOAT,   0, (UINT)offsetof(ImDrawVert, pos), D3D11_INPUT_PER_VERTEX_DATA, 0 },
             { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT,   0, (UINT)offsetof(ImDrawVert, uv),  D3D11_INPUT_PER_VERTEX_DATA, 0 },
             { "COLOR",    0, DXGI_FORMAT_R8G8B8A8_UNORM, 0, (UINT)offsetof(ImDrawVert, col), D3D11_INPUT_PER_VERTEX_DATA, 0 },
+            { "POINT",    0, DXGI_FORMAT_R8G8B8A8_UNORM, 0, (UINT)offsetof(ImDrawVert, point), D3D11_INPUT_PER_VERTEX_DATA, 0 },
         };
-        if (bd->pd3dDevice->CreateInputLayout(local_layout, 3, vertexShaderBlob->GetBufferPointer(), vertexShaderBlob->GetBufferSize(), &bd->pInputLayout) != S_OK)
+        if (bd->pd3dDevice->CreateInputLayout(local_layout, 4, vertexShaderBlob->GetBufferPointer(), vertexShaderBlob->GetBufferSize(), &bd->pInputLayout) != S_OK)
         {
             vertexShaderBlob->Release();
             return false;
@@ -474,8 +511,10 @@ bool    ImGui_ImplDX11_CreateDeviceObjects()
             float4 pos : SV_POSITION;\
             float4 col : COLOR0;\
             float2 uv  : TEXCOORD0;\
+            float4 pointp : POINT0;\
             };\
             sampler sampler0;\
+            sampler sampler1;\
             Texture2D texture0;\
             \
             float4 main(PS_INPUT input) : SV_Target\
@@ -485,8 +524,13 @@ bool    ImGui_ImplDX11_CreateDeviceObjects()
             }";
 
         ID3DBlob* pixelShaderBlob;
-        if (FAILED(D3DCompile(pixelShader, strlen(pixelShader), nullptr, nullptr, nullptr, "main", "ps_4_0", 0, 0, &pixelShaderBlob, nullptr)))
+        ID3DBlob* errorMsgBlob;
+        if (FAILED(D3DCompile(pixelShader, strlen(pixelShader), nullptr, nullptr, nullptr, "main", "ps_4_0", 0, 0, &pixelShaderBlob, &errorMsgBlob)))
+        {
+            for (int i = 0; i < errorMsgBlob->GetBufferSize(); i++) printf("%c", *((char*)(errorMsgBlob->GetBufferPointer()) + i));
+            printf("\n");
             return false; // NB: Pass ID3DBlob* pErrorBlob to D3DCompile() to get error showing in (const char*)pErrorBlob->GetBufferPointer(). Make sure to Release() the blob!
+        }
         if (bd->pd3dDevice->CreatePixelShader(pixelShaderBlob->GetBufferPointer(), pixelShaderBlob->GetBufferSize(), nullptr, &bd->pPixelShader) != S_OK)
         {
             pixelShaderBlob->Release();
@@ -548,6 +592,7 @@ void    ImGui_ImplDX11_InvalidateDeviceObjects()
         return;
 
     if (bd->pFontSampler)           { bd->pFontSampler->Release(); bd->pFontSampler = nullptr; }
+    if (bd->pTextureSampler)        { bd->pTextureSampler->Release(); bd->pTextureSampler = nullptr; }
     if (bd->pFontTextureView)       { bd->pFontTextureView->Release(); bd->pFontTextureView = nullptr; ImGui::GetIO().Fonts->SetTexID(0); } // We copied data->pFontTextureView to io.Fonts->TexID so let's clear that as well.
     if (bd->pIB)                    { bd->pIB->Release(); bd->pIB = nullptr; }
     if (bd->pVB)                    { bd->pVB->Release(); bd->pVB = nullptr; }

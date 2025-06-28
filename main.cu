@@ -33,7 +33,7 @@ cudaError_t execute(Computation* data)
     CUDA_MALLOC(&cuda_computation, sizeof(Computation), "cudaMalloc computation failed!");
     CUDA_MALLOC(&cuda_trajectory, size * sizeof(numb), "cudaMalloc data failed!");
     CUDA_MALLOC(&cuda_parameters, (unsigned long long)CUDA_marshal.totalVariations * CUDA_kernel.PARAM_COUNT * sizeof(numb), "cudaMalloc params failed!");
-    CUDA_MALLOC(&cuda_stepIndices, (unsigned long long)CUDA_marshal.totalVariations * (CUDA_kernel.VAR_COUNT + CUDA_kernel.PARAM_COUNT) * sizeof(int), "cudaMalloc indices failed!");
+    CUDA_MALLOC(&cuda_stepIndices, (unsigned long long)CUDA_marshal.totalVariations * CUDA_ATTR_COUNT * sizeof(int), "cudaMalloc indices failed!");
     if (CUDA_marshal.totalVariations > 1) CUDA_MALLOC(&cuda_maps2, (unsigned long long)CUDA_marshal.totalVariations * CUDA_kernel.MAP_COUNT * sizeof(numb), "cudaMalloc maps2 failed!");
 
     CUDA_MEMCPY(cuda_computation, data, cudaMemcpyHostToDevice, sizeof(Computation), "cudaMemcpy computation failed!");
@@ -44,7 +44,7 @@ cudaError_t execute(Computation* data)
 
     CUDA_MEMCPY(cuda_trajectory, CUDA_marshal.trajectory, cudaMemcpyHostToDevice, size * sizeof(numb), "cudaMemcpy data failed!");
     CUDA_MEMCPY(cuda_parameters, CUDA_marshal.parameterVariations, cudaMemcpyHostToDevice, (unsigned long long)CUDA_marshal.totalVariations * CUDA_kernel.PARAM_COUNT * sizeof(numb), "cudaMemcpy params failed!");
-    CUDA_MEMCPY(cuda_stepIndices, CUDA_marshal.stepIndices, cudaMemcpyHostToDevice, (unsigned long long)CUDA_marshal.totalVariations * (CUDA_kernel.VAR_COUNT + CUDA_kernel.PARAM_COUNT) * sizeof(int), "cudaMemcpy indices failed!");
+    CUDA_MEMCPY(cuda_stepIndices, CUDA_marshal.stepIndices, cudaMemcpyHostToDevice, (unsigned long long)CUDA_marshal.totalVariations * CUDA_ATTR_COUNT * sizeof(int), "cudaMemcpy indices failed!");
     if (CUDA_marshal.totalVariations > 1) CUDA_MEMCPY(cuda_maps2, CUDA_marshal.maps2, cudaMemcpyHostToDevice, (unsigned long long)CUDA_marshal.totalVariations * CUDA_kernel.MAP_COUNT * sizeof(numb), "cudaMemcpy maps2 failed!");
 
     // Kernel execution
@@ -99,11 +99,11 @@ int compute(Computation* data)
 
     if (CUDA_marshal.trajectory == nullptr) CUDA_marshal.trajectory = new numb[size];
     if (CUDA_marshal.parameterVariations == nullptr) CUDA_marshal.parameterVariations = new numb[CUDA_kernel.PARAM_COUNT * variations];
-    if (CUDA_marshal.stepIndices == nullptr) CUDA_marshal.stepIndices = new int[(CUDA_kernel.VAR_COUNT + CUDA_kernel.PARAM_COUNT) * variations];
+    if (CUDA_marshal.stepIndices == nullptr) CUDA_marshal.stepIndices = new int[CUDA_ATTR_COUNT * variations];
 
-    // Vector of steps is now outside the filling function, this way we can use it in several iterations, essential for hi-res computations
+    // Vector of attribute steps (indices of values) is now outside the filling function, this way we can use it in several iterations, essential for hi-res computations
     std::vector<int> attributeStepIndices;
-    for (int i = 0; i < CUDA_kernel.VAR_COUNT + CUDA_kernel.PARAM_COUNT; i++) attributeStepIndices.push_back(0);
+    for (int i = 0; i < CUDA_ATTR_COUNT; i++) attributeStepIndices.push_back(0);
 
     fillAttributeBuffers(data, attributeStepIndices, 0, variations);
     setMapValues(data);
@@ -132,7 +132,6 @@ void fillAttributeBuffers(Computation* data, std::vector<int>& attributeStepIndi
 {
     unsigned long long varStride = CUDA_marshal.variationSize;    // Stride between variations in "trajectory"
     unsigned long long paramStride = CUDA_kernel.PARAM_COUNT;     // Stride between variations in "parameterVariations"
-    int totalAttributes = CUDA_kernel.VAR_COUNT + CUDA_kernel.PARAM_COUNT;
 
     for (unsigned long long i = startVariation; i < endVariation; i++)
     {
@@ -161,11 +160,11 @@ void fillAttributeBuffers(Computation* data, std::vector<int>& attributeStepIndi
         for (int p = 0; p < CUDA_kernel.PARAM_COUNT; p++)
             CUDA_marshal.parameterVariations[i * paramStride + p] = CUDA_kernel.parameters[p].values[attributeStepIndices[p + CUDA_kernel.VAR_COUNT]];
 
-        for (int j = 0; j < totalAttributes; j++)
-            CUDA_marshal.stepIndices[i * totalAttributes + j] = attributeStepIndices[j];
+        for (int j = 0; j < CUDA_ATTR_COUNT; j++)
+            CUDA_marshal.stepIndices[i * CUDA_ATTR_COUNT + j] = attributeStepIndices[j];
 
         // Incrementing the "attribute step indices" total number
-        for (int j = totalAttributes - 1; j >= 0; j--)
+        for (int j = CUDA_ATTR_COUNT - 1; j >= 0; j--)
         {
             attributeStepIndices[j]++;
 

@@ -13,6 +13,7 @@ extern bool autofitHeatmap;
 extern PlotWindow* colorsLUTfrom;
 extern int staticLUTsize;
 extern int dynamicLUTsize;
+extern PlotWindow* hiresHeatmapWindow;
 
 void plotWindowMenu(PlotWindow* window)
 {
@@ -105,7 +106,17 @@ void plotWindowMenu_HeatmapPlot(PlotWindow* window)
 			ImGui::EndCombo();
 		}
 
-		bool tempHiresMode = window->isHiresModeOn; if (ImGui::Checkbox(("##" + windowName + "isHiresMode").c_str(), &tempHiresMode)) window->isHiresModeOn = !window->isHiresModeOn;
+		bool tempHiresMode = window == hiresHeatmapWindow; if (ImGui::Checkbox(("##" + windowName + "isHiresMode").c_str(), &tempHiresMode))
+		{
+			if (window != hiresHeatmapWindow)
+			{
+				hiresHeatmapWindow = window;
+			}
+			else
+			{
+				hiresHeatmapWindow = nullptr;
+			}
+		}
 		ImGui::SameLine(); ImGui::Text("Hi-Res mode");
 
 		bool tempHeatmapAutoCompute = window->hmp.isHeatmapAutoComputeOn; if (ImGui::Checkbox(("##" + windowName + "heatmapAutoCompute").c_str(), &tempHeatmapAutoCompute)) window->hmp.isHeatmapAutoComputeOn = !window->hmp.isHeatmapAutoComputeOn;
