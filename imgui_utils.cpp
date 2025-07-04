@@ -301,7 +301,7 @@ void cutoff2D(numb* data, numb* dst, int width, int height, int minX, int minY, 
 			dst[y * newWidthInclusive + x] = data[(minY + y) * width + minX + x];
 }
 
-void compress2D(numb* data, numb* dst, int width, int height, int stride)
+/*void compress2D(numb* data, numb* dst, int width, int height, int stride)
 {
 	if (stride == 1)
 	{
@@ -327,7 +327,7 @@ void compress2D(numb* data, numb* dst, int width, int height, int stride)
 
 			dst[dstI * dstWidth + dstJ] += data[i * width + j] / (stride * stride); //dstI * dstWidth + dstJ
 		}
-}
+}*/
 
 void getMinMax(numb* data, int size, numb* min, numb* max)
 {

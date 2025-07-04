@@ -20,15 +20,17 @@ public:
 
 	// Hi-res gizmos
 	bool isHires; // True only for the hi-res computation
-	unsigned long long variationsPerParallelization; // How many variations are launched in parallel during hi-res computation
+	unsigned long long variationsPerParallelization; // How many variations are launched in parallel during hi-res computation (in one execute)
+	unsigned long long variationsInCurrentExecute; // Current variations count, can be less at the end of hi-res computation
+	unsigned long long startVariationInCurrentExecute; // Index of the first variation in the execute
 	int buffersPerVariation; // How many times is one variation repeated (steps * buffersPerVariation equals total steps per variation)
 
 	void Clear()
 	{
-		if (marshal.trajectory != nullptr)				{ delete[] marshal.trajectory; marshal.trajectory = nullptr; }
-		if (marshal.parameterVariations != nullptr)		{ delete[] marshal.parameterVariations; marshal.parameterVariations = nullptr; }
-		if (marshal.stepIndices != nullptr)				{ delete[] marshal.stepIndices; marshal.stepIndices = nullptr; }
-		if (marshal.maps2 != nullptr)					{ delete[] marshal.maps2; marshal.maps2 = nullptr; }
+		if (marshal.trajectory != nullptr)				{ delete[] marshal.trajectory;			marshal.trajectory = nullptr; }
+		if (marshal.parameterVariations != nullptr)		{ delete[] marshal.parameterVariations;	marshal.parameterVariations = nullptr; }
+		if (marshal.stepIndices != nullptr)				{ delete[] marshal.stepIndices;			marshal.stepIndices = nullptr; }
+		if (marshal.maps != nullptr)					{ delete[] marshal.maps;				marshal.maps = nullptr; }
 
 		ready = false;
 		timeElapsed = 0.0f;

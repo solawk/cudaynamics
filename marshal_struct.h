@@ -20,9 +20,6 @@ struct Marshal
 	// Map data
 	numb* maps;
 
-	// New map data – for all variations
-	numb* maps2;
-
 	// Ranging attribute combinations count
 	int totalVariations;	
 

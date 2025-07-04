@@ -62,6 +62,8 @@ public:
 		VAR_COUNT = kernel->VAR_COUNT;
 		PARAM_COUNT = kernel->PARAM_COUNT;
 		MAP_COUNT = kernel->MAP_COUNT;
+
+		for (int i = 0; i < MAX_MAP_SETTINGS; i++) mapSettings[i] = kernel->mapSettings[i];
 	}
 
 	void CopyParameterValuesFrom(Kernel* kernel)

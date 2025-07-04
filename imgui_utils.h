@@ -26,7 +26,7 @@ void gridY2Z(numb* buffer);
 ImVec4 ToEulerAngles(ImVec4 q);
 
 void cutoff2D(numb* data, numb* dst, int width, int height, int minX, int minY, int maxX, int maxY);
-void compress2D(numb* data, numb* dst, int width, int height, int stride);
+//void compress2D(numb* data, numb* dst, int width, int height, int stride);
 
 void getMinMax(numb* data, int size, numb* min, numb* max);
 void getMinMax2D(numb* data, int size, ImVec2* min, ImVec2* max);

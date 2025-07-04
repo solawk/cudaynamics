@@ -12,8 +12,8 @@ struct HeatmapProperties
 	bool areHeatmapLimitsDefined;
 	void* texture;
 
-	bool areValuesDirty;
-	bool isHeatmapDirty;
+	bool areValuesDirty; // Values have changed and heatmap should be updated
+	bool isHeatmapDirty; // Values have not changed but its look has and should be updated
 
 	bool showHeatmapValues;
 	bool showActualDiapasons;

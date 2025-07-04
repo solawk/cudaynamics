@@ -24,8 +24,9 @@ std::vector<int> attributeValueIndices;
 bool autoLoadNewParams = false;
 PlotWindow* hiresHeatmapWindow = nullptr;
 #define HIRES_ON (hiresHeatmapWindow != nullptr)
-Kernel kernelNew, kernelHires;
-#define KERNELNEWCURRENT (HIRES_ON ? kernelHires : kernelNew)
+Kernel kernelNew, kernelHiresNew; // Front-end for the kernels in the GUI
+Kernel kernelHiresComputed; // Hi-res computation kernel buffer which has been sent to computation
+#define KERNELNEWCURRENT (HIRES_ON ? kernelHiresNew : kernelNew)
 
 numb* dataBuffer = nullptr; // One variation local buffer
 numb* particleBuffer = nullptr; // One step local buffer
@@ -122,6 +123,14 @@ void deleteBothBuffers()
     bufferToFillIndex = 0;
 }
 
+void deleteHiresBuffer()
+{
+    computationHires.Clear();
+
+    playedBufferIndex = 0;
+    bufferToFillIndex = 0;
+}
+
 void resetTempBuffers(Computation* data)
 {
     if (dataBuffer) delete[] dataBuffer;
@@ -149,7 +158,7 @@ void initAVI(bool hires)
     if (!hires)
         for (int i = 0; i < kernelNew.VAR_COUNT + kernelNew.PARAM_COUNT; i++) attributeValueIndices.push_back(0);
     else
-        for (int i = 0; i < kernelHires.VAR_COUNT + kernelHires.PARAM_COUNT; i++) attributeValueIndices.push_back(0);
+        for (int i = 0; i < kernelHiresNew.VAR_COUNT + kernelHiresNew.PARAM_COUNT; i++) attributeValueIndices.push_back(0);
 }
 
 // Normal computing
@@ -163,6 +172,7 @@ int asyncComputation()
     bool isFirstBatch = computations[1 - bufferToFillIndex].marshal.trajectory == nullptr; // Is another buffer null, only true when computing for the first time
     computations[bufferToFillIndex].isFirst = isFirstBatch;
 
+    computations[bufferToFillIndex].marshal.kernel.CopyFrom(&KERNEL);
     int computationResult = compute(&(computations[bufferToFillIndex]));
 
     computedSteps = KERNEL.steps;
@@ -178,7 +188,7 @@ int asyncComputation()
     for (int i = 0; i < plotWindows.size(); i++)
     {
         plotWindows[i].hmp.initClickedLocation = true;
-        plotWindows[i].hmp.isHeatmapDirty = true;
+        plotWindows[i].hmp.areValuesDirty = true;
     }
 
     if (continuousComputingEnabled)
@@ -207,7 +217,9 @@ void hiresComputing();
 int hiresAsyncComputation()
 {
     computationHires.ready = false;
+    computationHires.isFirst = true;
 
+    computationHires.marshal.kernel.CopyFrom(&kernelHiresComputed);
     int computationResult = compute(&computationHires);
 
     autofitAfterComputing = true;
@@ -217,7 +229,7 @@ int hiresAsyncComputation()
     computationHires.ready = true;
 
     hiresHeatmapWindow->hireshmp.initClickedLocation = true;
-    hiresHeatmapWindow->hireshmp.isHeatmapDirty = true;
+    hiresHeatmapWindow->hireshmp.areValuesDirty = true;
 
     return computationResult;
 }
@@ -291,11 +303,14 @@ void initializeKernel(bool needTerminate)
 
     kernelNew.CopyFrom(&KERNEL);
     kernelNew.continuousMaps = false;
-    kernelHires.CopyFrom(&KERNEL);
+    kernelHiresNew.CopyFrom(&KERNEL);
+    kernelHiresComputed.CopyFrom(&KERNEL);
 
     computations[0].Clear();
     computations[1].Clear();
     computationHires.Clear();
+
+    hiresHeatmapWindow = nullptr;
 
     initAVI(false);
     initAVI(true);
@@ -376,12 +391,54 @@ void prepareAndCompute()
     }
 }
 
-void releaseHeatmap(PlotWindow* window)
+void hiresPnC()
 {
-    if (window->hmp.texture != nullptr)
+    if ((!computations[0].ready && computations[0].marshal.trajectory != nullptr)
+        || (!computations[1].ready && computations[1].marshal.trajectory != nullptr)
+        || (!computationHires.ready && computationHires.marshal.trajectory != nullptr))
     {
-        ((ID3D11ShaderResourceView*)window->hmp.texture)->Release();
-        window->hmp.texture = nullptr;
+        printf("Preventing hi-res computing too fast!\n");
+    }
+    else
+    {
+        executedOnLaunch = true;
+        computeAfterShiftSelect = false;
+        bufferToFillIndex = 0;
+        playedBufferIndex = 0;
+        bufferNo = 0;
+        particleStep = 0;
+        deleteHiresBuffer();
+        removeHeatmapLimits();
+
+        kernelHiresComputed.CopyFrom(&kernelHiresNew);
+        kernelHiresComputed.PrepareAttributes();
+        kernelHiresComputed.AssessMapAttributes(&attributeValueIndices);
+        kernelHiresComputed.MapsSetSizes();
+
+        // TODO: All calc steps and stepcounts should be done beforehand, since ranging will be incorrect otherwise
+        // Done I guess? I forgor
+        //initAVI();
+        hiresComputing();
+    }
+}
+
+void releaseHeatmap(PlotWindow* window, bool isHires)
+{
+    if (!isHires)
+    {
+        if (window->hmp.texture != nullptr)
+        {
+            ((ID3D11ShaderResourceView*)window->hmp.texture)->Release();
+            window->hmp.texture = nullptr;
+        }
+    }
+    else
+    {
+        if (window->hireshmp.texture != nullptr)
+        {
+            ((ID3D11ShaderResourceView*)window->hireshmp.texture)->Release();
+            window->hireshmp.texture = nullptr;
+        }
     }
 }
 
@@ -820,6 +877,15 @@ int imgui_main(int, char**)
         if (playBreath) ImGui::PopStyleColor();
         if (!playingParticles) computationStatus(computation0InProgress, computation1InProgress);
 
+        // Hi-res compute button
+        if (hiresHeatmapWindow != nullptr)
+        {
+            if (ImGui::Button("= HI-RES COMPUTE ="))
+            {
+                hiresPnC();
+            }
+        }
+
         // COMMON
         if (anyChanged && !autoLoadNewParams)
         {
@@ -1090,30 +1156,34 @@ int imgui_main(int, char**)
             // Heatmap axes
             if (window->type == Heatmap)
             {
-                int prevIndexX = window->hmp.indexX;
-                int prevIndexY = window->hmp.indexY;
-                int prevTypeX = window->hmp.typeX;
-                int prevTypeY = window->hmp.typeY;
+                bool isHires = window == hiresHeatmapWindow;
+                HeatmapProperties* heatmap = isHires ? &window->hireshmp : &window->hmp;
+                Kernel* krnl = isHires ? &kernelHiresComputed : &(KERNEL);
+
+                int prevIndexX = heatmap->indexX;
+                int prevIndexY = heatmap->indexY;
+                int prevTypeX = heatmap->typeX;
+                int prevTypeY = heatmap->typeY;
 
                 ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.485f);
                 if (ImGui::BeginCombo(("##" + windowName + "_axisX").c_str(),
-                    window->hmp.typeX == VARIABLE ? KERNEL.variables[window->hmp.indexX].name.c_str() : KERNEL.parameters[window->hmp.indexX].name.c_str(), 0))
+                    heatmap->typeX == VARIABLE ? krnl->variables[heatmap->indexX].name.c_str() : krnl->parameters[heatmap->indexX].name.c_str(), 0))
                 {
-                    for (int v = 0; v < KERNEL.VAR_COUNT; v++)
+                    for (int v = 0; v < krnl->VAR_COUNT; v++)
                     {
-                        if (ImGui::Selectable(KERNEL.variables[v].name.c_str()))
+                        if (ImGui::Selectable(krnl->variables[v].name.c_str()))
                         {
-                            window->hmp.indexX = v;
-                            window->hmp.typeX = VARIABLE;
+                            heatmap->indexX = v;
+                            heatmap->typeX = VARIABLE;
                         }
                     }
 
-                    for (int p = 0; p < KERNEL.PARAM_COUNT; p++)
+                    for (int p = 0; p < krnl->PARAM_COUNT; p++)
                     {
-                        if (ImGui::Selectable(KERNEL.parameters[p].name.c_str()))
+                        if (ImGui::Selectable(krnl->parameters[p].name.c_str()))
                         {
-                            window->hmp.indexX = p;
-                            window->hmp.typeX = PARAMETER;
+                            heatmap->indexX = p;
+                            heatmap->typeX = PARAMETER;
                         }
                     }
 
@@ -1123,23 +1193,23 @@ int imgui_main(int, char**)
                 ImGui::SameLine();
 
                 if (ImGui::BeginCombo(("##" + windowName + "_axisY").c_str(),
-                    window->hmp.typeY == VARIABLE ? KERNEL.variables[window->hmp.indexY].name.c_str() : KERNEL.parameters[window->hmp.indexY].name.c_str(), 0))
+                    heatmap->typeY == VARIABLE ? krnl->variables[heatmap->indexY].name.c_str() : krnl->parameters[heatmap->indexY].name.c_str(), 0))
                 {
-                    for (int v = 0; v < KERNEL.VAR_COUNT; v++)
+                    for (int v = 0; v < krnl->VAR_COUNT; v++)
                     {
-                        if (ImGui::Selectable(KERNEL.variables[v].name.c_str()))
+                        if (ImGui::Selectable(krnl->variables[v].name.c_str()))
                         {
-                            window->hmp.indexY = v;
-                            window->hmp.typeY = VARIABLE;
+                            heatmap->indexY = v;
+                            heatmap->typeY = VARIABLE;
                         }
                     }
 
-                    for (int p = 0; p < KERNEL.PARAM_COUNT; p++)
+                    for (int p = 0; p < krnl->PARAM_COUNT; p++)
                     {
-                        if (ImGui::Selectable(KERNEL.parameters[p].name.c_str()))
+                        if (ImGui::Selectable(krnl->parameters[p].name.c_str()))
                         {
-                            window->hmp.indexY = p;
-                            window->hmp.typeY = PARAMETER;
+                            heatmap->indexY = p;
+                            heatmap->typeY = PARAMETER;
                         }
                     }
 
@@ -1148,11 +1218,10 @@ int imgui_main(int, char**)
 
                 ImGui::PopItemWidth();
 
-                if (prevIndexX != window->hmp.indexX || prevIndexY != window->hmp.indexY || prevTypeX != window->hmp.typeX || prevTypeY != window->hmp.typeY)
+                if (prevIndexX != heatmap->indexX || prevIndexY != heatmap->indexY || prevTypeX != heatmap->typeX || prevTypeY != heatmap->typeY)
                 {
-                    window->hmp.areValuesDirty = true;
-                    window->hmp.areHeatmapLimitsDefined = false; // Triggers isHeatmapDirty too
-                    //window->hmp.isHeatmapDirty = true;
+                    heatmap->areValuesDirty = true;
+                    heatmap->areHeatmapLimitsDefined = false;
                 }
             }
 
@@ -1664,10 +1733,15 @@ int imgui_main(int, char**)
                 
                 case Heatmap:
                     mapIndex = window->variables[0];
-                    if (!KERNEL.mapDatas[mapIndex].toCompute) break;
+                    bool isHires = window == hiresHeatmapWindow;
+                    HeatmapProperties* heatmap =    isHires ? &window->hireshmp : &window->hmp;
+                    Kernel* krnl =                  isHires ? &kernelHiresComputed : &(KERNEL);
+                    Computation* cmp =              isHires ? &computationHires : &(computations[playedBufferIndex]);
 
-                    Attribute* axisX = window->hmp.typeX == VARIABLE ? &(KERNEL.variables[window->hmp.indexX]) : &(KERNEL.parameters[window->hmp.indexX]);
-                    Attribute* axisY = window->hmp.typeY == VARIABLE ? &(KERNEL.variables[window->hmp.indexY]) : &(KERNEL.parameters[window->hmp.indexY]);
+                    if (!krnl->mapDatas[mapIndex].toCompute) break;
+
+                    Attribute* axisX = heatmap->typeX == VARIABLE ? &(krnl->variables[heatmap->indexX]) : &(krnl->parameters[heatmap->indexX]);
+                    Attribute* axisY = heatmap->typeY == VARIABLE ? &(krnl->variables[heatmap->indexY]) : &(krnl->parameters[heatmap->indexY]);
 
                     bool axisXisRanging = axisX->TrueStepCount() > 1;
                     bool axisYisRanging = axisY->TrueStepCount() > 1;
@@ -1675,13 +1749,12 @@ int imgui_main(int, char**)
 
                     if (axisXisRanging && axisYisRanging && !sameAxis)
                     {
-                        if (ImGui::BeginTable((plotName + "_table").c_str(), window->hmp.showLegend ? 2 : 1, ImGuiTableFlags_Reorderable, ImVec2(-1, 0)))
+                        if (ImGui::BeginTable((plotName + "_table").c_str(), heatmap->showLegend ? 2 : 1, ImGuiTableFlags_Reorderable, ImVec2(-1, 0)))
                         {
-                            int heatStride = window->hmp.stride;
                             axisFlags = 0;
 
                             ImGui::TableSetupColumn(nullptr);
-                            if (window->hmp.showLegend)
+                            if (heatmap->showLegend)
                                 ImGui::TableSetupColumn(nullptr, ImGuiTableColumnFlags_WidthFixed, 160.0f);
                             ImGui::TableNextRow();
 
@@ -1699,32 +1772,32 @@ int imgui_main(int, char**)
                             {
                                 plot = ImPlot::GetPlot(plotName.c_str());
                                 plot->is3d = false;
-                                plot->isHeatmapSelectionModeOn = window->hmp.isHeatmapSelectionModeOn;
+                                plot->isHeatmapSelectionModeOn = heatmap->isHeatmapSelectionModeOn;
 
-                                if (computations[playedBufferIndex].ready)
+                                if (cmp->ready)
                                 {
-                                    sizing.loadPointers(&KERNEL, &(window->hmp));
+                                    sizing.loadPointers(krnl, heatmap);
                                     sizing.initValues();
 
-                                    if (window->hmp.initClickedLocation)
+                                    if (heatmap->initClickedLocation)
                                     {
-                                        window->hmp.lastClickedLocation = ImVec2(sizing.minX, sizing.minY);
-                                        window->hmp.initClickedLocation = false;
+                                        heatmap->lastClickedLocation = ImVec2(sizing.minX, sizing.minY);
+                                        heatmap->initClickedLocation = false;
                                     }
 
-                                    if (window->hmp.showActualDiapasons)
+                                    if (heatmap->showActualDiapasons)
                                     {
                                         // Values
-                                        window->hmp.lastClickedLocation.x = valueFromStep(sizing.minX, sizing.stepX,
-                                            attributeValueIndices[sizing.hmp->indexX + (sizing.hmp->typeX == VARIABLE ? 0 : KERNEL.VAR_COUNT)]);
-                                        window->hmp.lastClickedLocation.y = valueFromStep(sizing.minY, sizing.stepY,
-                                            attributeValueIndices[sizing.hmp->indexY + (sizing.hmp->typeY == VARIABLE ? 0 : KERNEL.VAR_COUNT)]);
+                                        heatmap->lastClickedLocation.x = valueFromStep(sizing.minX, sizing.stepX,
+                                            attributeValueIndices[sizing.hmp->indexX + (sizing.hmp->typeX == VARIABLE ? 0 : krnl->VAR_COUNT)]);
+                                        heatmap->lastClickedLocation.y = valueFromStep(sizing.minY, sizing.stepY,
+                                            attributeValueIndices[sizing.hmp->indexY + (sizing.hmp->typeY == VARIABLE ? 0 : krnl->VAR_COUNT)]);
                                     }
                                     else
                                     {
                                         // Steps
-                                        window->hmp.lastClickedLocation.x = (float)attributeValueIndices[sizing.hmp->indexX + (sizing.hmp->typeX == VARIABLE ? 0 : KERNEL.VAR_COUNT)];
-                                        window->hmp.lastClickedLocation.y = (float)attributeValueIndices[sizing.hmp->indexY + (sizing.hmp->typeY == VARIABLE ? 0 : KERNEL.VAR_COUNT)];
+                                        heatmap->lastClickedLocation.x = (float)attributeValueIndices[sizing.hmp->indexX + (sizing.hmp->typeX == VARIABLE ? 0 : krnl->VAR_COUNT)];
+                                        heatmap->lastClickedLocation.y = (float)attributeValueIndices[sizing.hmp->indexY + (sizing.hmp->typeY == VARIABLE ? 0 : krnl->VAR_COUNT)];
                                     }
 
                                     // Choosing configuration
@@ -1733,7 +1806,7 @@ int imgui_main(int, char**)
                                         int stepX = 0;
                                         int stepY = 0;
 
-                                        if (window->hmp.showActualDiapasons)
+                                        if (heatmap->showActualDiapasons)
                                         {
                                             // Values
                                             stepX = stepFromValue(sizing.minX, sizing.stepX, plot->shiftClickLocation.x);
@@ -1749,20 +1822,20 @@ int imgui_main(int, char**)
                                         //enabledParticles = false;
                                         playingParticles = false;
 
-#define IGNOREOUTOFREACH    if (stepX < 0 || stepX >= (sizing.hmp->typeX == VARIABLE ? KERNEL.variables[sizing.hmp->indexX].TrueStepCount() : KERNEL.parameters[sizing.hmp->indexX].TrueStepCount())) break; \
-                            if (stepY < 0 || stepY >= (sizing.hmp->typeY == VARIABLE ? KERNEL.variables[sizing.hmp->indexY].TrueStepCount() : KERNEL.parameters[sizing.hmp->indexY].TrueStepCount())) break;
+#define IGNOREOUTOFREACH    if (stepX < 0 || stepX >= (sizing.hmp->typeX == VARIABLE ? krnl->variables[sizing.hmp->indexX].TrueStepCount() : krnl->parameters[sizing.hmp->indexX].TrueStepCount())) break; \
+                            if (stepY < 0 || stepY >= (sizing.hmp->typeY == VARIABLE ? krnl->variables[sizing.hmp->indexY].TrueStepCount() : krnl->parameters[sizing.hmp->indexY].TrueStepCount())) break;
 
                                         switch (sizing.hmp->typeX)
                                         {
                                         case VARIABLE:
                                             IGNOREOUTOFREACH;
                                             attributeValueIndices[sizing.hmp->indexX] = stepX;
-                                            window->hmp.lastClickedLocation.x = plot->shiftClickLocation.x;
+                                            heatmap->lastClickedLocation.x = plot->shiftClickLocation.x;
                                             break;
                                         case PARAMETER:
                                             IGNOREOUTOFREACH;
-                                            attributeValueIndices[KERNEL.VAR_COUNT + sizing.hmp->indexX] = stepX;
-                                            window->hmp.lastClickedLocation.x = plot->shiftClickLocation.x;
+                                            attributeValueIndices[krnl->VAR_COUNT + sizing.hmp->indexX] = stepX;
+                                            heatmap->lastClickedLocation.x = plot->shiftClickLocation.x;
                                             break;
                                         }
 
@@ -1771,12 +1844,12 @@ int imgui_main(int, char**)
                                         case VARIABLE:
                                             IGNOREOUTOFREACH;
                                             attributeValueIndices[sizing.hmp->indexY] = stepY;
-                                            window->hmp.lastClickedLocation.y = plot->shiftClickLocation.y;
+                                            heatmap->lastClickedLocation.y = plot->shiftClickLocation.y;
                                             break;
                                         case PARAMETER:
                                             IGNOREOUTOFREACH;
-                                            attributeValueIndices[KERNEL.VAR_COUNT + sizing.hmp->indexY] = stepY;
-                                            window->hmp.lastClickedLocation.y = plot->shiftClickLocation.y;
+                                            attributeValueIndices[krnl->VAR_COUNT + sizing.hmp->indexY] = stepY;
+                                            heatmap->lastClickedLocation.y = plot->shiftClickLocation.y;
                                             break;
                                         }
                                     }
@@ -1787,7 +1860,7 @@ int imgui_main(int, char**)
                                     }
 
                                     sizing.initCutoff((float)plot->Axes[plot->CurrentX].Range.Min, (float)plot->Axes[plot->CurrentY].Range.Min,
-                                        (float)plot->Axes[plot->CurrentX].Range.Max, (float)plot->Axes[plot->CurrentY].Range.Max, window->hmp.showActualDiapasons);
+                                        (float)plot->Axes[plot->CurrentX].Range.Max, (float)plot->Axes[plot->CurrentY].Range.Max, heatmap->showActualDiapasons);
                                     if (autofitHeatmap || toAutofit)
                                     {
                                         plot->Axes[plot->CurrentX].Range.Min = sizing.mapX1;
@@ -1799,119 +1872,114 @@ int imgui_main(int, char**)
                                     // Drawing
 
                                     int mapSize = sizing.xSize * sizing.ySize;
-                                    if (window->hmp.lastBufferSize != mapSize)
+                                    if (heatmap->lastBufferSize != mapSize)
                                     {
-                                        if (window->hmp.valueBuffer != nullptr) delete[] window->hmp.valueBuffer;
-                                        if (window->hmp.pixelBuffer != nullptr) delete[] window->hmp.pixelBuffer;
-                                        if (window->hmp.indexBuffer != nullptr) delete[] window->hmp.indexBuffer;
+                                        if (heatmap->valueBuffer != nullptr) delete[] heatmap->valueBuffer;
+                                        if (heatmap->pixelBuffer != nullptr) delete[] heatmap->pixelBuffer;
+                                        if (heatmap->indexBuffer != nullptr) delete[] heatmap->indexBuffer;
 
-                                        window->hmp.lastBufferSize = mapSize;
+                                        heatmap->lastBufferSize = mapSize;
 
-                                        window->hmp.valueBuffer = new numb[mapSize];
-                                        window->hmp.pixelBuffer = new unsigned char[mapSize * 4];
-                                        window->hmp.indexBuffer = new int[computations[playedBufferIndex].marshal.totalVariations];
-                                        window->hmp.areValuesDirty = true;
+                                        heatmap->valueBuffer = new numb[mapSize];
+                                        heatmap->pixelBuffer = new unsigned char[mapSize * 4];
+                                        heatmap->indexBuffer = new int[cmp->marshal.totalVariations];
+                                        heatmap->areValuesDirty = true;
                                     }
 
-                                    if (variation != prevVariation) window->hmp.areValuesDirty = true;
+                                    if (variation != prevVariation) heatmap->areValuesDirty = true;
 
-                                    if (window->hmp.areValuesDirty)
+                                    if (heatmap->areValuesDirty)
                                     {
-                                        extractMap(computations[playedBufferIndex].marshal.maps2, window->hmp.valueBuffer, window->hmp.indexBuffer, &(attributeValueIndices.data()[0]),
-                                            sizing.hmp->typeX == PARAMETER ? sizing.hmp->indexX + KERNEL.VAR_COUNT : sizing.hmp->indexX,
-                                            sizing.hmp->typeY == PARAMETER ? sizing.hmp->indexY + KERNEL.VAR_COUNT : sizing.hmp->indexY,
-                                            &KERNEL);
+                                        extractMap(cmp->marshal.maps, heatmap->valueBuffer, heatmap->indexBuffer, &(attributeValueIndices.data()[0]),
+                                            sizing.hmp->typeX == PARAMETER ? sizing.hmp->indexX + krnl->VAR_COUNT : sizing.hmp->indexX,
+                                            sizing.hmp->typeY == PARAMETER ? sizing.hmp->indexY + krnl->VAR_COUNT : sizing.hmp->indexY,
+                                            krnl);
+                                        heatmap->areValuesDirty = false;
+                                        heatmap->isHeatmapDirty = true;
                                     }
 
                                     //numb* mapData = computations[playedBufferIndex].marshal.maps2 + sizing.map->offset;
 
-                                    if (!window->hmp.areHeatmapLimitsDefined)
+                                    if (!heatmap->areHeatmapLimitsDefined)
                                     {
-                                        if (!window->hmp.ignoreNextLimitsRecalculation)
-                                            getMinMax(window->hmp.valueBuffer, sizing.xSize * sizing.ySize, &window->hmp.heatmapMin, &window->hmp.heatmapMax);
+                                        if (!heatmap->ignoreNextLimitsRecalculation)
+                                            getMinMax(heatmap->valueBuffer, sizing.xSize * sizing.ySize, &heatmap->heatmapMin, &heatmap->heatmapMax);
 
-                                        window->hmp.ignoreNextLimitsRecalculation = false;
-                                        window->hmp.areHeatmapLimitsDefined = true;
-                                        //window->hmp.isHeatmapDirty = true;
+                                        heatmap->ignoreNextLimitsRecalculation = false;
+                                        heatmap->areHeatmapLimitsDefined = true;
+                                        //heatmap->isHeatmapDirty = true;
                                     }
 
                                     // Do not reload values when variating map axes (map values don't change anyway)
                                     if (variation != prevVariation)
                                     {
-                                        window->hmp.isHeatmapDirty = true;
+                                        heatmap->isHeatmapDirty = true;
                                     }
 
                                     // Image init
-                                    if (window->hmp.isHeatmapDirty)
+                                    if (heatmap->isHeatmapDirty)
                                     {
-                                        MapToImg(window->hmp.valueBuffer, &(window->hmp.pixelBuffer), sizing.xSize, sizing.ySize, window->hmp.heatmapMin, window->hmp.heatmapMax);
-                                        window->hmp.isHeatmapDirty = false;
+                                        MapToImg(heatmap->valueBuffer, &(heatmap->pixelBuffer), sizing.xSize, sizing.ySize, heatmap->heatmapMin, heatmap->heatmapMax);
+                                        heatmap->isHeatmapDirty = false;
 
                                         // COLORS
-                                        window->hmp.staticLUT.Clear();
-                                        window->hmp.dynamicLUT.Clear();
+                                        heatmap->staticLUT.Clear();
+                                        heatmap->dynamicLUT.Clear();
 
-                                        window->hmp.staticLUT.lutGroups = staticLUTsize;
-                                        window->hmp.dynamicLUT.lutGroups = dynamicLUTsize;
-                                        window->hmp.staticLUT.lut = new int*[staticLUTsize];
-                                        window->hmp.dynamicLUT.lut = new int*[dynamicLUTsize];
-                                        for (int i = 0; i < staticLUTsize; i++) window->hmp.staticLUT.lut[i] = new int[computations[playedBufferIndex].marshal.totalVariations];
-                                        for (int i = 0; i < dynamicLUTsize; i++) window->hmp.dynamicLUT.lut[i] = new int[computations[playedBufferIndex].marshal.totalVariations];
-                                        window->hmp.staticLUT.lutSizes = new int[staticLUTsize];
-                                        window->hmp.dynamicLUT.lutSizes = new int[dynamicLUTsize];
+                                        heatmap->staticLUT.lutGroups = staticLUTsize;
+                                        heatmap->dynamicLUT.lutGroups = dynamicLUTsize;
+                                        heatmap->staticLUT.lut = new int*[staticLUTsize];
+                                        heatmap->dynamicLUT.lut = new int*[dynamicLUTsize];
+                                        for (int i = 0; i < staticLUTsize; i++) heatmap->staticLUT.lut[i] = new int[cmp->marshal.totalVariations];
+                                        for (int i = 0; i < dynamicLUTsize; i++) heatmap->dynamicLUT.lut[i] = new int[cmp->marshal.totalVariations];
+                                        heatmap->staticLUT.lutSizes = new int[staticLUTsize];
+                                        heatmap->dynamicLUT.lutSizes = new int[dynamicLUTsize];
 
-                                        setupLUT(computations[playedBufferIndex].marshal.maps2, computations[playedBufferIndex].marshal.totalVariations, window->hmp.staticLUT.lut, window->hmp.staticLUT.lutSizes, staticLUTsize, window->hmp.heatmapMin, window->hmp.heatmapMax);
-                                        setupLUT(computations[playedBufferIndex].marshal.maps2, computations[playedBufferIndex].marshal.totalVariations, window->hmp.dynamicLUT.lut, window->hmp.dynamicLUT.lutSizes, dynamicLUTsize, window->hmp.heatmapMin, window->hmp.heatmapMax);
+                                        setupLUT(cmp->marshal.maps, cmp->marshal.totalVariations, heatmap->staticLUT.lut, heatmap->staticLUT.lutSizes, staticLUTsize, heatmap->heatmapMin, heatmap->heatmapMax);
+                                        setupLUT(cmp->marshal.maps, cmp->marshal.totalVariations, heatmap->dynamicLUT.lut, heatmap->dynamicLUT.lutSizes, dynamicLUTsize, heatmap->heatmapMin, heatmap->heatmapMax);
                                     
-                                        releaseHeatmap(window);
+                                        releaseHeatmap(window, isHires);
                                     }
 
-                                    if (window->hmp.texture == nullptr)
+                                    if (heatmap->texture == nullptr)
                                     {
-                                        bool ret = LoadTextureFromRaw(&(window->hmp.pixelBuffer), sizing.xSize, sizing.ySize, (ID3D11ShaderResourceView**)&(window->hmp.texture), g_pd3dDevice);
+                                        bool ret = LoadTextureFromRaw(&(heatmap->pixelBuffer), sizing.xSize, sizing.ySize, (ID3D11ShaderResourceView**)&(heatmap->texture), g_pd3dDevice);
                                         IM_ASSERT(ret);
                                     }
 
-                                    ImPlotPoint from = window->hmp.showActualDiapasons ? ImPlotPoint(sizing.minX, sizing.maxY + sizing.stepY) : ImPlotPoint(0, sizing.ySize);
-                                    ImPlotPoint to = window->hmp.showActualDiapasons ? ImPlotPoint(sizing.maxX + sizing.stepX, sizing.minY) : ImPlotPoint(sizing.xSize, 0);
+                                    ImPlotPoint from = heatmap->showActualDiapasons ? ImPlotPoint(sizing.minX, sizing.maxY + sizing.stepY) : ImPlotPoint(0, sizing.ySize);
+                                    ImPlotPoint to = heatmap->showActualDiapasons ? ImPlotPoint(sizing.maxX + sizing.stepX, sizing.minY) : ImPlotPoint(sizing.xSize, 0);
 
-                                    ImPlot::SetupAxes(sizing.hmp->typeX == PARAMETER ? KERNEL.parameters[sizing.hmp->indexX].name.c_str() : KERNEL.variables[sizing.hmp->indexX].name.c_str(),
-                                        sizing.hmp->typeY == PARAMETER ? KERNEL.parameters[sizing.hmp->indexY].name.c_str() : KERNEL.variables[sizing.hmp->indexY].name.c_str());
+                                    ImPlot::SetupAxes(sizing.hmp->typeX == PARAMETER ? krnl->parameters[sizing.hmp->indexX].name.c_str() : krnl->variables[sizing.hmp->indexX].name.c_str(),
+                                        sizing.hmp->typeY == PARAMETER ? krnl->parameters[sizing.hmp->indexY].name.c_str() : krnl->variables[sizing.hmp->indexY].name.c_str());
 
-                                    ImPlot::PlotImage(("Map " + std::to_string(mapIndex) + "##" + plotName + std::to_string(0)).c_str(), (ImTextureID)(window->hmp.texture),
+                                    ImPlot::PlotImage(("Map " + std::to_string(mapIndex) + "##" + plotName + std::to_string(0)).c_str(), (ImTextureID)(heatmap->texture),
                                         from, to, ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f), ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
 
                                     // Value labels
                                     if (sizing.cutWidth > 0 && sizing.cutHeight > 0) // If there's anything to be shown in the plot
                                     {
-                                        if (window->hmp.showHeatmapValues)
+                                        if (heatmap->showHeatmapValues)
                                         {
-                                            void* cutoffHeatmap = new numb[sizing.cutHeight * sizing.cutWidth];
+                                            int rows = sizing.cutHeight;
+                                            int cols = sizing.cutWidth;
 
-                                            cutoff2D(window->hmp.valueBuffer, (numb*)cutoffHeatmap,
+                                            void* cutoffHeatmap = new numb[rows * cols];
+                                            cutoff2D(heatmap->valueBuffer, (numb*)cutoffHeatmap,
                                                 sizing.xSize, sizing.ySize, sizing.cutMinX, sizing.cutMinY, sizing.cutMaxX, sizing.cutMaxY);
 
-                                            void* compressedHeatmap = new numb[(int)ceil((float)sizing.cutWidth / heatStride) * (int)ceil((float)sizing.cutHeight / heatStride)];
-
-                                            compress2D((numb*)cutoffHeatmap, (numb*)compressedHeatmap,
-                                                sizing.cutWidth, sizing.cutHeight, heatStride);
-
-                                            int rows = heatStride > 1 ? (int)ceil((float)sizing.cutHeight / heatStride) : sizing.cutHeight;
-                                            int cols = heatStride > 1 ? (int)ceil((float)sizing.cutWidth / heatStride) : sizing.cutWidth;
-
                                             ImPlot::PlotHeatmap(("MapLabels " + std::to_string(mapIndex) + "##" + plotName + std::to_string(0)).c_str(),
-                                                (numb*)compressedHeatmap, rows, cols, -1234.0, 1.0, "%.3f",
+                                                (numb*)cutoffHeatmap, rows, cols, -1234.0, 1.0, "%.3f",
                                                 ImPlotPoint(sizing.mapX1Cut, sizing.mapY1Cut), ImPlotPoint(sizing.mapX2Cut, sizing.mapY2Cut));
 
                                             delete[] cutoffHeatmap;
-                                            delete[] compressedHeatmap;
                                         }
                                     }
 
-                                    if (window->hmp.showDragLines)
+                                    if (heatmap->showDragLines)
                                     {
-                                        double valueX = (double)window->hmp.lastClickedLocation.x + (window->hmp.showActualDiapasons ? sizing.stepX * 0.5 : 0.5);
-                                        double valueY = (double)window->hmp.lastClickedLocation.y + (window->hmp.showActualDiapasons ? sizing.stepY * 0.5 : 0.5);
+                                        double valueX = (double)heatmap->lastClickedLocation.x + (heatmap->showActualDiapasons ? sizing.stepX * 0.5 : 0.5);
+                                        double valueY = (double)heatmap->lastClickedLocation.y + (heatmap->showActualDiapasons ? sizing.stepY * 0.5 : 0.5);
 
                                         ImPlot::DragLineX(0, &valueX, ImVec4(1.0f, 1.0f, 1.0f, 1.0f), 2.0f, ImPlotDragToolFlags_NoInputs);
                                         ImPlot::DragLineY(1, &valueY, ImVec4(1.0f, 1.0f, 1.0f, 1.0f), 2.0f, ImPlotDragToolFlags_NoInputs);
@@ -1925,25 +1993,25 @@ int imgui_main(int, char**)
 
                             // Table column should be here
 
-                            float minBefore = window->hmp.heatmapMin;
-                            float maxBefore = window->hmp.heatmapMax;
+                            float minBefore = heatmap->heatmapMin;
+                            float maxBefore = heatmap->heatmapMax;
 
-                            if (window->hmp.showLegend)
+                            if (heatmap->showLegend)
                             {
                                 ImGui::TableSetColumnIndex(1);
 
                                 ImGui::SetNextItemWidth(120);
-                                float heatMinFloat = window->hmp.heatmapMin, heatMaxFloat = window->hmp.heatmapMax;
+                                float heatMinFloat = heatmap->heatmapMin, heatMaxFloat = heatmap->heatmapMax;
                                 ImGui::DragFloat("Max", &heatMaxFloat, 0.01f);
-                                ImPlot::ColormapScale("##HeatScale", window->hmp.heatmapMin, window->hmp.heatmapMax, ImVec2(120, plotSize.y - 30.0f));
+                                ImPlot::ColormapScale("##HeatScale", heatmap->heatmapMin, heatmap->heatmapMax, ImVec2(120, plotSize.y - 30.0f));
                                 ImGui::SetNextItemWidth(120);
                                 ImGui::DragFloat("Min", &heatMinFloat, 0.01f);
-                                window->hmp.heatmapMin = (numb)heatMinFloat;
-                                window->hmp.heatmapMax = (numb)heatMaxFloat;
+                                heatmap->heatmapMin = (numb)heatMinFloat;
+                                heatmap->heatmapMax = (numb)heatMaxFloat;
                                 ImPlot::PopColormap();
                             }
 
-                            if (minBefore != window->hmp.heatmapMin || maxBefore != window->hmp.heatmapMax) window->hmp.isHeatmapDirty = true;
+                            if (minBefore != heatmap->heatmapMin || maxBefore != heatmap->heatmapMax) heatmap->isHeatmapDirty = true;
 
                             if (window->whiteBg) ImPlot::PopStyleColor(2);
 
@@ -1956,6 +2024,7 @@ int imgui_main(int, char**)
                         if (!axisYisRanging) ImGui::Text(("Axis " + axisY->name + " is fixed").c_str());
                         if (sameAxis) ImGui::Text("X and Y axis are the same");
                     }
+
 
                     break;
             }          
