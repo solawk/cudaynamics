@@ -46,7 +46,7 @@ extern std::string selectedKernel;
 int compute(Computation*);
 
 // Fill trajectory and parameter buffers with initial values
-void fillAttributeBuffers(Computation* data, int* attributeStepIndices, unsigned long long startVariation, unsigned long long endVariation);
+void fillAttributeBuffers(Computation* data, int* attributeStepIndices, unsigned long long startVariation, unsigned long long endVariation, bool onlyTrajectory);
 
 // Set and copy map buffers for continuous map computation
 void setMapValues(Computation*);

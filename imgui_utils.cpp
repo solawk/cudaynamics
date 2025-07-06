@@ -373,3 +373,11 @@ void getMinMax2D(numb* data, int size, ImVec2* min, ImVec2* max)
 	if (isnan((*max).x)) (*max).x = 1.0f;
 	if (isnan((*max).y)) (*max).y = 1.0f;
 }
+
+std::string padString(std::string str, int length)
+{
+	std::string strPadded = str;
+	for (int j = (int)str.length(); j < length; j++)
+		strPadded += ' ';
+	return strPadded;
+}

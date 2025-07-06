@@ -23,7 +23,8 @@ public:
 	unsigned long long variationsPerParallelization; // How many variations are launched in parallel during hi-res computation (in one execute)
 	unsigned long long variationsInCurrentExecute; // Current variations count, can be less at the end of hi-res computation
 	unsigned long long startVariationInCurrentExecute; // Index of the first variation in the execute
-	int buffersPerVariation; // How many times is one variation repeated (steps * buffersPerVariation equals total steps per variation)
+	int buffersPerVariation = 1; // How many times is one variation repeated (steps * buffersPerVariation equals total steps per variation)
+	unsigned long long variationsFinished; // How many variations of marshal.totalVariations have finished hi-res-computing
 
 	void Clear()
 	{

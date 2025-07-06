@@ -45,7 +45,7 @@
 	if (cudaStatus != cudaSuccess) { fprintf(stderr, "cudaDeviceSynchronize returned error code %d after launching kernel!\n", cudaStatus); goto Error; }
 
 #define CUDA_RESET cudaStatus = cudaDeviceReset(); \
-	if (cudaStatus != cudaSuccess) { fprintf(stderr, "cudaDeviceReset failed!\n"); hasFailed = true; }
+	if (cudaStatus != cudaSuccess) { fprintf(stderr, "cudaDeviceReset failed!\n");/* hasFailed = true;*/ }
 
 // Computation macros
 

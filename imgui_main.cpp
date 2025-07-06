@@ -143,14 +143,6 @@ void resetTempBuffers(Computation* data)
     //mapBuffer = new numb[CUDA_marshal.mapsSize];
 }
 
-std::string padString(std::string str, int length)
-{
-    std::string strPadded = str;
-    for (int j = (int)str.length(); j < length; j++)
-        strPadded += ' ';
-    return strPadded;
-}
-
 // Initialize the Attribute Value Indeces vector for ranging
 void initAVI(bool hires)
 {
@@ -237,6 +229,7 @@ int hiresAsyncComputation()
 void hiresComputing()
 {
     computationHires.future = std::async(hiresAsyncComputation);
+    //hiresAsyncComputation();
 }
 
 // Windows configuration saving and loading
@@ -401,6 +394,8 @@ void hiresPnC()
     }
     else
     {
+        computationHires.Clear();
+
         executedOnLaunch = true;
         computeAfterShiftSelect = false;
         bufferToFillIndex = 0;
@@ -638,7 +633,7 @@ int imgui_main(int, char**)
             PUSH_UNSAVED_FRAME;
             popStyle = true;
         }
-        ImGui::InputInt("Steps", &(kernelNew.steps), 1, 1000, playingParticles ? ImGuiInputTextFlags_ReadOnly : 0);
+        ImGui::InputInt("Steps", &(KERNELNEWCURRENT.steps), 1, 1000, playingParticles ? ImGuiInputTextFlags_ReadOnly : 0);
         TOOLTIP("Amount of computed steps, the trajectory will be (1 + 'steps') steps long, including the initial state");
         if (popStyle) POP_FRAME(3);
         if (playingParticles)
@@ -646,6 +641,13 @@ int imgui_main(int, char**)
             ImGui::PopStyleColor();
             ImGui::PopStyleColor();
             ImGui::PopStyleColor();
+        }
+
+        // Hi-res buffers per variation
+        if (hiresHeatmapWindow != nullptr)
+        {
+            ImGui::InputInt("Buffers", &(computationHires.buffersPerVariation), 1, 10, 0);
+            TOOLTIP("Steps * Buffers = total steps in hi-res computation");
         }
 
         // Transient steps
@@ -663,7 +665,7 @@ int imgui_main(int, char**)
             PUSH_UNSAVED_FRAME;
             popStyle = true;
         }
-        ImGui::InputInt("Transient steps", &(kernelNew.transientSteps), 1, 1000, playingParticles ? ImGuiInputTextFlags_ReadOnly : 0);
+        ImGui::InputInt("Transient steps", &(KERNELNEWCURRENT.transientSteps), 1, 1000, playingParticles ? ImGuiInputTextFlags_ReadOnly : 0);
         TOOLTIP("Steps to skip, including the initial state");
         if (popStyle) POP_FRAME(3);
         if (playingParticles)
@@ -680,9 +682,9 @@ int imgui_main(int, char**)
             PUSH_UNSAVED_FRAME;
             popStyle = true;
         }
-        float stepSizeFloat = (float)kernelNew.stepSize;
+        float stepSizeFloat = (float)KERNELNEWCURRENT.stepSize;
         ImGui::InputFloat("Step size", &stepSizeFloat, 0.0f, 0.0f, "%f");
-        kernelNew.stepSize = (numb)stepSizeFloat;
+        KERNELNEWCURRENT.stepSize = (numb)stepSizeFloat;
         TOOLTIP("Step size of the simulation, h");
         ImGui::PopItemWidth();
         if (popStyle) POP_FRAME(3);
@@ -869,6 +871,7 @@ int imgui_main(int, char**)
 
         bool computation0InProgress = !computations[0].ready && computations[0].marshal.trajectory != nullptr;
         bool computation1InProgress = !computations[1].ready && computations[1].marshal.trajectory != nullptr;
+        bool computationHiresInProgress = !computationHires.ready && computationHires.marshal.trajectory != nullptr;
 
         if (ImGui::Button("= COMPUTE =") || (KERNEL.executeOnLaunch && !executedOnLaunch) || computeAfterShiftSelect)
         {
@@ -884,6 +887,12 @@ int imgui_main(int, char**)
             {
                 hiresPnC();
             }
+        }
+        if (computationHiresInProgress)
+        {
+            float progressPercentage = (computationHires.variationsFinished * 100.0f) / computationHires.marshal.totalVariations;
+            ImGui::Text((std::to_string(computationHires.variationsFinished) + "/" + std::to_string(computationHires.marshal.totalVariations) + " computed (" +
+                std::to_string(progressPercentage) + "%%)").c_str());
         }
 
         // COMMON

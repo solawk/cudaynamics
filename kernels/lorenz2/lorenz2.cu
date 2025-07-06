@@ -14,7 +14,8 @@ __global__ void kernelProgram_lorenz2(Computation* data)
     int b = blockIdx.x;                                     // Current block of THREADS_PER_BLOCK threads
     int t = threadIdx.x;                                    // Current thread in the block, from 0 to THREADS_PER_BLOCK-1
     int variation = (b * data->threads_per_block) + t;            // Variation (parameter combination) index
-    if (variation >= CUDA_marshal.totalVariations) return;      // Shutdown thread if there isn't a variation to compute
+    if (variation + data->startVariationInCurrentExecute
+        >= CUDA_marshal.totalVariations) return;      // Shutdown thread if there isn't a variation to compute
     int variationStart = variation * CUDA_marshal.variationSize;         // Start index to store the modelling data for the variation
     int stepStart = variationStart;                         // Start index for the current modelling step
 
