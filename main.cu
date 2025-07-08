@@ -103,7 +103,6 @@ int compute(Computation* data)
     unsigned long long variationSize = CUDA_kernel.VAR_COUNT * (CUDA_kernel.steps + 1); // All steps for the current parameter/variable value combination
     CUDA_marshal.variationSize = (int)variationSize;
 
-    data->variationsPerParallelization = 100 * 100;
     unsigned long long variationsInBuffers = !data->isHires ? variations : data->variationsPerParallelization;
     
     if (CUDA_marshal.trajectory == nullptr) CUDA_marshal.trajectory = new numb[variationSize * variationsInBuffers];

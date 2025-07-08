@@ -83,7 +83,7 @@ public:
 			break;
 		case Step:
 		case Linear:
-			if (!preserveValues)
+			if (!preserveValues || oldValues == nullptr)
 			{
 				for (int i = 0; i < trueStepCount; i++)
 				{
@@ -91,7 +91,7 @@ public:
 					if (values[i] > max) values[i] = max;
 				}
 			}
-			else if (oldValues != nullptr)
+			else
 			{
 				for (int i = 0; i < trueStepCount; i++)
 				{
@@ -100,7 +100,7 @@ public:
 			}
 			break;
 		case Enum:
-			if (!preserveValues)
+			if (!preserveValues || oldValues == nullptr)
 			{
 				int i = 0;
 				for (int e = 0; e < enumCount; e++)
@@ -108,7 +108,7 @@ public:
 					if (enumEnabled[e]) values[i++] = (numb)e;
 				}
 			}
-			else if (oldValues != nullptr)
+			else
 			{
 				for (int i = 0; i < trueStepCount; i++)
 				{

@@ -27,6 +27,7 @@ PlotWindow* hiresHeatmapWindow = nullptr;
 Kernel kernelNew, kernelHiresNew; // Front-end for the kernels in the GUI
 Kernel kernelHiresComputed; // Hi-res computation kernel buffer which has been sent to computation
 #define KERNELNEWCURRENT (HIRES_ON ? kernelHiresNew : kernelNew)
+#define KERNELINTERNALCURRENT (HIRES_ON ? kernelHiresNew : KERNEL)
 
 numb* dataBuffer = nullptr; // One variation local buffer
 numb* particleBuffer = nullptr; // One step local buffer
@@ -83,6 +84,8 @@ ImVec4 disabledColor = ImVec4(0.137f * 0.5f, 0.271f * 0.5f, 0.427f * 0.5f, 1.0f)
 ImVec4 disabledTextColor = ImVec4(1.0f, 1.0f, 1.0f, 0.5f);
 ImVec4 disabledBackgroundColor = ImVec4(0.137f * 0.35f, 0.271f * 0.35f, 0.427f * 0.35f, 1.0f);
 ImVec4 hiresBackgroundColor = ImVec4(0.427f, 0.137f, 0.427f, 1.0f);
+ImVec4 hiresBackgroundColorHovered = ImVec4(0.427f * 1.3f, 0.137f * 1.3f, 0.427f * 1.3f, 1.0f);
+ImVec4 hiresBackgroundColorActive = ImVec4(0.427f * 1.5f, 0.137f * 1.5f, 0.427f * 1.5f, 1.0f);
 ImVec4 xAxisColor = ImVec4(0.75f, 0.3f, 0.3f, 1.0f);
 ImVec4 yAxisColor = ImVec4(0.33f, 0.67f, 0.4f, 1.0f);
 ImVec4 zAxisColor = ImVec4(0.3f, 0.45f, 0.7f, 1.0f);
@@ -108,8 +111,8 @@ bool graphBuilderWindowEnabled = true;
                             ImGui::PushStyleColor(ImGuiCol_FrameBgActive, unsavedBackgroundColorActive); \
                             ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, unsavedBackgroundColorHovered);}
 #define PUSH_HIRES_FRAME  {ImGui::PushStyleColor(ImGuiCol_FrameBg, hiresBackgroundColor); \
-                            ImGui::PushStyleColor(ImGuiCol_FrameBgActive, hiresBackgroundColor); \
-                            ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, hiresBackgroundColor);}
+                            ImGui::PushStyleColor(ImGuiCol_FrameBgActive, hiresBackgroundColorActive); \
+                            ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, hiresBackgroundColorHovered);}
 #define POP_FRAME(n)        {ImGui::PopStyleColor(n);}
 #define CLAMP01(x)          if (x < 0.0f) x = 0.0f; if (x > 1.0f) x = 1.0f;
 #define TOOLTIP(text)       if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal)) ImGui::SetTooltip(text);
@@ -501,6 +504,7 @@ int imgui_main(int, char**)
     computations[1].index = 1;
     computations[0].otherMarshal = &(computations[1].marshal);
     computations[1].otherMarshal = &(computations[0].marshal);
+    computationHires.variationsPerParallelization = 1000;
     
     initializeKernel(false);
 
@@ -618,8 +622,18 @@ int imgui_main(int, char**)
 
         frameTime = 1.0f / io.Framerate; ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
 
-        // Steps
         ImGui::PushItemWidth(200.0f);
+
+        // Hi-res variations per computation
+        if (HIRES_ON)
+        {
+            int vpp = (int)computationHires.variationsPerParallelization;
+            ImGui::InputInt("Variations per computation", &vpp, 1, 10, 0);
+            computationHires.variationsPerParallelization = (unsigned long long)vpp;
+            TOOLTIP("Variations per each division of the heatmap");
+        }
+
+        // Steps
         if (playingParticles)
         {
             ImGui::PushStyleColor(ImGuiCol_FrameBg, disabledBackgroundColor);
@@ -644,7 +658,7 @@ int imgui_main(int, char**)
         }
 
         // Hi-res buffers per variation
-        if (hiresHeatmapWindow != nullptr)
+        if (HIRES_ON)
         {
             ImGui::InputInt("Buffers", &(computationHires.buffersPerVariation), 1, 10, 0);
             TOOLTIP("Steps * Buffers = total steps in hi-res computation");
@@ -692,197 +706,201 @@ int imgui_main(int, char**)
         variation = 0;
 
         ImGui::NewLine();
-
-        //enabledParticles = true;
-        bool tempParticlesMode = enabledParticles;
-        if (ImGui::Checkbox("Orbits/Particles", &(tempParticlesMode)))
+        if (!HIRES_ON)
         {
-            enabledParticles = !enabledParticles;
-        }
+            //enabledParticles = true;
+            bool tempParticlesMode = enabledParticles;
+            if (ImGui::Checkbox("Orbits/Particles", &(tempParticlesMode)))
+            {
+                enabledParticles = !enabledParticles;
+            }
 
-        // PARTICLES MODE
-        ImGui::PushItemWidth(200.0f);
-        ImGui::DragFloat("Animation speed, steps/s", &(particleSpeed), 1.0f);
-        TOOLTIP("Playback speed of the evolution in Particles mode");
-        if (particleSpeed < 0.0f) particleSpeed = 0.0f;
-        ImGui::PopItemWidth();
+            // PARTICLES MODE
+            ImGui::PushItemWidth(200.0f);
+            ImGui::DragFloat("Animation speed, steps/s", &(particleSpeed), 1.0f);
+            TOOLTIP("Playback speed of the evolution in Particles mode");
+            if (particleSpeed < 0.0f) particleSpeed = 0.0f;
+            ImGui::PopItemWidth();
 
-        if (computations[playedBufferIndex].timeElapsed > 0.0f)
-        {
-            float buffersPerSecond = 1000.0f / computations[playedBufferIndex].timeElapsed;
-            int stepsPerSecond = (int)(computedSteps * buffersPerSecond);
+            if (computations[playedBufferIndex].timeElapsed > 0.0f)
+            {
+                float buffersPerSecond = 1000.0f / computations[playedBufferIndex].timeElapsed;
+                int stepsPerSecond = (int)(computedSteps * buffersPerSecond);
 
+                ImGui::SameLine();
+                ImGui::Text(("(max " + std::to_string(stepsPerSecond) + " before stalling)").c_str());
+                TOOLTIP("Predicted speed that allows for seamless playback");
+            }
+
+            ImGui::PushItemWidth(200.0f);
+            ImGui::DragInt("##Animation step", &(particleStep), 1.0f, 0, KERNEL.steps);
+            ImGui::PopItemWidth();
             ImGui::SameLine();
-            ImGui::Text(("(max " + std::to_string(stepsPerSecond) + " before stalling)").c_str());
-            TOOLTIP("Predicted speed that allows for seamless playback");
-        }
+            ImGui::Text(("Animation step" + (continuousComputingEnabled ? " (total step " + std::to_string(bufferNo * KERNEL.steps + particleStep) + ")" : "")).c_str());
 
-        ImGui::PushItemWidth(200.0f);
-        ImGui::DragInt("##Animation step", &(particleStep), 1.0f, 0, KERNEL.steps);
-        ImGui::PopItemWidth();
-        ImGui::SameLine();
-        ImGui::Text(("Animation step" + (continuousComputingEnabled ? " (total step " + std::to_string(bufferNo * KERNEL.steps + particleStep) + ")" : "")).c_str());
-
-        if (ImGui::Button("Reset to step 0"))
-        {
-            particleStep = 0;
-        }
-
-        if (anyChanged)
-        {
-            ImGui::PushStyleColor(ImGuiCol_Text, disabledTextColor);
-            PUSH_DISABLED_FRAME;
-        }
-
-        ImGui::Spacing();
-
-        if (ImGui::Button(playingParticles ? "PAUSE" : "PLAY") && !anyChanged)
-        {
-            if (computations[0].ready || playingParticles)
+            if (ImGui::Button("Reset to step 0"))
             {
-                playingParticles = !playingParticles;
-                kernelNew.CopyFrom(&KERNEL);
-            }
-
-            if (!playingParticles)
-            {
-                KERNEL.CopyFrom(&kernelNew);
-            }
-        }
-        if (anyChanged) POP_FRAME(4);
-
-        /*bool tempContinuous = continuousComputingEnabled;
-        if (ImGui::Checkbox("Continuous computing", &(tempContinuous)))
-        {
-            // Flags of having buffers computed, to not interrupt computations in progress when switching
-            bool noncont = !continuousComputingEnabled && computations[0].ready;
-            bool cont = continuousComputingEnabled && computations[0].ready && computations[1].ready;
-
-            if (noComputedData || noncont || cont)
-            {
-                continuousComputingEnabled = !continuousComputingEnabled;
-
-                bufferNo = 0;
-                deleteBothBuffers();
-                playingParticles = false;
                 particleStep = 0;
             }
-        }
-        TOOLTIP("Keep computing next buffers for continuous playback");*/
 
-        // PARTICLES MODE
-        if (playingParticles/* && enabledParticles*/)
-        {
-            particlePhase += frameTime * particleSpeed;
-            int passedSteps = (int)floor(particlePhase);
-            particlePhase -= (float)passedSteps;
-
-            particleStep += passedSteps;
-            if (particleStep > KERNEL.steps) // Reached the end of animation
+            if (anyChanged)
             {
-                if (continuousComputingEnabled)
-                {
-                    // Starting from another buffer
+                ImGui::PushStyleColor(ImGuiCol_Text, disabledTextColor);
+                PUSH_DISABLED_FRAME;
+            }
 
-                    switchPlayedBuffer();
-                }
-                else
+            ImGui::Spacing();
+
+            if (ImGui::Button(playingParticles ? "PAUSE" : "PLAY") && !anyChanged)
+            {
+                if (computations[0].ready || playingParticles)
                 {
-                    // Stopping
-                    particleStep = KERNEL.steps;
+                    playingParticles = !playingParticles;
+                    kernelNew.CopyFrom(&KERNEL);
+                }
+
+                if (!playingParticles)
+                {
+                    KERNEL.CopyFrom(&kernelNew);
+                }
+            }
+            if (anyChanged) POP_FRAME(4);
+
+            /*bool tempContinuous = continuousComputingEnabled;
+            if (ImGui::Checkbox("Continuous computing", &(tempContinuous)))
+            {
+                // Flags of having buffers computed, to not interrupt computations in progress when switching
+                bool noncont = !continuousComputingEnabled && computations[0].ready;
+                bool cont = continuousComputingEnabled && computations[0].ready && computations[1].ready;
+
+                if (noComputedData || noncont || cont)
+                {
+                    continuousComputingEnabled = !continuousComputingEnabled;
+
+                    bufferNo = 0;
+                    deleteBothBuffers();
                     playingParticles = false;
+                    particleStep = 0;
                 }
             }
-        }
+            TOOLTIP("Keep computing next buffers for continuous playback");*/
 
-        // Auto-loading
-        bool tempAutoLoadNewParams = autoLoadNewParams;
-        if (ImGui::Checkbox("Apply parameter changes automatically", &(tempAutoLoadNewParams)))
-        {
-            autoLoadNewParams = !autoLoadNewParams;
-            if (autoLoadNewParams) kernelNew.CopyParameterValuesFrom(&KERNEL);
-            else KERNEL.CopyParameterValuesFrom(&kernelNew);
-        }
-        TOOLTIP("Automatically applies new parameter values to the new buffers mid-playback");
-
-        // Map continuous computing
-        popStyle = false;
-        if (kernelNew.continuousMaps != KERNEL.continuousMaps)
-        {
-            anyChanged = true;
-            PUSH_UNSAVED_FRAME;
-            popStyle = true;
-        }
-        bool tempContinuousMaps = kernelNew.continuousMaps;
-        if (ImGui::Checkbox("Continuous map computation", &(tempContinuousMaps)))
-        {
-            kernelNew.continuousMaps = !kernelNew.continuousMaps;
-        }
-        TOOLTIP("Shaping maps continuously. When off, map is fully redrawn for each buffer");
-        if (popStyle) POP_FRAME(3);
-
-        ImGui::PushItemWidth(200.0f);
-        ImGui::InputFloat("Value drag speed", &(dragChangeSpeed));
-        TOOLTIP("Drag speed of attribute values, allows for precise automatic parameter setting");
-
-        //if (ImGui::BeginTabItem("Orbit Mode", NULL, selectOrbitTab ? ImGuiTabItemFlags_SetSelected : 0))
-        ImGui::NewLine();
-
-        // RANGING, ORBIT MODE
-        if (computations[playedBufferIndex].ready)
-        {
-            for (int i = 0; i < KERNEL.VAR_COUNT + KERNEL.PARAM_COUNT; i++)
+            // PARTICLES MODE
+            if (playingParticles/* && enabledParticles*/)
             {
-                bool isVar = i < KERNEL.VAR_COUNT;
-                Attribute* attr = isVar ? &(computations[playedBufferIndex].marshal.kernel.variables[i]) : &(computations[playedBufferIndex].marshal.kernel.parameters[i - KERNEL.VAR_COUNT]);
-                Attribute* kernelNewAttr = isVar ? &(kernelNew.variables[i]) : &(kernelNew.parameters[i - KERNEL.VAR_COUNT]);
+                particlePhase += frameTime * particleSpeed;
+                int passedSteps = (int)floor(particlePhase);
+                particlePhase -= (float)passedSteps;
 
-                if (attr->TrueStepCount() == 1) continue;
-
-                ImGui::Text(padString(attr->name, maxNameLength).c_str()); ImGui::SameLine();
-                int index = attributeValueIndices[i];
-                ImGui::PushItemWidth(150.0f);
-                ImGui::SliderInt(("##RangingNo_" + std::to_string(i)).c_str(), &index, 0, attr->stepCount - 1, "Step: %d");
-                ImGui::PopItemWidth();
-                attributeValueIndices[i] = index;
-
-                if (attr->rangingType != Enum)
+                particleStep += passedSteps;
+                if (particleStep > KERNEL.steps) // Reached the end of animation
                 {
-                    ImGui::SameLine();
-                    ImGui::Text(("Value: " + std::to_string(calculateValue(attr->min, attr->step, index))).c_str());
+                    if (continuousComputingEnabled)
+                    {
+                        // Starting from another buffer
+
+                        switchPlayedBuffer();
+                    }
+                    else
+                    {
+                        // Stopping
+                        particleStep = KERNEL.steps;
+                        playingParticles = false;
+                    }
                 }
             }
 
-            steps2Variation(&variation, &(attributeValueIndices.data()[0]), &KERNEL);
-        }
+            // Auto-loading
+            bool tempAutoLoadNewParams = autoLoadNewParams;
+            if (ImGui::Checkbox("Apply parameter changes automatically", &(tempAutoLoadNewParams)))
+            {
+                autoLoadNewParams = !autoLoadNewParams;
+                if (autoLoadNewParams) kernelNew.CopyParameterValuesFrom(&KERNEL);
+                else KERNEL.CopyParameterValuesFrom(&kernelNew);
+            }
+            TOOLTIP("Automatically applies new parameter values to the new buffers mid-playback");
 
-        if (ImGui::Button("Next buffer"))
-        {
-            switchPlayedBuffer();
-        }
+            // Map continuous computing
+            popStyle = false;
+            if (kernelNew.continuousMaps != KERNEL.continuousMaps)
+            {
+                anyChanged = true;
+                PUSH_UNSAVED_FRAME;
+                popStyle = true;
+            }
+            bool tempContinuousMaps = kernelNew.continuousMaps;
+            if (ImGui::Checkbox("Continuous map computation", &(tempContinuousMaps)))
+            {
+                kernelNew.continuousMaps = !kernelNew.continuousMaps;
+            }
+            TOOLTIP("Shaping maps continuously. When off, map is fully redrawn for each buffer");
+            if (popStyle) POP_FRAME(3);
 
-        selectParticleTab = selectOrbitTab = false;
+            ImGui::PushItemWidth(200.0f);
+            ImGui::InputFloat("Value drag speed", &(dragChangeSpeed));
+            TOOLTIP("Drag speed of attribute values, allows for precise automatic parameter setting");
+
+            //if (ImGui::BeginTabItem("Orbit Mode", NULL, selectOrbitTab ? ImGuiTabItemFlags_SetSelected : 0))
+            ImGui::NewLine();
+
+            // RANGING, ORBIT MODE
+            if (computations[playedBufferIndex].ready)
+            {
+                for (int i = 0; i < KERNEL.VAR_COUNT + KERNEL.PARAM_COUNT; i++)
+                {
+                    bool isVar = i < KERNEL.VAR_COUNT;
+                    Attribute* attr = isVar ? &(computations[playedBufferIndex].marshal.kernel.variables[i]) : &(computations[playedBufferIndex].marshal.kernel.parameters[i - KERNEL.VAR_COUNT]);
+                    Attribute* kernelNewAttr = isVar ? &(kernelNew.variables[i]) : &(kernelNew.parameters[i - KERNEL.VAR_COUNT]);
+
+                    if (attr->TrueStepCount() == 1) continue;
+
+                    ImGui::Text(padString(attr->name, maxNameLength).c_str()); ImGui::SameLine();
+                    int index = attributeValueIndices[i];
+                    ImGui::PushItemWidth(150.0f);
+                    ImGui::SliderInt(("##RangingNo_" + std::to_string(i)).c_str(), &index, 0, attr->stepCount - 1, "Step: %d");
+                    ImGui::PopItemWidth();
+                    attributeValueIndices[i] = index;
+
+                    if (attr->rangingType != Enum)
+                    {
+                        ImGui::SameLine();
+                        ImGui::Text(("Value: " + std::to_string(calculateValue(attr->min, attr->step, index))).c_str());
+                    }
+                }
+
+                steps2Variation(&variation, &(attributeValueIndices.data()[0]), &KERNEL);
+            }
+
+            if (ImGui::Button("Next buffer"))
+            {
+                switchPlayedBuffer();
+            }
+
+            //selectParticleTab = selectOrbitTab = false;
+        }
 
         // COMMON
         // default button color is 0.137 0.271 0.427
         bool playBreath = noComputedData || (anyChanged && (!playingParticles || !enabledParticles));
-        if (playBreath)
-            ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.137f * buttonBreathMult, 0.271f * buttonBreathMult, 0.427f * buttonBreathMult, 1.0f));
+        
 
         bool computation0InProgress = !computations[0].ready && computations[0].marshal.trajectory != nullptr;
         bool computation1InProgress = !computations[1].ready && computations[1].marshal.trajectory != nullptr;
         bool computationHiresInProgress = !computationHires.ready && computationHires.marshal.trajectory != nullptr;
 
-        if (ImGui::Button("= COMPUTE =") || (KERNEL.executeOnLaunch && !executedOnLaunch) || computeAfterShiftSelect)
+        if (!HIRES_ON)
         {
-            prepareAndCompute();
-        }
-        if (playBreath) ImGui::PopStyleColor();
-        if (!playingParticles) computationStatus(computation0InProgress, computation1InProgress);
-
-        // Hi-res compute button
-        if (hiresHeatmapWindow != nullptr)
+            if (playBreath) ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.137f * buttonBreathMult, 0.271f * buttonBreathMult, 0.427f * buttonBreathMult, 1.0f));
+            if (ImGui::Button("= COMPUTE =") || (KERNEL.executeOnLaunch && !executedOnLaunch) || computeAfterShiftSelect)
+            {
+                prepareAndCompute();
+            }
+            if (playBreath) ImGui::PopStyleColor();
+            if (!playingParticles) computationStatus(computation0InProgress, computation1InProgress);
+        }     
+        else
         {
+            // Hi-res compute button
             if (ImGui::Button("= HI-RES COMPUTE ="))
             {
                 hiresPnC();
@@ -1103,26 +1121,26 @@ int imgui_main(int, char**)
             ImGui::Begin("Map Settings", nullptr);
             FullscreenButtonPressLogic(&mapSettingsWindow, ImGui::GetCurrentWindow());
 
-            for (int m = 0; m < KERNEL.MAP_COUNT; m++)
+            for (int m = 0; m < KERNELINTERNALCURRENT.MAP_COUNT; m++)
             {
-                if (ImGui::TreeNode(std::string(KERNEL.mapDatas[m].name + "##MapSettings_" + KERNEL.mapDatas[m].name).c_str()))
+                if (ImGui::TreeNode(std::string(KERNELINTERNALCURRENT.mapDatas[m].name + "##MapSettings_" + KERNELINTERNALCURRENT.mapDatas[m].name).c_str()))
                 {
-                    for (int s = 0; s < KERNEL.mapDatas[m].settingsCount; s++)
+                    for (int s = 0; s < KERNELINTERNALCURRENT.mapDatas[m].settingsCount; s++)
                     {
-                        ImGui::Text(KERNEL.mapDatas[m].settingName[s].c_str());
+                        ImGui::Text(KERNELINTERNALCURRENT.mapDatas[m].settingName[s].c_str());
                         ImGui::SameLine();
                         ImGui::PushItemWidth(150.0f);
-                        if (KERNEL.mapDatas[m].isSettingNumb[s])
+                        if (KERNELINTERNALCURRENT.mapDatas[m].isSettingNumb[s])
                         {
-                            double setting = (double)KERNEL.mapSettings[KERNEL.mapDatas[m].settingsOffset + s];
-                            ImGui::InputDouble(("##Setting" + KERNEL.mapDatas[m].settingName[s] + "_" + KERNEL.mapDatas[m].name).c_str(), &setting);
-                            KERNEL.mapSettings[KERNEL.mapDatas[m].settingsOffset + s] = (numb)setting;
+                            double setting = (double)KERNELINTERNALCURRENT.mapSettings[KERNELINTERNALCURRENT.mapDatas[m].settingsOffset + s];
+                            ImGui::InputDouble(("##Setting" + KERNELINTERNALCURRENT.mapDatas[m].settingName[s] + "_" + KERNELINTERNALCURRENT.mapDatas[m].name).c_str(), &setting);
+                            KERNELINTERNALCURRENT.mapSettings[KERNELINTERNALCURRENT.mapDatas[m].settingsOffset + s] = (numb)setting;
                         }
                         else
                         {
-                            int setting = (int)KERNEL.mapSettings[KERNEL.mapDatas[m].settingsOffset + s];
-                            ImGui::InputInt(("##Setting" + KERNEL.mapDatas[m].settingName[s] + "_" + KERNEL.mapDatas[m].name).c_str(), &setting);
-                            KERNEL.mapSettings[KERNEL.mapDatas[m].settingsOffset + s] = (numb)setting;
+                            int setting = (int)KERNELINTERNALCURRENT.mapSettings[KERNELINTERNALCURRENT.mapDatas[m].settingsOffset + s];
+                            ImGui::InputInt(("##Setting" + KERNELINTERNALCURRENT.mapDatas[m].settingName[s] + "_" + KERNELINTERNALCURRENT.mapDatas[m].name).c_str(), &setting);
+                            KERNELINTERNALCURRENT.mapSettings[KERNELINTERNALCURRENT.mapDatas[m].settingsOffset + s] = (numb)setting;
                         }
                         ImGui::PopItemWidth();
                     }
