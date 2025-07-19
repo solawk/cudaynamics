@@ -223,11 +223,12 @@ void setMapValues(Computation* data)
         CUDA_marshal.maps = new numb[CUDA_marshal.totalVariations * CUDA_kernel.MAP_COUNT];
     }
 
-    if (CUDA_marshal.totalVariations == 1) for (int m = 0; m < CUDA_kernel.MAP_COUNT; m++)
-    {
-        CUDA_kernel.mapDatas[m].toCompute = false;
-        return;
-    }
+    if (CUDA_marshal.totalVariations == 1)
+        for (int m = 0; m < CUDA_kernel.MAP_COUNT; m++)
+        {
+            CUDA_kernel.mapDatas[m].toCompute = false;
+            return;
+        }
 
     // Copy previous map values if present
     if (data->isFirst || !CUDA_kernel.continuousMaps)

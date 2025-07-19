@@ -504,7 +504,7 @@ int imgui_main(int, char**)
     computations[1].index = 1;
     computations[0].otherMarshal = &(computations[1].marshal);
     computations[1].otherMarshal = &(computations[0].marshal);
-    computationHires.variationsPerParallelization = 1000;
+    computationHires.variationsPerParallelization = 10000;
     
     initializeKernel(false);
 
@@ -900,6 +900,11 @@ int imgui_main(int, char**)
         }     
         else
         {
+            if (computeAfterShiftSelect) // For shift-clicking the hires map
+            {
+                prepareAndCompute();
+            }
+
             // Hi-res compute button
             if (ImGui::Button("= HI-RES COMPUTE ="))
             {
@@ -1121,26 +1126,28 @@ int imgui_main(int, char**)
             ImGui::Begin("Map Settings", nullptr);
             FullscreenButtonPressLogic(&mapSettingsWindow, ImGui::GetCurrentWindow());
 
-            for (int m = 0; m < KERNELINTERNALCURRENT.MAP_COUNT; m++)
+            Kernel* krn = HIRES_ON ? &kernelHiresNew : &kernelNew; // Workaround for Win11
+
+            for (int m = 0; m < krn->MAP_COUNT; m++)
             {
-                if (ImGui::TreeNode(std::string(KERNELINTERNALCURRENT.mapDatas[m].name + "##MapSettings_" + KERNELINTERNALCURRENT.mapDatas[m].name).c_str()))
+                if (ImGui::TreeNode(std::string(krn->mapDatas[m].name + "##MapSettings_" + krn->mapDatas[m].name).c_str()))
                 {
-                    for (int s = 0; s < KERNELINTERNALCURRENT.mapDatas[m].settingsCount; s++)
+                    for (int s = 0; s < krn->mapDatas[m].settingsCount; s++)
                     {
-                        ImGui::Text(KERNELINTERNALCURRENT.mapDatas[m].settingName[s].c_str());
+                        ImGui::Text(krn->mapDatas[m].settingName[s].c_str());
                         ImGui::SameLine();
                         ImGui::PushItemWidth(150.0f);
-                        if (KERNELINTERNALCURRENT.mapDatas[m].isSettingNumb[s])
+                        if (krn->mapDatas[m].isSettingNumb[s])
                         {
-                            double setting = (double)KERNELINTERNALCURRENT.mapSettings[KERNELINTERNALCURRENT.mapDatas[m].settingsOffset + s];
-                            ImGui::InputDouble(("##Setting" + KERNELINTERNALCURRENT.mapDatas[m].settingName[s] + "_" + KERNELINTERNALCURRENT.mapDatas[m].name).c_str(), &setting);
-                            KERNELINTERNALCURRENT.mapSettings[KERNELINTERNALCURRENT.mapDatas[m].settingsOffset + s] = (numb)setting;
+                            double setting = (double)krn->mapSettings[krn->mapDatas[m].settingsOffset + s];
+                            ImGui::InputDouble(("##Setting" + krn->mapDatas[m].settingName[s] + "_" + krn->mapDatas[m].name).c_str(), &setting);
+                            krn->mapSettings[krn->mapDatas[m].settingsOffset + s] = (numb)setting;
                         }
                         else
                         {
-                            int setting = (int)KERNELINTERNALCURRENT.mapSettings[KERNELINTERNALCURRENT.mapDatas[m].settingsOffset + s];
-                            ImGui::InputInt(("##Setting" + KERNELINTERNALCURRENT.mapDatas[m].settingName[s] + "_" + KERNELINTERNALCURRENT.mapDatas[m].name).c_str(), &setting);
-                            KERNELINTERNALCURRENT.mapSettings[KERNELINTERNALCURRENT.mapDatas[m].settingsOffset + s] = (numb)setting;
+                            int setting = (int)krn->mapSettings[krn->mapDatas[m].settingsOffset + s];
+                            ImGui::InputInt(("##Setting" + krn->mapDatas[m].settingName[s] + "_" + krn->mapDatas[m].name).c_str(), &setting);
+                            krn->mapSettings[krn->mapDatas[m].settingsOffset + s] = (numb)setting;
                         }
                         ImGui::PopItemWidth();
                     }
@@ -1812,78 +1819,104 @@ int imgui_main(int, char**)
                                         heatmap->initClickedLocation = false;
                                     }
 
-                                    if (heatmap->showActualDiapasons)
+                                    if (!isHires)
                                     {
-                                        // Values
-                                        heatmap->lastClickedLocation.x = valueFromStep(sizing.minX, sizing.stepX,
-                                            attributeValueIndices[sizing.hmp->indexX + (sizing.hmp->typeX == VARIABLE ? 0 : krnl->VAR_COUNT)]);
-                                        heatmap->lastClickedLocation.y = valueFromStep(sizing.minY, sizing.stepY,
-                                            attributeValueIndices[sizing.hmp->indexY + (sizing.hmp->typeY == VARIABLE ? 0 : krnl->VAR_COUNT)]);
-                                    }
-                                    else
-                                    {
-                                        // Steps
-                                        heatmap->lastClickedLocation.x = (float)attributeValueIndices[sizing.hmp->indexX + (sizing.hmp->typeX == VARIABLE ? 0 : krnl->VAR_COUNT)];
-                                        heatmap->lastClickedLocation.y = (float)attributeValueIndices[sizing.hmp->indexY + (sizing.hmp->typeY == VARIABLE ? 0 : krnl->VAR_COUNT)];
-                                    }
-
-                                    // Choosing configuration
-                                    if (plot->shiftClicked && plot->shiftClickLocation.x != 0.0)
-                                    {
-                                        int stepX = 0;
-                                        int stepY = 0;
-
                                         if (heatmap->showActualDiapasons)
                                         {
                                             // Values
-                                            stepX = stepFromValue(sizing.minX, sizing.stepX, plot->shiftClickLocation.x);
-                                            stepY = stepFromValue(sizing.minY, sizing.stepY, plot->shiftClickLocation.y);
+                                            heatmap->lastClickedLocation.x = valueFromStep(sizing.minX, sizing.stepX,
+                                                attributeValueIndices[sizing.hmp->indexX + (sizing.hmp->typeX == VARIABLE ? 0 : krnl->VAR_COUNT)]);
+                                            heatmap->lastClickedLocation.y = valueFromStep(sizing.minY, sizing.stepY,
+                                                attributeValueIndices[sizing.hmp->indexY + (sizing.hmp->typeY == VARIABLE ? 0 : krnl->VAR_COUNT)]);
                                         }
                                         else
                                         {
                                             // Steps
-                                            stepX = (int)floor(plot->shiftClickLocation.x);
-                                            stepY = (int)floor(plot->shiftClickLocation.y);
+                                            heatmap->lastClickedLocation.x = (float)attributeValueIndices[sizing.hmp->indexX + (sizing.hmp->typeX == VARIABLE ? 0 : krnl->VAR_COUNT)];
+                                            heatmap->lastClickedLocation.y = (float)attributeValueIndices[sizing.hmp->indexY + (sizing.hmp->typeY == VARIABLE ? 0 : krnl->VAR_COUNT)];
                                         }
 
-                                        //enabledParticles = false;
-                                        playingParticles = false;
+                                        // Choosing configuration
+                                        if (plot->shiftClicked && plot->shiftClickLocation.x != 0.0)
+                                        {
+                                            int stepX = 0;
+                                            int stepY = 0;
+
+                                            if (heatmap->showActualDiapasons)
+                                            {
+                                                // Values
+                                                stepX = stepFromValue(sizing.minX, sizing.stepX, plot->shiftClickLocation.x);
+                                                stepY = stepFromValue(sizing.minY, sizing.stepY, plot->shiftClickLocation.y);
+                                            }
+                                            else
+                                            {
+                                                // Steps
+                                                stepX = (int)floor(plot->shiftClickLocation.x);
+                                                stepY = (int)floor(plot->shiftClickLocation.y);
+                                            }
+
+                                            //enabledParticles = false;
+                                            //playingParticles = false;
 
 #define IGNOREOUTOFREACH    if (stepX < 0 || stepX >= (sizing.hmp->typeX == VARIABLE ? krnl->variables[sizing.hmp->indexX].TrueStepCount() : krnl->parameters[sizing.hmp->indexX].TrueStepCount())) break; \
                             if (stepY < 0 || stepY >= (sizing.hmp->typeY == VARIABLE ? krnl->variables[sizing.hmp->indexY].TrueStepCount() : krnl->parameters[sizing.hmp->indexY].TrueStepCount())) break;
 
-                                        switch (sizing.hmp->typeX)
-                                        {
-                                        case VARIABLE:
-                                            IGNOREOUTOFREACH;
-                                            attributeValueIndices[sizing.hmp->indexX] = stepX;
-                                            heatmap->lastClickedLocation.x = plot->shiftClickLocation.x;
-                                            break;
-                                        case PARAMETER:
-                                            IGNOREOUTOFREACH;
-                                            attributeValueIndices[krnl->VAR_COUNT + sizing.hmp->indexX] = stepX;
-                                            heatmap->lastClickedLocation.x = plot->shiftClickLocation.x;
-                                            break;
+                                            switch (sizing.hmp->typeX)
+                                            {
+                                            case VARIABLE:
+                                                IGNOREOUTOFREACH;
+                                                attributeValueIndices[sizing.hmp->indexX] = stepX;
+                                                heatmap->lastClickedLocation.x = plot->shiftClickLocation.x;
+                                                break;
+                                            case PARAMETER:
+                                                IGNOREOUTOFREACH;
+                                                attributeValueIndices[krnl->VAR_COUNT + sizing.hmp->indexX] = stepX;
+                                                heatmap->lastClickedLocation.x = plot->shiftClickLocation.x;
+                                                break;
+                                            }
+
+                                            switch (sizing.hmp->typeY)
+                                            {
+                                            case VARIABLE:
+                                                IGNOREOUTOFREACH;
+                                                attributeValueIndices[sizing.hmp->indexY] = stepY;
+                                                heatmap->lastClickedLocation.y = plot->shiftClickLocation.y;
+                                                break;
+                                            case PARAMETER:
+                                                IGNOREOUTOFREACH;
+                                                attributeValueIndices[krnl->VAR_COUNT + sizing.hmp->indexY] = stepY;
+                                                heatmap->lastClickedLocation.y = plot->shiftClickLocation.y;
+                                                break;
+                                            }
                                         }
 
-                                        switch (sizing.hmp->typeY)
+                                        if (plot->shiftSelected)
                                         {
-                                        case VARIABLE:
-                                            IGNOREOUTOFREACH;
-                                            attributeValueIndices[sizing.hmp->indexY] = stepY;
-                                            heatmap->lastClickedLocation.y = plot->shiftClickLocation.y;
-                                            break;
-                                        case PARAMETER:
-                                            IGNOREOUTOFREACH;
-                                            attributeValueIndices[krnl->VAR_COUNT + sizing.hmp->indexY] = stepY;
-                                            heatmap->lastClickedLocation.y = plot->shiftClickLocation.y;
-                                            break;
+                                            heatmapRangingSelection(window, plot, &sizing);
                                         }
                                     }
-
-                                    if (plot->shiftSelected)
+                                    else
                                     {
-                                        heatmapRangingSelection(window, plot, &sizing);
+                                        if (plot->shiftClicked && plot->shiftClickLocation.x != 0.0)
+                                        {
+                                            numb valueX = 0.0;
+                                            numb valueY = 0.0;
+
+                                            if (heatmap->showActualDiapasons)
+                                            {
+                                                // Values
+                                                valueX = plot->shiftClickLocation.x;
+                                                valueY = plot->shiftClickLocation.y;
+                                            }
+                                            else
+                                            {
+                                                // Steps
+                                                valueX = valueFromStep(sizing.minX, sizing.stepX, (int)floor(plot->shiftClickLocation.x));
+                                                valueY = valueFromStep(sizing.minY, sizing.stepY, (int)floor(plot->shiftClickLocation.y));
+                                            }
+
+                                            hiresShiftClickCompute(window, &sizing, valueX, valueY);
+                                        }
                                     }
 
                                     sizing.initCutoff((float)plot->Axes[plot->CurrentX].Range.Min, (float)plot->Axes[plot->CurrentY].Range.Min,
@@ -2003,7 +2036,7 @@ int imgui_main(int, char**)
                                         }
                                     }
 
-                                    if (heatmap->showDragLines)
+                                    if (heatmap->showDragLines && !isHires)
                                     {
                                         double valueX = (double)heatmap->lastClickedLocation.x + (heatmap->showActualDiapasons ? sizing.stepX * 0.5 : 0.5);
                                         double valueY = (double)heatmap->lastClickedLocation.y + (heatmap->showActualDiapasons ? sizing.stepY * 0.5 : 0.5);
@@ -2490,4 +2523,34 @@ void heatmapRangingSelection(PlotWindow* window, ImPlotPlot* plot, HeatmapSizing
         if (window->hmp.ignoreLimitsRecalculationOnSelection) window->hmp.ignoreNextLimitsRecalculation = true;
         computeAfterShiftSelect = true;
     }
+}
+
+void hiresShiftClickCompute(PlotWindow* window, HeatmapSizing* sizing, numb valueX, numb valueY)
+{
+    kernelNew.CopyFrom(&kernelHiresNew);
+
+    if (sizing->hmp->typeX == VARIABLE)
+    {
+        kernelNew.variables[sizing->hmp->indexX].min = valueX;
+        kernelNew.variables[sizing->hmp->indexX].rangingType = None;
+    }
+    else
+    {
+        kernelNew.parameters[sizing->hmp->indexX].min = valueX;
+        kernelNew.parameters[sizing->hmp->indexX].rangingType = None;
+    }
+
+    if (sizing->hmp->typeY == VARIABLE)
+    {
+        kernelNew.variables[sizing->hmp->indexY].min = valueY;
+        kernelNew.variables[sizing->hmp->indexY].rangingType = None;
+    }
+    else
+    {
+        kernelNew.parameters[sizing->hmp->indexY].min = valueY;
+        kernelNew.parameters[sizing->hmp->indexY].rangingType = None;
+    }
+
+    autoLoadNewParams = false; // Otherwise the map immediately starts drawing the cut region
+    computeAfterShiftSelect = true;
 }

@@ -25,10 +25,4 @@ struct MapData
 	int settingsCount;
 	std::string settingName[MAX_SETTINGS_PER_MAP];
 	bool isSettingNumb[MAX_SETTINGS_PER_MAP];
-
-	// Map can be calculated even with >2 varying attributes, as long as we fixate the rest with a certain value
-	// The fixed values of the varying attributes are stored in these arrays
-	// PRETTY MUCH UNUSED AND SHOULD BE DEPRECATED, IF I DON'T CHANGE MY MIND
-	//numb varFixations[MAX_ATTRIBUTES];
-	//numb paramFixations[MAX_ATTRIBUTES];
 };
