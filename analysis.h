@@ -5,4 +5,5 @@
 #include "cuda_macros.h"
 #include "device_launch_parameters.h"
 
-#include "analysis/lle.h"
+#include "analysis/lle/lle.h"
+#include "analysis/max/max.h"

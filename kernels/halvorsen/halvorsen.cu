@@ -37,7 +37,7 @@ __global__ void kernelProgram_halvorsen(Computation* data)
     {
         LLE_Settings lle_settings(0.01f, 50, 0);
         lle_settings.Use3DNorm();
-        LLE(data, lle_settings, variation, &finiteDifferenceScheme_halvorsen);
+        LLE(data, lle_settings, variation, &finiteDifferenceScheme_halvorsen, MO(LLE));
     }
 }
 

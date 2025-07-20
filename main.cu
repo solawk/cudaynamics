@@ -13,7 +13,7 @@ cudaError_t execute(Computation* data)
     // Hi-res only requires limited amount of variations
     unsigned long long variations = !data->isHires ? CUDA_marshal.totalVariations : data->variationsInCurrentExecute;
     unsigned long long size = CUDA_marshal.variationSize * variations;
-    int mapCount = !data->isHires ? CUDA_kernel.MAP_COUNT : 1; // We always only calculate one map in hi-res, controlled by "toCompute"s
+    int mapCount = !data->isHires ? CUDA_marshal.mapCount : 1; // We always only calculate one map in hi-res, controlled by "toCompute"s
 
     //std::chrono::steady_clock::time_point before = std::chrono::steady_clock::now();
     //std::chrono::steady_clock::time_point precompute, incompute, postcompute;
@@ -128,7 +128,7 @@ int compute(Computation* data)
     {
         data->variationsFinished = 0;
         data->bufferNo = 0;
-        data->otherMarshal = &(CUDA_marshal); // We trick it thinking its own trajectory is the previous trajectory when copying the variable values (ouroboros moment)
+        data->otherMarshal = &(CUDA_marshal); // We trick it into thinking its own trajectory is the previous trajectory when copying the variable values (ouroboros moment)
         for (unsigned long long v = 0; v < variations; v += data->variationsPerParallelization)
         {
             unsigned long long variationsCurrent = min(variations - v, data->variationsPerParallelization);
@@ -217,12 +217,6 @@ void fillAttributeBuffers(Computation* data, int* attributeStepIndices, unsigned
 
 void setMapValues(Computation* data)
 {
-    // Initialize buffer
-    if (CUDA_marshal.totalVariations > 1 && CUDA_kernel.MAP_COUNT > 0 && CUDA_marshal.maps == nullptr)
-    {
-        CUDA_marshal.maps = new numb[CUDA_marshal.totalVariations * CUDA_kernel.MAP_COUNT];
-    }
-
     if (CUDA_marshal.totalVariations == 1)
         for (int m = 0; m < CUDA_kernel.MAP_COUNT; m++)
         {
@@ -230,13 +224,31 @@ void setMapValues(Computation* data)
             return;
         }
 
+    // Look through all maps and set their offsets depending on which are to be computed and which are not
+    int offset = 0; // Offset is counted in maps to be computed, so it's then multiplied by totalVariations on the device
+    for (int m = 0; m < CUDA_kernel.MAP_COUNT; m++)
+    {
+        if (CUDA_kernel.mapDatas[m].toCompute)
+        {
+            CUDA_kernel.mapDatas[m].offset = offset;
+            offset++;
+        }
+    }
+    CUDA_marshal.mapCount = offset;
+
+    // Initialize buffer
+    if (CUDA_marshal.totalVariations > 1 && CUDA_kernel.MAP_COUNT > 0 && CUDA_marshal.maps == nullptr)
+    {
+        CUDA_marshal.maps = new numb[CUDA_marshal.totalVariations * CUDA_marshal.mapCount];
+    }
+
     // Copy previous map values if present
     if (data->isFirst || !CUDA_kernel.continuousMaps)
     {
-        memset(CUDA_marshal.maps, 0, sizeof(numb) * CUDA_marshal.totalVariations * CUDA_kernel.MAP_COUNT);
+        memset(CUDA_marshal.maps, 0, sizeof(numb) * CUDA_marshal.totalVariations * CUDA_marshal.mapCount);
     }
     else
     {
-        memcpy(CUDA_marshal.maps, data->otherMarshal->maps, sizeof(numb) * CUDA_marshal.totalVariations * CUDA_kernel.MAP_COUNT);
+        memcpy(CUDA_marshal.maps, data->otherMarshal->maps, sizeof(numb) * CUDA_marshal.totalVariations * CUDA_marshal.mapCount);
     }
 }

@@ -18,6 +18,10 @@
 // Map settings
 #define MS(map, offset) CUDA_kernel.mapSettings[data->marshal.kernel.mapDatas[attributes::maps::map].settingsOffset + offset]
 
+#define MO(map)         CUDA_kernel.mapDatas[attributes::maps::map].offset * CUDA_marshal.totalVariations
+
+#define mapPosition     variation + offset
+
 // Computation access macros
 
 #define CUDA_marshal	data->marshal

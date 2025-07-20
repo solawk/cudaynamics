@@ -108,7 +108,7 @@ public:
 		//MapDimensionType varyingType1 = VARIABLE;
 		//MapDimensionType varyingType2 = VARIABLE;
 
-		for (int i = 0; i < VAR_COUNT; i++)
+		/*for (int i = 0; i < VAR_COUNT; i++)
 		{
 			if (variables[i].TrueStepCount() > 1)
 			{
@@ -122,14 +122,17 @@ public:
 			{
 				//for (int m = 0; m < MAP_COUNT; m++) mapDatas[m].paramFixations[i] = parameters[i].values[(*avi)[VAR_COUNT + i]];
 			}
-		}
+		}*/
 
-		for (int i = 0; i < MAP_COUNT; i++) mapDatas[i].toCompute = true;
+		for (int i = 0; i < MAP_COUNT; i++)
+		{
+			mapDatas[i].toCompute = mapDatas[i].userEnabled;
+		}
 	}
 
 	void MapsSetSizes()
 	{
-		unsigned long int mapsSize = 0;
+		/*unsigned long int mapsSize = 0;
 
 		for (int i = 0; i < MAP_COUNT; i++)
 		{
@@ -165,7 +168,7 @@ public:
 
 			mapDatas[i].offset = mapsSize;
 			mapsSize += mapDatas[i].xSize * mapDatas[i].ySize;
-		}
+		}*/
 	}
 };
 

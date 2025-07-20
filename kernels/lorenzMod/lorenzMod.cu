@@ -37,7 +37,7 @@ __global__ void kernelProgram_lorenzMod(Computation* data)
     {
         LLE_Settings lle_settings(MS(LLE, 0), MS(LLE, 1), MS(LLE, 2));
         lle_settings.Use3DNorm();
-        LLE(data, lle_settings, variation, &finiteDifferenceScheme_lorenzMod);
+        LLE(data, lle_settings, variation, &finiteDifferenceScheme_lorenzMod, MO(LLE));
     }
 }
 

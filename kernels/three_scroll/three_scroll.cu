@@ -38,7 +38,7 @@ __global__ void kernelProgram_three_scroll(Computation* data)
     {
         LLE_Settings lle_settings(MS(LLE, 0), MS(LLE, 1), MS(LLE, 2));
         lle_settings.Use3DNorm();
-        LLE(data, lle_settings, variation, &finiteDifferenceScheme_three_scroll);
+        LLE(data, lle_settings, variation, &finiteDifferenceScheme_three_scroll, MO(LLE));
     }
 }
 

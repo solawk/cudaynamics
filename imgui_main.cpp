@@ -203,6 +203,7 @@ void computing()
 {
     computations[bufferToFillIndex].bufferNo += 2;
     computations[bufferToFillIndex].future = std::async(asyncComputation);
+    //asyncComputation();
 }
 
 // Hi-res computing
@@ -213,8 +214,12 @@ int hiresAsyncComputation()
 {
     computationHires.ready = false;
     computationHires.isFirst = true;
+    computationHires.mapIndex = hiresHeatmapWindow->variables[0];
 
     computationHires.marshal.kernel.CopyFrom(&kernelHiresComputed);
+    for (int i = 0; i < computationHires.marshal.kernel.MAP_COUNT; i++)
+        computationHires.marshal.kernel.mapDatas[i].toCompute = computationHires.mapIndex == i;
+
     int computationResult = compute(&computationHires);
 
     autofitAfterComputing = true;
@@ -378,7 +383,7 @@ void prepareAndCompute()
         KERNEL.CopyFrom(&kernelNew);
         KERNEL.PrepareAttributes();
         KERNEL.AssessMapAttributes(&attributeValueIndices);
-        KERNEL.MapsSetSizes();
+        //KERNEL.MapsSetSizes();
 
         // TODO: All calc steps and stepcounts should be done beforehand, since ranging will be incorrect otherwise
         // Done I guess? I forgor
@@ -410,8 +415,8 @@ void hiresPnC()
 
         kernelHiresComputed.CopyFrom(&kernelHiresNew);
         kernelHiresComputed.PrepareAttributes();
-        kernelHiresComputed.AssessMapAttributes(&attributeValueIndices);
-        kernelHiresComputed.MapsSetSizes();
+        //kernelHiresComputed.AssessMapAttributes(&attributeValueIndices);
+        //kernelHiresComputed.MapsSetSizes();
 
         // TODO: All calc steps and stepcounts should be done beforehand, since ranging will be incorrect otherwise
         // Done I guess? I forgor
@@ -1132,6 +1137,12 @@ int imgui_main(int, char**)
             {
                 if (ImGui::TreeNode(std::string(krn->mapDatas[m].name + "##MapSettings_" + krn->mapDatas[m].name).c_str()))
                 {
+                    ImGui::Text("Is enabled");
+                    ImGui::SameLine();
+                    bool mapUserEnabled = krn->mapDatas[m].userEnabled;
+                    ImGui::Checkbox(("##MapEnabled" + krn->mapDatas[m].name).c_str(), &mapUserEnabled);
+                    krn->mapDatas[m].userEnabled = mapUserEnabled;
+
                     for (int s = 0; s < krn->mapDatas[m].settingsCount; s++)
                     {
                         ImGui::Text(krn->mapDatas[m].settingName[s].c_str());
@@ -1772,7 +1783,17 @@ int imgui_main(int, char**)
                     Kernel* krnl =                  isHires ? &kernelHiresComputed : &(KERNEL);
                     Computation* cmp =              isHires ? &computationHires : &(computations[playedBufferIndex]);
 
-                    if (!krnl->mapDatas[mapIndex].toCompute) break;
+                    if (!krnl->mapDatas[mapIndex].userEnabled)
+                    {
+                        ImGui::Text(("Map " + krnl->mapDatas[mapIndex].name + " has been disabled").c_str());
+                        break;
+                    }
+
+                    if (/*!krnl->mapDatas[mapIndex].toCompute || */!cmp->marshal.kernel.mapDatas[mapIndex].toCompute)
+                    {
+                        ImGui::Text(("Map " + krnl->mapDatas[mapIndex].name + " has not been computed").c_str());
+                        break;
+                    }
 
                     Attribute* axisX = heatmap->typeX == VARIABLE ? &(krnl->variables[heatmap->indexX]) : &(krnl->parameters[heatmap->indexX]);
                     Attribute* axisY = heatmap->typeY == VARIABLE ? &(krnl->variables[heatmap->indexY]) : &(krnl->parameters[heatmap->indexY]);
@@ -1950,7 +1971,8 @@ int imgui_main(int, char**)
 
                                     if (heatmap->areValuesDirty)
                                     {
-                                        extractMap(cmp->marshal.maps, heatmap->valueBuffer, heatmap->indexBuffer, &(attributeValueIndices.data()[0]),
+                                        extractMap(cmp->marshal.maps + cmp->marshal.kernel.mapDatas[mapIndex].offset * cmp->marshal.totalVariations,
+                                            heatmap->valueBuffer, heatmap->indexBuffer, &(attributeValueIndices.data()[0]),
                                             sizing.hmp->typeX == PARAMETER ? sizing.hmp->indexX + krnl->VAR_COUNT : sizing.hmp->indexX,
                                             sizing.hmp->typeY == PARAMETER ? sizing.hmp->indexY + krnl->VAR_COUNT : sizing.hmp->indexY,
                                             krnl);

@@ -77,4 +77,13 @@ struct HeatmapProperties
 		ignoreLimitsRecalculationOnSelection = false;
 		ignoreNextLimitsRecalculation = false;
 	}
+
+	/*void obtainAxis(MapData& mapData)
+	{
+		indexX = mapData.indexX;
+		indexY = mapData.indexY;
+
+		typeX = mapData.typeX;
+		typeY = mapData.typeY;
+	}*/
 };

@@ -116,6 +116,9 @@ Kernel readKernelText(std::string name)
 				kernel.mapSettings[currentSettingsCount++] = (numb)atof(str[3 + i * 2 + 1].c_str());
 			}
 
+			tempMapData.typeX = tempMapData.typeY = VARIABLE;
+			tempMapData.indexX = tempMapData.indexY = 0;
+
 			kernel.mapDatas.push_back(tempMapData);
 		}
 	}

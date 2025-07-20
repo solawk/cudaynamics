@@ -38,7 +38,7 @@ __global__ void kernelProgram_mrlcs_jj(Computation* data)
     {
         LLE_Settings lle_settings(MS(LLE, 0), MS(LLE, 1), MS(LLE, 2));
         lle_settings.Use3DNorm();
-        LLE(data, lle_settings, variation, &finiteDifferenceScheme_mrlcs_jj);
+        LLE(data, lle_settings, variation, &finiteDifferenceScheme_mrlcs_jj, MO(LLE));
     }
 }
 

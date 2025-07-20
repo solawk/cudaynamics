@@ -6,6 +6,7 @@ enum MapDimensionType { VARIABLE, PARAMETER, STEP };
 
 struct MapData
 {
+	bool userEnabled; // Map calculation is enabled by the user. If not, toCompute will be 100% false, if enabled, it will be considered
 	bool toCompute;
 
 	unsigned long int xSize;
