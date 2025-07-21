@@ -303,7 +303,7 @@ void initializeKernel(bool needTerminate)
     colorsLUTfrom = nullptr;
 
     kernelNew.CopyFrom(&KERNEL);
-    kernelNew.continuousMaps = false;
+    kernelNew.mapWeight = 1.0f;
     kernelHiresNew.CopyFrom(&KERNEL);
     kernelHiresComputed.CopyFrom(&KERNEL);
 
@@ -827,18 +827,16 @@ int imgui_main(int, char**)
 
             // Map continuous computing
             popStyle = false;
-            if (kernelNew.continuousMaps != KERNEL.continuousMaps)
+            if (kernelNew.mapWeight != KERNEL.mapWeight)
             {
                 anyChanged = true;
                 PUSH_UNSAVED_FRAME;
                 popStyle = true;
             }
-            bool tempContinuousMaps = kernelNew.continuousMaps;
-            if (ImGui::Checkbox("Continuous map computation", &(tempContinuousMaps)))
-            {
-                kernelNew.continuousMaps = !kernelNew.continuousMaps;
-            }
-            TOOLTIP("Shaping maps continuously. When off, map is fully redrawn for each buffer");
+            float tempContinuousMaps = kernelNew.mapWeight;
+            ImGui::InputFloat("Map weight", &tempContinuousMaps);
+            kernelNew.mapWeight = tempContinuousMaps;
+            TOOLTIP("1.0 to create new map each buffer, 0.0 to continuously calculate the average, 0.0-1.0 defines the weight of each new map");
             if (popStyle) POP_FRAME(3);
 
             ImGui::PushItemWidth(200.0f);

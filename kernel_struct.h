@@ -13,7 +13,7 @@ public:
 	int transientSteps;
 	numb stepSize;
 	bool executeOnLaunch;
-	bool continuousMaps;
+	float mapWeight; // formerly "continuousMaps"
 
 	std::vector<Attribute> variables;
 	std::vector<Attribute> parameters;
@@ -40,7 +40,7 @@ public:
 		transientSteps = kernel->transientSteps;
 		stepSize = kernel->stepSize;
 		executeOnLaunch = kernel->executeOnLaunch;
-		continuousMaps = kernel->continuousMaps;
+		mapWeight = kernel->mapWeight;
 
 		for (Attribute& v : variables)	v.ClearValues(); variables.clear();
 		for (Attribute& p : parameters)	p.ClearValues(); parameters.clear();
@@ -194,7 +194,7 @@ public:
 		steps = kernel->steps;
 		transientSteps = kernel->transientSteps;
 		stepSize = kernel->stepSize;
-		continuousMaps = kernel->continuousMaps;
+		mapWeight = kernel->mapWeight;
 
 		for (int i = 0; i < kernel->VAR_COUNT; i++)
 			variables[i] = kernel->variables[i];
@@ -215,7 +215,7 @@ public:
 		kernel->steps = steps;
 		kernel->transientSteps = transientSteps;
 		kernel->stepSize = stepSize;
-		kernel->continuousMaps = continuousMaps;
+		kernel->mapWeight = mapWeight;
 
 		for (Attribute& v : kernel->variables)	v.ClearValues(); kernel->variables.clear();
 		for (Attribute& p : kernel->parameters)	p.ClearValues(); kernel->parameters.clear();

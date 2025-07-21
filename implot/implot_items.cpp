@@ -1402,6 +1402,7 @@ void RenderPrimitivesEx(const _Renderer& renderer, ImDrawList& draw_list, const 
 template <template <class> class _Renderer, class _Getter, typename ...Args>
 void RenderPrimitives1(const _Getter& getter, Args... args) {
     ImDrawList& draw_list = *GetPlotDrawList();
+    draw_list.usePointFiltering = false;
     const ImRect& cull_rect = GetCurrentPlot()->PlotRect;
     RenderPrimitivesEx(_Renderer<_Getter>(getter,args...), draw_list, cull_rect);
 }

@@ -243,7 +243,7 @@ void setMapValues(Computation* data)
     }
 
     // Copy previous map values if present
-    if (data->isFirst || !CUDA_kernel.continuousMaps)
+    if (data->isFirst || CUDA_kernel.mapWeight == 1.0f)
     {
         memset(CUDA_marshal.maps, 0, sizeof(numb) * CUDA_marshal.totalVariations * CUDA_marshal.mapCount);
     }
