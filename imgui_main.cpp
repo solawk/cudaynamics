@@ -217,6 +217,7 @@ int hiresAsyncComputation()
     computationHires.mapIndex = hiresHeatmapWindow->variables[0];
 
     computationHires.marshal.kernel.CopyFrom(&kernelHiresComputed);
+    computationHires.marshal.kernel.mapWeight = 0.0f;
     for (int i = 0; i < computationHires.marshal.kernel.MAP_COUNT; i++)
         computationHires.marshal.kernel.mapDatas[i].toCompute = computationHires.mapIndex == i;
 
