@@ -126,5 +126,6 @@ Kernel readKernelText(std::string name)
 	fileStream.close();
 
 	kernel.calcAttributeCounts();
+	kernel.mapWeight = 1.0f;
 	return kernel;
 }

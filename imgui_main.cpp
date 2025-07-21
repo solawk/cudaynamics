@@ -304,9 +304,9 @@ void initializeKernel(bool needTerminate)
     colorsLUTfrom = nullptr;
 
     kernelNew.CopyFrom(&KERNEL);
-    kernelNew.mapWeight = 1.0f;
     kernelHiresNew.CopyFrom(&KERNEL);
     kernelHiresComputed.CopyFrom(&KERNEL);
+    kernelNew.mapWeight = kernelHiresNew.mapWeight = kernelHiresComputed.mapWeight = 1.0f;
 
     computations[0].Clear();
     computations[1].Clear();

@@ -221,7 +221,6 @@ void setMapValues(Computation* data)
         for (int m = 0; m < CUDA_kernel.MAP_COUNT; m++)
         {
             CUDA_kernel.mapDatas[m].toCompute = false;
-            return;
         }
 
     // Look through all maps and set their offsets depending on which are to be computed and which are not
