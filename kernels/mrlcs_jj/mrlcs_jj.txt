@@ -1,5 +1,5 @@
 Name: mRLC_Shunted_Josephson_Junction
-Steps: 5000
+Steps: 1000
 Transient: 0
 Step size: 0.01
 // Compute on CUDAynamics launch: yes/no
@@ -18,8 +18,8 @@ var theta Fixed -0.31 50.0 1.0 50 0.0 0.0
 var theta_true Fixed -0.31 50.0 1.0 50 0.0 0.0
 var V Fixed 3.3 29.0 0.1 0 0.0 0.0
 var IL Fixed 0.76 29.0 0.1 0 0.0 0.0
-param betaL Fixed 50.0 50.0 0.1 250 0.0 0.0
-param betaC Fixed 0.5 50.0 0.1 250 0.0 0.0
+param betaL Linear 30.0 50.0 0.1 50 0.0 0.0
+param betaC Linear 0.5 50.0 0.1 50 0.0 0.0
 param betaM Fixed 1.0 29.0 0.1 0 0.0 0.0
 param i Fixed 1.15 1.5 0.01 100 0.0 0.0
 param eps Fixed -1.0 0.0 0.01 100 0.0 0.0

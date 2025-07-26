@@ -43,6 +43,8 @@ public:
 
 	HeatmapProperties hmp;
 	HeatmapProperties hireshmp;
+	
+	ImVec2 dragLineHiresPos;
 
 	bool showAxis;
 	bool showAxisNames;
@@ -78,6 +80,8 @@ public:
 		gridAlpha = 0.15f;
 		whiteBg = false;
 		isImplot3d = false;
+
+		dragLineHiresPos = ImVec2(0.0f, 0.0f);
 
 		showAxis = true;
 		showAxisNames = true;

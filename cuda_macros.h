@@ -18,9 +18,9 @@
 // Map settings
 #define MS(map, offset) CUDA_kernel.mapSettings[data->marshal.kernel.mapDatas[attributes::maps::map].settingsOffset + offset]
 
-#define MO(map)         CUDA_kernel.mapDatas[attributes::maps::map].offset * CUDA_marshal.totalVariations
+#define MO(map)         (CUDA_kernel.mapDatas[attributes::maps::map].offset * CUDA_marshal.totalVariations)
 
-#define mapPosition     variation + offset
+#define mapPosition     (variation + offset)
 
 // Computation access macros
 
@@ -34,7 +34,7 @@
 // Preparation macros
 
 #define CUDA_SET_DEVICE cudaStatus = cudaSetDevice(0); \
-	if (cudaStatus != cudaSuccess) { fprintf(stderr, "cudaSetDevice failed! Do you have a CUDA-capable GPU installed?"); goto Error; }
+	if (cudaStatus != cudaSuccess) { fprintf(stderr, "cudaSetDevice failed! Do you have a CUDA-capable GPU installed?\n"); goto Error; }
 
 #define CUDA_MALLOC(address, size, failComment) cudaStatus = cudaMalloc(address, size); \
 	if (cudaStatus != cudaSuccess) { fprintf(stderr, failComment); goto Error; }

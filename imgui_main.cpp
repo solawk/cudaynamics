@@ -174,7 +174,7 @@ int asyncComputation()
 
     if (isFirstBatch)
     {
-        autofitAfterComputing = true;
+        if (hiresHeatmapWindow == nullptr) autofitAfterComputing = true;
         resetTempBuffers(&(computations[bufferToFillIndex]));
         initAVI(false);
     }
@@ -1481,6 +1481,8 @@ int imgui_main(int, char**)
                         }
                     }
 
+                    if (window->isImplot3d) ImPlot3D::PushStyleColor(ImPlot3DCol_FrameBg, ImVec4(0.07f, 0.07f, 0.07f, 1.0f));
+
                     if (computations[playedBufferIndex].ready)
                     {
                         if (!enabledParticles) // Trajectory - one variation, all steps
@@ -1526,7 +1528,6 @@ int imgui_main(int, char**)
                             }
                             else
                             {
-                                ImPlot3D::PushStyleColor(ImPlot3DCol_FrameBg, ImVec4(0.07f, 0.07f, 0.07f, 1.0f));
                                 //ImPlot3D::SetNextLineStyle(window->plotColor);
                                 ImPlot3D::SetupAxes(KERNEL.variables[window->variables[0]].name.c_str(), KERNEL.variables[window->variables[1]].name.c_str(), KERNEL.variables[window->variables[2]].name.c_str());
                                 
@@ -1558,9 +1559,6 @@ int imgui_main(int, char**)
 
                                 ImPlot3D::PlotLine(plotName.c_str(), &(computedVariation[window->variables[0]]), &(computedVariation[window->variables[1]]), &(computedVariation[window->variables[2]]),
                                     computedSteps + 1, 0, 0, sizeof(numb)* KERNEL.VAR_COUNT);
-
-
-                                ImPlot3D::PopStyleColor(1);
                             }
                         }
                         else // Particles - all variations, one certain step
@@ -1625,7 +1623,6 @@ int imgui_main(int, char**)
                             {
                                 ImPlot3D::PushStyleVar(ImPlotStyleVar_MarkerWeight, window->markerOutlineSize);
                                 ImPlot3D::SetNextMarkerStyle(window->markerShape, window->markerSize);
-                                ImPlot3D::PushStyleColor(ImPlot3DCol_FrameBg, ImVec4(0.07f, 0.07f, 0.07f, 1.0f));
 
                                 if (colorsLUTfrom == nullptr)
                                 {
@@ -1656,19 +1653,24 @@ int imgui_main(int, char**)
                                             lutsize, 0, 0, sizeof(numb) * KERNEL.VAR_COUNT);
                                     }
                                 }
-
-                                /*ImPlot3D::SetNextLineStyle(window->markerColor);
-                                ImPlot3D::PlotScatter(plotName.c_str(), &((particleBuffer)[window->variables[0]]), &((particleBuffer)[window->variables[1]]), &((particleBuffer)[window->variables[2]]),
-                                    computations[playedBufferIndex].marshal.totalVariations, 0, 0, sizeof(numb)* KERNEL.VAR_COUNT);*/
-
-                                ImPlot3D::PopStyleColor(1);
                             }
+                        }
+                    }
+                    else
+                    {
+                        if (window->isImplot3d)
+                        {
+                            float justPlotOneDotFFS[3]{ 0.0f, 0.0f, 0.0f };
+                            ImPlot3D::PlotScatter(plotName.c_str(), &(justPlotOneDotFFS[0]), &(justPlotOneDotFFS[1]), &(justPlotOneDotFFS[2]), 1);
                         }
                     }
 
                     // PHASE DIAGRAM END
                     if (window->isImplot3d)
+                    {
+                        ImPlot3D::PopStyleColor(1);
                         ImPlot3D::EndPlot();
+                    }
                     else
                         ImPlot::EndPlot();
                 }
@@ -1927,12 +1929,14 @@ int imgui_main(int, char**)
                                                 // Values
                                                 valueX = plot->shiftClickLocation.x;
                                                 valueY = plot->shiftClickLocation.y;
+                                                window->dragLineHiresPos = ImVec2(valueX, valueY);
                                             }
                                             else
                                             {
                                                 // Steps
                                                 valueX = valueFromStep(sizing.minX, sizing.stepX, (int)floor(plot->shiftClickLocation.x));
                                                 valueY = valueFromStep(sizing.minY, sizing.stepY, (int)floor(plot->shiftClickLocation.y));
+                                                window->dragLineHiresPos = ImVec2((int)floor(plot->shiftClickLocation.x), (int)floor(plot->shiftClickLocation.y));
                                             }
 
                                             hiresShiftClickCompute(window, &sizing, valueX, valueY);
@@ -2057,10 +2061,21 @@ int imgui_main(int, char**)
                                         }
                                     }
 
-                                    if (heatmap->showDragLines && !isHires)
+                                    if (heatmap->showDragLines)
                                     {
-                                        double valueX = (double)heatmap->lastClickedLocation.x + (heatmap->showActualDiapasons ? sizing.stepX * 0.5 : 0.5);
-                                        double valueY = (double)heatmap->lastClickedLocation.y + (heatmap->showActualDiapasons ? sizing.stepY * 0.5 : 0.5);
+                                        double valueX;
+                                        double valueY;
+
+                                        if (!isHires)
+                                        {
+                                            valueX = (double)heatmap->lastClickedLocation.x + (heatmap->showActualDiapasons ? sizing.stepX * 0.5 : 0.5);
+                                            valueY = (double)heatmap->lastClickedLocation.y + (heatmap->showActualDiapasons ? sizing.stepY * 0.5 : 0.5);
+                                        }
+                                        else
+                                        {
+                                            valueX = (double)window->dragLineHiresPos.x;
+                                            valueY = (double)window->dragLineHiresPos.y;
+                                        }
 
                                         ImPlot::DragLineX(0, &valueX, ImVec4(1.0f, 1.0f, 1.0f, 1.0f), 2.0f, ImPlotDragToolFlags_NoInputs);
                                         ImPlot::DragLineY(1, &valueY, ImVec4(1.0f, 1.0f, 1.0f, 1.0f), 2.0f, ImPlotDragToolFlags_NoInputs);
@@ -2541,7 +2556,7 @@ void heatmapRangingSelection(PlotWindow* window, ImPlotPlot* plot, HeatmapSizing
 
     if (window->hmp.isHeatmapAutoComputeOn)
     {
-        if (window->hmp.ignoreLimitsRecalculationOnSelection) window->hmp.ignoreNextLimitsRecalculation = true;
+        if (window->hmp.ignoreLimitsRecalculationOnSelection) for (PlotWindow w : plotWindows) w.hmp.ignoreNextLimitsRecalculation = true;
         computeAfterShiftSelect = true;
     }
 }
