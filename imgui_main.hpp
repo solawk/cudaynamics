@@ -39,7 +39,7 @@ int imgui_main(int, char**);
 void listVariable(int i);
 void listParameter(int i);
 void listEnum(int i);
-void heatmapRangingSelection(PlotWindow* window, ImPlotPlot* plot, HeatmapSizing* sizing);
+void heatmapRangingSelection(PlotWindow* window, ImPlotPlot* plot, HeatmapSizing* sizing, bool isHires);
 void hiresShiftClickCompute(PlotWindow* window, HeatmapSizing* sizing, numb valueX, numb valueY);
 
 // ImGui macros to shorten the .cpp

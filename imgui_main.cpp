@@ -62,6 +62,7 @@ bool selectParticleTab = false;
 bool selectOrbitTab = true;
 
 bool computeAfterShiftSelect = false;
+bool hiresComputeAfterShiftSelect = false;
 bool autofitHeatmap;
 
 // Temporary variables
@@ -406,7 +407,7 @@ void hiresPnC()
         computationHires.Clear();
 
         executedOnLaunch = true;
-        computeAfterShiftSelect = false;
+        hiresComputeAfterShiftSelect = false;
         bufferToFillIndex = 0;
         playedBufferIndex = 0;
         bufferNo = 0;
@@ -910,8 +911,9 @@ int imgui_main(int, char**)
             }
 
             // Hi-res compute button
-            if (ImGui::Button("= HI-RES COMPUTE ="))
+            if (ImGui::Button("= HI-RES COMPUTE =") || hiresComputeAfterShiftSelect)
             {
+                printf("A\n");
                 hiresPnC();
             }
         }
@@ -1838,6 +1840,7 @@ int imgui_main(int, char**)
                                     if (heatmap->initClickedLocation)
                                     {
                                         heatmap->lastClickedLocation = ImVec2(sizing.minX, sizing.minY);
+                                        window->dragLineHiresPos = ImVec2(sizing.minX, sizing.minY);
                                         heatmap->initClickedLocation = false;
                                     }
 
@@ -1914,7 +1917,7 @@ int imgui_main(int, char**)
 
                                         if (plot->shiftSelected)
                                         {
-                                            heatmapRangingSelection(window, plot, &sizing);
+                                            heatmapRangingSelection(window, plot, &sizing, false);
                                         }
                                     }
                                     else
@@ -1940,6 +1943,11 @@ int imgui_main(int, char**)
                                             }
 
                                             hiresShiftClickCompute(window, &sizing, valueX, valueY);
+                                        }
+
+                                        if (plot->shiftSelected)
+                                        {
+                                            heatmapRangingSelection(window, plot, &sizing, true);
                                         }
                                     }
 
@@ -2494,14 +2502,17 @@ void listEnum(int i)
     if (!changeAllowed) POP_FRAME(4); // disabledText popped as well
 }
 
-void heatmapRangingSelection(PlotWindow* window, ImPlotPlot* plot, HeatmapSizing* sizing)
+void heatmapRangingSelection(PlotWindow* window, ImPlotPlot* plot, HeatmapSizing* sizing, bool isHires)
 {
+    Kernel* krnl = !isHires ? &kernelNew : &kernelHiresNew;
+    Kernel* krnlComputed = !isHires ? &KERNEL : &kernelHiresComputed;
+
     int stepX1 = 0;
     int stepY1 = 0;
     int stepX2 = 0;
     int stepY2 = 0;
 
-    if (window->hmp.showActualDiapasons)
+    if ((!isHires ? window->hmp : window->hireshmp).showActualDiapasons)
     {
         // Values
         stepX1 = stepFromValue(sizing->minX, sizing->stepX, plot->shiftSelect1Location.x);
@@ -2521,43 +2532,49 @@ void heatmapRangingSelection(PlotWindow* window, ImPlotPlot* plot, HeatmapSizing
     //enabledParticles = false;
     playingParticles = false;
 
-    int xMaxStep = sizing->hmp->typeX == PARAMETER ? KERNEL.parameters[sizing->hmp->indexX].TrueStepCount() :
-        (sizing->hmp->typeX == VARIABLE ? KERNEL.variables[sizing->hmp->indexX].TrueStepCount() : 0);
-    int yMaxStep = sizing->hmp->typeY == PARAMETER ? KERNEL.parameters[sizing->hmp->indexY].TrueStepCount() :
-        (sizing->hmp->typeY == VARIABLE ? KERNEL.variables[sizing->hmp->indexY].TrueStepCount() : 0);
+    int xMaxStep = sizing->hmp->typeX == PARAMETER ? krnlComputed->parameters[sizing->hmp->indexX].TrueStepCount() :
+        (sizing->hmp->typeX == VARIABLE ? krnlComputed->variables[sizing->hmp->indexX].TrueStepCount() : 0);
+    int yMaxStep = sizing->hmp->typeY == PARAMETER ? krnlComputed->parameters[sizing->hmp->indexY].TrueStepCount() :
+        (sizing->hmp->typeY == VARIABLE ? krnlComputed->variables[sizing->hmp->indexY].TrueStepCount() : 0);
 
     if (sizing->hmp->typeX == VARIABLE)
     {
-        kernelNew.variables[sizing->hmp->indexX].min = calculateValue(KERNEL.variables[sizing->hmp->indexX].min, KERNEL.variables[sizing->hmp->indexX].step, stepX1);
-        kernelNew.variables[sizing->hmp->indexX].max = calculateValue(KERNEL.variables[sizing->hmp->indexX].min, KERNEL.variables[sizing->hmp->indexX].step, stepX2);
-        kernelNew.variables[sizing->hmp->indexX].rangingType = Linear;
+        krnl->variables[sizing->hmp->indexX].min = calculateValue(krnlComputed->variables[sizing->hmp->indexX].min, krnlComputed->variables[sizing->hmp->indexX].step, stepX1);
+        krnl->variables[sizing->hmp->indexX].max = calculateValue(krnlComputed->variables[sizing->hmp->indexX].min, krnlComputed->variables[sizing->hmp->indexX].step, stepX2);
+        krnl->variables[sizing->hmp->indexX].rangingType = Linear;
     }
     else
     {
-        kernelNew.parameters[sizing->hmp->indexX].min = calculateValue(KERNEL.parameters[sizing->hmp->indexX].min, KERNEL.parameters[sizing->hmp->indexX].step, stepX1);
-        kernelNew.parameters[sizing->hmp->indexX].max = calculateValue(KERNEL.parameters[sizing->hmp->indexX].min, KERNEL.parameters[sizing->hmp->indexX].step, stepX2);
-        kernelNew.parameters[sizing->hmp->indexX].rangingType = Linear;
+        krnl->parameters[sizing->hmp->indexX].min = calculateValue(krnlComputed->parameters[sizing->hmp->indexX].min, krnlComputed->parameters[sizing->hmp->indexX].step, stepX1);
+        krnl->parameters[sizing->hmp->indexX].max = calculateValue(krnlComputed->parameters[sizing->hmp->indexX].min, krnlComputed->parameters[sizing->hmp->indexX].step, stepX2);
+        krnl->parameters[sizing->hmp->indexX].rangingType = Linear;
     }
 
     if (sizing->hmp->typeY == VARIABLE)
     {
-        kernelNew.variables[sizing->hmp->indexY].min = calculateValue(KERNEL.variables[sizing->hmp->indexY].min, KERNEL.variables[sizing->hmp->indexY].step, stepY1);
-        kernelNew.variables[sizing->hmp->indexY].max = calculateValue(KERNEL.variables[sizing->hmp->indexY].min, KERNEL.variables[sizing->hmp->indexY].step, stepY2);
-        kernelNew.variables[sizing->hmp->indexY].rangingType = Linear;
+        krnl->variables[sizing->hmp->indexY].min = calculateValue(krnlComputed->variables[sizing->hmp->indexY].min, krnlComputed->variables[sizing->hmp->indexY].step, stepY1);
+        krnl->variables[sizing->hmp->indexY].max = calculateValue(krnlComputed->variables[sizing->hmp->indexY].min, krnlComputed->variables[sizing->hmp->indexY].step, stepY2);
+        krnl->variables[sizing->hmp->indexY].rangingType = Linear;
     }
     else
     {
-        kernelNew.parameters[sizing->hmp->indexY].min = calculateValue(KERNEL.parameters[sizing->hmp->indexY].min, KERNEL.parameters[sizing->hmp->indexY].step, stepY1);
-        kernelNew.parameters[sizing->hmp->indexY].max = calculateValue(KERNEL.parameters[sizing->hmp->indexY].min, KERNEL.parameters[sizing->hmp->indexY].step, stepY2);
-        kernelNew.parameters[sizing->hmp->indexY].rangingType = Linear;
+        krnl->parameters[sizing->hmp->indexY].min = calculateValue(krnlComputed->parameters[sizing->hmp->indexY].min, krnlComputed->parameters[sizing->hmp->indexY].step, stepY1);
+        krnl->parameters[sizing->hmp->indexY].max = calculateValue(krnlComputed->parameters[sizing->hmp->indexY].min, krnlComputed->parameters[sizing->hmp->indexY].step, stepY2);
+        krnl->parameters[sizing->hmp->indexY].rangingType = Linear;
     }
 
     autoLoadNewParams = false; // Otherwise the map immediately starts drawing the cut region
 
-    if (window->hmp.isHeatmapAutoComputeOn)
+    if (window->hmp.isHeatmapAutoComputeOn && !isHires)
     {
         if (window->hmp.ignoreLimitsRecalculationOnSelection) for (PlotWindow w : plotWindows) w.hmp.ignoreNextLimitsRecalculation = true;
         computeAfterShiftSelect = true;
+    }
+
+    if (window->hireshmp.isHeatmapAutoComputeOn)
+    {
+        if (window->hmp.ignoreLimitsRecalculationOnSelection) for (PlotWindow w : plotWindows) w.hmp.ignoreNextLimitsRecalculation = true;
+        hiresComputeAfterShiftSelect = true;
     }
 }
 
