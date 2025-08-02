@@ -37,8 +37,8 @@ numb* particleBuffer = nullptr; // One step local buffer
 PlotWindow mainWindow(-1), graphBuilderWindow(-2), mapSettingsWindow(-3);
 ImVec2 fullscreenSize;
 
-numb axisBuffer[18]{}; // 3 axis, 2 points
-numb rulerBuffer[153]{}; // 1 axis, 5 * 10 + 1 points
+float axisBuffer[18]{}; // 3 axis, 2 points
+float rulerBuffer[153]{}; // 1 axis, 5 * 10 + 1 points
 
 int computedSteps = 0; // Step count for the current computation
 bool autofitAfterComputing = false; // Temporary flag to autofit computed data
@@ -1075,6 +1075,8 @@ int imgui_main(int, char**)
             case Heatmap:
                 if (KERNEL.MAP_COUNT > 0)
                 {
+                    if (selectedPlotMap >= KERNEL.MAP_COUNT) selectedPlotMap = 0;
+
                     ImGui::PushItemWidth(150.0f);
 
                     ImGui::Text("Index");
