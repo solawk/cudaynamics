@@ -164,6 +164,9 @@
 //    STB_TEXTEDIT_K_BACKSPACE   keyboard input to delete selection or character left of cursor
 //    STB_TEXTEDIT_K_UNDO        keyboard input to perform undo
 //    STB_TEXTEDIT_K_REDO        keyboard input to perform redo
+// 
+//    STB_TEXTEDIT_K_ADDONE      EXPERIMENTAL
+//    STB_TEXTEDIT_K_REMOVEONE   EXPERIMNETAL
 //
 // Optional:
 //    STB_TEXTEDIT_K_INSERT              keyboard input to toggle insert mode
@@ -513,6 +516,8 @@ static void stb_textedit_drag(IMSTB_TEXTEDIT_STRING *str, STB_TexteditState *sta
 // forward declarations
 static void stb_text_undo(IMSTB_TEXTEDIT_STRING *str, STB_TexteditState *state);
 static void stb_text_redo(IMSTB_TEXTEDIT_STRING *str, STB_TexteditState *state);
+static void stb_text_addone(IMSTB_TEXTEDIT_STRING* str, STB_TexteditState* state);
+static void stb_text_removeone(IMSTB_TEXTEDIT_STRING* str, STB_TexteditState* state);
 static void stb_text_makeundo_delete(IMSTB_TEXTEDIT_STRING *str, STB_TexteditState *state, int where, int length);
 static void stb_text_makeundo_insert(STB_TexteditState *state, int where, int length);
 static void stb_text_makeundo_replace(IMSTB_TEXTEDIT_STRING *str, STB_TexteditState *state, int where, int old_length, int new_length);
@@ -785,6 +790,16 @@ retry:
          state->insert_mode = !state->insert_mode;
          break;
 #endif
+      case STB_TEXTEDIT_K_ADDONE:
+         if(str->TextA[0]!='-')stb_text_addone(str, state);
+         else stb_text_removeone(str, state);
+         state->has_preferred_x = 0;
+         break;
+      case STB_TEXTEDIT_K_REMOVEONE:
+         if (str->TextA[0] != '-')stb_text_removeone(str, state);
+         else stb_text_addone(str, state);
+         state->has_preferred_x = 0;
+         break;
 
       case STB_TEXTEDIT_K_UNDO:
          stb_text_undo(str, state);
@@ -1309,6 +1324,177 @@ static void stb_text_undo(IMSTB_TEXTEDIT_STRING *str, STB_TexteditState *state)
    s->undo_point--;
    s->redo_point--;
 }
+
+
+
+static void stb_text_addone(IMSTB_TEXTEDIT_STRING* str, STB_TexteditState* state) {
+   bool NewRankFlag = 0;
+
+
+   if (str->TextA[state->cursor] <= 57 && str->TextA[state->cursor] >= 48) {
+      int k = state->cursor;
+      char c;
+      while (k >= 0) {
+         c = str->TextA[k] + 1;
+         if (c > 57) {
+            c = 48; str->TextA[k] = c;
+            k--;
+            if (k >= 0) {
+               c = str->TextA[k];
+               if (c > 57 || c < 48) {
+                  k--;
+               }
+               if (k < 0) { NewRankFlag = 1; break; }
+            }
+            else {
+               NewRankFlag = 1; break;
+            }
+
+         }
+         else {
+            str->TextA[k] = c;
+            break;
+         }
+      }
+      if (NewRankFlag== 1) {
+         if (str->TextA[0] == '-') {
+            for (int i = 0; i < str->TextLen - 1; i++) {
+               str->TextA[i] = str->TextA[i + 1];
+            }
+            str->TextA.push_front('1');
+            //str->TextA.resize(str->TextLen + 1);
+            str->TextLen++;
+            str->TextA.push_front('-');
+            state->cursor++;
+         }
+         else {
+            str->TextLen++;
+            str->TextA.push_front('1');
+            state->cursor++;
+         }
+      }
+   }
+}
+
+
+//    SYMMETRCAL CARET HOTKEYS
+
+static void stb_text_removeone(IMSTB_TEXTEDIT_STRING* str, STB_TexteditState* state) {
+   bool SignSwitchFlag = 0;
+   ImVector<char> BufText=str->TextA;
+      if (str->TextA[state->cursor] <= 57 && str->TextA[state->cursor] >= 48) {
+         int k = state->cursor;
+         char c;
+         while (k >= 0) {
+            c = str->TextA[k] - 1;
+            if (c < 48) {
+               c = 57; str->TextA[k] = c;
+               k--;
+               if (k >= 0) {        
+                  c = str->TextA[k];
+                  if (c > 57 || c < 48) {
+                     k--;
+                  }
+                  if (k < 0) { SignSwitchFlag = 1; break; }
+               }
+               else {
+                  SignSwitchFlag = 1; break;
+               }
+
+            }
+            else {
+               str->TextA[k] = c;
+               break;
+            }
+         }
+         if (SignSwitchFlag == 1) {
+            str->TextA = BufText;
+            if(str->TextA[0]=='-') {
+               for (int i = 0; i < str->TextLen - 1; i++) {
+                  str->TextA[i] = str->TextA[i + 1];
+               }
+               str->TextLen--;
+               state->cursor--;
+            }
+            else {
+               str->TextLen++;
+               str->TextA.push_front('-');
+               state->cursor++;
+            }
+         }
+      }
+
+}
+
+
+//    MATHEMATICAL CARET HOTKEYS
+/*
+static void stb_text_removeone(IMSTB_TEXTEDIT_STRING* str, STB_TexteditState* state) {
+   bool SignSwitchFlag = 0;
+   bool ZerosOverFlag = 0;
+   ImVector<char> BufText = str->TextA;
+   if (str->TextA[state->cursor] <= 57 && str->TextA[state->cursor] >= 48) {
+      int k = state->cursor;
+      char c;
+      while (k >= 0) {      
+         c = str->TextA[k] - 1;
+         if (c < 48) {
+            c = 57; str->TextA[k] = c;
+            k--;
+            if (k >= 0) {        
+               c = str->TextA[k];
+               if (c > 57 || c < 48) {
+                  k--;
+               }
+               if (k < 0) { SignSwitchFlag = 1; break; }
+            }
+            else {
+               SignSwitchFlag = 1; break;
+            }
+         }
+         else {
+            str->TextA[k] = c;
+            break;
+         }
+      }
+      if (SignSwitchFlag == 1) 
+      {
+         str->TextA = BufText;
+         if (str->TextA[0] == '-') {
+            for (int i = 0; i < str->TextLen - 1; i++) {
+               str->TextA[i] = str->TextA[i + 1];
+            }
+            str->TextLen--;
+            state->cursor--;
+            
+         }
+         else {
+            str->TextLen++;
+            str->TextA.push_front('-');
+            state->cursor++;
+         }
+
+         for (int i = str->TextLen-1; i > state->cursor; i--) {
+            if (str->TextA[i]<=57 && str->TextA[i] >= 48) {
+               if (str->TextA[i]!='0' || ZerosOverFlag==1) {
+                  if (ZerosOverFlag==0) {
+                     ZerosOverFlag = 1;
+                     if (str->TextA[i] != '0')str->TextA[i] = 10 - (str->TextA[i] - 48) + 48;
+                  }
+                  else {
+                     str->TextA[i] = 10 - (str->TextA[i] - 48) - 1 + 48;
+                  }
+               }
+            }
+         }
+         if (ZerosOverFlag == 0)str->TextA[state->cursor] = '1';
+      }
+   }
+
+}
+*/
+
+
 
 static void stb_text_redo(IMSTB_TEXTEDIT_STRING *str, STB_TexteditState *state)
 {

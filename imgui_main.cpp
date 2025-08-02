@@ -1939,7 +1939,7 @@ int imgui_main(int, char**)
                                                 // Steps
                                                 valueX = valueFromStep(sizing.minX, sizing.stepX, (int)floor(plot->shiftClickLocation.x));
                                                 valueY = valueFromStep(sizing.minY, sizing.stepY, (int)floor(plot->shiftClickLocation.y));
-                                                window->dragLineHiresPos = ImVec2((int)floor(plot->shiftClickLocation.x), (int)floor(plot->shiftClickLocation.y));
+                                                window->dragLineHiresPos = ImVec2(floor(plot->shiftClickLocation.x), floor(plot->shiftClickLocation.y));
                                             }
 
                                             hiresShiftClickCompute(window, &sizing, valueX, valueY);
