@@ -1,5 +1,5 @@
-Name: Three-Scroll_Unified
-Steps: 1000
+Name: Lorenz_83 system
+Steps: 10000
 Transient: 0
 Step size: 0.001
 // Compute on CUDAynamics launch: yes/no
@@ -13,17 +13,15 @@ Execute on launch: yes
 //
 // Defining variables/parameters:
 // var/param <name> <ranging type> <minimum value> <maximum value> <step> <step count> <normal mean> <normal deviation>
-var x Linear -150.0 150.0 0.02 45 0.0 0.0
-var y Linear -150.0 150.0 0.02 45 0.0 0.0
-var z Linear -150.0 150.0 0.02 45 0.0 0.0
-param a Fixed 32.48 50.0 0.1 250 0.0 0.0
-param b Fixed 45.84 50.0 0.1 250 0.0 0.0
-param c Fixed 1.18 29.0 0.1 0 0.0 0.0
-param d Fixed 0.13 50.0 0.1 250 0.0 0.0
-param e Fixed 0.57 50.0 0.1 250 0.0 0.0
-param f Fixed 14.7 50.0 0.1 250 0.0 0.0
+var x Linear -5 1.8 1.0 50 0.0 0.0
+var y Linear -4.0 8.0 0.1 50 0.0 0.0
+var z Fixed -1.8 3.2 0.1 0 0.0 0.0
+param a Fixed 0.95 29.0 0.1 0 0.0 0.0
+param b Fixed 7.91 29.0 0.1 0 0.0 0.0
+param f Fixed 4.83 29.0 0.1 0 0.0 0.0
+param g Fixed 4.66 29.0 0.1 0 0.0 0.0
 param stepsize Fixed 0.001 0.01 0.001 100 0.0 0.0
-param symmetry Fixed 0 0.01 0.001 100 0.0 0.0
+param symmetry Fixed 0.0 1.0 0.01 100 0.0 0.0
 // Defining enumerated parameters (useful for methods):
 // enum <name> <ranging type> <minimum value> <maximum value> <step> <step count> <normal mean> <normal deviation> <enum names, no spaces>
 enum method 0ExplicitEuler 0ExplicitMidpoint 0ExplicitRungeKutta4 1VariableSymmetryCD

@@ -1,15 +1,15 @@
 ﻿#include "main.h"
-#include "msprottj.h"
+#include "sprottJm.h"
 
 namespace attributes
 {
     enum variables { x, y, z };
-    enum parameters { a, b, c, method };
-    enum methods { ExplicitEuler, ExplicitRK4 };
+    enum parameters { a, b, c, stepsize, method };
+    enum methods { ExplicitEuler, ExplicitRungeKutta4 };
     enum maps { LLE };
 }
 
-__global__ void kernelProgram_msprottj(Computation* data)
+__global__ void kernelProgram_sprottJm(Computation* data)
 {
     int b = blockIdx.x;                                     // Current block of THREADS_PER_BLOCK threads
     int t = threadIdx.x;                                    // Current thread in the block, from 0 to THREADS_PER_BLOCK-1
@@ -20,13 +20,13 @@ __global__ void kernelProgram_msprottj(Computation* data)
 
     // Custom area (usually) starts here
 
-    TRANSIENT_SKIP(finiteDifferenceScheme_msprottj);
+    TRANSIENT_SKIP(finiteDifferenceScheme_sprottJm);
 
     for (int s = 0; s < CUDA_kernel.steps; s++)
     {
         stepStart = variationStart + s * CUDA_kernel.VAR_COUNT;
 
-        finiteDifferenceScheme_msprottj(&(CUDA_marshal.trajectory[stepStart]),
+        finiteDifferenceScheme_sprottJm(&(CUDA_marshal.trajectory[stepStart]),
             &(CUDA_marshal.trajectory[stepStart + CUDA_kernel.VAR_COUNT]),
             &(CUDA_marshal.parameterVariations[variation * CUDA_kernel.PARAM_COUNT]),
             CUDA_kernel.stepSize);
@@ -38,11 +38,11 @@ __global__ void kernelProgram_msprottj(Computation* data)
     {
         LLE_Settings lle_settings(MS(LLE, 0), MS(LLE, 1), MS(LLE, 2));
         lle_settings.Use3DNorm();
-        LLE(data, lle_settings, variation, &finiteDifferenceScheme_msprottj, MO(LLE));
+        LLE(data, lle_settings, variation, &finiteDifferenceScheme_sprottJm, MO(LLE));
     }
 }
 
-__device__ numb msprottj_F(numb y)
+__device__ numb sprottJm_F(numb y)
 {
     numb b, k;
     numb d = 1.0, m = 1.0, P = 1.23, R = 2.0;
@@ -80,51 +80,47 @@ __device__ numb msprottj_F(numb y)
         return 0.0;
 }
 
-__device__ void finiteDifferenceScheme_msprottj(numb* currentV, numb* nextV, numb* parameters, numb h)
+__device__ void finiteDifferenceScheme_sprottJm(numb* currentV, numb* nextV, numb* parameters, numb h)
 {  
     ifMETHOD(P(method), ExplicitEuler)
     {
-        numb dx = P(a) * V(z);
-        numb dy = P(b) * V(y) + V(z);
-        numb dz = -V(x) + V(y) + P(c) * msprottj_F(V(y));
-
-        Vnext(x) = V(x) + h * dx;
-        Vnext(y) = V(y) + h * dy;
-        Vnext(z) = V(z) + h * dz;
+        Vnext(x) = V(x) + P(stepsize) * (P(a) * V(z));
+        Vnext(y) = V(y) + P(stepsize) * (P(b) * V(y) + V(z));
+        Vnext(z) = V(z) + P(stepsize) * (-V(x) + V(y) + P(c) * sprottJm_F(V(y)));
     }
 
-    ifMETHOD(P(method), ExplicitRK4)
+    ifMETHOD(P(method), ExplicitRungeKutta4)
     {
-        numb dx1 = P(a) * V(z);
-        numb dy1 = P(b) * V(y) + V(z);
-        numb dz1 = -V(x) + V(y) + P(c) * msprottj_F(V(y));
+        numb kx1 = P(a) * V(z);
+        numb ky1 = P(b) * V(y) + V(z);
+        numb kz1 = -V(x) + V(y) + P(c) * sprottJm_F(V(y));
 
-        numb xt = V(x) + 0.5 * h * dx1;
-        numb yt = V(y) + 0.5 * h * dy1;
-        numb zt = V(z) + 0.5 * h * dz1;
+        numb xmp = V(x) + 0.5 * P(stepsize) * kx1;
+        numb ymp = V(y) + 0.5 * P(stepsize) * ky1;
+        numb zmp = V(z) + 0.5 * P(stepsize) * kz1;
 
-        numb dx2 = P(a) * zt;
-        numb dy2 = P(b) * yt + zt;
-        numb dz2 = -xt + yt + P(c) * msprottj_F(yt);
+        numb kx2 = P(a) * zmp;
+        numb ky2 = P(b) * ymp + zmp;
+        numb kz2 = -xmp + ymp + P(c) * sprottJm_F(ymp);
 
-        xt = V(x) + 0.5 * h * dx2;
-        yt = V(y) + 0.5 * h * dy2;
-        zt = V(z) + 0.5 * h * dz2;
+        xmp = V(x) + 0.5 * P(stepsize) * kx2;
+        ymp = V(y) + 0.5 * P(stepsize) * ky2;
+        zmp = V(z) + 0.5 * P(stepsize) * kz2;
 
-        numb dx3 = P(a) * zt;
-        numb dy3 = P(b) * yt + zt;
-        numb dz3 = -xt + yt + P(c) * msprottj_F(yt);
+        numb kx3 = P(a) * zmp;
+        numb ky3 = P(b) * ymp + zmp;
+        numb kz3 = -xmp + ymp + P(c) * sprottJm_F(ymp);
 
-        xt = V(x) + h * dx3;
-        yt = V(y) + h * dy3;
-        zt = V(z) + h * dz3;
+        xmp = V(x) + P(stepsize) * kx3;
+        ymp = V(y) + P(stepsize) * ky3;
+        zmp = V(z) + P(stepsize) * kz3;
 
-        numb dx4 = P(a) * zt;
-        numb dy4 = P(b) * yt + zt;
-        numb dz4 = -xt + yt + P(c) * msprottj_F(yt);
+        numb kx4 = P(a) * zmp;
+        numb ky4 = P(b) * ymp + zmp;
+        numb kz4 = -xmp + ymp + P(c) * sprottJm_F(ymp);
 
-        Vnext(x) = V(x) + h * (dx1 + 2 * dx2 + 2 * dx3 + dx4) / 6;
-        Vnext(y) = V(y) + h * (dy1 + 2 * dy2 + 2 * dy3 + dy4) / 6;
-        Vnext(z) = V(z) + h * (dz1 + 2 * dz2 + 2 * dz3 + dz4) / 6;
+        Vnext(x) = V(x) + P(stepsize) * (kx1 + 2 * kx2 + 2 * kx3 + kx4) / 6;
+        Vnext(y) = V(y) + P(stepsize) * (ky1 + 2 * ky2 + 2 * ky3 + ky4) / 6;
+        Vnext(z) = V(z) + P(stepsize) * (kz1 + 2 * kz2 + 2 * kz3 + kz4) / 6;
     }
 }

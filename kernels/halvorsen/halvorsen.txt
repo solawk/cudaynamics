@@ -18,6 +18,7 @@ var y Linear -2.51 2.5 0.1 250 0.0 0.0
 var z Fixed 2.04 5.0 0.2 250 0.0 0.0
 param alpha Fixed 1.89 29.0 0.1 0 0.0 0.0
 param beta Fixed 4 29.0 0.1 0 0.0 0.0
+param stepsize Fixed 0.01 0.1 0.01 10 0.0 0.0
 param symmetry Fixed 0.0 50.0 0.1 250 0.0 0.0
 // Defining enumerated parameters (useful for methods):
 // enum <name> <ranging type> <minimum value> <maximum value> <step> <step count> <normal mean> <normal deviation> <enum names, no spaces>

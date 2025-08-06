@@ -1,7 +1,7 @@
-Name: Modified_Sprott_Case_J
-Steps: 1000
-Transient: 0
-Step size: 0.01
+Name: Rabinovich_Fabrikant system
+Steps: 10000
+Transient: 03.0
+Step size: 0.001000
 // Compute on CUDAynamics launch: yes/no
 Execute on launch: yes
 // Ranging types:
@@ -13,15 +13,19 @@ Execute on launch: yes
 //
 // Defining variables/parameters:
 // var/param <name> <ranging type> <minimum value> <maximum value> <step> <step count> <normal mean> <normal deviation>
-var x Linear -10.0 80.0 1.0 100 0.0 0.0
-var y Fixed 1.0 50.0 0.1 50 0.0 0.0
-var z Linear -20.0 30.0 0.1 100 0.0 0.0
-param a Fixed 1.9 50.0 0.1 250 0.0 0.0
-param b Fixed -1.8 50.0 0.1 250 0.0 0.0
-param c Fixed 3.9 50.0 0.1 250 0.0 0.0
+var x Linear -2.0 3.0 1.0 50 0.0 0.0
+var y Linear -2.5 2.5 0.1 50 0.0 0.0
+var z Fixed 0.5 1.5 0.1 0 0.0 0.0
+param alpha Fixed 0.14 29.0 0.1 0 0.0 0.0
+param betta Fixed 1.0 29.0 0.1 0 0.0 0.0
+param gamma Fixed 0.1 29.0 0.1 0 0.0 0.0
+param delta Fixed 3.0 29.0 0.1 0 0.0 0.0
+param epsilon Fixed -2.0 29.0 0.1 0 0.0 0.0
+param stepsize Fixed 0.001 0.01 0.001 100 0.0 0.0
+param symmetry Fixed 0.0 1.0 0.01 100 0.0 0.0
 // Defining enumerated parameters (useful for methods):
-// enum <name> <enum names, no spaces, preceded by 0 if disabled or 1 if enabled>
-enum method 0ExplicitEuler 1ExplicitRK4
+// enum <name> <ranging type> <minimum value> <maximum value> <step> <step count> <normal mean> <normal deviation> <enum names, no spaces>
+enum method 0ExplicitEuler 0ExplicitMidpoint 0ExplicitRungeKutta4 1VariableSymmetryCD
 //
 // Defining maps:
 // map <name> <map settings count (inside its struct)> <map settings, beginning with "n" for numbs and "i" for ints>

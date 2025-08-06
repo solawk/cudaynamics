@@ -19,10 +19,11 @@ var z Fixed 0.0 29.0 0.1 0 0.0 0.0
 param a Fixed 0.2 50.0 0.1 250 0.0 0.0
 param b Fixed 0.2 50.0 0.1 250 0.0 0.0
 param c Fixed 5.7 29.0 0.1 0 0.0 0.0
-param symmetry Fixed 0 0.5 0.01 0 0.0 0.0
+param stepsize Fixed 0.01 0.1 0.01 100 0.0 0.0
+param symmetry Fixed 0.0 1.0 0.01 100 0.0 0.0
 // Defining enumerated parameters (useful for methods):
 // enum <name> <ranging type> <minimum value> <maximum value> <step> <step count> <normal mean> <normal deviation> <enum names, no spaces>
-enum method 1ExplicitEuler 0ExplicitMidpoint 0ExplicitRungeKutta4 0VariableSymmetryCD
+enum method 0ExplicitEuler 0ExplicitMidpoint 0ExplicitRungeKutta4 1VariableSymmetryCD
 //
 // Defining maps:
 // map <name> <map settings count (inside its struct)> <map settings, beginning with "n" for numbs and "i" for ints>

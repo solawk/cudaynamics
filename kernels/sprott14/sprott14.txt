@@ -1,5 +1,5 @@
-Name: RLC_Shunted_Josephson_Junction
-Steps: 5000
+Name: Sprott_14 system
+Steps: 1000
 Transient: 0
 Step size: 0.01
 // Compute on CUDAynamics launch: yes/no
@@ -13,16 +13,18 @@ Execute on launch: yes
 //
 // Defining variables/parameters:
 // var/param <name> <ranging type> <minimum value> <maximum value> <step> <step count> <normal mean> <normal deviation>
-var x1 Linear 0.0 1.0 0.1 100 0.0 0.0
-var sin_x1 Fixed -0.31 50.0 1.0 50 0.0 0.0
-var x2 Linear 3.3 4.3 0.1 100 0.0 0.0
-var x3 Fixed 0.76 29.0 0.1 0 0.0 0.0
-param betaL Fixed 29.215 50.0 0.1 250 0.0 0.0
-param betaC Fixed 0.707 50.0 0.1 250 0.0 0.0
-param betaM Fixed 1.0 29.0 0.1 0 0.0 0.0
-param i Fixed 1.25 1.5 0.01 100 0.0 0.0
-param eps Fixed -1.0 0.0 0.01 100 0.0 0.0
-param delta Fixed 1.0 29.0 0.1 0 0.0 0.0
-param s Fixed 0.5 29.0 0.1 0 0.0 0.0
+var x Linear -1.0 3.0 1.0 50 0.0 0.0
+var y Linear -1.0 1.0 0.1 50 0.0 0.0
+var z Fixed -1.0 1.0 0.1 0 0.0 0.0
+param a Fixed 2.0 50.0 0.1 250 0.0 0.0
+param b Fixed 2.0 50.0 0.1 250 0.0 0.0
+param c Fixed 1.0 29.0 0.1 0 0.0 0.0
+param stepsize Fixed 0.01 0.1 0.01 100 0.0 0.0
+param symmetry Fixed 0 0.1 0.01 100 0.0 0.0
+// Defining enumerated parameters (useful for methods):
+// enum <name> <ranging type> <minimum value> <maximum value> <step> <step count> <normal mean> <normal deviation> <enum names, no spaces>
+enum method 0ExplicitEuler 0ExplicitMidpoint 0ExplicitRungeKutta4 1VariableSymmetryCD
+//
 // Defining maps:
+// map <name> <map settings count (inside its struct)> <map settings, beginning with "n" for numbs and "i" for ints>
 map LLE 7 r n0.01 L i50 variableToDeflect i0 norm0 i0 norm1 i1 norm2 i2 norm3 i-1

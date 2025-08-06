@@ -1,5 +1,5 @@
 ﻿#include "main.h"
-#include "fourwing.h"
+#include "sprott14.h"
 
 namespace attributes
 {
@@ -9,7 +9,7 @@ namespace attributes
     enum maps { LLE };
 }
 
-__global__ void kernelProgram_fourwing(Computation* data)
+__global__ void kernelProgram_sprott14(Computation* data)
 {
     int b = blockIdx.x;                                     // Current block of THREADS_PER_BLOCK threads
     int t = threadIdx.x;                                    // Current thread in the block, from 0 to THREADS_PER_BLOCK-1
@@ -20,13 +20,13 @@ __global__ void kernelProgram_fourwing(Computation* data)
 
     // Custom area (usually) starts here
 
-    TRANSIENT_SKIP(finiteDifferenceScheme_fourwing);
+    TRANSIENT_SKIP(finiteDifferenceScheme_sprott14);
 
     for (int s = 0; s < CUDA_kernel.steps; s++)
     {
         stepStart = variationStart + s * CUDA_kernel.VAR_COUNT;
 
-        finiteDifferenceScheme_fourwing(&(CUDA_marshal.trajectory[stepStart]),
+        finiteDifferenceScheme_sprott14(&(CUDA_marshal.trajectory[stepStart]),
             &(CUDA_marshal.trajectory[stepStart + CUDA_kernel.VAR_COUNT]),
             &(CUDA_marshal.parameterVariations[variation * CUDA_kernel.PARAM_COUNT]),
             CUDA_kernel.stepSize);
@@ -38,59 +38,59 @@ __global__ void kernelProgram_fourwing(Computation* data)
     {
         LLE_Settings lle_settings(MS(LLE, 0), MS(LLE, 1), MS(LLE, 2));
         lle_settings.Use3DNorm();
-        LLE(data, lle_settings, variation, &finiteDifferenceScheme_fourwing, MO(LLE));
+        LLE(data, lle_settings, variation, &finiteDifferenceScheme_sprott14, MO(LLE));
     }
 }
 
-__device__ void finiteDifferenceScheme_fourwing(numb* currentV, numb* nextV, numb* parameters, numb h)
+__device__ void finiteDifferenceScheme_sprott14(numb* currentV, numb* nextV, numb* parameters, numb h)
 {
     ifMETHOD(P(method), ExplicitEuler)
     {
-        Vnext(x) = V(x) + P(stepsize) * (P(a) * V(x) + V(y) * V(z));
-        Vnext(y) = V(y) + P(stepsize) * (P(b) * V(x) + P(c) * V(y) - V(x) * V(z));
-        Vnext(z) = V(z) + P(stepsize) * (-V(z) - V(x) * V(y));
+        Vnext(x) = V(x) + P(stepsize) * (V(y) + P(a) * V(x) * V(y) + V(x) * V(z));
+        Vnext(y) = V(y) + P(stepsize) * (P(c) - P(b) * V(x) * V(x) + V(y) * V(z));
+        Vnext(z) = V(z) + P(stepsize) * (V(x) - V(x) * V(x) - V(y) * V(y));
     }
 
     ifMETHOD(P(method), ExplicitMidpoint)
     {
-        numb xmp = V(x) + P(stepsize) * 0.5 * (P(a) * V(x) + V(y) * V(z));
-        numb ymp = V(y) + P(stepsize) * 0.5 * (P(b) * V(x) + P(c) * V(y) - V(x) * V(z));
-        numb zmp = V(z) + P(stepsize) * 0.5 * (-V(z) - V(x) * V(y));
+        numb xmp = V(x) + P(stepsize) * 0.5 * (V(y) + P(a) * V(x) * V(y) + V(x) * V(z));
+        numb ymp = V(y) + P(stepsize) * 0.5 * (P(c) - P(b) * V(x) * V(x) + V(y) * V(z));
+        numb zmp = V(z) + P(stepsize) * 0.5 * (V(x) - V(x) * V(x) - V(y) * V(y));
 
-        Vnext(x) = V(x) + P(stepsize) * (P(a) * xmp + ymp * zmp);
-        Vnext(y) = V(y) + P(stepsize) * (P(b) * xmp + P(c) * ymp - xmp * zmp);
-        Vnext(z) = V(z) + P(stepsize) * (-zmp - xmp * ymp);
+        Vnext(x) = V(x) + P(stepsize) * (ymp + P(a) * xmp * ymp + xmp * zmp);
+        Vnext(y) = V(y) + P(stepsize) * (P(c) - P(b) * xmp * xmp + ymp * zmp);
+        Vnext(z) = V(z) + P(stepsize) * (xmp - xmp * xmp - ymp * ymp);
     }
 
     ifMETHOD(P(method), ExplicitRungeKutta4)
     {
-        numb kx1 = P(a) * V(x) + V(y) * V(z);
-        numb ky1 = P(b) * V(x) + P(c) * V(y) - V(x) * V(z);
-        numb kz1 = -V(z) - V(x) * V(y);
+        numb kx1 = V(y) + P(a) * V(x) * V(y) + V(x) * V(z);
+        numb ky1 = P(c) - P(b) * V(x) * V(x) + V(y) * V(z);
+        numb kz1 = V(x) - V(x) * V(x) - V(y) * V(y);
 
         numb xmp = V(x) + 0.5 * P(stepsize) * kx1;
         numb ymp = V(y) + 0.5 * P(stepsize) * ky1;
         numb zmp = V(z) + 0.5 * P(stepsize) * kz1;
 
-        numb kx2 = P(a) * xmp + ymp * zmp;
-        numb ky2 = P(b) * xmp + P(c) * ymp - V(x) * zmp;
-        numb kz2 = -zmp - xmp * ymp;
+        numb kx2 = ymp + P(a) * xmp * ymp + xmp * zmp;
+        numb ky2 = P(c) - P(b) * xmp * xmp + ymp * zmp;
+        numb kz2 = xmp - xmp * xmp - ymp * ymp;
 
         xmp = V(x) + 0.5 * P(stepsize) * kx2;
         ymp = V(y) + 0.5 * P(stepsize) * ky2;
         zmp = V(z) + 0.5 * P(stepsize) * kz2;
 
-        numb kx3 = P(a) * xmp + ymp * zmp;
-        numb ky3 = P(b) * xmp + P(c) * ymp - V(x) * zmp;
-        numb kz3 = -zmp - xmp * ymp;
+        numb kx3 = ymp + P(a) * xmp * ymp + xmp * zmp;
+        numb ky3 = P(c) - P(b) * xmp * xmp + ymp * zmp;
+        numb kz3 = xmp - xmp * xmp - ymp * ymp;
 
         xmp = V(x) + P(stepsize) * kx3;
         ymp = V(y) + P(stepsize) * ky3;
         zmp = V(z) + P(stepsize) * kz3;
 
-        numb kx4 = P(a) * xmp + ymp * zmp;
-        numb ky4 = P(b) * xmp + P(c) * ymp - V(x) * zmp;
-        numb kz4 = -zmp - xmp * ymp;
+        numb kx4 = ymp + P(a) * xmp * ymp + xmp * zmp;
+        numb ky4 = P(c) - P(b) * xmp * xmp + ymp * zmp;
+        numb kz4 = xmp - xmp * xmp - ymp * ymp;
 
         Vnext(x) = V(x) + P(stepsize) * (kx1 + 2 * kx2 + 2 * kx3 + kx4) / 6;
         Vnext(y) = V(y) + P(stepsize) * (ky1 + 2 * ky2 + 2 * ky3 + ky4) / 6;
@@ -102,12 +102,12 @@ __device__ void finiteDifferenceScheme_fourwing(numb* currentV, numb* nextV, num
         numb h1 = 0.5 * P(stepsize) - P(symmetry);
         numb h2 = 0.5 * P(stepsize) + P(symmetry);
 
-        numb xmp = V(x) + h1 * (P(a) * V(x) + V(y) * V(z));
-        numb ymp = V(y) + h1 * (P(b) * xmp + P(c) * V(y) - xmp * V(z));
-        numb zmp = V(z) + h1 * (-V(z) - xmp * ymp);
+        numb xmp = V(x) + h1 * (V(y) + P(a) * V(x) * V(y) + V(x) * V(z));
+        numb ymp = V(y) + h1 * (P(c) - P(b) * xmp * xmp + V(y) * V(z));
+        numb zmp = V(z) + h1 * (xmp - xmp * xmp - ymp * ymp);
 
-        Vnext(z) = (zmp - h2 * xmp * ymp) / (1 + h2);
-        Vnext(y) = (ymp + h2 * P(b) * xmp - h2 * xmp * Vnext(z)) / (1 - h2 * P(c));
-        Vnext(x) = (xmp + Vnext(y) * Vnext(z) * h2) / (1 - P(a) * h2);
+        Vnext(z) = zmp + h2 * (xmp - xmp * xmp - ymp * ymp);
+        Vnext(y) = (ymp + h2 * P(c) - h2 * P(b) * xmp * xmp) / (1 - h2 * Vnext(z));
+        Vnext(x) = (xmp + h2 * Vnext(y)) / (1 - h2 * P(a) * Vnext(y) - h2 * Vnext(z));
     }
 }

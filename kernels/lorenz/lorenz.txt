@@ -1,7 +1,7 @@
-Name: Three-Scroll_Unified
+Name: Lorenz system
 Steps: 1000
 Transient: 0
-Step size: 0.001
+Step size: 0.01
 // Compute on CUDAynamics launch: yes/no
 Execute on launch: yes
 // Ranging types:
@@ -13,20 +13,17 @@ Execute on launch: yes
 //
 // Defining variables/parameters:
 // var/param <name> <ranging type> <minimum value> <maximum value> <step> <step count> <normal mean> <normal deviation>
-var x Linear -150.0 150.0 0.02 45 0.0 0.0
-var y Linear -150.0 150.0 0.02 45 0.0 0.0
-var z Linear -150.0 150.0 0.02 45 0.0 0.0
-param a Fixed 32.48 50.0 0.1 250 0.0 0.0
-param b Fixed 45.84 50.0 0.1 250 0.0 0.0
-param c Fixed 1.18 29.0 0.1 0 0.0 0.0
-param d Fixed 0.13 50.0 0.1 250 0.0 0.0
-param e Fixed 0.57 50.0 0.1 250 0.0 0.0
-param f Fixed 14.7 50.0 0.1 250 0.0 0.0
-param stepsize Fixed 0.001 0.01 0.001 100 0.0 0.0
-param symmetry Fixed 0 0.01 0.001 100 0.0 0.0
+var x Fixed 10.0 50.0 1.0 100 0.0 0.0
+var y Fixed 10.0 50.0 0.1 50 0.0 0.0
+var z Fixed 10.0 29.0 0.1 0 0.0 0.0
+param sigma Linear 10.0 50.0 0.1 250 0.0 0.0
+param rho Linear 28.0 50.0 0.1 250 0.0 0.0
+param beta Fixed 2.666667 29.0 0.1 0 0.0 0.0
+param stepsize Fixed 0.01 0.1 0.01 100 0.0 0.0
+param symmetry Fixed 0.0 1.0 0.01 100 0.0 0.0
 // Defining enumerated parameters (useful for methods):
 // enum <name> <ranging type> <minimum value> <maximum value> <step> <step count> <normal mean> <normal deviation> <enum names, no spaces>
-enum method 0ExplicitEuler 0ExplicitMidpoint 0ExplicitRungeKutta4 1VariableSymmetryCD
+enum method 1ExplicitEuler 0ExplicitMidpoint 0ExplicitRungeKutta4 0VariableSymmetryCD
 //
 // Defining maps:
 // map <name> <map settings count (inside its struct)> <map settings, beginning with "n" for numbs and "i" for ints>
