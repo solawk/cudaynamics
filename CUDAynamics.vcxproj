@@ -170,6 +170,7 @@
     <ClInclude Include="plotWindow.h" />
     <ClInclude Include="quaternion.h" />
     <ClInclude Include="resource.h" />
+    <ClInclude Include="styles.h" />
     <ClInclude Include="variationSteps.h" />
   </ItemGroup>
   <ItemGroup>

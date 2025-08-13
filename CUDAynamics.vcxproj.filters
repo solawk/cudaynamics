@@ -180,6 +180,9 @@
     <ClInclude Include="analysis\max\max.h">
       <Filter>analysis\max</Filter>
     </ClInclude>
+    <ClInclude Include="styles.h">
+      <Filter>gui</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="main.cu" />

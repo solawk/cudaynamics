@@ -4,6 +4,7 @@
 #include "gui/img_loading.h"
 #include "gui/map_img.h"
 #include "gui/fullscreen_funcs.h"
+#include "styles.h"
 
 static ID3D11Device* g_pd3dDevice = nullptr;
 static ID3D11DeviceContext* g_pd3dDeviceContext = nullptr;
@@ -490,6 +491,8 @@ int imgui_main(int, char**)
     ImGui_ImplDX11_Init(g_pd3dDevice, g_pd3dDeviceContext);
 
     io.Fonts->AddFontFromFileTTF("UbuntuMono-R.ttf", 24.0f);
+
+    SetupImGuiStyle(ImGuiCustomStyle::Light);
 
     // Main loop
     bool work = true;
