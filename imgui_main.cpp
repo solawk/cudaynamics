@@ -66,6 +66,8 @@ bool computeAfterShiftSelect = false;
 bool hiresComputeAfterShiftSelect = false;
 bool autofitHeatmap;
 
+ImGuiCustomStyle appStyle = ImGuiCustomStyle::Dark;
+
 // Temporary variables
 int variation = 0;
 int prevVariation = 0;
@@ -492,7 +494,7 @@ int imgui_main(int, char**)
 
     io.Fonts->AddFontFromFileTTF("UbuntuMono-R.ttf", 24.0f);
 
-    SetupImGuiStyle(ImGuiCustomStyle::Light);
+    SetupImGuiStyle(appStyle);
 
     // Main loop
     bool work = true;

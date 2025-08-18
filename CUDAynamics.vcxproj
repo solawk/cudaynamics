@@ -192,6 +192,7 @@
     <CudaCompile Include="kernels\sprottJm\sprottJm.cu" />
     <CudaCompile Include="kernels\thomas\thomas.cu" />
     <CudaCompile Include="kernels\three_scroll\three_scroll.cu" />
+    <CudaCompile Include="kernels\vnm\vnm.cu" />
     <CudaCompile Include="kernels\wilson\wilson.cu" />
     <CudaCompile Include="main.cu" />
   </ItemGroup>

@@ -28,6 +28,7 @@
 #include "kernels/sang/sang.h"
 #include "kernels/rabinovich_fabrikant/rabinovich_fabrikant.h"
 #include "kernels/thomas/thomas.h"
+#include "kernels/vnm/vnm.h"
 
 extern std::map<std::string, Kernel> kernels;
 extern std::map<std::string, int> kernelTPBs;

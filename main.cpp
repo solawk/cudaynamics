@@ -33,6 +33,7 @@ void common_main()
     addKernel(rabinovich_fabrikant);
     addKernel(sang);
     addKernel(thomas);
+    addKernel(vnm);
 
     //selectKernel(kernels.begin()->first);
     selectKernel(lorenz);
