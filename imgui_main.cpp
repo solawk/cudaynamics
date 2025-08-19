@@ -1338,7 +1338,7 @@ int imgui_main(int, char**)
                 rotationEulerEditable.y += window->autorotate.y * frameTime;
                 rotationEulerEditable.z += window->autorotate.z * frameTime;
 
-                if (!window->isImplot3d)
+                if (!window->isImplot3d && window->settingsListEnabled)
                 {
                     ImGui::DragFloat3("Rotation", (float*)&rotationEulerEditable, 1.0f);
                     ImGui::DragFloat3("Automatic rotation", (float*)&window->autorotate, 0.1f);
