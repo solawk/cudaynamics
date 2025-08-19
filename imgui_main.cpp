@@ -318,6 +318,7 @@ void initializeKernel(bool needTerminate)
     initAVI(false);
     initAVI(true);
 
+    computedSteps = 0;
     particleStep = 0;
     computeAfterShiftSelect = false;
 }
