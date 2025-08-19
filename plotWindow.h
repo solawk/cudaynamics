@@ -54,6 +54,9 @@ public:
 	bool isFullscreen, isFullscreenEnd;
 	ImVec2 originalPos, originalSize;
 
+	int OrbitXIndex;
+	bool ShowOrbitParLines;
+
 	PlotWindow(int _id, std::string _name = "plot", bool _is3d = false)
 	{
 		active = true;
@@ -90,6 +93,9 @@ public:
 
 		isFullscreen = isFullscreenEnd = false;
 		originalPos = originalSize = ImVec2(0.0f, 0.0f);
+
+		OrbitXIndex = 0;
+		ShowOrbitParLines = false;
 	}
 
 	void AssignVariables(int* variablesArray)
