@@ -66,7 +66,7 @@ bool computeAfterShiftSelect = false;
 bool hiresComputeAfterShiftSelect = false;
 bool autofitHeatmap;
 
-ImGuiCustomStyle appStyle = ImGuiCustomStyle::Dark;
+ImGuiCustomStyle appStyle = ImGuiCustomStyle::Light;
 
 // Temporary variables
 int variation = 0;
@@ -918,7 +918,7 @@ int imgui_main(int, char**)
             // Hi-res compute button
             if (ImGui::Button("= HI-RES COMPUTE =") || hiresComputeAfterShiftSelect)
             {
-                printf("A\n");
+                //printf("A\n");
                 hiresPnC();
             }
         }
@@ -1753,7 +1753,8 @@ int imgui_main(int, char**)
                             {
                                 numb* computedVariation = computations[playedBufferIndex].marshal.trajectory + (computations[playedBufferIndex].marshal.variationSize * variation);
 
-                                ImPlot::SetNextLineStyle(ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
+                                //ImPlot::SetNextLineStyle(ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
+                                ImPlot::SetNextLineStyle(window->plotColor);
                                 ImPlot::PlotLine(plotName.c_str(), &(computedVariation[xIndex]), &(computedVariation[yIndex]), computedSteps + 1, 0, 0, sizeof(numb) * KERNEL.VAR_COUNT);
                             }
                             else // Particles - all variations, one certain step
