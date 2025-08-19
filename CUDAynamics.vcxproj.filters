@@ -180,16 +180,13 @@
     <ClInclude Include="analysis\max\max.h">
       <Filter>analysis\max</Filter>
     </ClInclude>
+    <ClInclude Include="styles.h">
+      <Filter>gui</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="main.cu" />
-    <CudaCompile Include="kernels\lorenz2\lorenz2.cu">
-      <Filter>kernels</Filter>
-    </CudaCompile>
     <CudaCompile Include="kernels\halvorsen\halvorsen.cu">
-      <Filter>kernels</Filter>
-    </CudaCompile>
-    <CudaCompile Include="kernels\mrlcs_jj\mrlcs_jj.cu">
       <Filter>kernels</Filter>
     </CudaCompile>
     <CudaCompile Include="kernels\chen\chen.cu">
@@ -207,22 +204,10 @@
     <CudaCompile Include="kernels\rossler\rossler.cu">
       <Filter>kernels</Filter>
     </CudaCompile>
-    <CudaCompile Include="kernels\sprott\sprott.cu">
-      <Filter>kernels</Filter>
-    </CudaCompile>
     <CudaCompile Include="kernels\three_scroll\three_scroll.cu">
       <Filter>kernels</Filter>
     </CudaCompile>
-    <CudaCompile Include="kernels\rlcs_jj\rlcs_jj.cu">
-      <Filter>kernels</Filter>
-    </CudaCompile>
-    <CudaCompile Include="kernels\lorenzMod\lorenzMod.cu">
-      <Filter>kernels</Filter>
-    </CudaCompile>
     <CudaCompile Include="kernels\wilson\wilson.cu">
-      <Filter>kernels</Filter>
-    </CudaCompile>
-    <CudaCompile Include="kernels\msprottj\msprottj.cu">
       <Filter>kernels</Filter>
     </CudaCompile>
     <CudaCompile Include="kernels\thomas\thomas.cu">
@@ -233,6 +218,33 @@
     </CudaCompile>
     <CudaCompile Include="analysis\max\max.cu">
       <Filter>analysis\max</Filter>
+    </CudaCompile>
+    <CudaCompile Include="kernels\lorenz\lorenz.cu">
+      <Filter>kernels</Filter>
+    </CudaCompile>
+    <CudaCompile Include="kernels\lorenzVar\lorenzVar.cu">
+      <Filter>kernels</Filter>
+    </CudaCompile>
+    <CudaCompile Include="kernels\jj_mrlcs\jj_mrlcs.cu">
+      <Filter>kernels</Filter>
+    </CudaCompile>
+    <CudaCompile Include="kernels\jj_rlcs\jj_rlcs.cu">
+      <Filter>kernels</Filter>
+    </CudaCompile>
+    <CudaCompile Include="kernels\sprott14\sprott14.cu">
+      <Filter>kernels</Filter>
+    </CudaCompile>
+    <CudaCompile Include="kernels\sprottJm\sprottJm.cu">
+      <Filter>kernels</Filter>
+    </CudaCompile>
+    <CudaCompile Include="kernels\sang\sang.cu">
+      <Filter>kernels</Filter>
+    </CudaCompile>
+    <CudaCompile Include="kernels\rabinovich_fabrikant\rabinovich_fabrikant.cu">
+      <Filter>kernels</Filter>
+    </CudaCompile>
+    <CudaCompile Include="kernels\vnm\vnm.cu">
+      <Filter>kernels</Filter>
     </CudaCompile>
   </ItemGroup>
   <ItemGroup>

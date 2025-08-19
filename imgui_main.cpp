@@ -4,6 +4,7 @@
 #include "gui/img_loading.h"
 #include "gui/map_img.h"
 #include "gui/fullscreen_funcs.h"
+#include "styles.h"
 
 static ID3D11Device* g_pd3dDevice = nullptr;
 static ID3D11DeviceContext* g_pd3dDeviceContext = nullptr;
@@ -64,6 +65,8 @@ bool selectOrbitTab = true;
 bool computeAfterShiftSelect = false;
 bool hiresComputeAfterShiftSelect = false;
 bool autofitHeatmap;
+
+ImGuiCustomStyle appStyle = ImGuiCustomStyle::Light;
 
 // Temporary variables
 int variation = 0;
@@ -492,6 +495,8 @@ int imgui_main(int, char**)
 
     io.Fonts->AddFontFromFileTTF("UbuntuMono-R.ttf", 24.0f);
 
+    SetupImGuiStyle(appStyle);
+
     // Main loop
     bool work = true;
 
@@ -914,7 +919,7 @@ int imgui_main(int, char**)
             // Hi-res compute button
             if (ImGui::Button("= HI-RES COMPUTE =") || hiresComputeAfterShiftSelect)
             {
-                printf("A\n");
+                //printf("A\n");
                 hiresPnC();
             }
         }
@@ -1749,7 +1754,8 @@ int imgui_main(int, char**)
                             {
                                 numb* computedVariation = computations[playedBufferIndex].marshal.trajectory + (computations[playedBufferIndex].marshal.variationSize * variation);
 
-                                ImPlot::SetNextLineStyle(ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
+                                //ImPlot::SetNextLineStyle(ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
+                                ImPlot::SetNextLineStyle(window->plotColor);
                                 ImPlot::PlotLine(plotName.c_str(), &(computedVariation[xIndex]), &(computedVariation[yIndex]), computedSteps + 1, 0, 0, sizeof(numb) * KERNEL.VAR_COUNT);
                             }
                             else // Particles - all variations, one certain step

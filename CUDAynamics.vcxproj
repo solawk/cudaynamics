@@ -170,6 +170,7 @@
     <ClInclude Include="plotWindow.h" />
     <ClInclude Include="quaternion.h" />
     <ClInclude Include="resource.h" />
+    <ClInclude Include="styles.h" />
     <ClInclude Include="variationSteps.h" />
   </ItemGroup>
   <ItemGroup>
@@ -179,16 +180,19 @@
     <CudaCompile Include="kernels\dadras\dadras.cu" />
     <CudaCompile Include="kernels\fourwing\fourwing.cu" />
     <CudaCompile Include="kernels\halvorsen\halvorsen.cu" />
+    <CudaCompile Include="kernels\jj_mrlcs\jj_mrlcs.cu" />
+    <CudaCompile Include="kernels\jj_rlcs\jj_rlcs.cu" />
     <CudaCompile Include="kernels\langford\langford.cu" />
-    <CudaCompile Include="kernels\lorenz2\lorenz2.cu" />
-    <CudaCompile Include="kernels\lorenzMod\lorenzMod.cu" />
-    <CudaCompile Include="kernels\mrlcs_jj\mrlcs_jj.cu" />
-    <CudaCompile Include="kernels\msprottj\msprottj.cu" />
-    <CudaCompile Include="kernels\rlcs_jj\rlcs_jj.cu" />
+    <CudaCompile Include="kernels\lorenzVar\lorenzVar.cu" />
+    <CudaCompile Include="kernels\lorenz\lorenz.cu" />
+    <CudaCompile Include="kernels\rabinovich_fabrikant\rabinovich_fabrikant.cu" />
     <CudaCompile Include="kernels\rossler\rossler.cu" />
-    <CudaCompile Include="kernels\sprott\sprott.cu" />
+    <CudaCompile Include="kernels\sang\sang.cu" />
+    <CudaCompile Include="kernels\sprott14\sprott14.cu" />
+    <CudaCompile Include="kernels\sprottJm\sprottJm.cu" />
     <CudaCompile Include="kernels\thomas\thomas.cu" />
     <CudaCompile Include="kernels\three_scroll\three_scroll.cu" />
+    <CudaCompile Include="kernels\vnm\vnm.cu" />
     <CudaCompile Include="kernels\wilson\wilson.cu" />
     <CudaCompile Include="main.cu" />
   </ItemGroup>

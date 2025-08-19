@@ -16,24 +16,27 @@ std::string selectedKernel;
 
 void common_main()
 {
-    addKernel(lorenz2);
-    addKernel(lorenzMod);
-    addKernel(mrlcs_jj);
-    addKernel(rlcs_jj);
+    addKernel(lorenz);
+    addKernel(lorenzVar);
+    addKernel(jj_mrlcs);
+    addKernel(jj_rlcs);
     addKernel(chen);
     addKernel(dadras);
     addKernel(fourwing);
     addKernel(halvorsen);
     addKernel(langford);
     addKernel(rossler);
-    addKernel(sprott);
+    addKernel(sprott14);
+    addKernel(sprottJm);
     addKernel(three_scroll);
     addKernel(wilson);
-    addKernel(msprottj);
+    addKernel(rabinovich_fabrikant);
+    addKernel(sang);
     addKernel(thomas);
+    addKernel(vnm);
 
     //selectKernel(kernels.begin()->first);
-    selectKernel(lorenz2);
+    selectKernel(lorenz);
 
     imgui_main(0, 0);
 }

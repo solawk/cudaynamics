@@ -4,7 +4,7 @@
 namespace attributes
 {
     enum variables { x, y, z };
-    enum parameters { a, b, c, symmetry, method };
+    enum parameters { a, b, c, stepsize, symmetry, method };
     enum methods { ExplicitEuler, ExplicitMidpoint, ExplicitRungeKutta4, VariableSymmetryCD};
     enum maps { LLE };
 }
@@ -46,91 +46,68 @@ __device__ void finiteDifferenceScheme_rossler(numb* currentV, numb* nextV, numb
 {
     ifMETHOD(P(method), ExplicitEuler)
     {
-        numb dx = -(V(y) + V(z));
-        numb dy = V(x) + P(a)*V(y);
-        numb dz = P(b) + V(z)*(V(x) - P(c));
-
-        Vnext(x) = V(x) + h * dx;
-        Vnext(y) = V(y) + h * dy;
-        Vnext(z) = V(z) + h * dz;
+        Vnext(x) = V(x) + P(stepsize) * (-(V(y) + V(z)));
+        Vnext(y) = V(y) + P(stepsize) * (V(x) + P(a) * V(y));
+        Vnext(z) = V(z) + P(stepsize) * (P(b) + V(z) * (V(x) - P(c)));
     }
 
     ifMETHOD(P(method), ExplicitMidpoint)
     {
-        numb dx = -(V(y) + V(z));
-        numb dy = V(x) + P(a)*V(y);
-        numb dz = P(b) + V(z)*(V(x)-P(c));
+        numb xmp = V(x) + P(stepsize) * 0.5 * (-(V(y) + V(z)));
+        numb ymp = V(y) + P(stepsize) * 0.5 * (V(x) + P(a) * V(y));
+        numb zmp = V(z) + P(stepsize) * 0.5 * (P(b) + V(z) * (V(x) - P(c)));
 
-        numb xmp = V(x) + h * 0.5 * dx;
-        numb ymp = V(y) + h * 0.5 * dy;
-        numb zmp = V(z) + h * 0.5 * dz;
-
-        numb dx2 = -(ymp + zmp);
-        numb dy2 = xmp + P(a)*ymp;
-        numb dz2 = P(b) + zmp*(xmp - P(c));
-
-        Vnext(x) = V(x) + h * dx2;
-        Vnext(y) = V(y) + h * dy2;
-        Vnext(z) = V(z) + h * dz2;
+        Vnext(x) = V(x) + P(stepsize) * (-(ymp + zmp));
+        Vnext(y) = V(y) + P(stepsize) * (xmp + P(a) * ymp);
+        Vnext(z) = V(z) + P(stepsize) * (P(b) + zmp * (xmp - P(c)));
     }
 
     ifMETHOD(P(method), ExplicitRungeKutta4)
     {
+        numb kx1 = -(V(y) + V(z));
+        numb ky1 = V(x) + P(a) * V(y);
+        numb kz1 = P(b) + V(z) * (V(x) - P(c));
 
+        numb xmp = V(x) + 0.5 * P(stepsize) * kx1;
+        numb ymp = V(y) + 0.5 * P(stepsize) * ky1;
+        numb zmp = V(z) + 0.5 * P(stepsize) * kz1;
 
-        numb dx1 = -(V(y) + V(z));
-        numb dy1 = V(x) + P(a) * V(y);
-        numb dz1 = P(b) + V(z) * (V(x) - P(c));
+        numb kx2 = -(ymp + zmp);
+        numb ky2 = xmp + P(a) * ymp;
+        numb kz2 = P(b) + zmp * (xmp - P(c));
 
-        numb xmp = V(x) + 0.5 * h * dx1;
-        numb ymp = V(y) + 0.5 * h * dy1;
-        numb zmp = V(z) + 0.5 * h * dz1;
+        xmp = V(x) + 0.5 * P(stepsize) * kx2;
+        ymp = V(y) + 0.5 * P(stepsize) * ky2;
+        zmp = V(z) + 0.5 * P(stepsize) * kz2;
 
-        numb dx2 = -(ymp + zmp);
-        numb dy2 = xmp + P(a) * ymp;
-        numb dz2 = P(b) + zmp * (xmp - P(c));
+        numb kx3 = -(ymp + zmp);
+        numb ky3 = xmp + P(a) * ymp;
+        numb kz3 = P(b) + zmp * (xmp - P(c));
 
-        xmp = V(x) + 0.5 * h * dx2;
-        ymp = V(y) + 0.5 * h * dy2;
-        zmp = V(z) + 0.5 * h * dz2;
+        xmp = V(x) + P(stepsize) * kx3;
+        ymp = V(y) + P(stepsize) * ky3;
+        zmp = V(z) + P(stepsize) * kz3;
 
-        numb dx3 = -(ymp + zmp);
-        numb dy3 = xmp + P(a) * ymp;
-        numb dz3 = P(b) + zmp * (xmp - P(c));
+        numb kx4 = -(ymp + zmp);
+        numb ky4 = xmp + P(a) * ymp;
+        numb kz4 = P(b) + zmp * (xmp - P(c));
 
-        xmp = V(x) + h * dx3;
-        ymp = V(y) + h * dy3;
-        zmp = V(z) + h * dz3;
-
-        numb dx4 = -(ymp + zmp);
-        numb dy4 = xmp + P(a) * ymp;
-        numb dz4 = P(b) + zmp * (xmp - P(c));
-
-        Vnext(x) = V(x) + h * (dx1 + 2 * dx2 + 2 * dx3 + dx4) / 6;
-        Vnext(y) = V(y) + h * (dy1 + 2 * dy2 + 2 * dy3 + dy4) / 6;
-        Vnext(z) = V(z) + h * (dz1 + 2 * dz2 + 2 * dz3 + dz4) / 6;
-
+        Vnext(x) = V(x) + P(stepsize) * (kx1 + 2 * kx2 + 2 * kx3 + kx4) / 6;
+        Vnext(y) = V(y) + P(stepsize) * (ky1 + 2 * ky2 + 2 * ky3 + ky4) / 6;
+        Vnext(z) = V(z) + P(stepsize) * (kz1 + 2 * kz2 + 2 * kz3 + kz4) / 6;
     }
 
     ifMETHOD(P(method), VariableSymmetryCD)
     {
-        numb s = P(symmetry);
-        numb h1 = 0.5 * h - s;
-        numb h2 = 0.5 * h + s;
+        numb h1 = 0.5 * P(stepsize) - P(symmetry);
+        numb h2 = 0.5 * P(stepsize) + P(symmetry);
 
-        numb dx1 = -(V(y) + V(z));
-        numb xmp1 = V(x) + h1 * dx1;
-        numb dy1 = xmp1 + P(a) * V(y);
-        numb ymp1 = V(y) + h1 * dy1;
-        numb dz1 = P(b) + V(z) * (xmp1 - P(c));
-        numb zmp1 = V(z) + h1 * dz1;
-
-        numb zmp2 = (zmp1+h2*P(b))/(1-h2*xmp1+h2*P(c));
-        numb ymp2 = (ymp1+xmp1*h2)/(1-P(a)*h2);
-        numb xmp2 = xmp1-h2*ymp2-h2*zmp2;
-
-        Vnext(x) = xmp2;
-        Vnext(y) = ymp2;
-        Vnext(z) = zmp2;
+        numb zmp = V(z) + h1 * (P(b) + V(z) * (V(x) - P(c)));
+        numb ymp = V(y) + h1 * (V(x) + P(a) * V(y));
+        numb xmp = V(x) + h1 * (-(ymp + zmp));
+        
+        Vnext(x) = xmp + h2 * (-(ymp + zmp));
+        Vnext(y) = (ymp + h2 * Vnext(x)) / (1 - P(a) * h2);
+        Vnext(z) = (zmp + h2 * P(b)) / (1 - (Vnext(x) - P(c)) * h2);
     }
 }

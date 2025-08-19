@@ -28,11 +28,11 @@ param p5 Fixed 26.0 50.0 0.1 250 0.0 0.0
 param p6 Fixed 1.35 50.0 0.1 250 0.0 0.0
 param p7 Fixed 0.0874 50.0 0.1 250 0.0 0.0
 param Imax Fixed 0.5 29.0 0.1 0 0.0 0.0
-param Iduty Fixed 5.0 29.0 0.1 0 0.0 0.0
+param Iduty Fixed 10.0 29.0 0.1 0 0.0 0.0
+param stepsize Fixed 0.01 0.1 0.01 100 0.0 0.0
 // Defining enumerated parameters (useful for methods):
 // enum <name> <ranging type> <minimum value> <maximum value> <step> <step count> <normal mean> <normal deviation> <enum names, no spaces>
-//enum method 1ExplicitEuler 0ExplicitMidpoint 0ExplicitRK4 0SomeLongMethodNameToExceedString
-//
+enum method 1ExplicitEuler
 // Defining maps:
 // map <name> <map settings count (inside its struct)> <map settings, beginning with "n" for numbs and "i" for ints>
-//map LLE 7 r n0.01 L i50 variableToDeflect i0 norm0 i0 norm1 i1 norm2 i2 norm3 i-1
+map LLE 7 r n0.01 L i50 variableToDeflect i2 norm0 i0 norm1 i1 norm2 i2 norm3 i-1
