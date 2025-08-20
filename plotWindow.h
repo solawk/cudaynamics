@@ -7,7 +7,7 @@
 #define MAX_VARS_PARAMS 32
 
 enum PlotType { Series, Phase, Phase2D, Orbit, Heatmap, PlotType_COUNT };
-
+enum OrbitPlotType {  Peak_Bifurcation, Interval_Bifurcation, Bifurcation_3D, Selected_Var_Section, OrbitPlotType_COUNT};
 struct PlotWindow
 {
 public:
@@ -56,6 +56,11 @@ public:
 
 	int OrbitXIndex;
 	bool ShowOrbitParLines;
+	OrbitPlotType OrbitType;
+	float OrbitDotSize;
+	float OrbitMarkerSize;
+	ImVec4 OrbitMarkerColor;
+	bool OrbitInvertedAxes;
 
 	PlotWindow(int _id, std::string _name = "plot", bool _is3d = false)
 	{
@@ -95,7 +100,12 @@ public:
 		originalPos = originalSize = ImVec2(0.0f, 0.0f);
 
 		OrbitXIndex = 0;
-		ShowOrbitParLines = false;
+		ShowOrbitParLines = true;
+		OrbitType = Peak_Bifurcation;
+		OrbitDotSize = 0.5f;
+		OrbitMarkerColor = ImVec4(1.0f, 1.0f, 1.0f, 0.5f);
+		OrbitMarkerSize = 1;
+		OrbitInvertedAxes = false;
 	}
 
 	void AssignVariables(int* variablesArray)
