@@ -66,7 +66,7 @@ bool computeAfterShiftSelect = false;
 bool hiresComputeAfterShiftSelect = false;
 bool autofitHeatmap;
 
-ImGuiCustomStyle appStyle = ImGuiCustomStyle::Dark;
+ImGuiCustomStyle appStyle = ImGuiCustomStyle::Light;
 
 // Temporary variables
 int variation = 0;
@@ -228,7 +228,7 @@ int hiresAsyncComputation()
     int computationResult = compute(&computationHires);
 
     autofitAfterComputing = true;
-    resetTempBuffers(&computationHires);
+    //resetTempBuffers(&computationHires);
     initAVI(true);
 
     computationHires.ready = true;
@@ -1902,7 +1902,7 @@ int imgui_main(int, char**)
                                                 if (firstpeakreached == false)
                                                 {
                                                     firstpeakreached = true;
-                                                    temppeakindex = i;
+                                                    temppeakindex = (float)i;
                                                 }
                                                 else
                                                 {
@@ -1912,7 +1912,7 @@ int imgui_main(int, char**)
                                                     bifAmps[BifDotAmount] = curr;
                                                     bifIntervals[BifDotAmount] = (i - temppeakindex);
                                                     bifParamIndices[BifDotAmount] = paramMin + j * paramStep;
-                                                    temppeakindex = i;
+                                                    temppeakindex = (float)i;
                                                     peakCount++;
                                                     BifDotAmount++;
 
