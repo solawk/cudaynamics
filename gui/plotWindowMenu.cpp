@@ -109,11 +109,11 @@ void plotWindowMenu_OrbitPlot(PlotWindow* window) {
 
 		
 		ImGui::ColorEdit4(("##" + windowName + "_dotColor").c_str(), (float*)(&(window->plotColor)));		ImGui::SameLine(); ImGui::Text("Dot color");
-		ImGui::DragFloat("Orbit dot size", &window->OrbitDotSize, 0.1,0.5,4.0,"%.1f");
+		ImGui::DragFloat("Orbit dot size", &window->OrbitDotSize, 0.1f, 0.5f, 4.0f,"%.1f");
 
 		ImGui::Checkbox("Show parameter marker", &window->ShowOrbitParLines);
 		ImGui::ColorEdit4(("##" + windowName + "_markerColor").c_str(), (float*)(&(window->OrbitMarkerColor)));		ImGui::SameLine(); ImGui::Text("Marker color");
-		ImGui::DragFloat("Marker size", &window->OrbitMarkerSize, 0.1, 0.5, 4.0, "%.1f");
+		ImGui::DragFloat("Marker size", &window->OrbitMarkerSize, 0.1f, 0.5f, 4.0f, "%.1f");
 		ImGui::Checkbox("Invert axes", &window->OrbitInvertedAxes);
 		ImGui::EndMenu();
 	}

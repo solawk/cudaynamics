@@ -1895,14 +1895,15 @@ int imgui_main(int, char**)
                                                 if (firstpeakreached == false)
                                                 {
                                                     firstpeakreached = true;
-                                                    temppeakindex = i;
+                                                    temppeakindex = (float)i;
                                                 }
                                                 else
                                                 {
 
                                                     peakAmplitudes[peakCount] = curr;
                                                     peakIntervals[peakCount] = i - temppeakindex;
-                                                    peakCount++; temppeakindex = i;
+                                                    peakCount++;
+                                                    temppeakindex = (float)i;
                                                 }
                                             }
                                         }
@@ -1950,14 +1951,14 @@ int imgui_main(int, char**)
                                                     if (firstpeakreached == false)
                                                     {
                                                         firstpeakreached = true;
-                                                        temppeakindex = i;
+                                                        temppeakindex = (float)i;
                                                     }
                                                     else
                                                     {
                                                         bifAmps[BifDotAmount] = curr;
                                                         bifIntervals[BifDotAmount] = (i - temppeakindex);
                                                         bifParamIndices[BifDotAmount] = paramMin + j * paramStep;
-                                                        temppeakindex = i;
+                                                        temppeakindex = (float)i;
                                                         peakCount++;
                                                         BifDotAmount++;
 

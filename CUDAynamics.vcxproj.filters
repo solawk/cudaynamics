@@ -249,6 +249,9 @@
     <CudaCompile Include="kernels\fitznagumo\fitznagumo.cu">
       <Filter>kernels</Filter>
     </CudaCompile>
+    <CudaCompile Include="kernels\bolshakov\bolshakov.cu">
+      <Filter>kernels</Filter>
+    </CudaCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="CUDAynamics.rc" />
