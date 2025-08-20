@@ -28,6 +28,7 @@
 #include "kernels/sang/sang.h"
 #include "kernels/rabinovich_fabrikant/rabinovich_fabrikant.h"
 #include "kernels/thomas/thomas.h"
+#include "kernels/bolshakov/bolshakov.h"
 #include "kernels/vnm/vnm.h"
 #include "kernels/fitznagumo/fitznagumo.h"
 
