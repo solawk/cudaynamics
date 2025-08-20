@@ -34,6 +34,7 @@ void common_main()
     addKernel(sang);
     addKernel(thomas);
     addKernel(vnm);
+    addKernel(fitznagumo);
     addKernel(bolshakov);
 
     //selectKernel(kernels.begin()->first);

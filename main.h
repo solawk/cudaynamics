@@ -30,6 +30,7 @@
 #include "kernels/thomas/thomas.h"
 #include "kernels/bolshakov/bolshakov.h"
 #include "kernels/vnm/vnm.h"
+#include "kernels/fitznagumo/fitznagumo.h"
 
 extern std::map<std::string, Kernel> kernels;
 extern std::map<std::string, int> kernelTPBs;

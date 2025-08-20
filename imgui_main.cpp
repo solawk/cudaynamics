@@ -228,7 +228,7 @@ int hiresAsyncComputation()
     int computationResult = compute(&computationHires);
 
     autofitAfterComputing = true;
-    resetTempBuffers(&computationHires);
+    //resetTempBuffers(&computationHires);
     initAVI(true);
 
     computationHires.ready = true;
@@ -701,7 +701,7 @@ int imgui_main(int, char**)
             ImGui::PopStyleColor();
         }
 
-        popStyle = false;
+        /*popStyle = false;
         if (kernelNew.stepSize != KERNEL.stepSize)
         {
             anyChanged = true;
@@ -713,7 +713,7 @@ int imgui_main(int, char**)
         KERNELNEWCURRENT.stepSize = (numb)stepSizeFloat;
         TOOLTIP("Step size of the simulation, h");
         ImGui::PopItemWidth();
-        if (popStyle) POP_FRAME(3);
+        if (popStyle) POP_FRAME(3);*/
 
         variation = 0;
 
@@ -1921,7 +1921,7 @@ int imgui_main(int, char**)
                                                 ImPlot::SetupAxisLimits(ImAxis_X1, minX * 0.95f, maxX * 1.05f, ImGuiCond_None);
                                                 ImPlot::SetupAxisLimits(ImAxis_Y1, minY * 0.95f, maxY * 1.05f, ImGuiCond_None);
                                                 ImPlot::SetupFinish();
-                                                ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle, 4, window->plotColor,-1.0, window->plotColor);
+                                                ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle, window->OrbitDotSize, window->plotColor,-1.0, window->plotColor);
                                                 if(!window->OrbitInvertedAxes)ImPlot::PlotScatter(("##" + plotName + "_ChosenVariationPlot").c_str(), peakIntervals, peakAmplitudes, peakCount - 1);
                                                 else ImPlot::PlotScatter(("##" + plotName + "_ChosenVariationPlot").c_str(), peakAmplitudes, peakIntervals, peakCount - 1);
                                                 ImPlot::EndPlot();
