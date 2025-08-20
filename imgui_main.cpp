@@ -66,7 +66,7 @@ bool computeAfterShiftSelect = false;
 bool hiresComputeAfterShiftSelect = false;
 bool autofitHeatmap;
 
-ImGuiCustomStyle appStyle = ImGuiCustomStyle::Dark;
+ImGuiCustomStyle appStyle = ImGuiCustomStyle::Light;
 
 // Temporary variables
 int variation = 0;
@@ -1561,7 +1561,7 @@ int imgui_main(int, char**)
                                 rotateOffsetBuffer(dataBuffer, computedSteps + 1, KERNEL.VAR_COUNT, window->variables[0], window->variables[1], window->variables[2],
                                     rotationEuler, window->offset, window->scale);
 
-                                getMinMax2D(dataBuffer, computedSteps + 1, &(plot->dataMin), &(plot->dataMax));
+                                getMinMax2D(dataBuffer, computedSteps + 1, &(plot->dataMin), &(plot->dataMax), KERNEL.VAR_COUNT);
                                 //getMinMax2D(computedVariation, computedSteps + 1, &(plot->dataMin), &(plot->dataMax));
 
                                 if (colorsLUTfrom == nullptr)
@@ -1646,7 +1646,7 @@ int imgui_main(int, char**)
                                 rotateOffsetBuffer(particleBuffer, computations[playedBufferIndex].marshal.totalVariations, KERNEL.VAR_COUNT, window->variables[0], window->variables[1], window->variables[2],
                                     rotationEuler, window->offset, window->scale);
 
-                                getMinMax2D(particleBuffer, computations[playedBufferIndex].marshal.totalVariations, &(plot->dataMin), &(plot->dataMax));
+                                getMinMax2D(particleBuffer, computations[playedBufferIndex].marshal.totalVariations, &(plot->dataMin), &(plot->dataMax), KERNEL.VAR_COUNT);
 
                                 ImPlot::PushStyleVar(ImPlotStyleVar_MarkerWeight, window->markerOutlineSize);
                                 ImPlot::SetNextMarkerStyle(window->markerShape, window->markerSize);
@@ -1828,7 +1828,7 @@ int imgui_main(int, char**)
                                         particleBuffer[v * varCount + var] = trajectory[(variationSize * v) + (varCount * particleStep) + var];
                                 }
 
-                                getMinMax2D(particleBuffer, computations[playedBufferIndex].marshal.totalVariations, &(plot->dataMin), &(plot->dataMax));
+                                getMinMax2D(particleBuffer, computations[playedBufferIndex].marshal.totalVariations, &(plot->dataMin), &(plot->dataMax), KERNEL.VAR_COUNT);
 
                                 ImPlot::SetNextLineStyle(window->markerColor);
                                 ImPlot::PushStyleVar(ImPlotStyleVar_MarkerWeight, window->markerOutlineSize);

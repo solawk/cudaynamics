@@ -5,7 +5,7 @@ namespace attributes
 {
     enum variables { v, w };
     enum parameters { a, b, tau, R, Iext, stepsize, method };
-    enum methods { ExplicitEuler };
+    enum methods { ExplicitEuler, ExplicitMidpoint };
     enum maps { LLE };
 }
 
@@ -48,5 +48,14 @@ __device__ void finiteDifferenceScheme_fitznagumo(numb* currentV, numb* nextV, n
     {
         Vnext(v) = V(v) + P(stepsize) * (V(v) - (V(v) * V(v) * V(v) / 3.0f) - V(w) + P(R) * P(Iext));
         Vnext(w) = V(w) + P(stepsize) * ((V(v) + P(a) - P(b) * V(w)) / P(tau));
+    }
+    
+    ifMETHOD(P(method), ExplicitMidpoint)
+    {
+        numb vmp = V(v) + P(stepsize) * 0.5f * (V(v) - (V(v) * V(v) * V(v) / 3.0f) - V(w) + P(R) * P(Iext));
+        numb wmp = V(w) + P(stepsize) * 0.5f * ((V(v) + P(a) - P(b) * V(w)) / P(tau));
+
+        Vnext(v) = V(v) + P(stepsize) * (vmp - (vmp * vmp * vmp / 3.0f) - wmp + P(R) * P(Iext));
+        Vnext(w) = V(w) + P(stepsize) * ((vmp + P(a) - P(b) * wmp) / P(tau));
     }
 }
