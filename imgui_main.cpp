@@ -66,7 +66,7 @@ bool computeAfterShiftSelect = false;
 bool hiresComputeAfterShiftSelect = false;
 bool autofitHeatmap;
 
-ImGuiCustomStyle appStyle = ImGuiCustomStyle::Light;
+ImGuiCustomStyle appStyle = ImGuiCustomStyle::Dark;
 
 // Temporary variables
 int variation = 0;
@@ -701,7 +701,7 @@ int imgui_main(int, char**)
             ImGui::PopStyleColor();
         }
 
-        popStyle = false;
+        /*popStyle = false;
         if (kernelNew.stepSize != KERNEL.stepSize)
         {
             anyChanged = true;
@@ -713,7 +713,7 @@ int imgui_main(int, char**)
         KERNELNEWCURRENT.stepSize = (numb)stepSizeFloat;
         TOOLTIP("Step size of the simulation, h");
         ImGui::PopItemWidth();
-        if (popStyle) POP_FRAME(3);
+        if (popStyle) POP_FRAME(3);*/
 
         variation = 0;
 

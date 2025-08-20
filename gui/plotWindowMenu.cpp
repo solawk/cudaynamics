@@ -21,7 +21,7 @@ void plotWindowMenu(PlotWindow* window)
 	{
 		plotWindowMenu_File(window);
 		if (window->type == Phase || window->type == Phase2D) plotWindowMenu_PhasePlot(window);
-		if (window->type == Heatmap || window->type == Phase2D) plotWindowMenu_HeatmapPlot(window);
+		if (window->type == Heatmap) plotWindowMenu_HeatmapPlot(window);
 		if (window->type == Heatmap) plotWindowMenu_HeatmapColors(window);
 
 		ImGui::EndMenuBar();
