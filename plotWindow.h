@@ -6,7 +6,7 @@
 // Maximum amount of variables and parameters in the plot
 #define MAX_VARS_PARAMS 32
 
-enum PlotType { Series, Phase, Phase2D, Orbit, Heatmap, PlotType_COUNT };
+enum PlotType { Series, Phase, Phase2D, Orbit, Heatmap, Metric, PlotType_COUNT };
 enum OrbitPlotType {  Peak_Bifurcation, Interval_Bifurcation, Bifurcation_3D, Selected_Var_Section, OrbitPlotType_COUNT};
 struct PlotWindow
 {
@@ -62,6 +62,9 @@ public:
 	ImVec4 OrbitMarkerColor;
 	bool OrbitInvertedAxes;
 
+	int indexX;
+	MapDimensionType typeX;
+
 	PlotWindow(int _id, std::string _name = "plot", bool _is3d = false)
 	{
 		active = true;
@@ -76,7 +79,7 @@ public:
 
 		settingsListEnabled = true;
 
-		markerSize = 1.0f;
+		markerSize = 2.0f;
 		markerOutlineSize = 0.0f;
 		markerColor = ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
 
@@ -106,6 +109,9 @@ public:
 		OrbitMarkerColor = ImVec4(1.0f, 1.0f, 1.0f, 0.5f);
 		OrbitMarkerSize = 1;
 		OrbitInvertedAxes = false;
+
+		indexX = 0;
+		typeX = VARIABLE;
 	}
 
 	void AssignVariables(int* variablesArray)
