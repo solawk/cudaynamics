@@ -13,6 +13,9 @@
 
 #include "kernels/lorenz/lorenz.h"
 #include "kernels/lorenzVar/lorenzVar.h"
+#include "kernels/lorenz83/lorenz83.h"
+#include "kernels/hindmarsh_rose/hindmarsh_rose.h"
+#include "kernels/izhikevich/izhikevich.h"
 #include "kernels/jj_mrlcs/jj_mrlcs.h"
 #include "kernels/jj_rlcs/jj_rlcs.h"
 #include "kernels/chen/chen.h"
@@ -30,7 +33,7 @@
 #include "kernels/thomas/thomas.h"
 #include "kernels/bolshakov/bolshakov.h"
 #include "kernels/vnm/vnm.h"
-#include "kernels/fitznagumo/fitznagumo.h"
+#include "kernels/fitzhugh_nagumo/fitzhugh_nagumo.h"
 
 extern std::map<std::string, Kernel> kernels;
 extern std::map<std::string, int> kernelTPBs;

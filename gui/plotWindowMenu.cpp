@@ -106,10 +106,21 @@ void plotWindowMenu_OrbitPlot(PlotWindow* window) {
 		ImGui::SameLine();
 		ImGui::Text("Orbit plot type");
 		ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.485f);
+		std::string orbitdottypes[] = { "Circle", "Square", "Diamond", "Up Triangle", "Down Triangle", "Left Triangle", "Right Triangle", "Cross", "Plus", "Asterisk"};
+		if (ImGui::BeginCombo(("##" + windowName + "_OrbitDotShape").c_str(), (orbitdottypes[window->markerShape]).c_str(), 0))
+		{
+			for (int t = 0; t < ImPlotMarker_COUNT; t++)
+			{
+				bool isSelected = window->OrbitType == t;
+				ImGuiSelectableFlags selectableFlags = 0;
+				if (ImGui::Selectable(orbitdottypes[t].c_str(), isSelected, selectableFlags)) window->markerShape = (ImPlotMarker)t;
+			}
 
-		
+			ImGui::EndCombo();
+		}
+		ImGui::SameLine(); ImGui::Text("Dot shape");
 		ImGui::ColorEdit4(("##" + windowName + "_dotColor").c_str(), (float*)(&(window->plotColor)));		ImGui::SameLine(); ImGui::Text("Dot color");
-		ImGui::DragFloat("Orbit dot size", &window->OrbitDotSize, 0.1f, 0.5f, 4.0f,"%.1f");
+		ImGui::DragFloat("Dot size", &window->OrbitDotSize, 0.1f, 0.5f, 4.0f,"%.1f");
 
 		ImGui::Checkbox("Show parameter marker", &window->ShowOrbitParLines);
 		ImGui::ColorEdit4(("##" + windowName + "_markerColor").c_str(), (float*)(&(window->OrbitMarkerColor)));		ImGui::SameLine(); ImGui::Text("Marker color");
@@ -135,6 +146,9 @@ void plotWindowMenu_HeatmapPlot(PlotWindow* window)
 
 		bool tempShowDragLines = heatmap->showDragLines; if (ImGui::Checkbox(("##" + windowName + "showDragLines").c_str(), &tempShowDragLines)) heatmap->showDragLines = !heatmap->showDragLines;
 		ImGui::SameLine(); ImGui::Text("Show crosshair lines");
+
+		ImGui::ColorEdit4(("##" + windowName + "_markerColor").c_str(), (float*)(&(window->markerColor)));		ImGui::SameLine(); ImGui::Text("Marker color");
+		ImGui::DragFloat("Marker size", &window->markerSize, 0.1f, 0.5f, 4.0f, "%.1f");
 
 		bool tempShowLegend = heatmap->showDragLines; if (ImGui::Checkbox(("##" + windowName + "showLegend").c_str(), &tempShowLegend)) heatmap->showLegend = !heatmap->showLegend;
 		ImGui::SameLine(); ImGui::Text("Show colormap");

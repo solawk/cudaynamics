@@ -1,5 +1,5 @@
 Name: Josephson_Junction_MRLC-shunted
-Steps: 1000
+Steps: 10000
 Transient: 5000
 Step size: 0.1
 // Compute on CUDAynamics launch: yes/no
