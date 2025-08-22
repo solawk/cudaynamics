@@ -179,12 +179,16 @@
     <CudaCompile Include="kernels\bolshakov\bolshakov.cu" />
     <CudaCompile Include="kernels\chen\chen.cu" />
     <CudaCompile Include="kernels\dadras\dadras.cu" />
+    <CudaCompile Include="kernels\fitzhugh_nagumo\fitzhugh_nagumo.cu" />
     <CudaCompile Include="kernels\fitznagumo\fitznagumo.cu" />
     <CudaCompile Include="kernels\fourwing\fourwing.cu" />
     <CudaCompile Include="kernels\halvorsen\halvorsen.cu" />
+    <CudaCompile Include="kernels\hindmarsh_rose\hindmarsh_rose.cu" />
+    <CudaCompile Include="kernels\izhikevich\izhikevich.cu" />
     <CudaCompile Include="kernels\jj_mrlcs\jj_mrlcs.cu" />
     <CudaCompile Include="kernels\jj_rlcs\jj_rlcs.cu" />
     <CudaCompile Include="kernels\langford\langford.cu" />
+    <CudaCompile Include="kernels\lorenz83\lorenz83.cu" />
     <CudaCompile Include="kernels\lorenzVar\lorenzVar.cu" />
     <CudaCompile Include="kernels\lorenz\lorenz.cu" />
     <CudaCompile Include="kernels\rabinovich_fabrikant\rabinovich_fabrikant.cu" />

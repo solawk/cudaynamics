@@ -28,8 +28,8 @@ public:
 	// Plot settings
 	bool settingsListEnabled;
 
-	float markerSize;
-	float markerOutlineSize;
+	float markerWidth;
+	float markerOutlineWidth;
 	ImVec4 markerColor;
 
 	ImVec4 plotColor;
@@ -57,10 +57,18 @@ public:
 	int OrbitXIndex;
 	bool ShowOrbitParLines;
 	OrbitPlotType OrbitType;
-	float OrbitDotSize;
-	float OrbitMarkerSize;
+	float OrbitPointSize;
+	float OrbitMarkerWidth;
 	ImVec4 OrbitMarkerColor;
 	bool OrbitInvertedAxes;
+
+	bool areOrbitValuesDirty;
+	numb* bifAmps;
+	numb* bifParamIndices;
+	numb* bifIntervals;
+	std::vector<int> lastAttributeValueIndices;
+	int BifDotAmount;
+	int prevTotalVariation;
 
 	int indexX;
 	MapDimensionType typeX;
@@ -79,8 +87,8 @@ public:
 
 		settingsListEnabled = true;
 
-		markerSize = 2.0f;
-		markerOutlineSize = 0.0f;
+		markerWidth = 2.0f;
+		markerOutlineWidth = 0.0f;
 		markerColor = ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
 
 		plotColor = ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
@@ -105,10 +113,14 @@ public:
 		OrbitXIndex = 0;
 		ShowOrbitParLines = true;
 		OrbitType = Peak_Bifurcation;
-		OrbitDotSize = 0.5f;
-		OrbitMarkerColor = ImVec4(1.0f, 1.0f, 1.0f, 0.5f);
-		OrbitMarkerSize = 1;
+		OrbitPointSize = 0.5f;
+		OrbitMarkerColor = ImVec4(1.0f, 0.0f, 0.0f, 0.5f);
+		OrbitMarkerWidth = 1;
 		OrbitInvertedAxes = false;
+		areOrbitValuesDirty = true;
+		bifAmps = NULL;
+		bifParamIndices = NULL;
+		bifIntervals = NULL;
 
 		indexX = 0;
 		typeX = VARIABLE;
