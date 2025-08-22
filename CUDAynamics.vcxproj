@@ -176,8 +176,10 @@
   <ItemGroup>
     <CudaCompile Include="analysis\lle\lle.cu" />
     <CudaCompile Include="analysis\max\max.cu" />
+    <CudaCompile Include="kernels\bolshakov\bolshakov.cu" />
     <CudaCompile Include="kernels\chen\chen.cu" />
     <CudaCompile Include="kernels\dadras\dadras.cu" />
+    <CudaCompile Include="kernels\fitznagumo\fitznagumo.cu" />
     <CudaCompile Include="kernels\fourwing\fourwing.cu" />
     <CudaCompile Include="kernels\halvorsen\halvorsen.cu" />
     <CudaCompile Include="kernels\jj_mrlcs\jj_mrlcs.cu" />

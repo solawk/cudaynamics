@@ -346,7 +346,7 @@ void getMinMax(numb* data, int size, numb* min, numb* max)
 	if (isnan(*max)) *max = 1.0f;
 }
 
-void getMinMax2D(numb* data, int size, ImVec2* min, ImVec2* max)
+void getMinMax2D(numb* data, int size, ImVec2* min, ImVec2* max, int varCount)
 {
 	(*min).x = (float)data[0];
 	(*min).y = (float)data[1];
@@ -357,8 +357,8 @@ void getMinMax2D(numb* data, int size, ImVec2* min, ImVec2* max)
 
 	for (int i = 1; i < size; i++)
 	{
-		x = i * 3;
-		y = i * 3 + 1;
+		x = i * varCount;
+		y = i * varCount + 1;
 
 		if (isnan(data[x]) || isinf(data[x]) || isnan(data[y]) || isinf(data[y])) continue;
 

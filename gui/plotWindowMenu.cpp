@@ -7,6 +7,7 @@ void plotWindowMenu_File(PlotWindow* window);
 void plotWindowMenu_PhasePlot(PlotWindow* window);
 void plotWindowMenu_HeatmapPlot(PlotWindow* window);
 void plotWindowMenu_HeatmapColors(PlotWindow* window);
+void plotWindowMenu_OrbitPlot(PlotWindow* window);
 
 extern bool enabledParticles;
 extern bool autofitHeatmap;
@@ -21,8 +22,9 @@ void plotWindowMenu(PlotWindow* window)
 	{
 		plotWindowMenu_File(window);
 		if (window->type == Phase || window->type == Phase2D) plotWindowMenu_PhasePlot(window);
-		if (window->type == Heatmap || window->type == Phase2D) plotWindowMenu_HeatmapPlot(window);
+		if (window->type == Heatmap ) plotWindowMenu_HeatmapPlot(window);
 		if (window->type == Heatmap) plotWindowMenu_HeatmapColors(window);
+		if (window->type == Orbit) plotWindowMenu_OrbitPlot(window);
 
 		ImGui::EndMenuBar();
 	}
@@ -83,6 +85,51 @@ void plotWindowMenu_PhasePlot(PlotWindow* window)
 	}
 }
 
+void plotWindowMenu_OrbitPlot(PlotWindow* window) {
+	if (ImGui::BeginMenu("Plot"))
+	{
+		std::string windowName = window->name + std::to_string(window->id);
+		plotWindowMenu_CommonPlot(window, windowName);
+		ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.58f);
+		std::string orbitplottypes[] = { "Peaks Bifurcation", "Intervals Bifurcation", "Features Bifurcation", "Features Section" };
+		if (ImGui::BeginCombo(("##" + windowName + "_OrbitPlotType").c_str(), (orbitplottypes[window->OrbitType]).c_str(), 0))
+		{
+			for (int t = 0; t < OrbitPlotType_COUNT; t++)
+			{
+				bool isSelected = window->OrbitType == t;
+				ImGuiSelectableFlags selectableFlags = 0;
+				if (ImGui::Selectable(orbitplottypes[t].c_str(), isSelected, selectableFlags)) window->OrbitType = (OrbitPlotType)t;
+			}
+
+			ImGui::EndCombo();
+		}
+		ImGui::SameLine();
+		ImGui::Text("Orbit plot type");
+		ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.485f);
+		std::string orbitdottypes[] = { "Circle", "Square", "Diamond", "Up Triangle", "Down Triangle", "Left Triangle", "Right Triangle", "Cross", "Plus", "Asterisk"};
+		if (ImGui::BeginCombo(("##" + windowName + "_OrbitDotShape").c_str(), (orbitdottypes[window->markerShape]).c_str(), 0))
+		{
+			for (int t = 0; t < ImPlotMarker_COUNT; t++)
+			{
+				bool isSelected = window->OrbitType == t;
+				ImGuiSelectableFlags selectableFlags = 0;
+				if (ImGui::Selectable(orbitdottypes[t].c_str(), isSelected, selectableFlags)) window->markerShape = (ImPlotMarker)t;
+			}
+
+			ImGui::EndCombo();
+		}
+		ImGui::SameLine(); ImGui::Text("Dot shape");
+		ImGui::ColorEdit4(("##" + windowName + "_dotColor").c_str(), (float*)(&(window->plotColor)));		ImGui::SameLine(); ImGui::Text("Dot color");
+		ImGui::DragFloat("Dot size", &window->OrbitDotSize, 0.1f, 0.5f, 4.0f,"%.1f");
+
+		ImGui::Checkbox("Show parameter marker", &window->ShowOrbitParLines);
+		ImGui::ColorEdit4(("##" + windowName + "_markerColor").c_str(), (float*)(&(window->OrbitMarkerColor)));		ImGui::SameLine(); ImGui::Text("Marker color");
+		ImGui::DragFloat("Marker size", &window->OrbitMarkerSize, 0.1f, 0.5f, 4.0f, "%.1f");
+		ImGui::Checkbox("Invert axes", &window->OrbitInvertedAxes);
+		ImGui::EndMenu();
+	}
+}
+
 void plotWindowMenu_HeatmapPlot(PlotWindow* window)
 {
 	if (ImGui::BeginMenu("Plot"))
@@ -99,6 +146,9 @@ void plotWindowMenu_HeatmapPlot(PlotWindow* window)
 
 		bool tempShowDragLines = heatmap->showDragLines; if (ImGui::Checkbox(("##" + windowName + "showDragLines").c_str(), &tempShowDragLines)) heatmap->showDragLines = !heatmap->showDragLines;
 		ImGui::SameLine(); ImGui::Text("Show crosshair lines");
+
+		ImGui::ColorEdit4(("##" + windowName + "_markerColor").c_str(), (float*)(&(window->markerColor)));		ImGui::SameLine(); ImGui::Text("Marker color");
+		ImGui::DragFloat("Marker size", &window->markerSize, 0.1f, 0.5f, 4.0f, "%.1f");
 
 		bool tempShowLegend = heatmap->showDragLines; if (ImGui::Checkbox(("##" + windowName + "showLegend").c_str(), &tempShowLegend)) heatmap->showLegend = !heatmap->showLegend;
 		ImGui::SameLine(); ImGui::Text("Show colormap");

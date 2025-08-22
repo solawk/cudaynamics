@@ -17,7 +17,10 @@ std::string selectedKernel;
 void common_main()
 {
     addKernel(lorenz);
+    addKernel(lorenz83);
     addKernel(lorenzVar);
+    addKernel(hindmarsh_rose);
+    addKernel(izhikevich);
     addKernel(jj_mrlcs);
     addKernel(jj_rlcs);
     addKernel(chen);
@@ -34,6 +37,8 @@ void common_main()
     addKernel(sang);
     addKernel(thomas);
     addKernel(vnm);
+    addKernel(fitzhugh_nagumo);
+    addKernel(bolshakov);
 
     //selectKernel(kernels.begin()->first);
     selectKernel(lorenz);

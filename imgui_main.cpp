@@ -228,7 +228,7 @@ int hiresAsyncComputation()
     int computationResult = compute(&computationHires);
 
     autofitAfterComputing = true;
-    resetTempBuffers(&computationHires);
+    //resetTempBuffers(&computationHires);
     initAVI(true);
 
     computationHires.ready = true;
@@ -702,7 +702,7 @@ int imgui_main(int, char**)
             ImGui::PopStyleColor();
         }
 
-        popStyle = false;
+        /*popStyle = false;
         if (kernelNew.stepSize != KERNEL.stepSize)
         {
             anyChanged = true;
@@ -714,7 +714,7 @@ int imgui_main(int, char**)
         KERNELNEWCURRENT.stepSize = (numb)stepSizeFloat;
         TOOLTIP("Step size of the simulation, h");
         ImGui::PopItemWidth();
-        if (popStyle) POP_FRAME(3);
+        if (popStyle) POP_FRAME(3);*/
 
         variation = 0;
 
@@ -950,7 +950,7 @@ int imgui_main(int, char**)
             FullscreenButtonPressLogic(&graphBuilderWindow, ImGui::GetCurrentWindow());
 
             // Type
-            std::string plottypes[] = { "Time series", "3D Phase diagram", "2D Phase diagram", "Orbit diagram", "Heatmap" };
+            std::string plottypes[] = { "Time series", "3D Phase diagram", "2D Phase diagram", "Orbit diagram", "Heatmap", "Metric"};
             ImGui::Text("Plot type ");
             ImGui::SameLine();
             ImGui::PushItemWidth(250.0f);
@@ -1075,10 +1075,63 @@ int imgui_main(int, char**)
                 break;
 
             case Orbit:
+                ImGui::PushItemWidth(150.0f);
+                for (int sv = 0; sv < 1; sv++)
+                {
+                    ImGui::Text("Variable ");
+                    ImGui::SameLine();
+                    if (ImGui::BeginCombo(("##Plot builder var " + std::to_string(sv + 1)).c_str(), selectedPlotVars[sv] > -1 ? KERNEL.variables[selectedPlotVars[sv]].name.c_str() : "-"))
+                    {
+                        for (int v = (sv > 0 ? -1 : 0); v < KERNEL.VAR_COUNT; v++)
+                        {
+                            bool isSelected = selectedPlotVars[sv] == v;
+                            ImGuiSelectableFlags selectableFlags = 0;
 
+                            if (v == -1)
+                            {
+                                if (sv == 0 && (selectedPlotVars[1] > -1 || selectedPlotVars[2] > -1)) selectableFlags = ImGuiSelectableFlags_Disabled;
+                                if (sv == 1 && (selectedPlotVars[2] > -1)) selectableFlags = ImGuiSelectableFlags_Disabled;
+                                if (ImGui::Selectable("-", isSelected, selectableFlags)) selectedPlotVars[sv] = -1;
+                            }
+                            else
+                            {
+                                if (sv == 1 && selectedPlotVars[0] == -1) selectableFlags = ImGuiSelectableFlags_Disabled;
+                                if (sv == 2 && selectedPlotVars[1] == -1) selectableFlags = ImGuiSelectableFlags_Disabled;
+                                if (v == selectedPlotVars[(sv + 1) % 3] || v == selectedPlotVars[(sv + 2) % 3]) selectableFlags = ImGuiSelectableFlags_Disabled;
+                                if (ImGui::Selectable(v > -1 ? KERNEL.variables[v].name.c_str() : "-", isSelected, selectableFlags)) selectedPlotVars[sv] = v;
+                            }
+                        }
+                        ImGui::EndCombo();
+                    }
+                }
+                ImGui::PopItemWidth();
                 break;
-
             case Heatmap:
+                if (KERNEL.MAP_COUNT > 0)
+                {
+                    if (selectedPlotMap >= KERNEL.MAP_COUNT) selectedPlotMap = 0;
+
+                    ImGui::PushItemWidth(150.0f);
+
+                    ImGui::Text("Index");
+                    ImGui::SameLine();
+                    if (ImGui::BeginCombo("##Plot builder map index selection", KERNEL.mapDatas[selectedPlotMap].name.c_str()))
+                    {
+                        for (int m = 0; m < KERNEL.MAP_COUNT; m++)
+                        {
+                            bool isSelected = selectedPlotMap == m;
+                            ImGuiSelectableFlags selectableFlags = 0;
+
+                            if (selectedPlotMap == m) selectableFlags = ImGuiSelectableFlags_Disabled;
+                            if (ImGui::Selectable(KERNEL.mapDatas[m].name.c_str(), isSelected, selectableFlags)) selectedPlotMap = m;
+                        }
+                        ImGui::EndCombo();
+                    }
+
+                    ImGui::PopItemWidth();
+                }
+                break;
+            case Metric:
                 if (KERNEL.MAP_COUNT > 0)
                 {
                     if (selectedPlotMap >= KERNEL.MAP_COUNT) selectedPlotMap = 0;
@@ -1105,6 +1158,8 @@ int imgui_main(int, char**)
                 break;
             }
 
+            
+
             if (ImGui::Button("Create graph"))
             {
                 PlotWindow plotWindow = PlotWindow(uniqueIds++, plotNameBuffer, true);
@@ -1114,6 +1169,8 @@ int imgui_main(int, char**)
                 if (plotType == Phase) plotWindow.AssignVariables(selectedPlotVars);
                 if (plotType == Phase2D) plotWindow.AssignVariables(selectedPlotVars);
                 if (plotType == Heatmap) plotWindow.AssignVariables(selectedPlotMap);
+                if (plotType == Orbit) plotWindow.AssignVariables(selectedPlotVars);
+                if (plotType == Metric)plotWindow.AssignVariables(selectedPlotMap);
 
                 int indexOfColorsLutFrom = -1;
                 if (colorsLUTfrom != nullptr)
@@ -1277,6 +1334,66 @@ int imgui_main(int, char**)
                     heatmap->areValuesDirty = true;
                     heatmap->areHeatmapLimitsDefined = false;
                 }
+            }
+
+            if (window->type == Orbit)
+            {
+                Kernel* krnl = &(KERNEL);
+                ImGui::Text("Parameter:");
+                ImGui::SameLine();
+                ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.2f);
+                if (ImGui::BeginCombo(("##" + windowName + "_axisX").c_str(), krnl->parameters[window->OrbitXIndex].name.c_str(), 0))
+                {
+
+
+                    for (int p = 0; p < krnl->PARAM_COUNT; p++)
+                    {
+                        if (ImGui::Selectable(krnl->parameters[p].name.c_str()))
+                        {
+                            window->OrbitXIndex = p;
+                        }
+                    }
+
+                    ImGui::EndCombo();
+                }
+
+                ImGui::SameLine();
+                ImGui::Text(("Variable: " + KERNEL.variables[window->variables[0]].name).c_str());
+
+                
+
+            }
+            if (window->type == Metric) {
+                Kernel* krnl =  &(KERNEL);
+
+
+                ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.485f);
+                if (ImGui::BeginCombo(("##" + windowName + "_axisX").c_str(),
+                    window->typeX == VARIABLE ? krnl->variables[window->indexX].name.c_str() : krnl->parameters[window->indexX].name.c_str(), 0))
+                {
+                    for (int v = 0; v < krnl->VAR_COUNT; v++)
+                    {
+                        if (ImGui::Selectable(krnl->variables[v].name.c_str()))
+                        {
+                            window->indexX = v;
+                            window->typeX = VARIABLE;
+                        }
+                    }
+
+                    for (int p = 0; p < krnl->PARAM_COUNT; p++)
+                    {
+                        if (ImGui::Selectable(krnl->parameters[p].name.c_str()))
+                        {
+                            window->indexX = p;
+                            window->typeX = PARAMETER;
+                        }
+                    }
+
+                    ImGui::EndCombo();
+                }
+                ImGui::PopItemWidth();
+
+                
             }
 
             // Common variables
@@ -1506,7 +1623,7 @@ int imgui_main(int, char**)
                                 rotateOffsetBuffer(dataBuffer, computedSteps + 1, KERNEL.VAR_COUNT, window->variables[0], window->variables[1], window->variables[2],
                                     rotationEuler, window->offset, window->scale);
 
-                                getMinMax2D(dataBuffer, computedSteps + 1, &(plot->dataMin), &(plot->dataMax));
+                                getMinMax2D(dataBuffer, computedSteps + 1, &(plot->dataMin), &(plot->dataMax), KERNEL.VAR_COUNT);
                                 //getMinMax2D(computedVariation, computedSteps + 1, &(plot->dataMin), &(plot->dataMax));
 
                                 if (colorsLUTfrom == nullptr)
@@ -1591,7 +1708,7 @@ int imgui_main(int, char**)
                                 rotateOffsetBuffer(particleBuffer, computations[playedBufferIndex].marshal.totalVariations, KERNEL.VAR_COUNT, window->variables[0], window->variables[1], window->variables[2],
                                     rotationEuler, window->offset, window->scale);
 
-                                getMinMax2D(particleBuffer, computations[playedBufferIndex].marshal.totalVariations, &(plot->dataMin), &(plot->dataMax));
+                                getMinMax2D(particleBuffer, computations[playedBufferIndex].marshal.totalVariations, &(plot->dataMin), &(plot->dataMax), KERNEL.VAR_COUNT);
 
                                 ImPlot::PushStyleVar(ImPlotStyleVar_MarkerWeight, window->markerOutlineSize);
                                 ImPlot::SetNextMarkerStyle(window->markerShape, window->markerSize);
@@ -1773,7 +1890,7 @@ int imgui_main(int, char**)
                                         particleBuffer[v * varCount + var] = trajectory[(variationSize * v) + (varCount * particleStep) + var];
                                 }
 
-                                getMinMax2D(particleBuffer, computations[playedBufferIndex].marshal.totalVariations, &(plot->dataMin), &(plot->dataMax));
+                                getMinMax2D(particleBuffer, computations[playedBufferIndex].marshal.totalVariations, &(plot->dataMin), &(plot->dataMax), KERNEL.VAR_COUNT);
 
                                 ImPlot::SetNextLineStyle(window->markerColor);
                                 ImPlot::PushStyleVar(ImPlotStyleVar_MarkerWeight, window->markerOutlineSize);
@@ -1787,7 +1904,277 @@ int imgui_main(int, char**)
                     }
                     if (window->whiteBg) ImPlot::PopStyleColor(2);
                     break;
-                
+
+                    case Orbit:
+                    {
+                        if (window->whiteBg)
+                            ImPlot::PushStyleColor(ImPlotCol_PlotBg, ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
+
+                        
+                            Kernel* krnl = &KERNEL;
+                            //Attribute* axisX = &(krnl->parameters[window->OrbitXIndex]);
+                            bool axisXisRanging = krnl->parameters[window->OrbitXIndex].TrueStepCount() > 1;
+
+                            if (axisXisRanging)
+                            {
+                                if (computations[playedBufferIndex].ready)
+                                {
+                                    int xIndex = window->variables[0];
+
+                                    int varCount = KERNEL.VAR_COUNT;
+                                    int parCount = KERNEL.PARAM_COUNT;
+                                    int variationSize = computations[playedBufferIndex].marshal.variationSize;
+
+                                    // Buffer to hold peak data (amplitudes and indices)
+                                    constexpr int MAX_PEAKS = 1024;
+                                    static numb peakAmplitudes[MAX_PEAKS];
+                                    static int peakIndices[MAX_PEAKS];
+                                    static numb peakIntervals[MAX_PEAKS - 1];
+
+                                    static numb bifAmps[MAX_PEAKS * 1024];
+                                    static numb bifIntervals[MAX_PEAKS * 1024];
+                                    static numb bifParamIndices[MAX_PEAKS * 1024];
+
+                                    numb paramStep = krnl->parameters[window->OrbitXIndex].step;
+                                    numb paramMin = krnl->parameters[window->OrbitXIndex].min;
+                                    int variation = 0;
+                                    if (window->OrbitType==Selected_Var_Section) {
+                                        steps2Variation(&variation, &(attributeValueIndices.data()[0]), &KERNEL);
+
+                                        int peakCount = 0;
+                                        bool firstpeakreached = false;
+                                        numb temppeakindex;
+                                        numb* computedVariation = computations[playedBufferIndex].marshal.trajectory + (computations[playedBufferIndex].marshal.variationSize * variation);
+                                        for (int i = 1; i < variationSize / varCount - 1 && peakCount < MAX_PEAKS; i++)
+                                        {
+                                            numb prev = computedVariation[xIndex + varCount * i - varCount];
+                                            numb curr = computedVariation[xIndex + varCount * i];
+                                            numb next = computedVariation[xIndex + varCount * i + varCount];
+                                            if (curr > prev && curr > next)
+                                            {
+                                                if (firstpeakreached == false)
+                                                {
+                                                    firstpeakreached = true;
+                                                    temppeakindex = (float)i;
+                                                }
+                                                else
+                                                {
+
+                                                    peakAmplitudes[peakCount] = curr;
+                                                    peakIntervals[peakCount] = (i - temppeakindex)* krnl->stepSize;
+                                                    peakCount++;
+                                                    temppeakindex = (float)i;
+                                                }
+                                            }
+                                        }
+
+                                            numb minX = peakIntervals[0], maxX = peakIntervals[0];
+                                            numb minY = peakAmplitudes[0], maxY = peakAmplitudes[0];
+                                            for (int i = 0; i < peakCount - 1; ++i)
+                                            {
+                                                if (peakIntervals[i] < minX) minX = peakIntervals[i];
+                                                if (peakIntervals[i] > maxX) maxX = peakIntervals[i];
+                                                if (peakAmplitudes[i + 1] < minY) minY = peakAmplitudes[i + 1];
+                                                if (peakAmplitudes[i + 1] > maxY) maxY = peakAmplitudes[i + 1];
+                                            }
+                                            if (ImPlot::BeginPlot(("##" + plotName +  "_ChosenVariation").c_str(), window->OrbitInvertedAxes?"Peaks":"Intervals", window->OrbitInvertedAxes ? "Intervals" : "Peaks", ImVec2(-1, -1), ImPlotFlags_NoTitle, 0, 0)) {
+                                                plot = ImPlot::GetPlot(("##" + plotName +  "_ChosenVariation").c_str()); plot->is3d = false;
+                                                ImPlot::SetupAxisLimits(ImAxis_X1, minX * 0.95f, maxX * 1.05f, ImGuiCond_None);
+                                                ImPlot::SetupAxisLimits(ImAxis_Y1, minY * 0.95f, maxY * 1.05f, ImGuiCond_None);
+                                                ImPlot::SetupFinish();
+                                                ImPlot::SetNextMarkerStyle(window->markerShape, window->OrbitDotSize, window->plotColor,-1.0, window->plotColor);
+                                                if(!window->OrbitInvertedAxes)ImPlot::PlotScatter(("##" + plotName + "_ChosenVariationPlot").c_str(), peakIntervals, peakAmplitudes, peakCount - 1);
+                                                else ImPlot::PlotScatter(("##" + plotName + "_ChosenVariationPlot").c_str(), peakAmplitudes, peakIntervals, peakCount - 1);
+                                                ImPlot::EndPlot();
+                                            }
+                                        
+                                    }
+                                    else {
+                                        std::vector<int> tempattributeValueIndices = attributeValueIndices;
+
+                                        int BifDotAmount = 0;
+                                        for (int j = 0; j < krnl->parameters[window->OrbitXIndex].stepCount; j++)
+                                        {
+                                            tempattributeValueIndices[window->OrbitXIndex + varCount] = j;
+                                            steps2Variation(&variation, &(tempattributeValueIndices.data()[0]), &KERNEL);
+                                            numb* computedVariation = computations[playedBufferIndex].marshal.trajectory + (computations[playedBufferIndex].marshal.variationSize * variation);
+                                            int peakCount = 0;
+                                            bool firstpeakreached = false;
+                                            numb temppeakindex;
+                                            for (int i = 1; i < variationSize / varCount - 1 && peakCount < MAX_PEAKS; i++)
+                                            {
+                                                numb prev = computedVariation[xIndex + varCount * i - varCount];
+                                                numb curr = computedVariation[xIndex + varCount * i];
+                                                numb next = computedVariation[xIndex + varCount * i + varCount];
+                                                if (curr > prev && curr > next)
+                                                {
+                                                    if (firstpeakreached == false)
+                                                    {
+                                                        firstpeakreached = true;
+                                                        temppeakindex = (float)i;
+                                                    }
+                                                    else
+                                                    {
+                                                        bifAmps[BifDotAmount] = curr;
+                                                        bifIntervals[BifDotAmount] = (i - temppeakindex) * krnl->stepSize;;
+                                                        bifParamIndices[BifDotAmount] = paramMin + j * paramStep;
+                                                        temppeakindex = (float)i;
+                                                        peakCount++;
+                                                        BifDotAmount++;
+
+                                                    }
+                                                }
+                                            }
+
+                                        }
+                                        numb minX = bifParamIndices[0], maxX = bifParamIndices[0];
+                                        numb minY = bifAmps[0], maxY = bifAmps[0];
+                                        numb minZ = bifIntervals[0]; numb maxZ = bifIntervals[0];
+                                        if (window->OrbitType == Peak_Bifurcation) {
+                                            
+                                            for (int i = 0; i < BifDotAmount - 1; ++i)
+                                            {
+                                                maxX = bifParamIndices[i];
+                                                if (bifAmps[i + 1] < minY) minY = bifAmps[i + 1];
+                                                if (bifAmps[i + 1] > maxY) maxY = bifAmps[i + 1];
+                                            }
+                                            if (ImPlot::BeginPlot((plotName + "_BifDiagrams").c_str(), window->OrbitInvertedAxes ? "Peaks" : krnl->parameters[window->OrbitXIndex].name.c_str(), window->OrbitInvertedAxes ? krnl->parameters[window->OrbitXIndex].name.c_str() : "Peaks", ImVec2(-1, -1), ImPlotFlags_NoTitle, 0, 0)) {
+                                                plot = ImPlot::GetPlot((plotName + "_BifDiagrams").c_str()); plot->is3d = false;
+                                                ImPlot::SetupAxisLimits(ImAxis_X1, minX * 0.95f, maxX * 1.05f, ImGuiCond_None);
+                                                ImPlot::SetupAxisLimits(ImAxis_Y1, minY * 0.95f, maxY * 1.05f, ImGuiCond_None);
+                                                ImPlot::SetupFinish();
+                                                ImPlot::SetNextMarkerStyle(window->markerShape, window->OrbitDotSize, window->plotColor, IMPLOT_AUTO, window->plotColor);
+                                                if(!window->OrbitInvertedAxes)ImPlot::PlotScatter(("##Peak to Parameter " + plotName).c_str(), bifParamIndices, bifAmps, BifDotAmount);
+                                                else ImPlot::PlotScatter(("##Peak to Parameter " + plotName).c_str(), bifAmps, bifParamIndices, BifDotAmount);
+                                                 
+                                                if (ImGui::IsMouseDown(0) && ImGui::IsKeyPressed(ImGuiMod_Shift)) {
+                                                    numb MousePosX = ImPlot::GetPlotMousePos().x;
+                                                    if (krnl->parameters[window->OrbitXIndex].min > MousePosX)attributeValueIndices[window->OrbitXIndex + varCount] = 0;
+                                                    else if(krnl->parameters[window->OrbitXIndex].max < MousePosX)attributeValueIndices[window->OrbitXIndex + varCount] = krnl->parameters[window->OrbitXIndex].stepCount-1;
+                                                    else {
+                                                        numb NotRoundedIndex =   (MousePosX - paramMin)/ (krnl->parameters[window->OrbitXIndex].max - paramMin) * krnl->parameters[window->OrbitXIndex].stepCount;
+                                                        int index = static_cast<int>(std::round(NotRoundedIndex)); if (index > krnl->parameters[window->OrbitXIndex].stepCount - 1)index = krnl->parameters[window->OrbitXIndex].stepCount - 1;
+                                                        attributeValueIndices[window->OrbitXIndex + varCount] = index;
+                                                    }
+                                                }
+                                                
+                                                if (window->ShowOrbitParLines) {
+                                                    double value = attributeValueIndices[varCount + window->OrbitXIndex] * paramStep + paramMin;
+                                                    if (!window->OrbitInvertedAxes)ImPlot::DragLineX(0, &value, window->OrbitMarkerColor, window->OrbitMarkerSize, ImPlotDragToolFlags_NoInputs);
+                                                    else ImPlot::DragLineY(0, &value, window->OrbitMarkerColor, window->OrbitMarkerSize, ImPlotDragToolFlags_NoInputs);
+                                                }
+
+                                                ImPlot::EndPlot();
+                                            }
+                                        }
+                                        else if(window->OrbitType == Interval_Bifurcation){
+                                            minY = bifIntervals[0], maxY = bifIntervals[0];
+                                            for (int i = 0; i < BifDotAmount - 1; ++i)
+                                            {
+                                                maxX = bifParamIndices[i];
+                                                if (bifIntervals[i + 1] < minY) minY = bifIntervals[i + 1];
+                                                if (bifIntervals[i + 1] > maxY) maxY = bifIntervals[i + 1];
+                                            }
+                                            if (ImPlot::BeginPlot((plotName  + "_BifAmp").c_str(), window->OrbitInvertedAxes ? "Intervals" : krnl->parameters[window->OrbitXIndex].name.c_str(), window->OrbitInvertedAxes ? krnl->parameters[window->OrbitXIndex].name.c_str() : "Intervals", ImVec2(-1, -1), ImPlotFlags_NoTitle, 0, 0)) {
+                                                plot = ImPlot::GetPlot((plotName +  "_BifAmp").c_str()); plot->is3d = false;
+                                                ImPlot::SetupAxisLimits(ImAxis_X1, minX * 0.95f, maxX * 1.05f, ImGuiCond_None);
+                                                ImPlot::SetupAxisLimits(ImAxis_Y1, minY * 0.95f, maxY * 1.05f, ImGuiCond_None);
+                                                ImPlot::SetupFinish();
+
+                                                ImPlot::SetNextMarkerStyle(window->markerShape, window->OrbitDotSize, window->plotColor, IMPLOT_AUTO, window->plotColor);
+                                                if(!window->OrbitInvertedAxes)ImPlot::PlotScatter(("##Interval to Parameter " + plotName).c_str(), bifParamIndices, bifIntervals, BifDotAmount);
+                                                else ImPlot::PlotScatter(("##Interval to Parameter " + plotName).c_str(),  bifIntervals, bifParamIndices, BifDotAmount);
+
+                                                if (ImGui::IsMouseDown(0) && ImGui::IsKeyPressed(ImGuiMod_Shift)) {
+                                                    numb MousePosX = ImPlot::GetPlotMousePos().x;
+                                                    if (krnl->parameters[window->OrbitXIndex].min > MousePosX)attributeValueIndices[window->OrbitXIndex + varCount] = 0;
+                                                    else if (krnl->parameters[window->OrbitXIndex].max < MousePosX)attributeValueIndices[window->OrbitXIndex + varCount] = krnl->parameters[window->OrbitXIndex].stepCount - 1;
+                                                    else {
+                                                        numb NotRoundedIndex = (MousePosX - paramMin) / (krnl->parameters[window->OrbitXIndex].max - paramMin) * krnl->parameters[window->OrbitXIndex].stepCount;
+                                                        int index = static_cast<int>(std::round(NotRoundedIndex)); if (index > krnl->parameters[window->OrbitXIndex].stepCount - 1)index = krnl->parameters[window->OrbitXIndex].stepCount - 1;
+                                                        attributeValueIndices[window->OrbitXIndex + varCount] = index;
+                                                    }
+                                                }
+
+                                                if (window->ShowOrbitParLines) {
+                                                    double value = attributeValueIndices[varCount + window->OrbitXIndex] * paramStep + paramMin;
+                                                    if(!window->OrbitInvertedAxes)ImPlot::DragLineX(0, &value, window->OrbitMarkerColor, window->OrbitMarkerSize, ImPlotDragToolFlags_NoInputs);
+                                                    else ImPlot::DragLineY(0, &value, window->OrbitMarkerColor, window->OrbitMarkerSize, ImPlotDragToolFlags_NoInputs);
+                                                }
+                                                ImPlot::EndPlot();
+                                            }
+                                        }
+                                        else if (window->OrbitType == Bifurcation_3D) {
+                                            if (ImPlot3D::BeginPlot((plotName +  "_Bif3D").c_str(),ImVec2(-1, -1), ImPlotFlags_NoTitle)) {
+                                                ImPlot3DContext *TheContext = ImPlot3D::GImPlot3D;
+                                                plot3d= TheContext->CurrentPlot;
+                                                plot3d->RangeMax().y;
+                                                static float  xs[4],ys[4], zs[4];
+                                                
+                                                ys[0] = plot3d->RangeMin().y; ys[1] = plot3d->RangeMin().y; ys[2] = plot3d->RangeMax().y; ys[3] = plot3d->RangeMax().y;  zs[0] = plot3d->RangeMin().z; zs[1] = plot3d->RangeMax().z; zs[2] = plot3d->RangeMax().z; zs[3] = plot3d->RangeMin().z; xs[0] = paramMin + paramStep * attributeValueIndices[window->OrbitXIndex + krnl->VAR_COUNT]; xs[3] = xs[2] = xs[1] = xs[0];
+                                                ImPlot3D::SetupAxis(ImAxis3D_X, krnl->parameters[window->OrbitXIndex].name.c_str());
+                                                ImPlot3D::SetupAxis(ImAxis3D_Y, "Peaks");
+                                                ImPlot3D::SetupAxis(ImAxis3D_Z, "Intervals");
+                                                ImPlot3D::SetNextMarkerStyle(window->markerShape, window->OrbitDotSize, window->plotColor, IMPLOT_AUTO, window->plotColor);
+                                                ImPlot3D::PlotScatter(("##Bif#d_Diagram"+plotName).c_str(), bifParamIndices, bifAmps, bifIntervals,
+                                                    BifDotAmount, 0, 0);
+
+                                                ImPlot3D::SetNextFillStyle(window->OrbitMarkerColor);
+                                                ImPlot3D::SetNextLineStyle(window->OrbitMarkerColor, 2);
+                                                ImPlot3D::PlotQuad("", &xs[0], &ys[0], &zs[0], 4);
+                                                ImPlot3D::EndPlot();
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                if (!axisXisRanging) ImGui::Text(("Parameter " + krnl->parameters[window->OrbitXIndex].name + " is fixed").c_str());
+                            }
+
+                        if (window->whiteBg)
+                            ImPlot::PopStyleColor();
+
+                    }
+                    break;
+                /*case Metric:
+                    {
+                        mapIndex = window->variables[0];
+                        Kernel* krnl =  &(KERNEL);
+                        Computation* cmp =  &(computations[playedBufferIndex]);
+                        Attribute* axis = window->typeX == VARIABLE ? &(krnl->variables[window->indexX]) : &(krnl->parameters[window->indexX]);
+                        bool axisIsRanging = axis->TrueStepCount() > 1;
+                        if (axisIsRanging) {
+                            numb minX, stepX, maxX;
+                            int xSize;
+                            HeatmapProperties* hmp = nullptr;
+                            int variation=0;
+                            
+                            
+                            //numb* MapSlice = cmp->marshal.maps + cmp->marshal.kernel.mapDatas[mapIndex].offset * cmp->marshal.totalVariations + cmp->marshal.variationSize * variation;
+                            numb* Xaxis = new numb[axis->stepCount];
+                            numb* Yaxis = new numb[axis->stepCount];
+                            std::vector<int> tempattributeValueIndices = attributeValueIndices;
+                            for (int i = 0; i < axis->stepCount; i++) {
+                                tempattributeValueIndices[window->indexX] = i;
+                                steps2Variation(&variation, &(tempattributeValueIndices.data()[0]), &KERNEL);
+                                Xaxis[i] = axis->min + axis->step * i;
+                                Yaxis[i] = *(cmp->marshal.maps + cmp->marshal.kernel.mapDatas[window->indexX].offset * cmp->marshal.totalVariations + cmp->marshal.variationSize * variation);
+                            }
+                            if (ImPlot::BeginPlot(("##Metric_Plot" + plotName).c_str(), ImVec2(-1,-1),ImPlotFlags_NoTitle)) {
+                                plot = ImPlot::GetPlot(("##Metric_Plot" + plotName).c_str()); plot->is3d = false;
+                                ImPlot::PlotLine("##Metric_Line_Plot", Xaxis, Yaxis, axis->stepCount);
+                                ImPlot::EndPlot();
+                            }
+                            delete[] Xaxis;
+                        }
+                        else {
+                            ImGui::Text(("Axis " + axis->name + " is fixed").c_str());
+                        }
+                    }
+                    break;*/
+
                 case Heatmap:
                     mapIndex = window->variables[0];
                     bool isHires = window == hiresHeatmapWindow;
@@ -1833,7 +2220,6 @@ int imgui_main(int, char**)
                             ImVec2 plotSize;
 
                             HeatmapSizing sizing;
-
                             if (window->whiteBg) { ImPlot::PushStyleColor(ImPlotCol_PlotBg, ImVec4(1.0f, 1.0f, 1.0f, 1.0f)); ImPlot::PushStyleColor(ImPlotCol_AxisGrid, ImVec4(0.2f, 0.2f, 0.2f, 1.0f)); }
                             if (ImPlot::BeginPlot(plotName.c_str(), "", "", ImVec2(-1, -1), ImPlotFlags_NoTitle | ImPlotFlags_NoLegend, axisFlags, axisFlags))
                             {
@@ -2017,7 +2403,6 @@ int imgui_main(int, char**)
                                     {
                                         heatmap->isHeatmapDirty = true;
                                     }
-
                                     // Image init
                                     if (heatmap->isHeatmapDirty)
                                     {
@@ -2065,7 +2450,6 @@ int imgui_main(int, char**)
                                         {
                                             int rows = sizing.cutHeight;
                                             int cols = sizing.cutWidth;
-
                                             void* cutoffHeatmap = new numb[rows * cols];
                                             cutoff2D(heatmap->valueBuffer, (numb*)cutoffHeatmap,
                                                 sizing.xSize, sizing.ySize, sizing.cutMinX, sizing.cutMinY, sizing.cutMaxX, sizing.cutMaxY);
@@ -2094,8 +2478,8 @@ int imgui_main(int, char**)
                                             valueY = (double)window->dragLineHiresPos.y;
                                         }
 
-                                        ImPlot::DragLineX(0, &valueX, ImVec4(1.0f, 1.0f, 1.0f, 1.0f), 2.0f, ImPlotDragToolFlags_NoInputs);
-                                        ImPlot::DragLineY(1, &valueY, ImVec4(1.0f, 1.0f, 1.0f, 1.0f), 2.0f, ImPlotDragToolFlags_NoInputs);
+                                        ImPlot::DragLineX(0, &valueX, window->markerColor,window->markerSize, ImPlotDragToolFlags_NoInputs);
+                                        ImPlot::DragLineY(1, &valueY, window->markerColor, window->markerSize, ImPlotDragToolFlags_NoInputs);
                                     }
 
                                     plotSize = ImPlot::GetPlotSize();
@@ -2117,13 +2501,14 @@ int imgui_main(int, char**)
                                 float heatMinFloat = heatmap->heatmapMin, heatMaxFloat = heatmap->heatmapMax;
                                 ImGui::DragFloat("Max", &heatMaxFloat, 0.01f);
                                 ImPlot::ColormapScale("##HeatScale", heatmap->heatmapMin, heatmap->heatmapMax, ImVec2(120, plotSize.y - 30.0f));
+                                //
                                 ImGui::SetNextItemWidth(120);
                                 ImGui::DragFloat("Min", &heatMinFloat, 0.01f);
                                 heatmap->heatmapMin = (numb)heatMinFloat;
                                 heatmap->heatmapMax = (numb)heatMaxFloat;
                                 ImPlot::PopColormap();
+                               
                             }
-
                             if (minBefore != heatmap->heatmapMin || maxBefore != heatmap->heatmapMax) heatmap->isHeatmapDirty = true;
 
                             if (window->whiteBg) ImPlot::PopStyleColor(2);

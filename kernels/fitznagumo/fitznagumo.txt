@@ -1,6 +1,6 @@
-Name: Rössler system
-Steps: 20000
-Transient: 30000
+Name: FitzHugh-Nagumo
+Steps: 1000
+Transient: 0
 Step size: 0.01
 // Compute on CUDAynamics launch: yes/no
 Execute on launch: yes
@@ -13,18 +13,17 @@ Execute on launch: yes
 //
 // Defining variables/parameters:
 // var/param <name> <ranging type> <minimum value> <maximum value> <step> <step count> <normal mean> <normal deviation>
-var x Fixed 0.0 10.0 1.0 50 0.0 0.0
-var y Fixed 0.1 10.0 0.1 50 0.0 0.0
-var z Fixed 0.0 29.0 0.1 0 0.0 0.0
-param a Linear 0.05 0.35 0.1 150 0.0 0.0
-param b Linear 0.05 0.35 0.1 150 0.0 0.0
-param c Fixed 5.7 29.0 0.1 0 0.0 0.0
+var v Fixed 0.0 50.0 1.0 100 0.0 0.0
+var w Fixed 0.0 50.0 0.1 50 0.0 0.0
+param a Fixed 0.7 50.0 0.1 250 0.0 0.0
+param b Linear 0.0 3.0 0.1 100 0.0 0.0
+param tau Fixed 12.5 50.0 0.1 250 0.0 0.0
+param R Fixed 0.1 50.0 0.1 250 0.0 0.0
+param Iext Linear -20.0 20.0 0.1 200 0.0 0.0
 param stepsize Fixed 0.01 0.1 0.01 100 0.0 0.0
-param symmetry Fixed 0.0 1.0 0.01 100 0.0 0.0
 // Defining enumerated parameters (useful for methods):
 // enum <name> <ranging type> <minimum value> <maximum value> <step> <step count> <normal mean> <normal deviation> <enum names, no spaces>
-enum method 0ExplicitEuler 0ExplicitMidpoint 0ExplicitRungeKutta4 1VariableSymmetryCD
-//
+enum method 0ExplicitEuler 1ExplicitMidpoint
 // Defining maps:
 // map <name> <map settings count (inside its struct)> <map settings, beginning with "n" for numbs and "i" for ints>
-map LLE 7 r n0.01 L i50 variableToDeflect i0 norm0 i0 norm1 i1 norm2 i2 norm3 i-1
+map LLE 7 r n0.01 L i50 variableToDeflect i2 norm0 i0 norm1 i1 norm2 i2 norm3 i-1
