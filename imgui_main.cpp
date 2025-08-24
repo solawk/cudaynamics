@@ -57,7 +57,7 @@ int bufferNo = 0;
 
 PlotWindow* colorsLUTfrom = nullptr;
 int staticLUTsize = 32;
-int dynamicLUTsize = 16;
+int dynamicLUTsize = 32;
 
 bool selectParticleTab = false;
 bool selectOrbitTab = true;
@@ -322,6 +322,7 @@ void initializeKernel(bool needTerminate)
     initAVI(false);
     initAVI(true);
 
+    computedSteps = 0;
     particleStep = 0;
     computeAfterShiftSelect = false;
 }
@@ -1844,7 +1845,7 @@ int imgui_main(int, char**)
                         plot->deltax = &(window->deltarotation.x);
                         plot->deltay = &(window->deltarotation.y);
 
-                        populateAxisBuffer(axisBuffer, plotRangeSize / 10.0f, plotRangeSize / 10.0f, plotRangeSize / 10.0f);
+                        /*populateAxisBuffer(axisBuffer, plotRangeSize / 10.0f, plotRangeSize / 10.0f, plotRangeSize / 10.0f);
 
                         // Axis
                         if (window->showAxis)
@@ -1864,7 +1865,7 @@ int imgui_main(int, char**)
                             ImPlot::PushStyleColor(ImPlotCol_InlayText, yAxisColor);
                             ImPlot::PlotText(KERNEL.variables[window->variables[1]].name.c_str(), axisBuffer[6], axisBuffer[7], ImVec2(0.0f, 0.0f));
                             ImPlot::PopStyleColor();
-                        }
+                        }*/
 
                         if (computations[playedBufferIndex].ready)
                         {
