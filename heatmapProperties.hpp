@@ -4,7 +4,6 @@
 
 struct HeatmapProperties
 {
-	bool grayscaleHeatmap;
 	int stride; // deprecated
 
 	numb heatmapMax;
@@ -46,7 +45,6 @@ struct HeatmapProperties
 		heatmapMax = 0.0f;
 		heatmapMin = 0.0f;
 
-		grayscaleHeatmap = false;
 		isHeatmapSelectionModeOn = false;
 		isHeatmapAutoComputeOn = false;
 		areHeatmapLimitsDefined = false;

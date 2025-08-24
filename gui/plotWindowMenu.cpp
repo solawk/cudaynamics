@@ -8,6 +8,7 @@ void plotWindowMenu_PhasePlot(PlotWindow* window);
 void plotWindowMenu_HeatmapPlot(PlotWindow* window);
 void plotWindowMenu_HeatmapColors(PlotWindow* window);
 void plotWindowMenu_OrbitPlot(PlotWindow* window);
+void plotWindowMenu_MetricPlot(PlotWindow* window);
 
 extern bool enabledParticles;
 extern bool autofitHeatmap;
@@ -25,6 +26,7 @@ void plotWindowMenu(PlotWindow* window)
 		if (window->type == Heatmap ) plotWindowMenu_HeatmapPlot(window);
 		if (window->type == Heatmap) plotWindowMenu_HeatmapColors(window);
 		if (window->type == Orbit) plotWindowMenu_OrbitPlot(window);
+		if (window->type == Metric) plotWindowMenu_MetricPlot(window);
 
 		ImGui::EndMenuBar();
 	}
@@ -48,8 +50,6 @@ void plotWindowMenu_CommonPlot(PlotWindow* window, std::string windowName)
 	bool tempWhiteBg = window->whiteBg; if (ImGui::Checkbox(("##" + windowName + "whiteBG").c_str(), &tempWhiteBg)) window->whiteBg = !window->whiteBg;
 	ImGui::SameLine(); ImGui::Text("White background");
 
-	bool tempGrayscale = window->hmp.grayscaleHeatmap; if (ImGui::Checkbox(("##" + windowName + "grayscale").c_str(), &tempGrayscale)) window->hmp.grayscaleHeatmap = !window->hmp.grayscaleHeatmap;
-	ImGui::SameLine(); ImGui::Text("Grayscale");
 }
 
 void plotWindowMenu_PhasePlot(PlotWindow* window)
@@ -63,9 +63,9 @@ void plotWindowMenu_PhasePlot(PlotWindow* window)
 		if (enabledParticles)
 		{
 			ImGui::ColorEdit4(("##" + windowName + "_particleColor").c_str(), (float*)(&(window->markerColor)));		ImGui::SameLine(); ImGui::Text("Particle color");
-			ImGui::DragFloat(("##" + windowName + "_particleSize").c_str(), &(window->markerSize), 0.1f);				ImGui::SameLine(); ImGui::Text("Particle size");
-			ImGui::DragFloat(("##" + windowName + "_particleOutlineSize").c_str(), &(window->markerOutlineSize), 0.1f);	ImGui::SameLine(); ImGui::Text("Particle outline size");
-			if (window->markerSize < 0.0f) window->markerSize = 0.0f;
+			ImGui::DragFloat(("##" + windowName + "_particleSize").c_str(), &(window->markerWidth), 0.1f);				ImGui::SameLine(); ImGui::Text("Particle size");
+			ImGui::DragFloat(("##" + windowName + "_particleOutlineSize").c_str(), &(window->markerOutlineWidth), 0.1f);	ImGui::SameLine(); ImGui::Text("Particle outline size");
+			if (window->markerWidth < 0.0f) window->markerWidth = 0.0f;
 		}
 		else
 		{
@@ -118,13 +118,14 @@ void plotWindowMenu_OrbitPlot(PlotWindow* window) {
 
 			ImGui::EndCombo();
 		}
-		ImGui::SameLine(); ImGui::Text("Dot shape");
-		ImGui::ColorEdit4(("##" + windowName + "_dotColor").c_str(), (float*)(&(window->plotColor)));		ImGui::SameLine(); ImGui::Text("Dot color");
-		ImGui::DragFloat("Dot size", &window->OrbitDotSize, 0.1f, 0.5f, 4.0f,"%.1f");
+		ImGui::SameLine(); ImGui::Text("Point shape");
+		ImGui::ColorEdit4(("##" + windowName + "_dotColor").c_str(), (float*)(&(window->plotColor)));		ImGui::SameLine(); ImGui::Text("Point color");
+		ImGui::DragFloat("Point size", &window->OrbitPointSize, 0.1f, 0.5f, 4.0f,"%.1f");
 
 		ImGui::Checkbox("Show parameter marker", &window->ShowOrbitParLines);
 		ImGui::ColorEdit4(("##" + windowName + "_markerColor").c_str(), (float*)(&(window->OrbitMarkerColor)));		ImGui::SameLine(); ImGui::Text("Marker color");
-		ImGui::DragFloat("Marker size", &window->OrbitMarkerSize, 0.1f, 0.5f, 4.0f, "%.1f");
+		ImGui::DragFloat("Marker width", &window->OrbitMarkerWidth, 0.1f, 0.5f, 4.0f, "%.1f");
+
 		ImGui::Checkbox("Invert axes", &window->OrbitInvertedAxes);
 		ImGui::EndMenu();
 	}
@@ -148,7 +149,7 @@ void plotWindowMenu_HeatmapPlot(PlotWindow* window)
 		ImGui::SameLine(); ImGui::Text("Show crosshair lines");
 
 		ImGui::ColorEdit4(("##" + windowName + "_markerColor").c_str(), (float*)(&(window->markerColor)));		ImGui::SameLine(); ImGui::Text("Marker color");
-		ImGui::DragFloat("Marker size", &window->markerSize, 0.1f, 0.5f, 4.0f, "%.1f");
+		ImGui::DragFloat("Marker width", &window->markerWidth, 0.1f, 0.5f, 4.0f, "%.1f");
 
 		bool tempShowLegend = heatmap->showDragLines; if (ImGui::Checkbox(("##" + windowName + "showLegend").c_str(), &tempShowLegend)) heatmap->showLegend = !heatmap->showLegend;
 		ImGui::SameLine(); ImGui::Text("Show colormap");
@@ -216,6 +217,25 @@ void plotWindowMenu_HeatmapColors(PlotWindow* window)
 		if (staticLUTsize < 2) staticLUTsize = 2;
 
 		if (tempDLS != dynamicLUTsize || tempSLS != staticLUTsize) window->hmp.isHeatmapDirty = true;
+
+		ImGui::EndMenu();
+	}
+}
+
+void plotWindowMenu_MetricPlot(PlotWindow*window) {
+	if (ImGui::BeginMenu("Plot")) {
+		std::string windowName = window->name + std::to_string(window->id);
+		plotWindowMenu_CommonPlot(window, windowName);
+
+
+		ImGui::ColorEdit4(("##" + windowName + "_lineColor").c_str(), (float*)(&(window->markerColor)));		ImGui::SameLine(); ImGui::Text("Line color");
+		ImGui::DragFloat("Line width", &window->markerWidth, 0.1f, 0.5f, 4.0f, "%.1f");
+
+		ImGui::Checkbox("Show parameter marker", &window->ShowOrbitParLines);
+		ImGui::ColorEdit4(("##" + windowName + "_markerColor").c_str(), (float*)(&(window->OrbitMarkerColor)));		ImGui::SameLine(); ImGui::Text("Marker color");
+		ImGui::DragFloat("Marker width", &window->OrbitMarkerWidth, 0.1f, 0.5f, 4.0f, "%.1f");
+
+
 
 		ImGui::EndMenu();
 	}
