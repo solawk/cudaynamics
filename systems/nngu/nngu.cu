@@ -27,8 +27,7 @@ __global__ void kernelProgram_nngu(Computation* data)
 
         finiteDifferenceScheme_nngu(&(CUDA_marshal.trajectory[stepStart]),
             &(CUDA_marshal.trajectory[stepStart + CUDA_kernel.VAR_COUNT]),
-            &(CUDA_marshal.parameterVariations[variation * CUDA_kernel.PARAM_COUNT]),
-            CUDA_kernel.stepSize);
+            &(CUDA_marshal.parameterVariations[variation * CUDA_kernel.PARAM_COUNT]));
     }
 
     // Analysis
@@ -41,7 +40,7 @@ __global__ void kernelProgram_nngu(Computation* data)
     }
 }
 
-__device__ void finiteDifferenceScheme_nngu(numb* currentV, numb* nextV, numb* parameters, numb h)
+__device__ void finiteDifferenceScheme_nngu(numb* currentV, numb* nextV, numb* parameters)
 {
     numb xmp = fmodf(V(x) + P(stepsize) * 0.5 * V(y), 2.0f * 3.141592f);
     numb ymp = V(y) + P(stepsize) * 0.5 * V(z);

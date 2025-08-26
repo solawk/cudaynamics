@@ -159,7 +159,7 @@
     <ClInclude Include="implot3d\implot3d_internal.h" />
     <ClInclude Include="implot\implot.h" />
     <ClInclude Include="implot\implot_internal.h" />
-    <ClInclude Include="systems_common.h" />
+    <ClInclude Include="kernels_common.h" />
     <ClInclude Include="kernel_struct.h" />
     <ClInclude Include="main.h" />
     <ClInclude Include="main_utils.h" />

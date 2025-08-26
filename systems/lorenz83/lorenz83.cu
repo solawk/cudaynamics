@@ -28,8 +28,7 @@ __global__ void kernelProgram_lorenz83(Computation* data)
 
         finiteDifferenceScheme_lorenz83(&(CUDA_marshal.trajectory[stepStart]),
             &(CUDA_marshal.trajectory[stepStart + CUDA_kernel.VAR_COUNT]),
-            &(CUDA_marshal.parameterVariations[variation * CUDA_kernel.PARAM_COUNT]),
-            CUDA_kernel.stepSize);
+            &(CUDA_marshal.parameterVariations[variation * CUDA_kernel.PARAM_COUNT]));
     }
 
     // Analysis
@@ -42,7 +41,7 @@ __global__ void kernelProgram_lorenz83(Computation* data)
     }
 }
 
-__device__ void finiteDifferenceScheme_lorenz83(numb* currentV, numb* nextV, numb* parameters, numb h)
+__device__ void finiteDifferenceScheme_lorenz83(numb* currentV, numb* nextV, numb* parameters)
 {
     ifMETHOD(P(method), ExplicitEuler)
     {

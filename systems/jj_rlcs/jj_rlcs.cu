@@ -29,8 +29,7 @@ __global__ void kernelProgram_jj_rlcs(Computation* data)
 
         finiteDifferenceScheme_jj_rlcs(&(CUDA_marshal.trajectory[stepStart]),
             &(CUDA_marshal.trajectory[stepStart + CUDA_kernel.VAR_COUNT]),
-            &(CUDA_marshal.parameterVariations[variation * CUDA_kernel.PARAM_COUNT]),
-            CUDA_kernel.stepSize);
+            &(CUDA_marshal.parameterVariations[variation * CUDA_kernel.PARAM_COUNT]));
     }
 
     // Analysis
@@ -43,7 +42,7 @@ __global__ void kernelProgram_jj_rlcs(Computation* data)
     }
 }
 
-__device__ void finiteDifferenceScheme_jj_rlcs(numb* currentV, numb* nextV, numb* parameters, numb h)
+__device__ void finiteDifferenceScheme_jj_rlcs(numb* currentV, numb* nextV, numb* parameters)
 {
     ifMETHOD(P(method), ExplicitEuler)
     {

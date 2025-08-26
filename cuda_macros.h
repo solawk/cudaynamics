@@ -61,8 +61,7 @@
                                 {  \
                                     FDS(&(CUDA_marshal.trajectory[variationStart]),  \
                                         &(transientBuffer[0]),  \
-                                        &(CUDA_marshal.parameterVariations[variation * CUDA_kernel.PARAM_COUNT]),  \
-                                        CUDA_kernel.stepSize);  \
+                                        &(CUDA_marshal.parameterVariations[variation * CUDA_kernel.PARAM_COUNT]));  \
                                       \
                                     for (int v = 0; v < CUDA_kernel.VAR_COUNT; v++)  \
                                         CUDA_marshal.trajectory[variationStart + v] = transientBuffer[v];  \

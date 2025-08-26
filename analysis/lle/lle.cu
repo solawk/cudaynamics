@@ -1,6 +1,6 @@
 #include "lle.h"
 
-__device__ void LLE(Computation* data, LLE_Settings settings, int variation, void(* finiteDifferenceScheme)(numb*, numb*, numb*, numb), int offset)
+__device__ void LLE(Computation* data, LLE_Settings settings, int variation, void(* finiteDifferenceScheme)(numb*, numb*, numb*), int offset)
 {
     int variationStart = variation * CUDA_marshal.variationSize;
     int stepStart = variationStart;
@@ -23,7 +23,7 @@ __device__ void LLE(Computation* data, LLE_Settings settings, int variation, voi
         for (int i = 0; i < CUDA_kernel.VAR_COUNT; i++)
             LLE_array_temp[i] = LLE_array[i];
 
-        finiteDifferenceScheme(LLE_array_temp, LLE_array, &(CUDA_marshal.parameterVariations[variation * CUDA_kernel.PARAM_COUNT]), CUDA_kernel.stepSize);
+        finiteDifferenceScheme(LLE_array_temp, LLE_array, &(CUDA_marshal.parameterVariations[variation * CUDA_kernel.PARAM_COUNT]));
 
         if (s % L == 0)
         {

@@ -39,7 +39,7 @@
 extern std::map<std::string, Kernel> kernels;
 extern std::map<std::string, int> kernelTPBs;
 extern std::map<std::string, void(*)(Computation*)> kernelPrograms;
-extern std::map<std::string, void(*)(numb*, numb*, numb*, numb)> kernelFDSs;
+extern std::map<std::string, void(*)(numb*, numb*, numb*)> kernelFDSs;
 extern std::string selectedKernel;
 
 #define addKernel(name)         kernels[#name] = readKernelText(#name); \

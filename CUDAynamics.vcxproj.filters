@@ -144,7 +144,6 @@
     <ClInclude Include="mapData_struct.h" />
     <ClInclude Include="variationSteps.h" />
     <ClInclude Include="heatmapSizing_struct.h" />
-    <ClInclude Include="systems_common.h" />
     <ClInclude Include="implot3d\implot3d.h">
       <Filter>implot3d</Filter>
     </ClInclude>
@@ -183,6 +182,7 @@
     <ClInclude Include="styles.h">
       <Filter>gui</Filter>
     </ClInclude>
+    <ClInclude Include="kernels_common.h" />
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="main.cu" />

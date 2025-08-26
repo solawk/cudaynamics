@@ -46,7 +46,13 @@ Kernel readKernelText(std::string name)
 
 		if (str[0] == "//") continue;
 
-		if (str[0] == "Name:") { kernel.name = str[1]; continue; }
+		if (str[0] == "Name:")
+		{
+			kernel.name = "";
+			for (int i = 1; i < str.size(); i++)
+				kernel.name += (i > 1 ? " " : "") + str[i];
+			continue;
+		}
 		if (str[0] == "Steps:") { kernel.steps = atoi(str[1].c_str()); continue; }
 		if (str[0] == "Transient:") { kernel.transientSteps = atoi(str[1].c_str()); continue; }
 		if (str[0] == "Step") { kernel.stepSize = (numb)atof(str[2].c_str()); continue; }
