@@ -1,14 +1,14 @@
 ﻿#include "main.h"
-#include "bolshakov.h"
+#include "nngu.h"
 
 namespace attributes
 {
-    enum variables { Q, S, X, Y, c };
-    enum parameters { i, p, k, r };
+    enum variables { x, cosx, y, z };
+    enum parameters { gamma, eps1, eps2, stepsize };
     enum maps { LLE };
 }
 
-__global__ void kernelProgram_bolshakov(Computation* data)
+__global__ void kernelProgram_nngu(Computation* data)
 {
     int b = blockIdx.x;                                     // Current block of THREADS_PER_BLOCK threads
     int t = threadIdx.x;                                    // Current thread in the block, from 0 to THREADS_PER_BLOCK-1
@@ -19,13 +19,13 @@ __global__ void kernelProgram_bolshakov(Computation* data)
 
     // Custom area (usually) starts here
 
-    TRANSIENT_SKIP(finiteDifferenceScheme_bolshakov);
+    TRANSIENT_SKIP(finiteDifferenceScheme_nngu);
 
     for (int s = 0; s < CUDA_kernel.steps; s++)
     {
         stepStart = variationStart + s * CUDA_kernel.VAR_COUNT;
 
-        finiteDifferenceScheme_bolshakov(&(CUDA_marshal.trajectory[stepStart]),
+        finiteDifferenceScheme_nngu(&(CUDA_marshal.trajectory[stepStart]),
             &(CUDA_marshal.trajectory[stepStart + CUDA_kernel.VAR_COUNT]),
             &(CUDA_marshal.parameterVariations[variation * CUDA_kernel.PARAM_COUNT]),
             CUDA_kernel.stepSize);
@@ -37,19 +37,18 @@ __global__ void kernelProgram_bolshakov(Computation* data)
     {
         LLE_Settings lle_settings(MS(LLE, 0), MS(LLE, 1), MS(LLE, 2));
         lle_settings.Use3DNorm();
-        LLE(data, lle_settings, variation, &finiteDifferenceScheme_bolshakov, MO(LLE));
+        LLE(data, lle_settings, variation, &finiteDifferenceScheme_nngu, MO(LLE));
     }
 }
 
-__device__ void finiteDifferenceScheme_bolshakov(numb* currentV, numb* nextV, numb* parameters, numb h)
+__device__ void finiteDifferenceScheme_nngu(numb* currentV, numb* nextV, numb* parameters, numb h)
 {
-    Vnext(Q) = V(Q) + V(c) * (P(i) + V(S)) - !V(c) * (P(i) + V(S));
+    numb xmp = fmodf(V(x) + P(stepsize) * 0.5 * V(y), 2.0f * 3.141592f);
+    numb ymp = V(y) + P(stepsize) * 0.5 * V(z);
+    numb zmp = V(z) + P(stepsize) * 0.5 * ((1 / (P(eps1) * P(eps2))) * (P(gamma) - (P(eps1) + P(eps2)) * V(z) - (1 - (P(eps1) * cosf(V(x)))) * V(y)));
 
-    if (Vnext(Q) < 0) Vnext(Q) = 0;
-    if (Vnext(Q) > P(r)) Vnext(Q) = P(r);
-
-    Vnext(X) = P(p) * (Vnext(Q) + V(X));
-    Vnext(Y) = P(k) * (Vnext(X) - V(Y)) + V(Y);
-    Vnext(S) = Vnext(X) - Vnext(Y);
-    Vnext(c) = (V(c) || (Vnext(Q) > 0 ? 0 : 1)) && (Vnext(Q) < P(r) ? 1 : 0);
+    Vnext(x) = fmodf(V(x) + P(stepsize) * ymp, 2.0f * 3.141592f);
+    Vnext(cosx) = cosf(Vnext(x));
+    Vnext(y) = V(y) + P(stepsize) * zmp;
+    Vnext(z) = V(z) + P(stepsize) * 0.5 * ((1 / (P(eps1) * P(eps2))) * (P(gamma) - (P(eps1) + P(eps2)) * zmp - (1 - (P(eps1) * cosf(xmp))) * ymp));
 }

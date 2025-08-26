@@ -31,7 +31,7 @@ RangingType rangingTypeFromString(std::string str)
 
 Kernel readKernelText(std::string name)
 {
-	std::ifstream fileStream(("kernels/" + name + "/" + name + ".txt").c_str(), std::ios::out);
+	std::ifstream fileStream(("systems/" + name + "/" + name + ".txt").c_str(), std::ios::out);
 	std::vector<std::string> str;
 
 	Kernel kernel;

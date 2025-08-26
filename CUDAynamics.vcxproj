@@ -75,7 +75,7 @@
     </Link>
     <CudaCompile>
       <TargetMachinePlatform>64</TargetMachinePlatform>
-      <Include>imgui;imgui/backends;.;backends;kernels;implot;dbscan</Include>
+      <Include>imgui;imgui/backends;.;backends;systems;implot;dbscan</Include>
       <AdditionalCompilerOptions>
       </AdditionalCompilerOptions>
       <GenerateRelocatableDeviceCode>true</GenerateRelocatableDeviceCode>
@@ -159,7 +159,7 @@
     <ClInclude Include="implot3d\implot3d_internal.h" />
     <ClInclude Include="implot\implot.h" />
     <ClInclude Include="implot\implot_internal.h" />
-    <ClInclude Include="kernels_common.h" />
+    <ClInclude Include="systems_common.h" />
     <ClInclude Include="kernel_struct.h" />
     <ClInclude Include="main.h" />
     <ClInclude Include="main_utils.h" />
@@ -176,30 +176,31 @@
   <ItemGroup>
     <CudaCompile Include="analysis\lle\lle.cu" />
     <CudaCompile Include="analysis\max\max.cu" />
-    <CudaCompile Include="kernels\bolshakov\bolshakov.cu" />
-    <CudaCompile Include="kernels\chen\chen.cu" />
-    <CudaCompile Include="kernels\dadras\dadras.cu" />
-    <CudaCompile Include="kernels\fitzhugh_nagumo\fitzhugh_nagumo.cu" />
-    <CudaCompile Include="kernels\fitznagumo\fitznagumo.cu" />
-    <CudaCompile Include="kernels\fourwing\fourwing.cu" />
-    <CudaCompile Include="kernels\halvorsen\halvorsen.cu" />
-    <CudaCompile Include="kernels\hindmarsh_rose\hindmarsh_rose.cu" />
-    <CudaCompile Include="kernels\izhikevich\izhikevich.cu" />
-    <CudaCompile Include="kernels\jj_mrlcs\jj_mrlcs.cu" />
-    <CudaCompile Include="kernels\jj_rlcs\jj_rlcs.cu" />
-    <CudaCompile Include="kernels\langford\langford.cu" />
-    <CudaCompile Include="kernels\lorenz83\lorenz83.cu" />
-    <CudaCompile Include="kernels\lorenzVar\lorenzVar.cu" />
-    <CudaCompile Include="kernels\lorenz\lorenz.cu" />
-    <CudaCompile Include="kernels\rabinovich_fabrikant\rabinovich_fabrikant.cu" />
-    <CudaCompile Include="kernels\rossler\rossler.cu" />
-    <CudaCompile Include="kernels\sang\sang.cu" />
-    <CudaCompile Include="kernels\sprott14\sprott14.cu" />
-    <CudaCompile Include="kernels\sprottJm\sprottJm.cu" />
-    <CudaCompile Include="kernels\thomas\thomas.cu" />
-    <CudaCompile Include="kernels\three_scroll\three_scroll.cu" />
-    <CudaCompile Include="kernels\vnm\vnm.cu" />
-    <CudaCompile Include="kernels\wilson\wilson.cu" />
+    <CudaCompile Include="systems\bolshakov\bolshakov.cu" />
+    <CudaCompile Include="systems\chen\chen.cu" />
+    <CudaCompile Include="systems\dadras\dadras.cu" />
+    <CudaCompile Include="systems\fitzhugh_nagumo\fitzhugh_nagumo.cu" />
+    <CudaCompile Include="systems\fitznagumo\fitznagumo.cu" />
+    <CudaCompile Include="systems\fourwing\fourwing.cu" />
+    <CudaCompile Include="systems\halvorsen\halvorsen.cu" />
+    <CudaCompile Include="systems\hindmarsh_rose\hindmarsh_rose.cu" />
+    <CudaCompile Include="systems\izhikevich\izhikevich.cu" />
+    <CudaCompile Include="systems\jj_mrlcs\jj_mrlcs.cu" />
+    <CudaCompile Include="systems\jj_rlcs\jj_rlcs.cu" />
+    <CudaCompile Include="systems\langford\langford.cu" />
+    <CudaCompile Include="systems\lorenz83\lorenz83.cu" />
+    <CudaCompile Include="systems\lorenzVar\lorenzVar.cu" />
+    <CudaCompile Include="systems\lorenz\lorenz.cu" />
+    <CudaCompile Include="systems\nngu\nngu.cu" />
+    <CudaCompile Include="systems\rabinovich_fabrikant\rabinovich_fabrikant.cu" />
+    <CudaCompile Include="systems\rossler\rossler.cu" />
+    <CudaCompile Include="systems\sang\sang.cu" />
+    <CudaCompile Include="systems\sprott14\sprott14.cu" />
+    <CudaCompile Include="systems\sprottJm\sprottJm.cu" />
+    <CudaCompile Include="systems\thomas\thomas.cu" />
+    <CudaCompile Include="systems\three_scroll\three_scroll.cu" />
+    <CudaCompile Include="systems\vnm\vnm.cu" />
+    <CudaCompile Include="systems\wilson\wilson.cu" />
     <CudaCompile Include="main.cu" />
   </ItemGroup>
   <ItemGroup>

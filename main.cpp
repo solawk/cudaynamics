@@ -39,6 +39,7 @@ void common_main()
     addKernel(vnm);
     addKernel(fitzhugh_nagumo);
     addKernel(bolshakov);
+    addKernel(nngu);
 
     //selectKernel(kernels.begin()->first);
     selectKernel(lorenz);

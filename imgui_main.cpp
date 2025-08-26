@@ -2064,7 +2064,7 @@ int imgui_main(int, char**)
                                                 else ImPlot::PlotScatter(("##Peak to Parameter " + plotName).c_str(), window->bifAmps, window->bifParamIndices, window->BifDotAmount);
                                                  
                                                 if (ImGui::IsMouseDown(0) && ImGui::IsKeyPressed(ImGuiMod_Shift) && ImGui::IsMouseHoveringRect(plot->PlotRect.Min, plot->PlotRect.Max)) {
-                                                    numb MousePosX = ImPlot::GetPlotMousePos().x;
+                                                    numb MousePosX = (numb)ImPlot::GetPlotMousePos().x;
                                                     if (axis->min > MousePosX)attributeValueIndices[window->OrbitXIndex + varCount] = 0;
                                                     else if(axis->max < MousePosX)attributeValueIndices[window->OrbitXIndex + varCount] = axis->stepCount-1;
                                                     else {
@@ -2102,7 +2102,7 @@ int imgui_main(int, char**)
                                                 else ImPlot::PlotScatter(("##Interval to Parameter " + plotName).c_str(),  window->bifIntervals, window->bifParamIndices, window->BifDotAmount);
 
                                                 if (ImGui::IsMouseDown(0) && ImGui::IsKeyPressed(ImGuiMod_Shift) && ImGui::IsMouseHoveringRect(plot->PlotRect.Min, plot->PlotRect.Max)) {
-                                                    numb MousePosX = ImPlot::GetPlotMousePos().x;
+                                                    numb MousePosX = (numb)ImPlot::GetPlotMousePos().x;
                                                     if (axis->min > MousePosX)attributeValueIndices[window->OrbitXIndex + varCount] = 0;
                                                     else if (axis->max < MousePosX)attributeValueIndices[window->OrbitXIndex + varCount] = axis->stepCount - 1;
                                                     else {
@@ -2164,8 +2164,8 @@ int imgui_main(int, char**)
                         Attribute* axis = window->typeX == VARIABLE ? &(krnl->variables[window->indexX]) : &(krnl->parameters[window->indexX]);
                         bool axisIsRanging = axis->TrueStepCount() > 1;
                         if (axisIsRanging) {
-                            numb minX, stepX, maxX;
-                            int xSize;
+                            //numb minX, stepX, maxX;
+                            //int xSize;
                             HeatmapProperties* hmp = nullptr;
                             int variation=0;
                             
@@ -2186,7 +2186,7 @@ int imgui_main(int, char**)
                                 ImPlot::SetNextLineStyle(window->markerColor, window->markerWidth);
                                 ImPlot::PlotLine("##Metric_Line_Plot", Xaxis, Yaxis, axis->stepCount);
                                 if (ImGui::IsMouseDown(0) && ImGui::IsKeyPressed(ImGuiMod_Shift) && ImGui::IsMouseHoveringRect(plot->PlotRect.Min, plot->PlotRect.Max)) {
-                                    numb MousePosX = ImPlot::GetPlotMousePos().x;
+                                    numb MousePosX = (numb)ImPlot::GetPlotMousePos().x;
                                     if (axis->min > MousePosX)window->typeX == VARIABLE ? attributeValueIndices[window->indexX] = 0: attributeValueIndices[window->indexX +krnl->VAR_COUNT] = 0;
                                     else if (axis->max < MousePosX)window->typeX == VARIABLE ? attributeValueIndices[window->indexX] = axis->stepCount-1 : attributeValueIndices[window->indexX + krnl->VAR_COUNT] = axis->stepCount;
                                     else {
@@ -2706,7 +2706,7 @@ void listAttrRanging(Attribute* attr, bool isChanged)
     ImGui::PushItemWidth(120.0f);
     if (ImGui::BeginCombo(("##RANGING_" + attr->name).c_str(), (rangingTypes[attr->rangingType]).c_str()))
     {
-        for (int r = 0; r < 5; r++)
+        for (int r = 0; r < /*5*/3; r++) // 3 without randoms, 5 with randoms
         {
             bool isSelected = attr->rangingType == r;
             ImGuiSelectableFlags selectableFlags = 0;
