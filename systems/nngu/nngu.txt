@@ -1,4 +1,4 @@
-Name: NNGU
+Name: NNGU neuron model
 Steps: 1000
 Transient: 0
 Step size: 1

@@ -1,4 +1,4 @@
-Name: Sprott_14 system
+Name: Sprott 14 system
 Steps: 1000
 Transient: 0
 Step size: 0.01

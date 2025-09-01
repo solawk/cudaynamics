@@ -1,4 +1,4 @@
-Name: Bolshakov map neuron model
+Name: Bolshakov neuron model
 Steps: 1000
 Transient: 0
 Step size: 1

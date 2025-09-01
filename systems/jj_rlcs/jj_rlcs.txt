@@ -1,4 +1,4 @@
-Name: Josephson_Junction_RLC-shunted
+Name: Josephson junction RLC-shunted
 Steps: 5000
 Transient: 0
 Step size: 0.01

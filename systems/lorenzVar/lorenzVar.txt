@@ -1,4 +1,4 @@
-Name: Lorenz_Variation system
+Name: Lorenz Variation system
 Steps: 10000
 Transient: 0
 Step size: 0.001

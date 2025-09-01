@@ -1,4 +1,4 @@
-Name: Three-Scroll_Unified
+Name: Three-Scroll Unified system
 Steps: 1000
 Transient: 0
 Step size: 0.001

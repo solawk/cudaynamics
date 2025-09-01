@@ -1,4 +1,4 @@
-Name: Wilson
+Name: Wilson neuron model
 Steps: 1000
 Transient: 0
 Step size: 0.01

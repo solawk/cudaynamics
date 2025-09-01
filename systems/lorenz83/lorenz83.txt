@@ -1,4 +1,4 @@
-Name: Lorenz_83 system
+Name: Lorenz 83 system
 Steps: 10000
 Transient: 0
 Step size: 0.001

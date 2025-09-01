@@ -1,4 +1,4 @@
-Name: Chen
+Name: Chen system
 Steps: 1000
 Transient: 0
 Step size: 0.01

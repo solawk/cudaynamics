@@ -1,4 +1,4 @@
-Name: VNM
+Name: VNM demo
 Steps: 10
 Transient: 500
 Step size: 0.01

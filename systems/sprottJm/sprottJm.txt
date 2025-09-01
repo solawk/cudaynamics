@@ -1,4 +1,4 @@
-Name: Sprott_Case_J_Modified
+Name: Sprott Case J Modified system
 Steps: 1000
 Transient: 0
 Step size: 0.01
