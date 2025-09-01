@@ -180,7 +180,6 @@
     <CudaCompile Include="systems\chen\chen.cu" />
     <CudaCompile Include="systems\dadras\dadras.cu" />
     <CudaCompile Include="systems\fitzhugh_nagumo\fitzhugh_nagumo.cu" />
-    <CudaCompile Include="systems\fitznagumo\fitznagumo.cu" />
     <CudaCompile Include="systems\fourwing\fourwing.cu" />
     <CudaCompile Include="systems\halvorsen\halvorsen.cu" />
     <CudaCompile Include="systems\hindmarsh_rose\hindmarsh_rose.cu" />

@@ -246,9 +246,6 @@
     <CudaCompile Include="systems\vnm\vnm.cu">
       <Filter>systems</Filter>
     </CudaCompile>
-    <CudaCompile Include="systems\fitznagumo\fitznagumo.cu">
-      <Filter>systems</Filter>
-    </CudaCompile>
     <CudaCompile Include="systems\bolshakov\bolshakov.cu">
       <Filter>systems</Filter>
     </CudaCompile>
