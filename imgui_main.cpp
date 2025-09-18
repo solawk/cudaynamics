@@ -1990,9 +1990,27 @@ int imgui_main(int, char**)
                                                 ImPlot::SetNextMarkerStyle(window->markerShape, window->OrbitPointSize, window->plotColor,-1.0, window->plotColor);
                                                 if(!window->OrbitInvertedAxes)ImPlot::PlotScatter(("##" + plotName + "_ChosenVariationPlot").c_str(), peakIntervals, peakAmplitudes, peakCount - 1);
                                                 else ImPlot::PlotScatter(("##" + plotName + "_ChosenVariationPlot").c_str(), peakAmplitudes, peakIntervals, peakCount - 1);
+                                                ;
                                                 ImPlot::EndPlot();
                                             }
+
+                                            /*float a = 1, b = 1;
+                                            if (maxX - minX > maxY - minY) a = (maxY - minY) / (maxX - minX);
+                                            else b = (maxX-minX) / (maxY-minY);
+                                            vector<Point> PointsVector;
+                                            for (int i = 0; i < peakCount; i++) {
+                                                peakIntervals[i] *= a; peakAmplitudes[i] *= b;
+                                                Point TempPoint;
+                                                TempPoint.x = peakIntervals[i]; TempPoint.y = peakAmplitudes[i]; TempPoint.clusterID = UNCLASSIFIED;
+                                                PointsVector.push_back(TempPoint);
+
+                                            }
+                                            DBSCAN *clusters = new DBSCAN(3, 0.0005, PointsVector);
+                                            clusters->run();
                                             
+                                            ImGui::Text("Cluster count: "); ImGui::SameLine(); ImGui::Text(std::to_string(clusters->clusterCount).c_str());*/
+
+
                                     }
                                     else {
                                         if (OrbitRedraw) { window->areOrbitValuesDirty = OrbitRedraw; }
@@ -2067,7 +2085,7 @@ int imgui_main(int, char**)
                                                 ImPlot::SetNextMarkerStyle(window->markerShape, window->OrbitPointSize, window->plotColor, IMPLOT_AUTO, window->plotColor);
                                                 if(!window->OrbitInvertedAxes)ImPlot::PlotScatter(("##Peak to Parameter " + plotName).c_str(), window->bifParamIndices, window->bifAmps, window->BifDotAmount);
                                                 else ImPlot::PlotScatter(("##Peak to Parameter " + plotName).c_str(), window->bifAmps, window->bifParamIndices, window->BifDotAmount);
-                                                if (ImGui::IsMouseDown(0) && ImGui::IsKeyPressed(ImGuiMod_Shift) && ImGui::IsMouseHoveringRect(plot->PlotRect.Min, plot->PlotRect.Max) && plot->ContextLocked) {
+                                                if (ImGui::IsMouseDown(0) && ImGui::IsKeyPressed(ImGuiMod_Shift) && ImGui::IsMouseHoveringRect(plot->PlotRect.Min, plot->PlotRect.Max) && plot->ContextLocked || plot->shiftClicked) {
                                                     numb MousePosX;
                                                     window->OrbitInvertedAxes ? MousePosX = (numb)ImPlot::GetPlotMousePos().y:  MousePosX = (numb)ImPlot::GetPlotMousePos().x;
                                                     if (axis->min > MousePosX)attributeValueIndices[window->OrbitXIndex + varCount] = 0;
@@ -2106,7 +2124,7 @@ int imgui_main(int, char**)
                                                 if(!window->OrbitInvertedAxes)ImPlot::PlotScatter(("##Interval to Parameter " + plotName).c_str(), window->bifParamIndices, window->bifIntervals, window->BifDotAmount);
                                                 else ImPlot::PlotScatter(("##Interval to Parameter " + plotName).c_str(),  window->bifIntervals, window->bifParamIndices, window->BifDotAmount);
 
-                                                if (ImGui::IsMouseDown(0) && ImGui::IsKeyPressed(ImGuiMod_Shift) && ImGui::IsMouseHoveringRect(plot->PlotRect.Min, plot->PlotRect.Max) && plot->ContextLocked) {
+                                                if (ImGui::IsMouseDown(0) && ImGui::IsKeyPressed(ImGuiMod_Shift) && ImGui::IsMouseHoveringRect(plot->PlotRect.Min, plot->PlotRect.Max) && plot->ContextLocked || plot->shiftClicked) {
                                                     numb MousePosX;
                                                     window->OrbitInvertedAxes ? MousePosX = (numb)ImPlot::GetPlotMousePos().y : MousePosX = (numb)ImPlot::GetPlotMousePos().x;
                                                     if (axis->min > MousePosX)attributeValueIndices[window->OrbitXIndex + varCount] = 0;
