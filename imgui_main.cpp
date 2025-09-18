@@ -773,11 +773,13 @@ int imgui_main(int, char**)
                 {
                     playingParticles = !playingParticles;
                     kernelNew.CopyFrom(&KERNEL);
+                    
                 }
 
                 if (!playingParticles)
                 {
                     KERNEL.CopyFrom(&kernelNew);
+                    
                 }
             }
             if (anyChanged) POP_FRAME(4);
@@ -835,8 +837,10 @@ int imgui_main(int, char**)
                 if (autoLoadNewParams) kernelNew.CopyParameterValuesFrom(&KERNEL);
                 else KERNEL.CopyParameterValuesFrom(&kernelNew);
             }
-            if (tempAutoLoadNewParams)OrbitRedraw = true;
             TOOLTIP("Automatically applies new parameter values to the new buffers mid-playback");
+
+
+          
 
             // Map continuous computing
             popStyle = false;
@@ -889,7 +893,7 @@ int imgui_main(int, char**)
 
             if (ImGui::Button("Next buffer"))
             {
-                switchPlayedBuffer();
+                switchPlayedBuffer(); OrbitRedraw = true;
             }
 
             //selectParticleTab = selectOrbitTab = false;
@@ -903,6 +907,7 @@ int imgui_main(int, char**)
         bool computation0InProgress = !computations[0].ready && computations[0].marshal.trajectory != nullptr;
         bool computation1InProgress = !computations[1].ready && computations[1].marshal.trajectory != nullptr;
         bool computationHiresInProgress = !computationHires.ready && computationHires.marshal.trajectory != nullptr;
+        if (autoLoadNewParams || playingParticles || computation0InProgress || computation1InProgress || computationHiresInProgress)OrbitRedraw = true; else OrbitRedraw = false;
 
         if (!HIRES_ON)
         {
@@ -925,7 +930,7 @@ int imgui_main(int, char**)
             if (ImGui::Button("= HI-RES COMPUTE =") || hiresComputeAfterShiftSelect)
             {
                 //printf("A\n");
-                hiresPnC();
+                hiresPnC(); OrbitRedraw = true;
             }
         }
         if (computationHiresInProgress)
@@ -1355,7 +1360,7 @@ int imgui_main(int, char**)
                     {
                         if (ImGui::Selectable(krnl->parameters[p].name.c_str()))
                         {
-                            window->OrbitXIndex = p;
+                            window->OrbitXIndex = p; OrbitRedraw = true;
                         }
                     }
 
@@ -1990,7 +1995,7 @@ int imgui_main(int, char**)
                                             
                                     }
                                     else {
-                                        if (OrbitRedraw) { window->areOrbitValuesDirty = OrbitRedraw; OrbitRedraw = false; }
+                                        if (OrbitRedraw) { window->areOrbitValuesDirty = OrbitRedraw; }
                                         if (window->lastAttributeValueIndices.size() != 0) {
                                             for (int i = 0; i < varCount + parCount - 2; i++) {
                                                 if (i != varCount + window->OrbitXIndex) {
@@ -2062,9 +2067,9 @@ int imgui_main(int, char**)
                                                 ImPlot::SetNextMarkerStyle(window->markerShape, window->OrbitPointSize, window->plotColor, IMPLOT_AUTO, window->plotColor);
                                                 if(!window->OrbitInvertedAxes)ImPlot::PlotScatter(("##Peak to Parameter " + plotName).c_str(), window->bifParamIndices, window->bifAmps, window->BifDotAmount);
                                                 else ImPlot::PlotScatter(("##Peak to Parameter " + plotName).c_str(), window->bifAmps, window->bifParamIndices, window->BifDotAmount);
-                                                 
-                                                if (ImGui::IsMouseDown(0) && ImGui::IsKeyPressed(ImGuiMod_Shift) && ImGui::IsMouseHoveringRect(plot->PlotRect.Min, plot->PlotRect.Max)) {
-                                                    numb MousePosX = (numb)ImPlot::GetPlotMousePos().x;
+                                                if (ImGui::IsMouseDown(0) && ImGui::IsKeyPressed(ImGuiMod_Shift) && ImGui::IsMouseHoveringRect(plot->PlotRect.Min, plot->PlotRect.Max) && plot->ContextLocked) {
+                                                    numb MousePosX;
+                                                    window->OrbitInvertedAxes ? MousePosX = (numb)ImPlot::GetPlotMousePos().y:  MousePosX = (numb)ImPlot::GetPlotMousePos().x;
                                                     if (axis->min > MousePosX)attributeValueIndices[window->OrbitXIndex + varCount] = 0;
                                                     else if(axis->max < MousePosX)attributeValueIndices[window->OrbitXIndex + varCount] = axis->stepCount-1;
                                                     else {
@@ -2101,8 +2106,9 @@ int imgui_main(int, char**)
                                                 if(!window->OrbitInvertedAxes)ImPlot::PlotScatter(("##Interval to Parameter " + plotName).c_str(), window->bifParamIndices, window->bifIntervals, window->BifDotAmount);
                                                 else ImPlot::PlotScatter(("##Interval to Parameter " + plotName).c_str(),  window->bifIntervals, window->bifParamIndices, window->BifDotAmount);
 
-                                                if (ImGui::IsMouseDown(0) && ImGui::IsKeyPressed(ImGuiMod_Shift) && ImGui::IsMouseHoveringRect(plot->PlotRect.Min, plot->PlotRect.Max)) {
-                                                    numb MousePosX = (numb)ImPlot::GetPlotMousePos().x;
+                                                if (ImGui::IsMouseDown(0) && ImGui::IsKeyPressed(ImGuiMod_Shift) && ImGui::IsMouseHoveringRect(plot->PlotRect.Min, plot->PlotRect.Max) && plot->ContextLocked) {
+                                                    numb MousePosX;
+                                                    window->OrbitInvertedAxes ? MousePosX = (numb)ImPlot::GetPlotMousePos().y : MousePosX = (numb)ImPlot::GetPlotMousePos().x;
                                                     if (axis->min > MousePosX)attributeValueIndices[window->OrbitXIndex + varCount] = 0;
                                                     else if (axis->max < MousePosX)attributeValueIndices[window->OrbitXIndex + varCount] = axis->stepCount - 1;
                                                     else {
