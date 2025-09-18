@@ -2004,7 +2004,6 @@ int imgui_main(int, char**)
                                             }
                                         }
                                         if (window->areOrbitValuesDirty) {
-                                            window->plotColor = ImVec4(0.6f, 0.6f, 1.0f, 1.0f);
                                             if (window->bifAmps != nullptr) { delete[]window->bifAmps; delete[]window->bifIntervals; delete[]window->bifParamIndices; }
                                             window->bifAmps = new numb[MAX_PEAKS * axis->stepCount];
                                             window->bifIntervals = new numb[MAX_PEAKS * axis->stepCount];
@@ -2049,7 +2048,6 @@ int imgui_main(int, char**)
                                             window->BifDotAmount = BifDotAmount;
                                             window->areOrbitValuesDirty = false;
                                         }
-                                        else { window->plotColor = ImVec4(1.0f,1.0f,1.0f,1.0f); }
                                         numb minX = window->bifParamIndices[0], maxX = window->bifParamIndices[0];
                                         numb minY = window->bifAmps[0], maxY = window->bifAmps[0];
                                         numb minZ = window->bifIntervals[0]; numb maxZ = window->bifIntervals[0];
