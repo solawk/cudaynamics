@@ -58,7 +58,6 @@ __device__ void LLE(Computation* data, LLE_Settings settings, int variation, voi
     else if (CUDA_kernel.mapWeight == 1.0f)
     {
         CUDA_marshal.maps[mapValueAt(0)] = mapValue;
-        CUDA_marshal.maps[mapValueAt(1)] = -mapValue;
     }
     else
     {
