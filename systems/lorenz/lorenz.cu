@@ -6,7 +6,7 @@ namespace attributes
     enum variables { x, y, z };
     enum parameters { sigma, rho, beta, stepsize, symmetry, method };
     enum methods { ExplicitEuler, ExplicitMidpoint, ExplicitRungeKutta4, VariableSymmetryCD };
-    enum maps { LLE };
+    enum maps { LLE, MAX };
 }
 
 __global__ void kernelProgram_lorenz(Computation* data)
@@ -38,6 +38,12 @@ __global__ void kernelProgram_lorenz(Computation* data)
         LLE_Settings lle_settings(MS(LLE, 0), MS(LLE, 1), MS(LLE, 2));
         lle_settings.Use3DNorm();
         LLE(data, lle_settings, variation, &finiteDifferenceScheme_lorenz, MO(LLE));
+    }
+
+    if (M(MAX).toCompute)
+    {
+        MAX_Settings max_settings(MS(MAX, 0));
+        MAX(data, max_settings, variation, &finiteDifferenceScheme_lorenz, MO(MAX));
     }
 }
 

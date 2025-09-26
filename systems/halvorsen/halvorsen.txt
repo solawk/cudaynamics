@@ -25,4 +25,4 @@ param symmetry Fixed 0.0 50.0 0.1 250 0.0 0.0
 enum method 0ExplicitEuler 0ExplicitMidpoint 1ExplicitRungeKutta4 0VariableSymmetryCD
 //
 // Defining maps:
-map LLE 11 0.01 50 0 -1
+map LLE 1 7 r n0.01 L i50 variableToDeflect i0 norm0 i0 norm1 i1 norm2 i2 norm3 i-1

@@ -31,6 +31,7 @@ struct HeatmapProperties
 	int indexY;
 	MapDimensionType typeX;
 	MapDimensionType typeY;
+	int mapValueIndex;
 
 	bool initClickedLocation;
 	ImVec2 lastClickedLocation;
@@ -66,6 +67,8 @@ struct HeatmapProperties
 
 		typeX = VARIABLE;
 		typeY = VARIABLE;
+
+		mapValueIndex = 0;
 
 		initClickedLocation = false;
 		lastClickedLocation = ImVec2(0.0f, 0.0f);

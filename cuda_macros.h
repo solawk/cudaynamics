@@ -21,6 +21,7 @@
 #define MO(map)         (CUDA_kernel.mapDatas[attributes::maps::map].offset * CUDA_marshal.totalVariations)
 
 #define mapPosition     (variation + offset)
+#define mapValueAt(index) (variation + offset) + (index * CUDA_marshal.totalVariations)
 
 // Computation access macros
 

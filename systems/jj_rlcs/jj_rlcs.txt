@@ -27,4 +27,4 @@ param stepsize Fixed 0.05 0.0 0.01 0 0.0 0.0
 param symmetry Fixed 0.0 0.0 0.01 0 0.0 0.0
 enum method 0ExplicitEuler 1SemiExplicitEuler 0ExplicitMidpoint 0ExplicitRungeKutta4 0VariableSymmetryCD
 // Defining maps:
-map LLE 7 r n0.01 L i50 variableToDeflect i0 norm0 i0 norm1 i1 norm2 i2 norm3 i-1
+map LLE 1 7 r n0.01 L i50 variableToDeflect i0 norm0 i0 norm1 i1 norm2 i2 norm3 i-1

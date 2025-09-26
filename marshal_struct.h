@@ -26,12 +26,14 @@ struct Marshal
 	// Trajectory steps * variables = amount of numbers for one trajectory
 	int variationSize;
 
-	int mapCount;
+	//int mapCount;
+	unsigned int totalMapValuesPerVariation; // Previously mapCount meant total amount of map values per variation
 
 	void CopyMetadataFrom(Marshal* marshal)
 	{
 		totalVariations = marshal->totalVariations;
 		variationSize = marshal->variationSize;
-		mapCount = marshal->mapCount;
+		//mapCount = marshal->mapCount;
+		totalMapValuesPerVariation = marshal->totalMapValuesPerVariation;
 	}
 };

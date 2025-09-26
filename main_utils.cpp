@@ -106,20 +106,21 @@ Kernel readKernelText(std::string name)
 		if (str[0] == "map")
 		{
 			tempMapData.name = str[1];
-			int structSettingsCount = atoi(str[2].c_str()); // Settings by the struct
+			tempMapData.valueCount = atoi(str[2].c_str());
+			int structSettingsCount = atoi(str[3].c_str()); // Settings by the struct
 			int currentSettingsCount = mapSettingsCount;
 			tempMapData.settingsOffset = mapSettingsCount;
 			mapSettingsCount += structSettingsCount;
 			tempMapData.settingsCount = structSettingsCount;
-			int writtenSettingsCount = ((int)str.size() - 3) / 2; // Settings in the config file
+			int writtenSettingsCount = ((int)str.size() - 4) / 2; // Settings in the config file
 
 			for (int i = 0; i < writtenSettingsCount; i++)
 			{
-				tempMapData.settingName[i] = str[3 + i * 2 + 0];
+				tempMapData.settingName[i] = str[4 + i * 2 + 0];
 
-				tempMapData.isSettingNumb[i] = str[3 + i * 2 + 1][0] == 'n';
-				str[3 + i * 2 + 1] = str[3 + i * 2 + 1].substr(1);
-				kernel.mapSettings[currentSettingsCount++] = (numb)atof(str[3 + i * 2 + 1].c_str());
+				tempMapData.isSettingNumb[i] = str[4 + i * 2 + 1][0] == 'n';
+				str[4 + i * 2 + 1] = str[4 + i * 2 + 1].substr(1);
+				kernel.mapSettings[currentSettingsCount++] = (numb)atof(str[4 + i * 2 + 1].c_str());
 			}
 
 			tempMapData.typeX = tempMapData.typeY = VARIABLE;

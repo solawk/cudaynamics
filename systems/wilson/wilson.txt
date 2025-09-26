@@ -35,4 +35,4 @@ param stepsize Fixed 0.01 0.1 0.01 100 0.0 0.0
 enum method 1ExplicitEuler
 // Defining maps:
 // map <name> <map settings count (inside its struct)> <map settings, beginning with "n" for numbs and "i" for ints>
-map LLE 7 r n0.01 L i50 variableToDeflect i2 norm0 i0 norm1 i1 norm2 i2 norm3 i-1
+map LLE 1 7 r n0.01 L i50 variableToDeflect i2 norm0 i0 norm1 i1 norm2 i2 norm3 i-1

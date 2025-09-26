@@ -29,4 +29,4 @@ param symmetry Fixed 0.0 29.0 0.1 0 0.0 0.0
 // enum <name> <ranging type> <minimum value> <maximum value> <step> <step count> <normal mean> <normal deviation> <enum names, no spaces>
 enum method 0ExplicitEuler 0SemiExplicitEuler 0ExplicitMidpoint 0ExplicitRungeKutta4 1VariableSymmetryCD
 // Defining maps:
-map LLE 7 r n0.01 L i1000 variableToDeflect i2 norm0 i0 norm1 i1 norm2 i2 norm3 i-1
+map LLE 1 7 r n0.01 L i1000 variableToDeflect i2 norm0 i0 norm1 i1 norm2 i2 norm3 i-1

@@ -1272,16 +1272,20 @@ int imgui_main(int, char**)
             // Heatmap axes
             if (window->type == Heatmap)
             {
+                int mapIndex = window->variables[0];
                 bool isHires = window == hiresHeatmapWindow;
                 HeatmapProperties* heatmap = isHires ? &window->hireshmp : &window->hmp;
                 Kernel* krnl = isHires ? &kernelHiresComputed : &(KERNEL);
+                MapData* mapData = &(krnl->mapDatas[mapIndex]);
+                bool isSingleValue = mapData->valueCount == 1;
 
                 int prevIndexX = heatmap->indexX;
                 int prevIndexY = heatmap->indexY;
                 int prevTypeX = heatmap->typeX;
                 int prevTypeY = heatmap->typeY;
+                int prevValueIndex = heatmap->mapValueIndex;
 
-                ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.485f);
+                ImGui::PushItemWidth(ImGui::GetWindowWidth() * (isSingleValue ? 0.485f : 0.31f));
                 if (ImGui::BeginCombo(("##" + windowName + "_axisX").c_str(),
                     heatmap->typeX == VARIABLE ? krnl->variables[heatmap->indexX].name.c_str() : krnl->parameters[heatmap->indexX].name.c_str(), 0))
                 {
@@ -1332,9 +1336,17 @@ int imgui_main(int, char**)
                     ImGui::EndCombo();
                 }
 
+                if (!isSingleValue)
+                {
+                    ImGui::SameLine();
+                    ImGui::DragInt(("##" + windowName + "_value").c_str(), &(heatmap->mapValueIndex), 1.0f, 0, mapData->valueCount - 1, "%d", 0);
+                    /*if (heatmap->mapValueIndex < 0) heatmap->mapValueIndex = 0;
+                    if ((int)heatmap->mapValueIndex >= mapData->valueCount) heatmap->mapValueIndex = mapData->valueCount - 1;*/
+                }
+
                 ImGui::PopItemWidth();
 
-                if (prevIndexX != heatmap->indexX || prevIndexY != heatmap->indexY || prevTypeX != heatmap->typeX || prevTypeY != heatmap->typeY)
+                if (prevIndexX != heatmap->indexX || prevIndexY != heatmap->indexY || prevTypeX != heatmap->typeX || prevTypeY != heatmap->typeY || prevValueIndex != heatmap->mapValueIndex)
                 {
                     heatmap->areValuesDirty = true;
                     heatmap->areHeatmapLimitsDefined = false;
@@ -2415,7 +2427,7 @@ int imgui_main(int, char**)
 
                                     if (heatmap->areValuesDirty)
                                     {
-                                        extractMap(cmp->marshal.maps + cmp->marshal.kernel.mapDatas[mapIndex].offset * cmp->marshal.totalVariations,
+                                        extractMap(cmp->marshal.maps + (cmp->marshal.kernel.mapDatas[mapIndex].offset + heatmap->mapValueIndex) * cmp->marshal.totalVariations,
                                             heatmap->valueBuffer, heatmap->indexBuffer, &(attributeValueIndices.data()[0]),
                                             sizing.hmp->typeX == PARAMETER ? sizing.hmp->indexX + krnl->VAR_COUNT : sizing.hmp->indexX,
                                             sizing.hmp->typeY == PARAMETER ? sizing.hmp->indexY + krnl->VAR_COUNT : sizing.hmp->indexY,
