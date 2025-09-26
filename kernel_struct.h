@@ -86,7 +86,8 @@ public:
 			variables[i].CalcStepCount();
 			variables[i].CalcStep();
 			//if (!CUDA_kernel.variables[i].DoValuesExist()) CUDA_kernel.variables[i].Generate(); TODO
-			variables[i].ClearValues(); variables[i].Generate(false);
+			variables[i].ClearValues();
+			variables[i].Generate(false);
 			if (variables[i].TrueStepCount() == 1) variables[i].selectedForMaps = false;
 		}
 
@@ -95,7 +96,8 @@ public:
 			parameters[i].CalcStepCount();
 			parameters[i].CalcStep();
 			//if (!CUDA_kernel.parameters[i].DoValuesExist()) CUDA_kernel.parameters[i].Generate();
-			parameters[i].ClearValues(); parameters[i].Generate(false);
+			parameters[i].ClearValues();
+			parameters[i].Generate(false);
 			if (parameters[i].TrueStepCount() == 1) parameters[i].selectedForMaps = false;
 		}
 	}

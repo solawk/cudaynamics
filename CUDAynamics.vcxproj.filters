@@ -61,6 +61,9 @@
     <ClCompile Include="gui\fullscreen_funcs.cpp">
       <Filter>gui</Filter>
     </ClCompile>
+    <ClCompile Include="gui\imgui_ui_funcs.cpp">
+      <Filter>gui</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="imgui">
@@ -183,6 +186,9 @@
       <Filter>gui</Filter>
     </ClInclude>
     <ClInclude Include="kernels_common.h" />
+    <ClInclude Include="gui\imgui_ui_funcs.h">
+      <Filter>gui</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="main.cu" />

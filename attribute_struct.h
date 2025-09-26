@@ -91,7 +91,7 @@ public:
 					if (values[i] > max) values[i] = max;
 				}
 			}
-			else
+			else // i.e. if (preserveValues && oldValues != nullptr)
 			{
 				for (int i = 0; i < trueStepCount; i++)
 				{

@@ -104,6 +104,7 @@
   <ItemGroup>
     <ClCompile Include="dbscan\dbscan.cpp" />
     <ClCompile Include="gui\fullscreen_funcs.cpp" />
+    <ClCompile Include="gui\imgui_ui_funcs.cpp" />
     <ClCompile Include="gui\img_loading.cpp" />
     <ClCompile Include="gui\map_img.cpp" />
     <ClCompile Include="gui\plotWindowMenu.cpp" />
@@ -138,6 +139,7 @@
     <ClInclude Include="dbscan\dbscan.h" />
     <ClInclude Include="gui\d3dx11tex.h" />
     <ClInclude Include="gui\fullscreen_funcs.h" />
+    <ClInclude Include="gui\imgui_ui_funcs.h" />
     <ClInclude Include="gui\img_loading.h" />
     <ClInclude Include="gui\map_img.h" />
     <ClInclude Include="gui\plotWindowMenu.h" />
