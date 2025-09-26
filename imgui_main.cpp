@@ -688,20 +688,6 @@ int imgui_main(int, char**)
             ImGui::PopStyleColor();
         }
 
-        /*popStyle = false;
-        if (kernelNew.stepSize != KERNEL.stepSize)
-        {
-            anyChanged = true;
-            PUSH_UNSAVED_FRAME;
-            popStyle = true;
-        }
-        float stepSizeFloat = (float)KERNELNEWCURRENT.stepSize;
-        ImGui::InputFloat("Step size", &stepSizeFloat, 0.0f, 0.0f, "%f");
-        KERNELNEWCURRENT.stepSize = (numb)stepSizeFloat;
-        TOOLTIP("Step size of the simulation, h");
-        ImGui::PopItemWidth();
-        if (popStyle) POP_FRAME(3);*/
-
         variation = 0;
 
         ImGui::NewLine();
@@ -766,25 +752,6 @@ int imgui_main(int, char**)
                 }
             }
             if (anyChanged) POP_FRAME(4);
-
-            /*bool tempContinuous = continuousComputingEnabled;
-            if (ImGui::Checkbox("Continuous computing", &(tempContinuous)))
-            {
-                // Flags of having buffers computed, to not interrupt computations in progress when switching
-                bool noncont = !continuousComputingEnabled && computations[0].ready;
-                bool cont = continuousComputingEnabled && computations[0].ready && computations[1].ready;
-
-                if (noComputedData || noncont || cont)
-                {
-                    continuousComputingEnabled = !continuousComputingEnabled;
-
-                    bufferNo = 0;
-                    deleteBothBuffers();
-                    playingParticles = false;
-                    particleStep = 0;
-                }
-            }
-            TOOLTIP("Keep computing next buffers for continuous playback");*/
 
             // PARTICLES MODE
             if (playingParticles/* && enabledParticles*/)
@@ -991,9 +958,7 @@ int imgui_main(int, char**)
                     if (ImGui::Button(("x##" + std::to_string(v)).c_str()))
                     {
                         selectedPlotVarsSet.erase(v);
-                        break; // temporary workaround (hahaha)
-                        // What workaround? Why was it temporary?
-                        // I forgor what was the original problem and I'm too afraid to find out what'll happen if I remove this workaround :skull:
+                        break;
                     }
                     ImGui::SameLine();
                     ImGui::Text(("- " + KERNEL.variables[v].name).c_str());
@@ -1328,8 +1293,6 @@ int imgui_main(int, char**)
                 {
                     ImGui::SameLine();
                     ImGui::DragInt(("##" + windowName + "_value").c_str(), &(heatmap->mapValueIndex), 1.0f, 0, mapData->valueCount - 1, "%d", 0);
-                    /*if (heatmap->mapValueIndex < 0) heatmap->mapValueIndex = 0;
-                    if ((int)heatmap->mapValueIndex >= mapData->valueCount) heatmap->mapValueIndex = mapData->valueCount - 1;*/
                 }
 
                 ImGui::PopItemWidth();
@@ -1349,8 +1312,6 @@ int imgui_main(int, char**)
                 ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.2f);
                 if (ImGui::BeginCombo(("##" + windowName + "_axisX").c_str(), krnl->parameters[window->OrbitXIndex].name.c_str(), 0))
                 {
-
-
                     for (int p = 0; p < krnl->PARAM_COUNT; p++)
                     {
                         if (ImGui::Selectable(krnl->parameters[p].name.c_str()))
@@ -1396,9 +1357,8 @@ int imgui_main(int, char**)
 
                     ImGui::EndCombo();
                 }
-                ImGui::PopItemWidth();
 
-                
+                ImGui::PopItemWidth();
             }
 
             // Common variables
@@ -1660,7 +1620,6 @@ int imgui_main(int, char**)
                             }
                             else
                             {
-                                //ImPlot3D::SetNextLineStyle(window->plotColor);
                                 ImPlot3D::SetupAxes(KERNEL.variables[window->variables[0]].name.c_str(), KERNEL.variables[window->variables[1]].name.c_str(), KERNEL.variables[window->variables[2]].name.c_str());
                                 
                                 if (colorsLUTfrom == nullptr)
@@ -1844,28 +1803,6 @@ int imgui_main(int, char**)
                         plot->is3d = false;
                         plot->deltax = &(window->deltarotation.x);
                         plot->deltay = &(window->deltarotation.y);
-
-                        /*populateAxisBuffer(axisBuffer, plotRangeSize / 10.0f, plotRangeSize / 10.0f, plotRangeSize / 10.0f);
-
-                        // Axis
-                        if (window->showAxis)
-                        {
-                            ImPlot::SetNextLineStyle(xAxisColor);
-                            ImPlot::PlotLine(plotName.c_str(), &(axisBuffer[0]), &(axisBuffer[1]), 2, 0, 0, sizeof(float) * 3);
-                            ImPlot::SetNextLineStyle(yAxisColor);
-                            ImPlot::PlotLine(plotName.c_str(), &(axisBuffer[6]), &(axisBuffer[7]), 2, 0, 0, sizeof(float) * 3);
-                        }
-
-                        // Axis names
-                        if (window->showAxisNames)
-                        {
-                            ImPlot::PushStyleColor(ImPlotCol_InlayText, xAxisColor);
-                            ImPlot::PlotText(KERNEL.variables[window->variables[0]].name.c_str(), axisBuffer[0], axisBuffer[1], ImVec2(0.0f, 0.0f));
-                            ImPlot::PopStyleColor();
-                            ImPlot::PushStyleColor(ImPlotCol_InlayText, yAxisColor);
-                            ImPlot::PlotText(KERNEL.variables[window->variables[1]].name.c_str(), axisBuffer[6], axisBuffer[7], ImVec2(0.0f, 0.0f));
-                            ImPlot::PopStyleColor();
-                        }*/
 
                         if (computations[playedBufferIndex].ready)
                         {
@@ -2245,7 +2182,7 @@ int imgui_main(int, char**)
                         break;
                     }
 
-                    if (/*!krnl->mapDatas[mapIndex].toCompute || */!cmp->marshal.kernel.mapDatas[mapIndex].toCompute)
+                    if (!cmp->marshal.kernel.mapDatas[mapIndex].toCompute)
                     {
                         ImGui::Text(("Map " + krnl->mapDatas[mapIndex].name + " has not been computed").c_str());
                         break;
@@ -2331,9 +2268,6 @@ int imgui_main(int, char**)
                                                 stepX = (int)floor(plot->shiftClickLocation.x);
                                                 stepY = (int)floor(plot->shiftClickLocation.y);
                                             }
-
-                                            //enabledParticles = false;
-                                            //playingParticles = false;
 
 #define IGNOREOUTOFREACH    if (stepX < 0 || stepX >= (sizing.hmp->typeX == VARIABLE ? krnl->variables[sizing.hmp->indexX].TrueStepCount() : krnl->parameters[sizing.hmp->indexX].TrueStepCount())) break; \
                             if (stepY < 0 || stepY >= (sizing.hmp->typeY == VARIABLE ? krnl->variables[sizing.hmp->indexY].TrueStepCount() : krnl->parameters[sizing.hmp->indexY].TrueStepCount())) break;
@@ -2443,8 +2377,6 @@ int imgui_main(int, char**)
                                         heatmap->isHeatmapDirty = true;
                                     }
 
-                                    //numb* mapData = computations[playedBufferIndex].marshal.maps2 + sizing.map->offset;
-
                                     if (!heatmap->areHeatmapLimitsDefined)
                                     {
                                         if (!heatmap->ignoreNextLimitsRecalculation)
@@ -2452,7 +2384,6 @@ int imgui_main(int, char**)
 
                                         heatmap->ignoreNextLimitsRecalculation = false;
                                         heatmap->areHeatmapLimitsDefined = true;
-                                        //heatmap->isHeatmapDirty = true;
                                     }
 
                                     // Do not reload values when variating map axes (map values don't change anyway)
