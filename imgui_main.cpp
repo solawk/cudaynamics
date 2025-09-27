@@ -1038,8 +1038,6 @@ int imgui_main(int, char**)
                 break;
             }
 
-            
-
             if (ImGui::Button("Create graph"))
             {
                 PlotWindow plotWindow = PlotWindow(uniqueIds++, plotNameBuffer, true);
@@ -1050,7 +1048,7 @@ int imgui_main(int, char**)
                 if (plotType == Phase2D) plotWindow.AssignVariables(selectedPlotVars);
                 if (plotType == Heatmap) plotWindow.AssignVariables(selectedPlotMap);
                 if (plotType == Orbit) plotWindow.AssignVariables(selectedPlotVarsOrbitVer);
-                if (plotType == Metric)plotWindow.AssignVariables(selectedPlotMapMetric);
+                if (plotType == Metric) plotWindow.AssignVariables(selectedPlotMapMetric);
 
                 int indexOfColorsLutFrom = -1;
                 if (colorsLUTfrom != nullptr)
@@ -1064,6 +1062,8 @@ int imgui_main(int, char**)
                 plotWindows.push_back(plotWindow);
 
                 if (indexOfColorsLutFrom != -1) colorsLUTfrom = &(plotWindows[indexOfColorsLutFrom]);
+
+                saveWindows();
             }
 
             ImGui::End();
@@ -1383,13 +1383,13 @@ int imgui_main(int, char**)
 
                 if (window->whiteBg) { ImPlot::PushStyleColor(ImPlotCol_PlotBg, ImVec4(1.0f, 1.0f, 1.0f, 1.0f)); ImPlot::PushStyleColor(ImPlotCol_AxisGrid, ImVec4(0.2f, 0.2f, 0.2f, 1.0f)); }
 
-                bool isPlotBegan;
+                bool isPlotBegun;
                 if (window->isImplot3d)
-                    isPlotBegan = ImPlot3D::BeginPlot(plotName.c_str(), ImVec2(-1, -1), ImPlot3DFlags_NoLegend | ImPlot3DFlags_NoTitle | ImPlot3DFlags_NoClip);
+                    isPlotBegun = ImPlot3D::BeginPlot(plotName.c_str(), ImVec2(-1, -1), ImPlot3DFlags_NoLegend | ImPlot3DFlags_NoTitle | ImPlot3DFlags_NoClip);
                 else
-                    isPlotBegan = ImPlot::BeginPlot(plotName.c_str(), "", "", ImVec2(-1, -1), ImPlotFlags_NoLegend | ImPlotFlags_NoTitle, axisFlags, axisFlags);
+                    isPlotBegun = ImPlot::BeginPlot(plotName.c_str(), "", "", ImVec2(-1, -1), ImPlotFlags_NoLegend | ImPlotFlags_NoTitle, axisFlags, axisFlags);
 
-                if (isPlotBegan)
+                if (isPlotBegun)
                 {
                     float plotRangeSize;
 
@@ -1398,7 +1398,6 @@ int imgui_main(int, char**)
                     else
                     {
                         plot = ImPlot::GetCurrentPlot();
-
                         plotRangeSize = ((float)plot->Axes[ImAxis_X1].Range.Max - (float)plot->Axes[ImAxis_X1].Range.Min);
 
                         if (!computations[playedBufferIndex].ready)
@@ -1409,30 +1408,15 @@ int imgui_main(int, char**)
                         }
                     }
 
-                    float deltax = -window->deltarotation.x;
-                    float deltay = -window->deltarotation.y;
-
-                    window->deltarotation.x = 0;
-                    window->deltarotation.y = 0;
+                    float deltax = -window->deltarotation.x; window->deltarotation.x = 0;
+                    float deltay = -window->deltarotation.y; window->deltarotation.y = 0;
 
                     if (!window->isImplot3d)
                     {
                         plot->is3d = true;
                         plot->deltax = &(window->deltarotation.x);
                         plot->deltay = &(window->deltarotation.y);
-
-                        if (deltax != 0.0f || deltay != 0.0f)
-                        {
-                            quaternion::Quaternion<float> quat(window->quatRot.w, window->quatRot.x, window->quatRot.y, window->quatRot.z);
-                            quaternion::Quaternion<float> quatY(cosf(deltax * 0.5f * DEG2RAD), 0.0f, sinf(deltax * 0.5f * DEG2RAD), 0.0f);
-                            quaternion::Quaternion<float> quatX(cosf(deltay * 0.5f * DEG2RAD), sinf(deltay * 0.5f * DEG2RAD), 0.0f, 0.0f);
-                            quat = quatY * quatX * quat;
-                            quat = quaternion::normalize(quat);
-                            window->quatRot.w = quat.a();
-                            window->quatRot.x = quat.b();
-                            window->quatRot.y = quat.c();
-                            window->quatRot.z = quat.d();
-                        }
+                        if (deltax != 0.0f || deltay != 0.0f) addDeltaQuatRotation(window, deltax, deltay);
                         rotationEuler = ToEulerAngles(window->quatRot);
 
                         populateAxisBuffer(axisBuffer, plotRangeSize / 10.0f, plotRangeSize / 10.0f, plotRangeSize / 10.0f);
@@ -1441,12 +1425,9 @@ int imgui_main(int, char**)
                         // Axis
                         if (window->showAxis)
                         {
-                            ImPlot::SetNextLineStyle(xAxisColor);
-                            ImPlot::PlotLine(plotName.c_str(), &(axisBuffer[0]), &(axisBuffer[1]), 2, 0, 0, sizeof(float) * 3);
-                            ImPlot::SetNextLineStyle(yAxisColor);
-                            ImPlot::PlotLine(plotName.c_str(), &(axisBuffer[6]), &(axisBuffer[7]), 2, 0, 0, sizeof(float) * 3);
-                            ImPlot::SetNextLineStyle(zAxisColor);
-                            ImPlot::PlotLine(plotName.c_str(), &(axisBuffer[12]), &(axisBuffer[13]), 2, 0, 0, sizeof(float) * 3);
+                            ImPlot::SetNextLineStyle(xAxisColor); ImPlot::PlotLine(plotName.c_str(), &(axisBuffer[0]), &(axisBuffer[1]), 2, 0, 0, sizeof(float) * 3);
+                            ImPlot::SetNextLineStyle(yAxisColor); ImPlot::PlotLine(plotName.c_str(), &(axisBuffer[6]), &(axisBuffer[7]), 2, 0, 0, sizeof(float) * 3);
+                            ImPlot::SetNextLineStyle(zAxisColor); ImPlot::PlotLine(plotName.c_str(), &(axisBuffer[12]), &(axisBuffer[13]), 2, 0, 0, sizeof(float) * 3);
                         }
 
                         // Axis names
@@ -1511,7 +1492,6 @@ int imgui_main(int, char**)
                                     rotationEuler, window->offset, window->scale);
 
                                 getMinMax2D(dataBuffer, computedSteps + 1, &(plot->dataMin), &(plot->dataMax), KERNEL.VAR_COUNT);
-                                //getMinMax2D(computedVariation, computedSteps + 1, &(plot->dataMin), &(plot->dataMax));
 
                                 if (colorsLUTfrom == nullptr)
                                 {
@@ -1716,15 +1696,10 @@ int imgui_main(int, char**)
                             plot->dataMax = ImVec2(10.0f, 10.0f);
                         }
 
-                        float deltax = -window->deltarotation.x;
-                        float deltay = -window->deltarotation.y;
-
-                        window->deltarotation.x = 0;
-                        window->deltarotation.y = 0;
+                        float deltax = -window->deltarotation.x; window->deltarotation.x = 0; plot->deltax = &(window->deltarotation.x);
+                        float deltay = -window->deltarotation.y; window->deltarotation.y = 0; plot->deltay = &(window->deltarotation.y);
 
                         plot->is3d = false;
-                        plot->deltax = &(window->deltarotation.x);
-                        plot->deltay = &(window->deltarotation.y);
 
                         if (computations[playedBufferIndex].ready)
                         {
@@ -1735,7 +1710,6 @@ int imgui_main(int, char**)
                             {
                                 numb* computedVariation = computations[playedBufferIndex].marshal.trajectory + (computations[playedBufferIndex].marshal.variationSize * variation);
 
-                                //ImPlot::SetNextLineStyle(ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
                                 ImPlot::SetNextLineStyle(window->plotColor);
                                 ImPlot::PlotLine(plotName.c_str(), &(computedVariation[xIndex]), &(computedVariation[yIndex]), computedSteps + 1, 0, 0, sizeof(numb) * KERNEL.VAR_COUNT);
                             }
@@ -2232,8 +2206,7 @@ int imgui_main(int, char**)
                                     {
                                         if (plot->shiftClicked && plot->shiftClickLocation.x != 0.0)
                                         {
-                                            numb valueX = 0.0;
-                                            numb valueY = 0.0;
+                                            numb valueX = 0.0; numb valueY = 0.0;
 
                                             if (heatmap->showActualDiapasons)
                                             {
@@ -2309,10 +2282,8 @@ int imgui_main(int, char**)
                                     }
 
                                     // Do not reload values when variating map axes (map values don't change anyway)
-                                    if (variation != prevVariation)
-                                    {
-                                        heatmap->isHeatmapDirty = true;
-                                    }
+                                    if (variation != prevVariation) heatmap->isHeatmapDirty = true;
+
                                     // Image init
                                     if (heatmap->isHeatmapDirty)
                                     {
@@ -2349,7 +2320,6 @@ int imgui_main(int, char**)
 
                                     ImPlot::SetupAxes(sizing.hmp->typeX == PARAMETER ? krnl->parameters[sizing.hmp->indexX].name.c_str() : krnl->variables[sizing.hmp->indexX].name.c_str(),
                                         sizing.hmp->typeY == PARAMETER ? krnl->parameters[sizing.hmp->indexY].name.c_str() : krnl->variables[sizing.hmp->indexY].name.c_str());
-
                                     ImPlot::PlotImage(("Map " + std::to_string(mapIndex) + "##" + plotName + std::to_string(0)).c_str(), (ImTextureID)(heatmap->texture),
                                         from, to, ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f), ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
 
@@ -2374,8 +2344,7 @@ int imgui_main(int, char**)
 
                                     if (heatmap->showDragLines)
                                     {
-                                        double valueX;
-                                        double valueY;
+                                        double valueX; double valueY;
 
                                         if (!isHires)
                                         {
@@ -2400,8 +2369,7 @@ int imgui_main(int, char**)
 
                             // Table column should be here
 
-                            float minBefore = heatmap->heatmapMin;
-                            float maxBefore = heatmap->heatmapMax;
+                            float minBefore = heatmap->heatmapMin; float maxBefore = heatmap->heatmapMax;
 
                             if (heatmap->showLegend)
                             {
@@ -2432,7 +2400,6 @@ int imgui_main(int, char**)
                         if (!axisYisRanging) ImGui::Text(("Axis " + axisY->name + " is fixed").c_str());
                         if (sameAxis) ImGui::Text("X and Y axis are the same");
                     }
-
 
                     break;
             }          

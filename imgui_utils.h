@@ -32,3 +32,5 @@ void getMinMax(numb* data, int size, numb* min, numb* max);
 void getMinMax2D(numb* data, int size, ImVec2* min, ImVec2* max, int varCount);
 
 std::string padString(std::string str, int length);
+
+void addDeltaQuatRotation(PlotWindow* window, float deltax, float deltay);

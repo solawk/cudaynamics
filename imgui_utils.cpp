@@ -301,34 +301,6 @@ void cutoff2D(numb* data, numb* dst, int width, int height, int minX, int minY, 
 			dst[y * newWidthInclusive + x] = data[(minY + y) * width + minX + x];
 }
 
-/*void compress2D(numb* data, numb* dst, int width, int height, int stride)
-{
-	if (stride == 1)
-	{
-		memcpy(dst, data, width * height * sizeof(numb));
-		return;
-	}
-
-	int dstWidth = (int)ceil((float)width / stride);
-	int dstHeight = (int)ceil((float)height / stride);
-
-	int dstI = 0;
-	int dstJ = 0;
-
-	for (int i = 0; i < dstHeight; i++)
-		for (int j = 0; j < dstWidth; j++)
-			dst[i * dstWidth + j] = 0.0f;
-
-	for (int i = 0; i < height; i++)
-		for (int j = 0; j < width; j++)
-		{
-			dstI = i / stride;
-			dstJ = j / stride;
-
-			dst[dstI * dstWidth + dstJ] += data[i * width + j] / (stride * stride); //dstI * dstWidth + dstJ
-		}
-}*/
-
 void getMinMax(numb* data, int size, numb* min, numb* max)
 {
 	*min = data[0];
@@ -380,4 +352,17 @@ std::string padString(std::string str, int length)
 	for (int j = (int)str.length(); j < length; j++)
 		strPadded += ' ';
 	return strPadded;
+}
+
+void addDeltaQuatRotation(PlotWindow* window, float deltax, float deltay)
+{
+	quaternion::Quaternion<float> quat(window->quatRot.w, window->quatRot.x, window->quatRot.y, window->quatRot.z);
+	quaternion::Quaternion<float> quatY(cosf(deltax * 0.5f * DEG2RAD), 0.0f, sinf(deltax * 0.5f * DEG2RAD), 0.0f);
+	quaternion::Quaternion<float> quatX(cosf(deltay * 0.5f * DEG2RAD), sinf(deltay * 0.5f * DEG2RAD), 0.0f, 0.0f);
+	quat = quatY * quatX * quat;
+	quat = quaternion::normalize(quat);
+	window->quatRot.w = quat.a();
+	window->quatRot.x = quat.b();
+	window->quatRot.y = quat.c();
+	window->quatRot.z = quat.d();
 }

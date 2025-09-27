@@ -6,6 +6,7 @@ extern std::vector<PlotWindow> plotWindows;
 extern int uniqueIds;
 
 // Windows configuration saving and loading
+
 void saveWindows()
 {
     std::ofstream configFileStream((KERNEL.name + ".config").c_str(), std::ios::out);
