@@ -189,6 +189,9 @@
     <ClInclude Include="gui\imgui_ui_funcs.h">
       <Filter>gui</Filter>
     </ClInclude>
+    <ClInclude Include="gui\window_configs.h">
+      <Filter>gui</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="main.cu" />

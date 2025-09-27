@@ -27,6 +27,7 @@
 #include "quaternion.h"
 #include "heatmapSizing_struct.h"
 #include "map_utils.hpp"
+#include "gui/imgui_ui_funcs.h"
 
 bool CreateDeviceD3D(HWND hWnd);
 void CleanupDeviceD3D();

@@ -144,6 +144,7 @@
     <ClInclude Include="gui\map_img.h" />
     <ClInclude Include="gui\plotWindowMenu.h" />
     <ClInclude Include="gui\stb_image.h" />
+    <ClInclude Include="gui\window_configs.h" />
     <ClInclude Include="heatmapProperties.hpp" />
     <ClInclude Include="heatmapSizing_struct.h" />
     <ClInclude Include="iconfont.h" />

@@ -1,10 +1,10 @@
 #include "imgui_main.hpp"
-#include "gui/imgui_ui_funcs.h"
 
 #include "gui/plotWindowMenu.h"
 #include "gui/img_loading.h"
 #include "gui/map_img.h"
 #include "gui/fullscreen_funcs.h"
+#include "gui/window_configs.h"
 #include "styles.h"
 
 static ID3D11Device* g_pd3dDevice = nullptr;
@@ -21,7 +21,7 @@ Computation computations[2];
 Computation computationHires;
 int playedBufferIndex = 0; // Buffer currently shown
 int bufferToFillIndex = 0; // Buffer to send computations to
-std::vector<int> attributeValueIndices;
+std::vector<int> attributeValueIndices; // Currently selected indices of ranging attributes
 
 bool autoLoadNewParams = false;
 PlotWindow* hiresHeatmapWindow = nullptr;
@@ -30,7 +30,6 @@ Kernel kernelHiresComputed; // Hi-res computation kernel buffer which has been s
 
 numb* dataBuffer = nullptr; // One variation local buffer
 numb* particleBuffer = nullptr; // One step local buffer
-//numb* mapBuffer = nullptr;
 
 // To use with fullscreen functionality
 PlotWindow mainWindow(-1), graphBuilderWindow(-2), mapSettingsWindow(-3);
@@ -105,18 +104,15 @@ std::string rangingDescriptions[] =
 bool rangingWindowEnabled = true;
 bool graphBuilderWindowEnabled = true;
 
-void deleteBothBuffers()
+void deleteBuffers(bool deleteHires)
 {
-    computations[0].Clear();
-    computations[1].Clear();
-
-    playedBufferIndex = 0;
-    bufferToFillIndex = 0;
-}
-
-void deleteHiresBuffer()
-{
-    computationHires.Clear();
+    if (!deleteHires)
+    {
+        computations[0].Clear();
+        computations[1].Clear();
+    }
+    else
+        computationHires.Clear();
 
     playedBufferIndex = 0;
     bufferToFillIndex = 0;
@@ -129,9 +125,6 @@ void resetTempBuffers(Computation* data)
 
     if (particleBuffer) delete[] particleBuffer;
     particleBuffer = new numb[CUDA_marshal.totalVariations * KERNEL.VAR_COUNT];
-
-    //if (mapBuffer) delete[] mapBuffer;
-    //mapBuffer = new numb[CUDA_marshal.mapsSize];
 }
 
 // Initialize the Attribute Value Indeces vector for ranging
@@ -189,7 +182,7 @@ int asyncComputation()
 
 void computing()
 {
-    computations[bufferToFillIndex].bufferNo += 2;
+    computations[bufferToFillIndex].bufferNo += 2; // One computation buffer only gets even trajectories, the other one get odd trajectories
     computations[bufferToFillIndex].future = std::async(asyncComputation);
     //asyncComputation();
 }
@@ -229,44 +222,14 @@ void hiresComputing()
     //hiresAsyncComputation();
 }
 
-// Windows configuration saving and loading
-void saveWindows()
-{
-    std::ofstream configFileStream((KERNEL.name + ".config").c_str(), std::ios::out);
-
-    for (PlotWindow w : plotWindows)
-    {
-        std::string exportString = w.ExportAsString();
-        configFileStream.write(exportString.c_str(), exportString.length());
-    }
-
-    configFileStream.close();
-}
-
-void loadWindows()
-{
-    std::ifstream configFileStream((KERNEL.name + ".config").c_str(), std::ios::in);
-
-    for (std::string line; getline(configFileStream, line); )
-    {
-        PlotWindow plotWindow = PlotWindow(uniqueIds++);
-        plotWindow.ImportAsString(line);
-
-        plotWindows.push_back(plotWindow);
-    }
-
-    configFileStream.close();
-}
-
 void terminateBuffers()
 {
     if (computations[0].future.valid()) computations[0].future.wait();
     if (computations[1].future.valid()) computations[1].future.wait();
     if (computationHires.future.valid()) computationHires.future.wait();
-    deleteBothBuffers();
+    deleteBuffers(false);
     if (dataBuffer != nullptr)      { delete[] dataBuffer;      dataBuffer = nullptr; }
     if (particleBuffer != nullptr)  { delete[] particleBuffer;  particleBuffer = nullptr; }
-    //if (mapBuffer != nullptr)       { delete[] mapBuffer;  mapBuffer = nullptr; }
 
     executedOnLaunch = false;
     playedBufferIndex = bufferToFillIndex = 0;
@@ -313,15 +276,9 @@ void initializeKernel(bool needTerminate)
 void computationStatus(bool comp0, bool comp1)
 {
     if (comp0)
-    {
         ImGui::Text("Computing buffer 0...");
-        return;
-    }
-    
-    if (comp1)
-    {
+    else if (comp1)
         ImGui::Text("Computing buffer 1...");
-    }
 }
 
 void switchPlayedBuffer()
@@ -331,88 +288,54 @@ void switchPlayedBuffer()
         playedBufferIndex = 1 - playedBufferIndex;
         particleStep = 0;
         bufferNo++;
-        //printf("Switch occured and starting playing %i\n", playedBufferIndex);
         computing();
-    }
-    else
-    {
-        //ImGui::Text("Next buffer not ready for switching yet!");
     }
 }
 
 void removeHeatmapLimits()
 {
-    for (int i = 0; i < plotWindows.size(); i++)
-    {
-        plotWindows[i].hmp.areHeatmapLimitsDefined = false;
-    }
+    for (int i = 0; i < plotWindows.size(); i++) plotWindows[i].hmp.areHeatmapLimitsDefined = false;
 }
 
-void prepareAndCompute()
+void prepareAndCompute(bool hires)
 {
-    if ((!computations[0].ready && computations[0].marshal.trajectory != nullptr)
-        || (!computations[1].ready && computations[1].marshal.trajectory != nullptr)
-        || (!computationHires.ready && computationHires.marshal.trajectory != nullptr))
+    bool comp0inProgress = !computations[0].ready && computations[0].marshal.trajectory != nullptr;
+    bool comp1inProgress = !computations[1].ready && computations[1].marshal.trajectory != nullptr;
+    bool compHiresinProgress = !computationHires.ready && computationHires.marshal.trajectory != nullptr;
+    if (comp0inProgress || comp1inProgress || compHiresinProgress)
     {
         printf("Preventing computing too fast!\n");
+        return;
     }
-    else
-    {
-        executedOnLaunch = true;
-        computeAfterShiftSelect = false;
-        bufferToFillIndex = 0;
-        playedBufferIndex = 0;
-        bufferNo = 0;
-        particleStep = 0;
-        deleteBothBuffers();
-        removeHeatmapLimits();
+    
+    if (hires) computationHires.Clear();
 
+    executedOnLaunch = true;
+    computeAfterShiftSelect = false;
+    bufferNo = 0;
+    particleStep = 0;
+    deleteBuffers(hires);
+    removeHeatmapLimits();
+
+    if (!hires)
+    {
         computations[0].bufferNo = -2;
         computations[1].bufferNo = -1;
 
         KERNEL.CopyFrom(&kernelNew);
         KERNEL.PrepareAttributes();
         KERNEL.AssessMapAttributes(&attributeValueIndices);
-        //KERNEL.MapsSetSizes();
 
-        // TODO: All calc steps and stepcounts should be done beforehand, since ranging will be incorrect otherwise
-        // Done I guess? I forgor
-        //initAVI();
         computing();
-    }
-}
-
-void hiresPnC()
-{
-    if ((!computations[0].ready && computations[0].marshal.trajectory != nullptr)
-        || (!computations[1].ready && computations[1].marshal.trajectory != nullptr)
-        || (!computationHires.ready && computationHires.marshal.trajectory != nullptr))
-    {
-        printf("Preventing hi-res computing too fast!\n");
     }
     else
     {
-        computationHires.Clear();
-
-        executedOnLaunch = true;
-        hiresComputeAfterShiftSelect = false;
-        bufferToFillIndex = 0;
-        playedBufferIndex = 0;
-        bufferNo = 0;
-        particleStep = 0;
-        deleteHiresBuffer();
-        removeHeatmapLimits();
-
         kernelHiresComputed.CopyFrom(&kernelHiresNew);
         kernelHiresComputed.PrepareAttributes();
-        //kernelHiresComputed.AssessMapAttributes(&attributeValueIndices);
-        //kernelHiresComputed.MapsSetSizes();
 
-        // TODO: All calc steps and stepcounts should be done beforehand, since ranging will be incorrect otherwise
-        // Done I guess? I forgor
-        //initAVI();
         hiresComputing();
     }
+
 }
 
 void releaseHeatmap(PlotWindow* window, bool isHires)
@@ -498,7 +421,6 @@ int imgui_main(int, char**)
     computations[0].marshal.parameterVariations = computations[1].marshal.parameterVariations = nullptr;
     computations[0].isHires = computations[1].isHires = false;
     computationHires.isHires = true;
-
     computations[0].index = 0;
     computations[1].index = 1;
     computations[0].otherMarshal = &(computations[1].marshal);
@@ -864,7 +786,7 @@ int imgui_main(int, char**)
             if (playBreath) ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.137f * buttonBreathMult, 0.271f * buttonBreathMult, 0.427f * buttonBreathMult, 1.0f));
             if (ImGui::Button("= COMPUTE =") || (KERNEL.executeOnLaunch && !executedOnLaunch) || computeAfterShiftSelect)
             {
-                prepareAndCompute(); OrbitRedraw = true;
+                prepareAndCompute(false); OrbitRedraw = true;
             }
             if (playBreath) ImGui::PopStyleColor();
             if (!playingParticles) computationStatus(computation0InProgress, computation1InProgress);
@@ -873,14 +795,14 @@ int imgui_main(int, char**)
         {
             if (computeAfterShiftSelect) // For shift-clicking the hires map
             {
-                prepareAndCompute(); OrbitRedraw = true;
+                prepareAndCompute(false); OrbitRedraw = true;
             }
 
             // Hi-res compute button
             if (ImGui::Button("= HI-RES COMPUTE =") || hiresComputeAfterShiftSelect)
             {
                 //printf("A\n");
-                hiresPnC(); OrbitRedraw = true;
+                prepareAndCompute(true); OrbitRedraw = true;
             }
         }
         if (computationHiresInProgress)
