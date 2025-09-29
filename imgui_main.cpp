@@ -78,7 +78,7 @@ bool thisChanged;
 bool popStyle;
 ImGuiSliderFlags dragFlag;
 
-ImVec4 unsavedBackgroundColor = ImVec4(0.427f, 0.427f, 0.137f, 1.0f);
+/*ImVec4 unsavedBackgroundColor = ImVec4(0.427f, 0.427f, 0.137f, 1.0f);
 ImVec4 unsavedBackgroundColorHovered = ImVec4(0.427f * 1.3f, 0.427f * 1.3f, 0.137f * 1.3f, 1.0f);
 ImVec4 unsavedBackgroundColorActive = ImVec4(0.427f * 1.5f, 0.427f * 1.5f, 0.137f * 1.5f, 1.0f);
 ImVec4 disabledColor = ImVec4(0.137f * 0.5f, 0.271f * 0.5f, 0.427f * 0.5f, 1.0f);
@@ -89,7 +89,7 @@ ImVec4 hiresBackgroundColorHovered = ImVec4(0.427f * 1.3f, 0.137f * 1.3f, 0.427f
 ImVec4 hiresBackgroundColorActive = ImVec4(0.427f * 1.5f, 0.137f * 1.5f, 0.427f * 1.5f, 1.0f);
 ImVec4 xAxisColor = ImVec4(0.75f, 0.3f, 0.3f, 1.0f);
 ImVec4 yAxisColor = ImVec4(0.33f, 0.67f, 0.4f, 1.0f);
-ImVec4 zAxisColor = ImVec4(0.3f, 0.45f, 0.7f, 1.0f);
+ImVec4 zAxisColor = ImVec4(0.3f, 0.45f, 0.7f, 1.0f);*/
 
 std::string rangingTypes[] = { "Fixed", "Step", "Linear", "Random", "Normal" };
 std::string rangingDescriptions[] =
@@ -508,10 +508,8 @@ int imgui_main(int, char**)
             {
                 if (applicationProhibited)
                 {
-                    ImGui::PushStyleColor(ImGuiCol_Text, disabledTextColor);
-                    ImGui::PushStyleColor(ImGuiCol_Button, disabledBackgroundColor);
-                    ImGui::PushStyleColor(ImGuiCol_ButtonActive, disabledBackgroundColor);
-                    ImGui::PushStyleColor(ImGuiCol_ButtonHovered, disabledBackgroundColor);
+                    ImGui::PushStyleColor(ImGuiCol_Text, CUSTOM_COLOR(DisabledText));
+                    PUSH_DISABLED_FRAME;
                 }
                 if (ImGui::Button("Apply") && !applicationProhibited)
                 {
@@ -519,10 +517,7 @@ int imgui_main(int, char**)
                 }
                 if (applicationProhibited)
                 {
-                    ImGui::PopStyleColor();
-                    ImGui::PopStyleColor();
-                    ImGui::PopStyleColor();
-                    ImGui::PopStyleColor();
+                    POP_FRAME(4);
                 }
             }
         }
@@ -557,9 +552,7 @@ int imgui_main(int, char**)
         // Steps
         if (playingParticles)
         {
-            ImGui::PushStyleColor(ImGuiCol_FrameBg, disabledBackgroundColor);
-            ImGui::PushStyleColor(ImGuiCol_FrameBgActive, disabledBackgroundColor);
-            ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, disabledBackgroundColor);
+            PUSH_DISABLED_FRAME;
         }
         popStyle = false;
         if (kernelNew.steps != KERNEL.steps)
@@ -573,9 +566,7 @@ int imgui_main(int, char**)
         if (popStyle) POP_FRAME(3);
         if (playingParticles)
         {
-            ImGui::PopStyleColor();
-            ImGui::PopStyleColor();
-            ImGui::PopStyleColor();
+            POP_FRAME(3);
         }
 
         // Hi-res buffers per variation
@@ -589,9 +580,7 @@ int imgui_main(int, char**)
         ImGui::PushItemWidth(200.0f);
         if (playingParticles)
         {
-            ImGui::PushStyleColor(ImGuiCol_FrameBg, disabledBackgroundColor);
-            ImGui::PushStyleColor(ImGuiCol_FrameBgActive, disabledBackgroundColor);
-            ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, disabledBackgroundColor);
+            PUSH_DISABLED_FRAME;
         }
         popStyle = false;
         if (kernelNew.transientSteps != KERNEL.transientSteps)
@@ -605,9 +594,7 @@ int imgui_main(int, char**)
         if (popStyle) POP_FRAME(3);
         if (playingParticles)
         {
-            ImGui::PopStyleColor();
-            ImGui::PopStyleColor();
-            ImGui::PopStyleColor();
+            POP_FRAME(3);
         }
 
         variation = 0;
@@ -652,7 +639,7 @@ int imgui_main(int, char**)
 
             if (anyChanged)
             {
-                ImGui::PushStyleColor(ImGuiCol_Text, disabledTextColor);
+                ImGui::PushStyleColor(ImGuiCol_Text, CUSTOM_COLOR(DisabledText));
                 PUSH_DISABLED_FRAME;
             }
 
@@ -711,9 +698,6 @@ int imgui_main(int, char**)
             }
             TOOLTIP("Automatically applies new parameter values to the new buffers mid-playback");
 
-
-          
-
             // Map continuous computing
             popStyle = false;
             if (kernelNew.mapWeight != KERNEL.mapWeight)
@@ -732,7 +716,6 @@ int imgui_main(int, char**)
             ImGui::InputFloat("Value drag speed", &(dragChangeSpeed));
             TOOLTIP("Drag speed of attribute values, allows for precise automatic parameter setting");
 
-            //if (ImGui::BeginTabItem("Orbit Mode", NULL, selectOrbitTab ? ImGuiTabItemFlags_SetSelected : 0))
             ImGui::NewLine();
 
             // RANGING, ORBIT MODE
@@ -767,8 +750,6 @@ int imgui_main(int, char**)
             {
                 switchPlayedBuffer(); OrbitRedraw = true;
             }
-
-            //selectParticleTab = selectOrbitTab = false;
         }
 
         // COMMON
@@ -819,6 +800,18 @@ int imgui_main(int, char**)
             {
                 kernelNew.CopyFrom(&KERNEL);
             }
+        }
+
+        // Color style
+        ImGui::NewLine();
+        bool isDark = appStyle == ImGuiCustomStyle::Dark;
+        if (ImGui::Checkbox("Dark theme", &isDark))
+        {
+            if (isDark)
+                appStyle = ImGuiCustomStyle::Dark;
+            else
+                appStyle = ImGuiCustomStyle::Light;
+            SetupImGuiStyle(appStyle);
         }
 
         ImGui::End();
@@ -1425,21 +1418,21 @@ int imgui_main(int, char**)
                         // Axis
                         if (window->showAxis)
                         {
-                            ImPlot::SetNextLineStyle(xAxisColor); ImPlot::PlotLine(plotName.c_str(), &(axisBuffer[0]), &(axisBuffer[1]), 2, 0, 0, sizeof(float) * 3);
-                            ImPlot::SetNextLineStyle(yAxisColor); ImPlot::PlotLine(plotName.c_str(), &(axisBuffer[6]), &(axisBuffer[7]), 2, 0, 0, sizeof(float) * 3);
-                            ImPlot::SetNextLineStyle(zAxisColor); ImPlot::PlotLine(plotName.c_str(), &(axisBuffer[12]), &(axisBuffer[13]), 2, 0, 0, sizeof(float) * 3);
+                            ImPlot::SetNextLineStyle(CUSTOM_COLOR(XAxis)); ImPlot::PlotLine(plotName.c_str(), &(axisBuffer[0]), &(axisBuffer[1]), 2, 0, 0, sizeof(float) * 3);
+                            ImPlot::SetNextLineStyle(CUSTOM_COLOR(YAxis)); ImPlot::PlotLine(plotName.c_str(), &(axisBuffer[6]), &(axisBuffer[7]), 2, 0, 0, sizeof(float) * 3);
+                            ImPlot::SetNextLineStyle(CUSTOM_COLOR(ZAxis)); ImPlot::PlotLine(plotName.c_str(), &(axisBuffer[12]), &(axisBuffer[13]), 2, 0, 0, sizeof(float) * 3);
                         }
 
                         // Axis names
                         if (window->showAxisNames)
                         {
-                            ImPlot::PushStyleColor(ImPlotCol_InlayText, xAxisColor);
+                            ImPlot::PushStyleColor(ImPlotCol_InlayText, CUSTOM_COLOR(XAxis));
                             ImPlot::PlotText(KERNEL.variables[window->variables[0]].name.c_str(), axisBuffer[0], axisBuffer[1], ImVec2(0.0f, 0.0f));
                             ImPlot::PopStyleColor();
-                            ImPlot::PushStyleColor(ImPlotCol_InlayText, yAxisColor);
+                            ImPlot::PushStyleColor(ImPlotCol_InlayText, CUSTOM_COLOR(YAxis));
                             ImPlot::PlotText(KERNEL.variables[window->variables[1]].name.c_str(), axisBuffer[6], axisBuffer[7], ImVec2(0.0f, 0.0f));
                             ImPlot::PopStyleColor();
-                            ImPlot::PushStyleColor(ImPlotCol_InlayText, zAxisColor);
+                            ImPlot::PushStyleColor(ImPlotCol_InlayText, CUSTOM_COLOR(ZAxis));
                             ImPlot::PlotText(KERNEL.variables[window->variables[2]].name.c_str(), axisBuffer[12], axisBuffer[13], ImVec2(0.0f, 0.0f));
                             ImPlot::PopStyleColor();
                         }
@@ -1465,14 +1458,14 @@ int imgui_main(int, char**)
                                 ImPlot::PlotText(scaleString(scaleStr * 10.0f).c_str(), rulerBuffer[150 + 0], rulerBuffer[150 + 1], ImVec2(0.0f, 0.0f)); \
                                 ImPlot::PopStyleColor();
 
-                            DRAW_RULER_PART(xAxisColor.x, xAxisColor.y, xAxisColor.z, alpha0.x, scale0.x * window->scale.x, scale0.x, 0);
-                            DRAW_RULER_PART(xAxisColor.x, xAxisColor.y, xAxisColor.z, alpha1.x, scale1.x * window->scale.x, scale1.x, 0);
+                            DRAW_RULER_PART(CUSTOM_COLOR(XAxis).x, CUSTOM_COLOR(XAxis).y, CUSTOM_COLOR(XAxis).z, alpha0.x, scale0.x * window->scale.x, scale0.x, 0);
+                            DRAW_RULER_PART(CUSTOM_COLOR(XAxis).x, CUSTOM_COLOR(XAxis).y, CUSTOM_COLOR(XAxis).z, alpha1.x, scale1.x * window->scale.x, scale1.x, 0);
 
-                            DRAW_RULER_PART(yAxisColor.x, yAxisColor.y, yAxisColor.z, alpha0.y, scale0.y * window->scale.y, scale0.y, 1);
-                            DRAW_RULER_PART(yAxisColor.x, yAxisColor.y, yAxisColor.z, alpha1.y, scale1.y * window->scale.y, scale1.y, 1);
+                            DRAW_RULER_PART(CUSTOM_COLOR(YAxis).x, CUSTOM_COLOR(YAxis).y, CUSTOM_COLOR(YAxis).z, alpha0.y, scale0.y * window->scale.y, scale0.y, 1);
+                            DRAW_RULER_PART(CUSTOM_COLOR(YAxis).x, CUSTOM_COLOR(YAxis).y, CUSTOM_COLOR(YAxis).z, alpha1.y, scale1.y * window->scale.y, scale1.y, 1);
 
-                            DRAW_RULER_PART(zAxisColor.x, zAxisColor.y, zAxisColor.z, alpha0.z, scale0.z * window->scale.z, scale0.z, 2);
-                            DRAW_RULER_PART(zAxisColor.x, zAxisColor.y, zAxisColor.z, alpha1.z, scale1.z * window->scale.z, scale1.z, 2);
+                            DRAW_RULER_PART(CUSTOM_COLOR(ZAxis).x, CUSTOM_COLOR(ZAxis).y, CUSTOM_COLOR(ZAxis).z, alpha0.z, scale0.z * window->scale.z, scale0.z, 2);
+                            DRAW_RULER_PART(CUSTOM_COLOR(ZAxis).x, CUSTOM_COLOR(ZAxis).y, CUSTOM_COLOR(ZAxis).z, alpha1.z, scale1.z * window->scale.z, scale1.z, 2);
                         }
                     }
 

@@ -73,6 +73,20 @@ void SetupImGuiStyle(ImGuiCustomStyle cs)
             }
             ImGui::ColorConvertHSVtoRGB(H, S, V, col.x, col.y, col.z);
         }
+
+        style.Colors[ImGuiCol_C_Unsaved] = ImVec4(0.427f, 0.427f, 0.137f, 1.0f);
+        style.Colors[ImGuiCol_C_UnsavedHovered] = ImVec4(0.427f * 1.3f, 0.427f * 1.3f, 0.137f * 1.3f, 1.0f);
+        style.Colors[ImGuiCol_C_UnsavedActive] = ImVec4(0.427f * 1.5f, 0.427f * 1.5f, 0.137f * 1.5f, 1.0f);
+        style.Colors[ImGuiCol_C_Hires] = ImVec4(0.427f, 0.137f, 0.427f, 1.0f);
+        style.Colors[ImGuiCol_C_HiresHovered] = ImVec4(0.427f * 1.3f, 0.137f * 1.3f, 0.427f * 1.3f, 1.0f);
+        style.Colors[ImGuiCol_C_HiresActive] = ImVec4(0.427f * 1.5f, 0.137f * 1.5f, 0.427f * 1.5f, 1.0f);
+        style.Colors[ImGuiCol_C_Disabled] = ImVec4(0.137f * 0.5f, 0.271f * 0.5f, 0.427f * 0.5f, 1.0f);
+        style.Colors[ImGuiCol_C_DisabledBg] = ImVec4(1.0f, 1.0f, 1.0f, 0.5f);
+        style.Colors[ImGuiCol_C_DisabledText] = ImVec4(0.137f * 0.35f, 0.271f * 0.35f, 0.427f * 0.35f, 1.0f);
+        style.Colors[ImGuiCol_C_XAxis] = ImVec4(0.75f, 0.3f, 0.3f, 1.0f);
+        style.Colors[ImGuiCol_C_YAxis] = ImVec4(0.33f, 0.67f, 0.4f, 1.0f);
+        style.Colors[ImGuiCol_C_ZAxis] = ImVec4(0.3f, 0.45f, 0.7f, 1.0f);
+
         break;
     case Light: 
         style.Colors[ImGuiCol_Text] = ImVec4(0.00f, 0.00f, 0.00f, 1.00f);
@@ -121,6 +135,20 @@ void SetupImGuiStyle(ImGuiCustomStyle cs)
         style.Colors[ImGuiCol_PlotHistogramHovered] = ImVec4(1.00f, 0.60f, 0.00f, 1.00f);
         style.Colors[ImGuiCol_TextSelectedBg] = ImVec4(0.26f, 0.59f, 0.98f, 0.35f);
         //style.Colors[ImGuiCol_ModalWindowDarkening] = ImVec4(0.20f, 0.20f, 0.20f, 0.35f);
+
+        style.Colors[ImGuiCol_C_Unsaved] = ImVec4(0.427f, 0.427f, 0.137f, 1.0f);
+        style.Colors[ImGuiCol_C_UnsavedHovered] = ImVec4(0.427f * 1.3f, 0.427f * 1.3f, 0.137f * 1.3f, 1.0f);
+        style.Colors[ImGuiCol_C_UnsavedActive] = ImVec4(0.427f * 1.5f, 0.427f * 1.5f, 0.137f * 1.5f, 1.0f);
+        style.Colors[ImGuiCol_C_Hires] = ImVec4(0.427f * 2, 0.137f * 5, 0.427f * 2, 1.0f);
+        style.Colors[ImGuiCol_C_HiresHovered] = ImVec4(0.427f * 1.3f * 2, 0.137f * 1.3f * 5, 0.427f * 1.3f * 2, 1.0f);
+        style.Colors[ImGuiCol_C_HiresActive] = ImVec4(0.427f * 1.5f * 2, 0.137f * 1.5f * 5, 0.427f * 1.5f * 2, 1.0f);
+        style.Colors[ImGuiCol_C_Disabled] = ImVec4(0.137f * 0.5f, 0.271f * 0.5f, 0.427f * 0.5f, 1.0f);
+        style.Colors[ImGuiCol_C_DisabledBg] = ImVec4(1.0f, 1.0f, 1.0f, 0.5f);
+        style.Colors[ImGuiCol_C_DisabledText] = ImVec4(0.137f * 0.35f, 0.271f * 0.35f, 0.427f * 0.35f, 1.0f);
+        style.Colors[ImGuiCol_C_XAxis] = ImVec4(0.75f, 0.3f, 0.3f, 1.0f);
+        style.Colors[ImGuiCol_C_YAxis] = ImVec4(0.33f, 0.67f, 0.4f, 1.0f);
+        style.Colors[ImGuiCol_C_ZAxis] = ImVec4(0.3f, 0.45f, 0.7f, 1.0f);
+
         break;
     }
 }

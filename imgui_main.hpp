@@ -43,35 +43,22 @@ void listEnum(int i);
 void heatmapRangingSelection(PlotWindow* window, ImPlotPlot* plot, HeatmapSizing* sizing, bool isHires);
 void hiresShiftClickCompute(PlotWindow* window, HeatmapSizing* sizing, numb valueX, numb valueY);
 
-// Colors
-extern ImVec4 unsavedBackgroundColor;
-extern ImVec4 unsavedBackgroundColorHovered;
-extern ImVec4 unsavedBackgroundColorActive;
-extern ImVec4 disabledColor;
-extern ImVec4 disabledTextColor;
-extern ImVec4 disabledBackgroundColor;
-extern ImVec4 hiresBackgroundColor;
-extern ImVec4 hiresBackgroundColorHovered;
-extern ImVec4 hiresBackgroundColorActive;
-extern ImVec4 xAxisColor;
-extern ImVec4 yAxisColor;
-extern ImVec4 zAxisColor;
-
 // Kernel-related macros
 #define HIRES_ON (hiresHeatmapWindow != nullptr)
 #define KERNELNEWCURRENT (HIRES_ON ? kernelHiresNew : kernelNew)
 #define KERNELINTERNALCURRENT (HIRES_ON ? kernelHiresNew : KERNEL)
 
 // UI drawing-related macros
-#define PUSH_DISABLED_FRAME {ImGui::PushStyleColor(ImGuiCol_FrameBg, disabledBackgroundColor); \
-                            ImGui::PushStyleColor(ImGuiCol_FrameBgActive, disabledBackgroundColor); \
-                            ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, disabledBackgroundColor);}
-#define PUSH_UNSAVED_FRAME  {ImGui::PushStyleColor(ImGuiCol_FrameBg, unsavedBackgroundColor); \
-                            ImGui::PushStyleColor(ImGuiCol_FrameBgActive, unsavedBackgroundColorActive); \
-                            ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, unsavedBackgroundColorHovered);}
-#define PUSH_HIRES_FRAME  {ImGui::PushStyleColor(ImGuiCol_FrameBg, hiresBackgroundColor); \
-                            ImGui::PushStyleColor(ImGuiCol_FrameBgActive, hiresBackgroundColorActive); \
-                            ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, hiresBackgroundColorHovered);}
+#define CUSTOM_COLOR(c)     ImGui::GetStyle().Colors[ImGuiCol_C_##c]
+#define PUSH_DISABLED_FRAME {ImGui::PushStyleColor(ImGuiCol_FrameBg, CUSTOM_COLOR(DisabledBg)); \
+                            ImGui::PushStyleColor(ImGuiCol_FrameBgActive, CUSTOM_COLOR(DisabledBg)); \
+                            ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, CUSTOM_COLOR(DisabledBg));}
+#define PUSH_UNSAVED_FRAME  {ImGui::PushStyleColor(ImGuiCol_FrameBg, CUSTOM_COLOR(Unsaved)); \
+                            ImGui::PushStyleColor(ImGuiCol_FrameBgActive, CUSTOM_COLOR(UnsavedActive)); \
+                            ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, CUSTOM_COLOR(UnsavedHovered));}
+#define PUSH_HIRES_FRAME  {ImGui::PushStyleColor(ImGuiCol_FrameBg, CUSTOM_COLOR(Hires)); \
+                            ImGui::PushStyleColor(ImGuiCol_FrameBgActive, CUSTOM_COLOR(HiresActive)); \
+                            ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, CUSTOM_COLOR(HiresHovered));}
 #define POP_FRAME(n)        {ImGui::PopStyleColor(n);}
 #define CLAMP01(x)          if (x < 0.0f) x = 0.0f; if (x > 1.0f) x = 1.0f;
 #define TOOLTIP(text)       if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal)) ImGui::SetTooltip(text);

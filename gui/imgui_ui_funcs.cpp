@@ -69,7 +69,7 @@ void listVariable(int i)
 
     if (playingParticles)
     {
-        ImGui::PushStyleColor(ImGuiCol_Text, disabledTextColor);
+        ImGui::PushStyleColor(ImGuiCol_Text, CUSTOM_COLOR(DisabledText));
         PUSH_DISABLED_FRAME;
     }
 
@@ -128,14 +128,14 @@ void listParameter(int i)
 
     if (!changeAllowed)
     {
-        ImGui::PushStyleColor(ImGuiCol_Text, disabledTextColor); // disabledText push
+        ImGui::PushStyleColor(ImGuiCol_Text, CUSTOM_COLOR(DisabledText)); // disabledText push
         PUSH_DISABLED_FRAME;
     }
 
     // Ranging
     if (playingParticles)
     {
-        ImGui::PushStyleColor(ImGuiCol_Text, disabledTextColor);
+        ImGui::PushStyleColor(ImGuiCol_Text, CUSTOM_COLOR(DisabledText));
         PUSH_DISABLED_FRAME;
     }
 
@@ -197,14 +197,14 @@ void listEnum(int i)
 
     if (!changeAllowed)
     {
-        ImGui::PushStyleColor(ImGuiCol_Text, disabledTextColor); // disabledText push
+        ImGui::PushStyleColor(ImGuiCol_Text, CUSTOM_COLOR(DisabledText)); // disabledText push
         PUSH_DISABLED_FRAME;
     }
 
     // Ranging
     if (playingParticles)
     {
-        ImGui::PushStyleColor(ImGuiCol_Text, disabledTextColor);
+        ImGui::PushStyleColor(ImGuiCol_Text, CUSTOM_COLOR(DisabledText));
         PUSH_DISABLED_FRAME;
     }
 
