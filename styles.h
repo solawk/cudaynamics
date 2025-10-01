@@ -145,9 +145,11 @@ void SetupImGuiStyle(ImGuiCustomStyle cs)
         style.Colors[ImGuiCol_C_Disabled] = ImVec4(0.137f * 0.5f, 0.271f * 0.5f, 0.427f * 0.5f, 1.0f);
         style.Colors[ImGuiCol_C_DisabledBg] = ImVec4(1.0f, 1.0f, 1.0f, 0.5f);
         style.Colors[ImGuiCol_C_DisabledText] = ImVec4(0.137f * 0.35f, 0.271f * 0.35f, 0.427f * 0.35f, 1.0f);
-        style.Colors[ImGuiCol_C_XAxis] = ImVec4(0.75f, 0.3f, 0.3f, 1.0f);
-        style.Colors[ImGuiCol_C_YAxis] = ImVec4(0.33f, 0.67f, 0.4f, 1.0f);
-        style.Colors[ImGuiCol_C_ZAxis] = ImVec4(0.3f, 0.45f, 0.7f, 1.0f);
+
+        float axisDarkening = 0.7f;
+        style.Colors[ImGuiCol_C_XAxis] = ImVec4(0.75f, 0.3f * axisDarkening, 0.3f * axisDarkening, 1.0f);
+        style.Colors[ImGuiCol_C_YAxis] = ImVec4(0.33f * axisDarkening, 0.67f, 0.4f * axisDarkening, 1.0f);
+        style.Colors[ImGuiCol_C_ZAxis] = ImVec4(0.3f * axisDarkening, 0.45f * axisDarkening, 0.7f, 1.0f);
 
         break;
     }
