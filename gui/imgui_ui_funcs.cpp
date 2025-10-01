@@ -234,7 +234,7 @@ void listEnum(int i)
             {
                 KERNELNEWCURRENT.parameters[i].enumEnabled[e] = !KERNELNEWCURRENT.parameters[i].enumEnabled[e];
             }
-            TOOLTIP("Enable this method in computations");
+            TOOLTIP("Enable this item in computations");
         }
 
         ImGui::EndCombo();
@@ -242,7 +242,7 @@ void listEnum(int i)
     ATTR_END;
     //ImGui::PopItemWidth();
 
-    ImGui::SameLine(); ImGui::Text((std::to_string(selectedCount) + " method" + ((selectedCount % 10 != 1 || selectedCount == 11) ? "s" : "")).c_str());
+    ImGui::SameLine(); ImGui::Text((std::to_string(selectedCount) + " item" + ((selectedCount % 10 != 1 || selectedCount == 11) ? "s" : "")).c_str());
 
     if (playingParticles)
     {
