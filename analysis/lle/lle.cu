@@ -52,8 +52,7 @@ __device__ void LLE(Computation* data, LLE_Settings settings, int variation, voi
 
     if (CUDA_kernel.mapWeight == 0.0f)
     {
-        numb existingValue = CUDA_marshal.maps[mapPosition] * data->bufferNo;
-        CUDA_marshal.maps[mapPosition] = (existingValue + mapValue) / (data->bufferNo + 1);
+        CUDA_marshal.maps[mapPosition] = (CUDA_marshal.maps[mapPosition] * data->bufferNo + mapValue) / (data->bufferNo + 1);
     }
     else if (CUDA_kernel.mapWeight == 1.0f)
     {

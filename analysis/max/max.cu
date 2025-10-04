@@ -16,17 +16,12 @@ __device__ void MAX(Computation* data, MAX_Settings settings, int variation, voi
 
     numb mapValue = maxValue;
 
-    if (CUDA_kernel.mapWeight == 0.0f)
-    {
-        numb existingValue = CUDA_marshal.maps[mapPosition] * data->bufferNo;
-        CUDA_marshal.maps[mapPosition] = (existingValue + mapValue) / (data->bufferNo + 1);
-    }
-    else if (CUDA_kernel.mapWeight == 1.0f)
+    if (CUDA_kernel.mapWeight == 1.0f)
     {
         CUDA_marshal.maps[mapPosition] = mapValue;
     }
     else
     {
-        CUDA_marshal.maps[mapPosition] = CUDA_marshal.maps[mapPosition] * (1.0f - CUDA_kernel.mapWeight) + mapValue * CUDA_kernel.mapWeight;
+        CUDA_marshal.maps[mapPosition] = mapValue > CUDA_marshal.maps[mapPosition] ? mapValue : CUDA_marshal.maps[mapPosition];
     }
 }
