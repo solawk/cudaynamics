@@ -726,6 +726,7 @@ int imgui_main(int, char**)
                     bool isVar = i < KERNEL.VAR_COUNT;
                     Attribute* attr = isVar ? &(computations[playedBufferIndex].marshal.kernel.variables[i]) : &(computations[playedBufferIndex].marshal.kernel.parameters[i - KERNEL.VAR_COUNT]);
                     Attribute* kernelNewAttr = isVar ? &(kernelNew.variables[i]) : &(kernelNew.parameters[i - KERNEL.VAR_COUNT]);
+                    bool isEnum = attr->rangingType == Enum;
 
                     if (attr->TrueStepCount() == 1) continue;
 
@@ -736,10 +737,30 @@ int imgui_main(int, char**)
                     ImGui::PopItemWidth();
                     attributeValueIndices[i] = index;
 
-                    if (attr->rangingType != Enum)
+                    if (!isEnum)
                     {
                         ImGui::SameLine();
                         ImGui::Text(("Value: " + std::to_string(calculateValue(attr->min, attr->step, index))).c_str());
+                    }
+                    else
+                    {
+                        ImGui::SameLine();
+                        ImGui::Text(attr->enumNames[index].c_str());
+                    }
+
+                    ImGui::SameLine();
+                    if (ImGui::Button(("Fix##FixRanging" + std::to_string(i)).c_str()))
+                    {
+                        if (!isEnum)
+                        {
+                            kernelNewAttr->rangingType = None;
+                            kernelNewAttr->min = calculateValue(attr->min, attr->step, index);
+                        }
+                        else
+                        {
+                            for (int i = 0; i < attr->enumCount; i++) kernelNewAttr->enumEnabled[i] = false;
+                            kernelNewAttr->enumEnabled[index] = true;
+                        }
                     }
                 }
 
