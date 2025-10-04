@@ -103,6 +103,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="dbscan\dbscan.cpp" />
+    <ClCompile Include="file_export.cpp" />
     <ClCompile Include="gui\fullscreen_funcs.cpp" />
     <ClCompile Include="gui\imgui_ui_funcs.cpp" />
     <ClCompile Include="gui\img_loading.cpp" />
@@ -137,6 +138,7 @@
     <ClInclude Include="computation_struct.h" />
     <ClInclude Include="cuda_macros.h" />
     <ClInclude Include="dbscan\dbscan.h" />
+    <ClInclude Include="file_export.h" />
     <ClInclude Include="gui\d3dx11tex.h" />
     <ClInclude Include="gui\fullscreen_funcs.h" />
     <ClInclude Include="gui\imgui_ui_funcs.h" />

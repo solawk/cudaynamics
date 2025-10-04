@@ -23,7 +23,7 @@ void plotWindowMenu(PlotWindow* window)
 	{
 		plotWindowMenu_File(window);
 		if (window->type == Phase || window->type == Phase2D) plotWindowMenu_PhasePlot(window);
-		if (window->type == Heatmap ) plotWindowMenu_HeatmapPlot(window);
+		if (window->type == Heatmap) plotWindowMenu_HeatmapPlot(window);
 		if (window->type == Heatmap) plotWindowMenu_HeatmapColors(window);
 		if (window->type == Orbit) plotWindowMenu_OrbitPlot(window);
 		if (window->type == Metric) plotWindowMenu_MetricPlot(window);
@@ -38,7 +38,19 @@ void plotWindowMenu_File(PlotWindow* window)
 	{
 		if (ImGui::MenuItem("Export"))
 		{
-			printf("Export placeholder\n");
+			switch (window->type)
+			{
+			case Heatmap:
+				bool isHires = hiresHeatmapWindow == window;
+				numb* values = isHires ? window->hireshmp.valueBuffer : window->hmp.valueBuffer;
+				int valuesCount = isHires ? window->hireshmp.lastBufferSize : window->hmp.lastBufferSize;
+				std::string mapName = KERNEL.mapDatas[window->variables[0]].name;
+				if (values == nullptr) break;
+
+				exportToFile(mapName + "_" + timeAsString() + ".txt", values, valuesCount);
+
+				break;
+			}
 		}
 
 		ImGui::EndMenu();

@@ -64,6 +64,7 @@
     <ClCompile Include="gui\imgui_ui_funcs.cpp">
       <Filter>gui</Filter>
     </ClCompile>
+    <ClCompile Include="file_export.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="imgui">
@@ -192,6 +193,7 @@
     <ClInclude Include="gui\window_configs.h">
       <Filter>gui</Filter>
     </ClInclude>
+    <ClInclude Include="file_export.h" />
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="main.cu" />

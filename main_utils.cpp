@@ -136,3 +136,19 @@ Kernel readKernelText(std::string name)
 	kernel.mapWeight = 1.0f;
 	return kernel;
 }
+
+std::string timeAsString()
+{
+	time_t timestamp = time(NULL);
+	struct tm timeStruct;
+	localtime_s(&timeStruct, &timestamp);
+
+	std::string mday = std::to_string(timeStruct.tm_mday);	if (mday.size() < 2) mday = "0" + mday;
+	std::string mon = std::to_string(timeStruct.tm_mon);	if (mon.size() < 2) mon = "0" + mon;
+	std::string hour = std::to_string(timeStruct.tm_hour);	if (hour.size() < 2) hour = "0" + hour;
+	std::string min = std::to_string(timeStruct.tm_min);	if (min.size() < 2) min = "0" + min;
+	std::string sec = std::to_string(timeStruct.tm_sec);	if (sec.size() < 2) sec = "0" + sec;
+
+	std::string time = mday + mon + "_" + hour + min + sec;
+	return time;
+}
