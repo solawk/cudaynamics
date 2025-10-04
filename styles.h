@@ -136,9 +136,9 @@ void SetupImGuiStyle(ImGuiCustomStyle cs)
         style.Colors[ImGuiCol_TextSelectedBg] = ImVec4(0.26f, 0.59f, 0.98f, 0.35f);
         //style.Colors[ImGuiCol_ModalWindowDarkening] = ImVec4(0.20f, 0.20f, 0.20f, 0.35f);
 
-        style.Colors[ImGuiCol_C_Unsaved] = ImVec4(0.427f, 0.427f, 0.137f, 1.0f);
-        style.Colors[ImGuiCol_C_UnsavedHovered] = ImVec4(0.427f * 1.3f, 0.427f * 1.3f, 0.137f * 1.3f, 1.0f);
-        style.Colors[ImGuiCol_C_UnsavedActive] = ImVec4(0.427f * 1.5f, 0.427f * 1.5f, 0.137f * 1.5f, 1.0f);
+        style.Colors[ImGuiCol_C_Unsaved] = ImVec4(0.827f, 0.827f, 0.437f, 1.0f);
+        style.Colors[ImGuiCol_C_UnsavedHovered] = ImVec4(0.827f * 1.3f, 0.827f * 1.3f, 0.437f * 1.3f, 1.0f);
+        style.Colors[ImGuiCol_C_UnsavedActive] = ImVec4(0.827f * 1.5f, 0.827f * 1.5f, 0.437f * 1.5f, 1.0f);
         style.Colors[ImGuiCol_C_Hires] = ImVec4(0.427f * 2, 0.137f * 5, 0.427f * 2, 1.0f);
         style.Colors[ImGuiCol_C_HiresHovered] = ImVec4(0.427f * 1.3f * 2, 0.137f * 1.3f * 5, 0.427f * 1.3f * 2, 1.0f);
         style.Colors[ImGuiCol_C_HiresActive] = ImVec4(0.427f * 1.5f * 2, 0.137f * 1.5f * 5, 0.427f * 1.5f * 2, 1.0f);
