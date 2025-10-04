@@ -1074,14 +1074,13 @@ int imgui_main(int, char**)
 
             for (int m = 0; m < krn->MAP_COUNT; m++)
             {
+                bool mapUserEnabled = krn->mapDatas[m].userEnabled;
+                ImGui::Checkbox(("##MapEnabled" + krn->mapDatas[m].name).c_str(), &mapUserEnabled);
+                krn->mapDatas[m].userEnabled = mapUserEnabled;
+                ImGui::SameLine();
+
                 if (ImGui::TreeNode(std::string(krn->mapDatas[m].name + "##MapSettings_" + krn->mapDatas[m].name).c_str()))
                 {
-                    ImGui::Text("Is enabled");
-                    ImGui::SameLine();
-                    bool mapUserEnabled = krn->mapDatas[m].userEnabled;
-                    ImGui::Checkbox(("##MapEnabled" + krn->mapDatas[m].name).c_str(), &mapUserEnabled);
-                    krn->mapDatas[m].userEnabled = mapUserEnabled;
-
                     for (int s = 0; s < krn->mapDatas[m].settingsCount; s++)
                     {
                         ImGui::Text(krn->mapDatas[m].settingName[s].c_str());
