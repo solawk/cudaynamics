@@ -39,18 +39,18 @@
 extern std::map<std::string, Kernel> kernels;
 extern std::map<std::string, int> kernelTPBs;
 extern std::map<std::string, void(*)(Computation*)> kernelPrograms;
-extern std::map<std::string, void(*)(numb*, numb*, numb*)> kernelFDSs;
+//extern std::map<std::string, void(*)(numb*, numb*, numb*)> kernelFDSs;
 extern std::string selectedKernel;
 
 #define addKernel(name)         kernels[#name] = readKernelText(#name); \
                                 kernelTPBs[#name] = THREADS_PER_BLOCK_##name; \
-                                kernelPrograms[#name] = kernelProgram_##name; \
-                                kernelFDSs[#name] = finiteDifferenceScheme_##name;
+                                kernelPrograms[#name] = kernelProgram_##name;// \
+                                //kernelFDSs[#name] = finiteDifferenceScheme_##name;
 #define selectKernel(name)      selectedKernel = #name;
 #define KERNEL      kernels[selectedKernel]
 #define KERNEL_TPB  kernelTPBs[selectedKernel]
 #define KERNEL_PROG kernelPrograms[selectedKernel]
-#define KERNEL_FDS  kernelFDSs[selectedKernel]
+//#define KERNEL_FDS  kernelFDSs[selectedKernel]
 
 int compute(Computation*);
 

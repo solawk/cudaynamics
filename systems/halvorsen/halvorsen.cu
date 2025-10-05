@@ -17,7 +17,6 @@ __global__ void kernelProgram_halvorsen(Computation* data)
     if (variation >= CUDA_marshal.totalVariations) return;      // Shutdown thread if there isn't a variation to compute
     int variationStart = variation * CUDA_marshal.variationSize;         // Start index to store the modelling data for the variation
     int stepStart = variationStart;                         // Start index for the current modelling step
-    //int indicesStart = variation * (CUDA_kernel.VAR_COUNT + CUDA_kernel.PARAM_COUNT);   // Start index for the step indices of the attributes in the current variation
 
     // Custom area (usually) starts here
 

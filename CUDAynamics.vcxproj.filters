@@ -65,6 +65,9 @@
       <Filter>gui</Filter>
     </ClCompile>
     <ClCompile Include="file_export.cpp" />
+    <ClCompile Include="benchmarking\cpu_bm.cpp">
+      <Filter>benchmarking</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="imgui">
@@ -96,6 +99,9 @@
     </Filter>
     <Filter Include="analysis\max">
       <UniqueIdentifier>{1d501396-4ff0-4147-b8df-9df70f96ca8a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="benchmarking">
+      <UniqueIdentifier>{77057837-ce30-4f25-a386-eaf1094d3b91}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -194,6 +200,9 @@
       <Filter>gui</Filter>
     </ClInclude>
     <ClInclude Include="file_export.h" />
+    <ClInclude Include="benchmarking\cpu_bm.h">
+      <Filter>benchmarking</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="main.cu" />

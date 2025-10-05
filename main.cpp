@@ -11,7 +11,7 @@
 std::map<std::string, Kernel> kernels;
 std::map<std::string, int> kernelTPBs;
 std::map<std::string, void(*)(Computation*)> kernelPrograms;
-std::map<std::string, void(*)(numb*, numb*, numb*)> kernelFDSs;
+//std::map<std::string, void(*)(numb*, numb*, numb*)> kernelFDSs;
 std::string selectedKernel;
 
 void common_main()

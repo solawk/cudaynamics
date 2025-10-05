@@ -7,6 +7,7 @@
 #include "main.h"
 #include "cuda_macros.h"
 #include <objects.h>
+#include "benchmarking/cpu_bm.h"
 
 cudaError_t execute(Computation* data)
 {
@@ -16,7 +17,7 @@ cudaError_t execute(Computation* data)
     int totalMapValues = !data->isHires ? CUDA_marshal.totalMapValuesPerVariation : 1; // We always only calculate one map in hi-res, controlled by "toCompute"s
 
     //std::chrono::steady_clock::time_point before = std::chrono::steady_clock::now();
-    //std::chrono::steady_clock::time_point precompute, incompute, postcompute;
+    std::chrono::steady_clock::time_point precompute, incompute, postcompute;
 
     cudaError_t cudaStatus;
 
@@ -57,11 +58,11 @@ cudaError_t execute(Computation* data)
         cudaMemcpyHostToDevice, variations * totalMapValues * sizeof(numb), "cudaMemcpy maps failed!");
 
     // Kernel execution
-    //precompute = std::chrono::steady_clock::now();
+    precompute = std::chrono::steady_clock::now();
     KERNEL_PROG <<< blocks, threads >>> (cuda_computation);
     CUDA_LASTERROR;
     CUDA_SYNCHRONIZE;
-    //incompute = std::chrono::steady_clock::now();
+    incompute = std::chrono::steady_clock::now();
 
     // Copying the trajectories and the maps back to the host
     CUDA_MEMCPY(CUDA_marshal.trajectory, cuda_trajectory, cudaMemcpyDeviceToHost, size * sizeof(numb), "cudaMemcpy back failed!");
@@ -79,7 +80,7 @@ Error:
 
     //postcompute = std::chrono::steady_clock::now();
     //printf("Precompute time: %Ii ms\n", std::chrono::duration_cast<std::chrono::milliseconds>(precompute - before).count());
-    //printf("Incompute time: %Ii ms\n", std::chrono::duration_cast<std::chrono::milliseconds>(incompute - precompute).count());
+    printf("Incompute time: %Ii ms\n", std::chrono::duration_cast<std::chrono::milliseconds>(incompute - precompute).count());
     //printf("Postcompute time: %Ii ms\n", std::chrono::duration_cast<std::chrono::milliseconds>(postcompute - incompute).count());
 
     return cudaStatus;
@@ -107,7 +108,11 @@ int compute(Computation* data)
 
     unsigned long long variationsInBuffers = !data->isHires ? variations : data->variationsPerParallelization;
     
-    if (CUDA_marshal.trajectory == nullptr) CUDA_marshal.trajectory = new numb[variationSize * variationsInBuffers];
+    if (CUDA_marshal.trajectory == nullptr)
+    {
+        CUDA_marshal.trajectory = new numb[variationSize * variationsInBuffers];
+        //cudaHostAlloc(&(CUDA_marshal.trajectory), variationSize * variationsInBuffers * sizeof(numb), cudaHostAllocDefault);
+    }
     if (CUDA_marshal.parameterVariations == nullptr) CUDA_marshal.parameterVariations = new numb[CUDA_kernel.PARAM_COUNT * variationsInBuffers];
     if (CUDA_marshal.stepIndices == nullptr) CUDA_marshal.stepIndices = new int[CUDA_ATTR_COUNT * variationsInBuffers];
 
@@ -119,11 +124,19 @@ int compute(Computation* data)
     bool hasFailed = false;
     cudaError_t cudaStatus;
 
+#define IS_CPU_BENCHMARKING 0
+#define IS_CPU_OPENMP 0
+
     // Execution
     if (!data->isHires)
     {
         fillAttributeBuffers(data, attributeStepIndices, 0, variations, false);
+#if IS_CPU_BENCHMARKING
+        cpu_execute(data, IS_CPU_OPENMP);
+        cudaStatus = cudaSuccess;
+#else
         cudaStatus = execute(data);
+#endif
         if (cudaStatus != cudaSuccess) { fprintf(stderr, "execute failed!\n"); hasFailed = true; }
     }
     else
@@ -141,7 +154,14 @@ int compute(Computation* data)
             for (int b = 0; b < data->buffersPerVariation; b++)
             {
                 fillAttributeBuffers(data, attributeStepIndices, v, v + variationsCurrent, !data->isFirst);
+
+#if IS_CPU_BENCHMARKING
+                cpu_execute(data, IS_CPU_OPENMP);
+                cudaStatus = cudaSuccess;
+#else
                 cudaStatus = execute(data);
+#endif
+
                 if (cudaStatus != cudaSuccess) { fprintf(stderr, "execute failed!\n"); hasFailed = true; break; }
                 data->isFirst = false;
             }
@@ -156,6 +176,7 @@ int compute(Computation* data)
     std::chrono::steady_clock::duration elapsed = after - before;
     auto timeElapsed = std::chrono::duration_cast<std::chrono::milliseconds>(elapsed).count();
     data->timeElapsed = (float)timeElapsed;
+    printf("Total time elapsed: %f ms\n", (float)timeElapsed);
 
     delete[] attributeStepIndices;
 

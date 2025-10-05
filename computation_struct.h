@@ -29,7 +29,7 @@ public:
 
 	void Clear()
 	{
-		if (marshal.trajectory != nullptr)				{ delete[] marshal.trajectory;			marshal.trajectory = nullptr; }
+		if (marshal.trajectory != nullptr) { /*cudaFreeHost(marshal.trajectory);*/ delete[] marshal.trajectory;			marshal.trajectory = nullptr; }
 		if (marshal.parameterVariations != nullptr)		{ delete[] marshal.parameterVariations;	marshal.parameterVariations = nullptr; }
 		if (marshal.stepIndices != nullptr)				{ delete[] marshal.stepIndices;			marshal.stepIndices = nullptr; }
 		if (marshal.maps != nullptr)					{ delete[] marshal.maps;				marshal.maps = nullptr; }

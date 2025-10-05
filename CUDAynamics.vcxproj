@@ -65,6 +65,8 @@
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;WIN64;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <LanguageStandard>stdcpp17</LanguageStandard>
+      <OpenMPSupport>true</OpenMPSupport>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -79,6 +81,9 @@
       <AdditionalCompilerOptions>
       </AdditionalCompilerOptions>
       <GenerateRelocatableDeviceCode>true</GenerateRelocatableDeviceCode>
+      <PtxAsOptionV>false</PtxAsOptionV>
+      <MaxRegCount>32</MaxRegCount>
+      <FastMath>true</FastMath>
     </CudaCompile>
     <CudaLink />
   </ItemDefinitionGroup>
@@ -102,6 +107,7 @@
     </CudaCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="benchmarking\cpu_bm.cpp" />
     <ClCompile Include="dbscan\dbscan.cpp" />
     <ClCompile Include="file_export.cpp" />
     <ClCompile Include="gui\fullscreen_funcs.cpp" />
@@ -134,6 +140,7 @@
     <ClInclude Include="analysis\lle\lle.h" />
     <ClInclude Include="analysis\max\max.h" />
     <ClInclude Include="attribute_struct.h" />
+    <ClInclude Include="benchmarking\cpu_bm.h" />
     <ClInclude Include="colorLUT_struct.h" />
     <ClInclude Include="computation_struct.h" />
     <ClInclude Include="cuda_macros.h" />
@@ -194,7 +201,9 @@
     <CudaCompile Include="systems\langford\langford.cu" />
     <CudaCompile Include="systems\lorenz83\lorenz83.cu" />
     <CudaCompile Include="systems\lorenzVar\lorenzVar.cu" />
-    <CudaCompile Include="systems\lorenz\lorenz.cu" />
+    <CudaCompile Include="systems\lorenz\lorenz.cu">
+      <FastMath Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</FastMath>
+    </CudaCompile>
     <CudaCompile Include="systems\nngu\nngu.cu" />
     <CudaCompile Include="systems\rabinovich_fabrikant\rabinovich_fabrikant.cu" />
     <CudaCompile Include="systems\rossler\rossler.cu" />
