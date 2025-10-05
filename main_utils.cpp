@@ -134,6 +134,7 @@ Kernel readKernelText(std::string name)
 
 	kernel.calcAttributeCounts();
 	kernel.mapWeight = 1.0f;
+	kernel.usingTime = false;
 	return kernel;
 }
 

@@ -40,6 +40,7 @@ float rulerBuffer[153]{}; // 1 axis, 5 * 10 + 1 points
 
 int computedSteps = 0; // Step count for the current computation
 bool autofitAfterComputing = false; // Temporary flag to autofit computed data
+bool autofitTimeSeries = false;
 int currentTotalVariations = 0; // Current amount of variations, so we can compare and safely hot-swap the parameter values
 bool executedOnLaunch = false; // Temporary flag to execute computations on launch if needed
 
@@ -135,6 +136,12 @@ void initAVI(bool hires)
         for (int i = 0; i < kernelNew.VAR_COUNT + kernelNew.PARAM_COUNT; i++) attributeValueIndices.push_back(0);
     else
         for (int i = 0; i < kernelHiresNew.VAR_COUNT + kernelHiresNew.PARAM_COUNT; i++) attributeValueIndices.push_back(0);
+}
+
+float getStepSize(Kernel& kernel)
+{
+    for (int i = 0; i < kernel.PARAM_COUNT; i++) if (kernel.parameters[i].name == "stepsize") return kernel.parameters[i].min;
+    return 1.0f;
 }
 
 // Normal computing
@@ -286,6 +293,7 @@ void switchPlayedBuffer()
     if (computations[1 - playedBufferIndex].ready)
     {
         playedBufferIndex = 1 - playedBufferIndex;
+        autofitTimeSeries = true;
         particleStep = 0;
         bufferNo++;
         computing();
@@ -561,8 +569,29 @@ int imgui_main(int, char**)
             PUSH_UNSAVED_FRAME;
             popStyle = true;
         }
-        ImGui::InputInt("Steps", &(KERNELNEWCURRENT.steps), 1, 1000, playingParticles ? ImGuiInputTextFlags_ReadOnly : 0);
-        TOOLTIP("Amount of computed steps, the trajectory will be (1 + 'steps') steps long, including the initial state");
+
+        float stepSize = getStepSize(KERNELNEWCURRENT);
+        if (!KERNELNEWCURRENT.usingTime)
+        {
+            ImGui::InputInt("##Steps", &(KERNELNEWCURRENT.steps), 1, 1000, playingParticles ? ImGuiInputTextFlags_ReadOnly : 0);
+            TOOLTIP("Amount of computed steps, the trajectory will be (1 + 'steps') steps long, including the initial state");
+            KERNELNEWCURRENT.time = KERNELNEWCURRENT.steps * stepSize;
+        }
+        else
+        {
+            ImGui::InputFloat("##Time(s)", &(KERNELNEWCURRENT.time), 1.0f, 10.0f, "%.3f", playingParticles ? ImGuiInputTextFlags_ReadOnly : 0);
+            TOOLTIP("Modelling time");
+            KERNELNEWCURRENT.steps = (int)(KERNELNEWCURRENT.time / stepSize);
+        }
+        ImGui::SameLine();
+        if (ImGui::BeginCombo("##stepsOrTime", !KERNELNEWCURRENT.usingTime ? "Steps" : "Time (s)"))
+        {
+            if (ImGui::Selectable("Steps", !KERNELNEWCURRENT.usingTime)) KERNELNEWCURRENT.usingTime = false;
+            if (ImGui::Selectable("Time (s)", KERNELNEWCURRENT.usingTime)) KERNELNEWCURRENT.usingTime = true;
+
+            ImGui::EndCombo();
+        }
+
         if (popStyle) POP_FRAME(3);
         if (playingParticles)
         {
@@ -589,8 +618,20 @@ int imgui_main(int, char**)
             PUSH_UNSAVED_FRAME;
             popStyle = true;
         }
-        ImGui::InputInt("Transient steps", &(KERNELNEWCURRENT.transientSteps), 1, 1000, playingParticles ? ImGuiInputTextFlags_ReadOnly : 0);
-        TOOLTIP("Steps to skip, including the initial state");
+
+        if (!KERNELNEWCURRENT.usingTime)
+        {
+            ImGui::InputInt("Transient steps##Transient steps", &(KERNELNEWCURRENT.transientSteps), 1, 1000, playingParticles ? ImGuiInputTextFlags_ReadOnly : 0);
+            TOOLTIP("Steps to skip, including the initial state");
+            KERNELNEWCURRENT.transientTime = KERNELNEWCURRENT.transientSteps * stepSize;
+        }
+        else
+        {
+            ImGui::InputFloat("Transient time##Transient time(s)", &(KERNELNEWCURRENT.transientTime), 1.0f, 10.0f, "%.3f", playingParticles ? ImGuiInputTextFlags_ReadOnly : 0);
+            TOOLTIP("Time to skip");
+            KERNELNEWCURRENT.transientSteps = (int)(KERNELNEWCURRENT.transientTime / stepSize);
+        }
+
         if (popStyle) POP_FRAME(3);
         if (playingParticles)
         {
@@ -1133,6 +1174,8 @@ int imgui_main(int, char**)
 
         bool toAutofit = autofitAfterComputing;
         autofitAfterComputing = false;
+        bool toAutofitTimeSeries = autofitTimeSeries;
+        autofitTimeSeries = false;
 
         // PLOT WINDOWS //
 
@@ -1303,7 +1346,7 @@ int imgui_main(int, char**)
             ImPlotPlot* plot;
             ImPlot3DPlot* plot3d;
             int mapIndex;
-            ImPlotColormap heatmapColorMap =  ImPlotColormap_Jet ;
+            ImPlotColormap heatmapColorMap =  ImPlotColormap_Jet;
             ImVec4 rotationEuler;
             ImVec4 rotationEulerEditable, rotationEulerBeforeEdit;
 
@@ -1316,6 +1359,21 @@ int imgui_main(int, char**)
                 {
                     plot = ImPlot::GetPlot(plotName.c_str());
 
+                    if (toAutofitTimeSeries)
+                    {
+                        plot->FitThisFrame = true;
+                        for (int i = 0; i < IMPLOT_NUM_X_AXES; i++)
+                        {
+                            ImPlotAxis& x_axis = plot->XAxis(i);
+                            x_axis.FitThisFrame = true;
+                        }
+                        for (int i = 0; i < IMPLOT_NUM_Y_AXES; i++)
+                        {
+                            ImPlotAxis& y_axis = plot->YAxis(i);
+                            y_axis.FitThisFrame = true;
+                        }
+                    }
+
                     plot->is3d = false;
 
                     if (computations[playedBufferIndex].ready)
@@ -1325,10 +1383,15 @@ int imgui_main(int, char**)
                         void* computedVariation = (numb*)(computations[playedBufferIndex].marshal.trajectory) + (variationSize * variation);
                         memcpy(dataBuffer, computedVariation, variationSize * sizeof(numb));
 
+                        bool isTime = KERNEL.usingTime;
+                        float stepSize = getStepSize(KERNEL);
+                        float start = !isTime ? bufferNo * KERNEL.steps + KERNEL.transientSteps : (bufferNo * KERNEL.steps + KERNEL.transientSteps) * stepSize;
+                        float scale = !isTime ? 1.0f : stepSize;
+
                         for (int v = 0; v < window->variableCount; v++)
                         {
                             ImPlot::PlotLine((KERNEL.variables[window->variables[v]].name + "##" + plotName + std::to_string(v)).c_str(),
-                                &((dataBuffer)[window->variables[v]]), computedSteps + 1, 1.0f, 0.0f, ImPlotLineFlags_None, 0, sizeof(numb) * KERNEL.VAR_COUNT);
+                                &((dataBuffer)[window->variables[v]]), computedSteps + 1, scale, start, ImPlotLineFlags_None, 0, sizeof(numb) * KERNEL.VAR_COUNT);
                         }
                     }
 

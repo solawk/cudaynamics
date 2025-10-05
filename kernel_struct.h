@@ -9,8 +9,13 @@ struct Kernel
 {
 public:
 	std::string name;
+
 	int steps;
 	int transientSteps;
+	float time;
+	float transientTime;
+	bool usingTime;
+
 	numb stepSize;
 	bool executeOnLaunch;
 	float mapWeight; // formerly "continuousMaps"
@@ -38,6 +43,9 @@ public:
 		name = kernel->name;
 		steps = kernel->steps;
 		transientSteps = kernel->transientSteps;
+		time = kernel->time;
+		transientTime = kernel->transientTime;
+		usingTime = kernel->usingTime;
 		stepSize = kernel->stepSize;
 		executeOnLaunch = kernel->executeOnLaunch;
 		mapWeight = kernel->mapWeight;
@@ -179,6 +187,9 @@ struct MarshalledKernel : Kernel
 public:
 	int steps;
 	int transientSteps;
+	float time;
+	float transientTime;
+	bool usingTime;
 	numb stepSize;
 
 	Attribute variables[MAX_ATTRIBUTES];
@@ -195,6 +206,9 @@ public:
 	{
 		steps = kernel->steps;
 		transientSteps = kernel->transientSteps;
+		time = kernel->time;
+		transientTime = kernel->transientTime;
+		usingTime = kernel->usingTime;
 		stepSize = kernel->stepSize;
 		mapWeight = kernel->mapWeight;
 
