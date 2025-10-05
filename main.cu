@@ -17,7 +17,7 @@ cudaError_t execute(Computation* data)
     int totalMapValues = !data->isHires ? CUDA_marshal.totalMapValuesPerVariation : 1; // We always only calculate one map in hi-res, controlled by "toCompute"s
 
     //std::chrono::steady_clock::time_point before = std::chrono::steady_clock::now();
-    std::chrono::steady_clock::time_point precompute, incompute, postcompute;
+    //std::chrono::steady_clock::time_point precompute, incompute, postcompute;
 
     cudaError_t cudaStatus;
 
@@ -58,11 +58,11 @@ cudaError_t execute(Computation* data)
         cudaMemcpyHostToDevice, variations * totalMapValues * sizeof(numb), "cudaMemcpy maps failed!");
 
     // Kernel execution
-    precompute = std::chrono::steady_clock::now();
+    //precompute = std::chrono::steady_clock::now();
     KERNEL_PROG <<< blocks, threads >>> (cuda_computation);
     CUDA_LASTERROR;
     CUDA_SYNCHRONIZE;
-    incompute = std::chrono::steady_clock::now();
+    //incompute = std::chrono::steady_clock::now();
 
     // Copying the trajectories and the maps back to the host
     CUDA_MEMCPY(CUDA_marshal.trajectory, cuda_trajectory, cudaMemcpyDeviceToHost, size * sizeof(numb), "cudaMemcpy back failed!");
@@ -80,7 +80,7 @@ Error:
 
     //postcompute = std::chrono::steady_clock::now();
     //printf("Precompute time: %Ii ms\n", std::chrono::duration_cast<std::chrono::milliseconds>(precompute - before).count());
-    printf("Incompute time: %Ii ms\n", std::chrono::duration_cast<std::chrono::milliseconds>(incompute - precompute).count());
+    //printf("Incompute time: %Ii ms\n", std::chrono::duration_cast<std::chrono::milliseconds>(incompute - precompute).count());
     //printf("Postcompute time: %Ii ms\n", std::chrono::duration_cast<std::chrono::milliseconds>(postcompute - incompute).count());
 
     return cudaStatus;
@@ -176,7 +176,7 @@ int compute(Computation* data)
     std::chrono::steady_clock::duration elapsed = after - before;
     auto timeElapsed = std::chrono::duration_cast<std::chrono::milliseconds>(elapsed).count();
     data->timeElapsed = (float)timeElapsed;
-    printf("Total time elapsed: %f ms\n", (float)timeElapsed);
+    //printf("Total time elapsed: %f ms\n", (float)timeElapsed);
 
     delete[] attributeStepIndices;
 

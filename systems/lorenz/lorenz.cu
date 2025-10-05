@@ -13,13 +13,11 @@ __global__ void kernelProgram_lorenz(Computation* data)
 {
     int variation = (blockIdx.x * blockDim.x) + threadIdx.x;            // Variation (parameter combination) index
     if (variation >= CUDA_marshal.totalVariations) return;      // Shutdown thread if there isn't a variation to compute
-    int variationStart = variation * CUDA_marshal.variationSize;         // Start index to store the modelling data for the variation
-    int stepStart;                                              // Start index for the current modelling step 
+    int stepStart, variationStart = variation * CUDA_marshal.variationSize;         // Start index to store the modelling data for the variation
     numb variables[MAX_ATTRIBUTES];
     numb variablesNext[MAX_ATTRIBUTES];
     numb parameters[MAX_ATTRIBUTES];
-    for (int i = 0; i < CUDA_kernel.VAR_COUNT; i++) variables[i] = CUDA_marshal.trajectory[variationStart + i];
-    for (int i = 0; i < CUDA_kernel.PARAM_COUNT; i++) parameters[i] = CUDA_marshal.parameterVariations[variation * CUDA_kernel.PARAM_COUNT + i];
+    LOAD_ATTRIBUTES;
 
     // Custom area (usually) starts here
 
@@ -28,13 +26,8 @@ __global__ void kernelProgram_lorenz(Computation* data)
     for (int s = 0; s < CUDA_kernel.steps; s++)
     {
         stepStart = variationStart + s * CUDA_kernel.VAR_COUNT;
-
-        finiteDifferenceScheme_lorenz(&(variables[0]), &(variablesNext[0]), &(parameters[0]));
-
-        for (int i = 0; i < CUDA_kernel.VAR_COUNT; i++)
-        {
-            CUDA_marshal.trajectory[stepStart + CUDA_kernel.VAR_COUNT + i] = variables[i] = variablesNext[i];
-        }
+        finiteDifferenceScheme_lorenz(FDS_ARGUMENTS);
+        RECORD_STEP;
     }
 
     // Analysis

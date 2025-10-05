@@ -761,6 +761,8 @@ int imgui_main(int, char**)
                             for (int i = 0; i < attr->enumCount; i++) kernelNewAttr->enumEnabled[i] = false;
                             kernelNewAttr->enumEnabled[index] = true;
                         }
+
+                        playingParticles = false;
                     }
                 }
 

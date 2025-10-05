@@ -9,6 +9,9 @@
 // Parameter value in the FDS
 #define P(n)			parameters[attributes::parameters::n]
 
+#define LOAD_ATTRIBUTES for (int i = 0; i < CUDA_kernel.VAR_COUNT; i++) variables[i] = CUDA_marshal.trajectory[variationStart + i]; \
+                        for (int i = 0; i < CUDA_kernel.PARAM_COUNT; i++) parameters[i] = CUDA_marshal.parameterVariations[variation * CUDA_kernel.PARAM_COUNT + i];
+
 // Map
 #define M(n)			CUDA_kernel.mapDatas[attributes::maps::n]
 
@@ -68,6 +71,10 @@
                                         CUDA_marshal.trajectory[variationStart + v] = transientBuffer[v];  \
                                 }  \
                             }
+
+#define FDS_ARGUMENTS   &(variables[0]), &(variablesNext[0]), &(parameters[0])
+
+#define RECORD_STEP for (int i = 0; i < CUDA_kernel.VAR_COUNT; i++) CUDA_marshal.trajectory[stepStart + CUDA_kernel.VAR_COUNT + i] = variables[i] = variablesNext[i];
 
 #define NORM_3D(x1, x2, y1, y2, z1, z2) sqrt((x2-x1)*(x2-x1) + (y2-y1)*(y2-y1) + (z2-z1)*(z2-z1))
 
