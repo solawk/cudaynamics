@@ -18,6 +18,9 @@
 // Method
 #define ifMETHOD(p, n)  if ((int)p == attributes::methods::n) 
 
+// Signal
+#define ifSIGNAL(p, n)  if ((int)p == attributes::waveforms::n)
+
 // Map settings
 #define MS(map, offset) CUDA_kernel.mapSettings[data->marshal.kernel.mapDatas[attributes::maps::map].settingsOffset + offset]
 
