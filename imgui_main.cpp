@@ -2677,13 +2677,17 @@ void heatmapRangingSelection(PlotWindow* window, ImPlotPlot* plot, HeatmapSizing
 
     if (window->hmp.isHeatmapAutoComputeOn && !isHires)
     {
-        if (window->hmp.ignoreLimitsRecalculationOnSelection) for (PlotWindow w : plotWindows) w.hmp.ignoreNextLimitsRecalculation = true;
+        if (window->hmp.ignoreLimitsRecalculationOnSelection) 
+            for (int w = 0; w < plotWindows.size(); w++)
+                plotWindows[w].hmp.ignoreNextLimitsRecalculation = true;
         computeAfterShiftSelect = true;
     }
 
     if (window->hireshmp.isHeatmapAutoComputeOn)
     {
-        if (window->hmp.ignoreLimitsRecalculationOnSelection) for (PlotWindow w : plotWindows) w.hmp.ignoreNextLimitsRecalculation = true;
+        if (window->hmp.ignoreLimitsRecalculationOnSelection) 
+            for (int w = 0; w < plotWindows.size(); w++)
+                plotWindows[w].hmp.ignoreNextLimitsRecalculation = true;
         hiresComputeAfterShiftSelect = true;
     }
 }
