@@ -21,7 +21,7 @@ __global__ void kernelProgram_lorenz(Computation* data)
 
     // Custom area (usually) starts here
 
-    TRANSIENT_SKIP(finiteDifferenceScheme_lorenz);
+    TRANSIENT_SKIP_NEW(finiteDifferenceScheme_lorenz);
 
     for (int s = 0; s < CUDA_kernel.steps; s++)
     {
