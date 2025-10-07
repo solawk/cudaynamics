@@ -9,7 +9,7 @@
 // Parameter value in the FDS
 #define P(n)			parameters[attributes::parameters::n]
 
-#define LOAD_ATTRIBUTES for (int i = 0; i < CUDA_kernel.VAR_COUNT; i++) variables[i] = CUDA_marshal.trajectory[variationStart + i]; \
+#define LOAD_ATTRIBUTES for (int i = 0; i < CUDA_kernel.VAR_COUNT; i++) CUDA_marshal.trajectory[variationStart + i] = variables[i] = CUDA_marshal.variableInits[variation * CUDA_kernel.VAR_COUNT + i]; \
                         for (int i = 0; i < CUDA_kernel.PARAM_COUNT; i++) parameters[i] = CUDA_marshal.parameterVariations[variation * CUDA_kernel.PARAM_COUNT + i];
 
 // Map
@@ -66,12 +66,12 @@
                                 numb transientBuffer[MAX_ATTRIBUTES];  \
                                 for (int ts = 0; ts < CUDA_kernel.transientSteps; ts++)  \
                                 {  \
-                                    FDS(&(CUDA_marshal.trajectory[variationStart]),  \
+                                    FDS(&(CUDA_marshal.variableInits[variation * CUDA_kernel.VAR_COUNT]),  \
                                         &(transientBuffer[0]),  \
                                         &(CUDA_marshal.parameterVariations[variation * CUDA_kernel.PARAM_COUNT]));  \
                                       \
                                     for (int v = 0; v < CUDA_kernel.VAR_COUNT; v++)  \
-                                        CUDA_marshal.trajectory[variationStart + v] = transientBuffer[v];  \
+                                        CUDA_marshal.variableInits[variation * CUDA_kernel.VAR_COUNT + v] = transientBuffer[v];  \
                                 }  \
                             }
 

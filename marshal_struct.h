@@ -11,6 +11,9 @@ struct Marshal
 	// Trajectory data
 	numb* trajectory;
 
+	// Variable values at the start of the trajectory (cheaper than memcpy'ing the entire trajectory to the device)
+	numb* variableInits;
+
 	// Parameter values for each variation
 	numb* parameterVariations;
 

@@ -17,7 +17,8 @@ cudaError_t execute(Computation* data)
     int totalMapValues = !data->isHires ? CUDA_marshal.totalMapValuesPerVariation : 1; // We always only calculate one map in hi-res, controlled by "toCompute"s
 
     //std::chrono::steady_clock::time_point before = std::chrono::steady_clock::now();
-    //std::chrono::steady_clock::time_point precompute, incompute, postcompute;
+    //std::chrono::steady_clock::time_point precompute, incompute;
+    //std::chrono::steady_clock::time_point postcompute;
 
     cudaError_t cudaStatus;
 
@@ -28,6 +29,7 @@ cudaError_t execute(Computation* data)
     // We create a dummy CUDA Computation with a Marshal to store the pointers in
     Computation* cuda_computation = nullptr;
     numb* cuda_trajectory = nullptr;
+    numb* cuda_variables = nullptr;
     numb* cuda_parameters = nullptr;
     int* cuda_stepIndices = nullptr;
     numb* cuda_maps = nullptr;
@@ -37,6 +39,7 @@ cudaError_t execute(Computation* data)
     // Allocation memory on the device for the Computation struct and the buffers
     CUDA_MALLOC(&cuda_computation, sizeof(Computation), "cudaMalloc computation failed!");
     CUDA_MALLOC(&cuda_trajectory, size * sizeof(numb), "cudaMalloc data failed!");
+    CUDA_MALLOC(&cuda_variables, variations * CUDA_kernel.VAR_COUNT * sizeof(numb), "cudaMalloc vars failed!");
     CUDA_MALLOC(&cuda_parameters, variations * CUDA_kernel.PARAM_COUNT * sizeof(numb), "cudaMalloc params failed!");
     CUDA_MALLOC(&cuda_stepIndices, variations * CUDA_ATTR_COUNT * sizeof(int), "cudaMalloc indices failed!");
     if (totalMapValues > 0 && variations > 1) CUDA_MALLOC(&cuda_maps, variations * totalMapValues * sizeof(numb), "cudaMalloc maps failed!");
@@ -45,12 +48,14 @@ cudaError_t execute(Computation* data)
     CUDA_MEMCPY(cuda_computation, data, cudaMemcpyHostToDevice, sizeof(Computation), "cudaMemcpy computation failed!");
     // Copying addresses of the device-side buffers to the device-side Computation
     CUDA_MEMCPY(&(cuda_computation->marshal.trajectory), &cuda_trajectory, cudaMemcpyHostToDevice, sizeof(numb*), "cudaMemcpy trajectory address failed!");
+    CUDA_MEMCPY(&(cuda_computation->marshal.variableInits), &cuda_variables, cudaMemcpyHostToDevice, sizeof(numb*), "cudaMemcpy variable address failed!");
     CUDA_MEMCPY(&(cuda_computation->marshal.parameterVariations), &cuda_parameters, cudaMemcpyHostToDevice, sizeof(numb*), "cudaMemcpy parameter address failed!");
     CUDA_MEMCPY(&(cuda_computation->marshal.stepIndices), &cuda_stepIndices, cudaMemcpyHostToDevice, sizeof(int*), "cudaMemcpy indices address failed!");
     if (totalMapValues > 0 && variations > 1) CUDA_MEMCPY(&(cuda_computation->marshal.maps), &cuda_maps, cudaMemcpyHostToDevice, sizeof(numb*), "cudaMemcpy maps address failed!");
 
     // Copying the values in the buffers themselves to the device
-    CUDA_MEMCPY(cuda_trajectory, CUDA_marshal.trajectory, cudaMemcpyHostToDevice, size * sizeof(numb), "cudaMemcpy data failed!");
+    //CUDA_MEMCPY(cuda_trajectory, CUDA_marshal.trajectory, cudaMemcpyHostToDevice, size * sizeof(numb), "cudaMemcpy data failed!");
+    CUDA_MEMCPY(cuda_variables, CUDA_marshal.variableInits, cudaMemcpyHostToDevice, variations * CUDA_kernel.VAR_COUNT * sizeof(numb), "cudaMemcpy vars failed!");
     CUDA_MEMCPY(cuda_parameters, CUDA_marshal.parameterVariations, cudaMemcpyHostToDevice, variations * CUDA_kernel.PARAM_COUNT * sizeof(numb), "cudaMemcpy params failed!");
     CUDA_MEMCPY(cuda_stepIndices, CUDA_marshal.stepIndices, cudaMemcpyHostToDevice, variations * CUDA_ATTR_COUNT * sizeof(int), "cudaMemcpy indices failed!");
     // We don't need to account for multiple maps since we only calculate one at once
@@ -82,6 +87,7 @@ Error:
     //printf("Precompute time: %Ii ms\n", std::chrono::duration_cast<std::chrono::milliseconds>(precompute - before).count());
     //printf("Incompute time: %Ii ms\n", std::chrono::duration_cast<std::chrono::milliseconds>(incompute - precompute).count());
     //printf("Postcompute time: %Ii ms\n", std::chrono::duration_cast<std::chrono::milliseconds>(postcompute - incompute).count());
+    //printf("Total execute time: %Ii ms\n", std::chrono::duration_cast<std::chrono::milliseconds>(postcompute - before).count());
 
     return cudaStatus;
 }
@@ -113,6 +119,7 @@ int compute(Computation* data)
         CUDA_marshal.trajectory = new numb[variationSize * variationsInBuffers];
         //cudaHostAlloc(&(CUDA_marshal.trajectory), variationSize * variationsInBuffers * sizeof(numb), cudaHostAllocDefault);
     }
+    if (CUDA_marshal.variableInits == nullptr) CUDA_marshal.variableInits = new numb[CUDA_kernel.VAR_COUNT * variationsInBuffers];
     if (CUDA_marshal.parameterVariations == nullptr) CUDA_marshal.parameterVariations = new numb[CUDA_kernel.PARAM_COUNT * variationsInBuffers];
     if (CUDA_marshal.stepIndices == nullptr) CUDA_marshal.stepIndices = new int[CUDA_ATTR_COUNT * variationsInBuffers];
 
@@ -187,6 +194,7 @@ int compute(Computation* data)
 void fillAttributeBuffers(Computation* data, int* attributeStepIndices, unsigned long long startVariation, unsigned long long endVariation, bool onlyTrajectory)
 {
     unsigned long long varStride = CUDA_marshal.variationSize;    // Stride between variations in "trajectory"
+    unsigned long long varInitStride = CUDA_kernel.VAR_COUNT;    // Stride between variations in "variableInits"
     unsigned long long paramStride = CUDA_kernel.PARAM_COUNT;     // Stride between variations in "parameterVariations"
 
     for (unsigned long long i = 0; i < endVariation - startVariation; i++)
@@ -199,7 +207,8 @@ void fillAttributeBuffers(Computation* data, int* attributeStepIndices, unsigned
             {
                 // i * stride - start of the variation, + v for the variable
                 // setting a value from the variable's ranged values, knowing the step index is among the first of "attribute step indices"
-                CUDA_marshal.trajectory[i * varStride + v] = CUDA_kernel.variables[v].values[attributeStepIndices[v]];
+                CUDA_marshal.trajectory[i * varStride + v] = CUDA_marshal.variableInits[i * varInitStride + v]
+                    = CUDA_kernel.variables[v].values[attributeStepIndices[v]];
             }
         }
         else
@@ -209,7 +218,8 @@ void fillAttributeBuffers(Computation* data, int* attributeStepIndices, unsigned
             {
                 // Left side is the first step of the trajectory
                 // Right side is the last step of the previous trajectory
-                CUDA_marshal.trajectory[i * varStride + v] = data->otherMarshal->trajectory[i * varStride + (CUDA_kernel.steps * CUDA_kernel.VAR_COUNT) + v];
+                CUDA_marshal.trajectory[i * varStride + v] = CUDA_marshal.variableInits[i * varInitStride + v] 
+                    = data->otherMarshal->trajectory[i * varStride + (CUDA_kernel.steps * CUDA_kernel.VAR_COUNT) + v];
             }
         }
 
