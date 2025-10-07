@@ -27,8 +27,6 @@ __global__ void kernelProgram_wilson(Computation* data)
     for (int s = 0; s < CUDA_kernel.steps; s++)
     {
         stepStart = variationStart + s * CUDA_kernel.VAR_COUNT;
-
-        stepStart = variationStart + s * CUDA_kernel.VAR_COUNT;
         finiteDifferenceScheme_wilson(FDS_ARGUMENTS);
         RECORD_STEP;
     }
