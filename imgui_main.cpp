@@ -584,10 +584,10 @@ int imgui_main(int, char**)
             KERNELNEWCURRENT.steps = (int)(KERNELNEWCURRENT.time / stepSize);
         }
         ImGui::SameLine();
-        if (ImGui::BeginCombo("##stepsOrTime", !KERNELNEWCURRENT.usingTime ? "Steps" : "Time (s)"))
+        if (ImGui::BeginCombo("##stepsOrTime", !KERNELNEWCURRENT.usingTime ? "Steps" : "Time"))
         {
             if (ImGui::Selectable("Steps", !KERNELNEWCURRENT.usingTime)) KERNELNEWCURRENT.usingTime = false;
-            if (ImGui::Selectable("Time (s)", KERNELNEWCURRENT.usingTime)) KERNELNEWCURRENT.usingTime = true;
+            if (ImGui::Selectable("Time", KERNELNEWCURRENT.usingTime)) KERNELNEWCURRENT.usingTime = true;
 
             ImGui::EndCombo();
         }
@@ -1387,8 +1387,8 @@ int imgui_main(int, char**)
                         float stepSize = getStepSize(KERNEL);
                         float start = !isTime ? bufferNo * KERNEL.steps + KERNEL.transientSteps : (bufferNo * KERNEL.steps + KERNEL.transientSteps) * stepSize;
                         float scale = !isTime ? 1.0f : stepSize;
-                        
-                        ImPlot::SetupAxes(KERNEL.usingTime ? "Time (s)" : "Steps", "Variables");
+
+                        ImPlot::SetupAxes(KERNEL.usingTime ? "Time" : "Steps", "Variable");
 
                         for (int v = 0; v < window->variableCount; v++)
                         {
@@ -2383,9 +2383,9 @@ int imgui_main(int, char**)
                                         heatmap->staticLUT.lutSizes = new int[staticLUTsize];
                                         heatmap->dynamicLUT.lutSizes = new int[dynamicLUTsize];
 
-                                        setupLUT(cmp->marshal.maps + cmp->marshal.kernel.mapDatas[mapIndex].offset * cmp->marshal.totalVariations, cmp->marshal.totalVariations, heatmap->staticLUT.lut, heatmap->staticLUT.lutSizes, staticLUTsize, heatmap->heatmapMin, heatmap->heatmapMax);
-                                        setupLUT(cmp->marshal.maps + cmp->marshal.kernel.mapDatas[mapIndex].offset * cmp->marshal.totalVariations, cmp->marshal.totalVariations, heatmap->dynamicLUT.lut, heatmap->dynamicLUT.lutSizes, dynamicLUTsize, heatmap->heatmapMin, heatmap->heatmapMax);
-                                    
+                                        setupLUT(cmp->marshal.maps + (cmp->marshal.kernel.mapDatas[mapIndex].offset + heatmap->mapValueIndex) * cmp->marshal.totalVariations, cmp->marshal.totalVariations, heatmap->staticLUT.lut, heatmap->staticLUT.lutSizes, staticLUTsize, heatmap->heatmapMin, heatmap->heatmapMax);
+                                        setupLUT(cmp->marshal.maps + (cmp->marshal.kernel.mapDatas[mapIndex].offset + heatmap->mapValueIndex) * cmp->marshal.totalVariations, cmp->marshal.totalVariations, heatmap->dynamicLUT.lut, heatmap->dynamicLUT.lutSizes, dynamicLUTsize, heatmap->heatmapMin, heatmap->heatmapMax);
+
                                         releaseHeatmap(window, isHires);
                                     }
 

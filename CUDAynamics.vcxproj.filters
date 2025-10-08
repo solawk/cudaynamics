@@ -31,9 +31,6 @@
       <Filter>implot</Filter>
     </ClCompile>
     <ClCompile Include="imgui_utils.cpp" />
-    <ClCompile Include="dbscan\dbscan.cpp">
-      <Filter>dbscan</Filter>
-    </ClCompile>
     <ClCompile Include="main_utils.cpp" />
     <ClCompile Include="variationSteps.cu" />
     <ClCompile Include="implot3d\implot3d.cpp">
@@ -82,9 +79,6 @@
     <Filter Include="implot">
       <UniqueIdentifier>{3e4da3fd-8489-4389-9886-e10bac652991}</UniqueIdentifier>
     </Filter>
-    <Filter Include="dbscan">
-      <UniqueIdentifier>{4461c4e3-1746-41e9-847c-27da9839fd03}</UniqueIdentifier>
-    </Filter>
     <Filter Include="analysis">
       <UniqueIdentifier>{de16d9d3-e2a2-45ef-8e41-d0ff21a3645f}</UniqueIdentifier>
     </Filter>
@@ -100,11 +94,11 @@
     <Filter Include="analysis\max">
       <UniqueIdentifier>{1d501396-4ff0-4147-b8df-9df70f96ca8a}</UniqueIdentifier>
     </Filter>
-    <Filter Include="analysis\periodicity">
-      <UniqueIdentifier>{efd68ad8-5378-49e5-a684-3577b1013904}</UniqueIdentifier>
-    </Filter>
     <Filter Include="benchmarking">
       <UniqueIdentifier>{77057837-ce30-4f25-a386-eaf1094d3b91}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="analysis\periodicity">
+      <UniqueIdentifier>{af4b7fc7-4be9-4f2b-8228-a7f75f715eba}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -143,9 +137,6 @@
     <ClInclude Include="imgui_utils.h" />
     <ClInclude Include="cuda_macros.h" />
     <ClInclude Include="resource.h" />
-    <ClInclude Include="dbscan\dbscan.h">
-      <Filter>dbscan</Filter>
-    </ClInclude>
     <ClInclude Include="quaternion.h" />
     <ClInclude Include="plotWindow.h" />
     <ClInclude Include="analysis.h" />
@@ -192,9 +183,6 @@
     <ClInclude Include="analysis\max\max.h">
       <Filter>analysis\max</Filter>
     </ClInclude>
-    <ClInclude Include="analysis\periodicity\dbscan.h">
-      <Filter>analysis\periodicity</Filter>
-    </ClInclude>
     <ClInclude Include="styles.h">
       <Filter>gui</Filter>
     </ClInclude>
@@ -208,6 +196,9 @@
     <ClInclude Include="file_export.h" />
     <ClInclude Include="benchmarking\cpu_bm.h">
       <Filter>benchmarking</Filter>
+    </ClInclude>
+    <ClInclude Include="analysis\periodicity\dbscan.h">
+      <Filter>analysis\periodicity</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -244,9 +235,6 @@
     </CudaCompile>
     <CudaCompile Include="analysis\max\max.cu">
       <Filter>analysis\max</Filter>
-    </CudaCompile>
-    <CudaCompile Include="analysis\periodicity\dbscan.cu">
-      <Filter>analysis\periodicity</Filter>
     </CudaCompile>
     <CudaCompile Include="systems\lorenz\lorenz.cu">
       <Filter>systems</Filter>
@@ -290,7 +278,10 @@
     <CudaCompile Include="systems\fitzhugh_nagumo\fitzhugh_nagumo.cu">
       <Filter>systems</Filter>
     </CudaCompile>
-    <CudaCompile Include="systems\nngu\nngu.cu">
+    <CudaCompile Include="analysis\periodicity\dbscan.cu">
+      <Filter>analysis\periodicity</Filter>
+    </CudaCompile>
+    <CudaCompile Include="systems\mishchenko\mishchenko.cu">
       <Filter>systems</Filter>
     </CudaCompile>
   </ItemGroup>

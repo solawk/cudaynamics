@@ -11,6 +11,7 @@
 #include "mapData_struct.h"
 #include "variationSteps.h"
 
+
 #include "systems/lorenz/lorenz.h"
 #include "systems/lorenzVar/lorenzVar.h"
 #include "systems/lorenz83/lorenz83.h"
@@ -32,7 +33,7 @@
 #include "systems/rabinovich_fabrikant/rabinovich_fabrikant.h"
 #include "systems/thomas/thomas.h"
 #include "systems/bolshakov/bolshakov.h"
-#include "systems/nngu/nngu.h"
+#include "systems/mishchenko/mishchenko.h"
 #include "systems/vnm/vnm.h"
 #include "systems/fitzhugh_nagumo/fitzhugh_nagumo.h"
 
