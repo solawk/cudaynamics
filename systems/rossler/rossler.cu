@@ -6,7 +6,7 @@ namespace attributes
     enum variables { x, y, z };
     enum parameters { a, b, c, stepsize, symmetry, method };
     enum methods { ExplicitEuler, ExplicitMidpoint, ExplicitRungeKutta4, VariableSymmetryCD};
-    enum maps { LLE };
+    enum maps { LLE, Periodicity };
 }
 
 __global__ void kernelProgram_rossler(Computation* data)
@@ -38,6 +38,12 @@ __global__ void kernelProgram_rossler(Computation* data)
         LLE_Settings lle_settings(MS(LLE, 0), MS(LLE, 1), MS(LLE, 2));
         lle_settings.Use3DNorm();
         LLE(data, lle_settings, variation, &finiteDifferenceScheme_rossler, MO(LLE));
+    }
+
+    if (M(Periodicity).toCompute)
+    {
+        DBscan_Settings dbscan_settings(MS(Periodicity, 0), MS(Periodicity, 1), MS(Periodicity, 2), MS(Periodicity,3));
+        Periodicity(data, dbscan_settings, variation, MO(Periodicity));
     }
 }
 
