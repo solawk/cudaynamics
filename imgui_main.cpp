@@ -4,7 +4,6 @@
 #include "gui/img_loading.h"
 #include "gui/map_img.h"
 #include "gui/fullscreen_funcs.h"
-#include "gui/window_configs.h"
 #include "styles.h"
 
 static ID3D11Device* g_pd3dDevice = nullptr;
@@ -21,15 +20,19 @@ Computation computations[2];
 Computation computationHires;
 int playedBufferIndex = 0; // Buffer currently shown
 int bufferToFillIndex = 0; // Buffer to send computations to
-std::vector<int> attributeValueIndices; // Currently selected indices of ranging attributes
+std::vector<int> attributeValueIndices;
 
 bool autoLoadNewParams = false;
 PlotWindow* hiresHeatmapWindow = nullptr;
+#define HIRES_ON (hiresHeatmapWindow != nullptr)
 Kernel kernelNew, kernelHiresNew; // Front-end for the kernels in the GUI
 Kernel kernelHiresComputed; // Hi-res computation kernel buffer which has been sent to computation
+#define KERNELNEWCURRENT (HIRES_ON ? kernelHiresNew : kernelNew)
+#define KERNELINTERNALCURRENT (HIRES_ON ? kernelHiresNew : KERNEL)
 
 numb* dataBuffer = nullptr; // One variation local buffer
 numb* particleBuffer = nullptr; // One step local buffer
+//numb* mapBuffer = nullptr;
 
 // To use with fullscreen functionality
 PlotWindow mainWindow(-1), graphBuilderWindow(-2), mapSettingsWindow(-3);
@@ -40,7 +43,6 @@ float rulerBuffer[153]{}; // 1 axis, 5 * 10 + 1 points
 
 int computedSteps = 0; // Step count for the current computation
 bool autofitAfterComputing = false; // Temporary flag to autofit computed data
-bool autofitTimeSeries = false;
 int currentTotalVariations = 0; // Current amount of variations, so we can compare and safely hot-swap the parameter values
 bool executedOnLaunch = false; // Temporary flag to execute computations on launch if needed
 
@@ -79,7 +81,8 @@ bool thisChanged;
 bool popStyle;
 ImGuiSliderFlags dragFlag;
 
-/*ImVec4 unsavedBackgroundColor = ImVec4(0.427f, 0.427f, 0.137f, 1.0f);
+// Colors
+ImVec4 unsavedBackgroundColor = ImVec4(0.427f, 0.427f, 0.137f, 1.0f);
 ImVec4 unsavedBackgroundColorHovered = ImVec4(0.427f * 1.3f, 0.427f * 1.3f, 0.137f * 1.3f, 1.0f);
 ImVec4 unsavedBackgroundColorActive = ImVec4(0.427f * 1.5f, 0.427f * 1.5f, 0.137f * 1.5f, 1.0f);
 ImVec4 disabledColor = ImVec4(0.137f * 0.5f, 0.271f * 0.5f, 0.427f * 0.5f, 1.0f);
@@ -90,7 +93,7 @@ ImVec4 hiresBackgroundColorHovered = ImVec4(0.427f * 1.3f, 0.137f * 1.3f, 0.427f
 ImVec4 hiresBackgroundColorActive = ImVec4(0.427f * 1.5f, 0.137f * 1.5f, 0.427f * 1.5f, 1.0f);
 ImVec4 xAxisColor = ImVec4(0.75f, 0.3f, 0.3f, 1.0f);
 ImVec4 yAxisColor = ImVec4(0.33f, 0.67f, 0.4f, 1.0f);
-ImVec4 zAxisColor = ImVec4(0.3f, 0.45f, 0.7f, 1.0f);*/
+ImVec4 zAxisColor = ImVec4(0.3f, 0.45f, 0.7f, 1.0f);
 
 std::string rangingTypes[] = { "Fixed", "Step", "Linear", "Random", "Normal" };
 std::string rangingDescriptions[] =
@@ -105,15 +108,32 @@ std::string rangingDescriptions[] =
 bool rangingWindowEnabled = true;
 bool graphBuilderWindowEnabled = true;
 
-void deleteBuffers(bool deleteHires)
+// Repetitive stuff
+#define PUSH_DISABLED_FRAME {ImGui::PushStyleColor(ImGuiCol_FrameBg, disabledBackgroundColor); \
+                            ImGui::PushStyleColor(ImGuiCol_FrameBgActive, disabledBackgroundColor); \
+                            ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, disabledBackgroundColor);}
+#define PUSH_UNSAVED_FRAME  {ImGui::PushStyleColor(ImGuiCol_FrameBg, unsavedBackgroundColor); \
+                            ImGui::PushStyleColor(ImGuiCol_FrameBgActive, unsavedBackgroundColorActive); \
+                            ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, unsavedBackgroundColorHovered);}
+#define PUSH_HIRES_FRAME  {ImGui::PushStyleColor(ImGuiCol_FrameBg, hiresBackgroundColor); \
+                            ImGui::PushStyleColor(ImGuiCol_FrameBgActive, hiresBackgroundColorActive); \
+                            ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, hiresBackgroundColorHovered);}
+#define POP_FRAME(n)        {ImGui::PopStyleColor(n);}
+#define CLAMP01(x)          if (x < 0.0f) x = 0.0f; if (x > 1.0f) x = 1.0f;
+#define TOOLTIP(text)       if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal)) ImGui::SetTooltip(text);
+
+void deleteBothBuffers()
 {
-    if (!deleteHires)
-    {
-        computations[0].Clear();
-        computations[1].Clear();
-    }
-    else
-        computationHires.Clear();
+    computations[0].Clear();
+    computations[1].Clear();
+
+    playedBufferIndex = 0;
+    bufferToFillIndex = 0;
+}
+
+void deleteHiresBuffer()
+{
+    computationHires.Clear();
 
     playedBufferIndex = 0;
     bufferToFillIndex = 0;
@@ -126,6 +146,9 @@ void resetTempBuffers(Computation* data)
 
     if (particleBuffer) delete[] particleBuffer;
     particleBuffer = new numb[CUDA_marshal.totalVariations * KERNEL.VAR_COUNT];
+
+    //if (mapBuffer) delete[] mapBuffer;
+    //mapBuffer = new numb[CUDA_marshal.mapsSize];
 }
 
 // Initialize the Attribute Value Indeces vector for ranging
@@ -136,12 +159,6 @@ void initAVI(bool hires)
         for (int i = 0; i < kernelNew.VAR_COUNT + kernelNew.PARAM_COUNT; i++) attributeValueIndices.push_back(0);
     else
         for (int i = 0; i < kernelHiresNew.VAR_COUNT + kernelHiresNew.PARAM_COUNT; i++) attributeValueIndices.push_back(0);
-}
-
-float getStepSize(Kernel& kernel)
-{
-    for (int i = 0; i < kernel.PARAM_COUNT; i++) if (kernel.parameters[i].name == "stepsize") return kernel.parameters[i].min;
-    return 1.0f;
 }
 
 // Normal computing
@@ -189,7 +206,7 @@ int asyncComputation()
 
 void computing()
 {
-    computations[bufferToFillIndex].bufferNo += 2; // One computation buffer only gets even trajectories, the other one get odd trajectories
+    computations[bufferToFillIndex].bufferNo += 2;
     computations[bufferToFillIndex].future = std::async(asyncComputation);
     //asyncComputation();
 }
@@ -229,14 +246,44 @@ void hiresComputing()
     //hiresAsyncComputation();
 }
 
+// Windows configuration saving and loading
+void saveWindows()
+{
+    std::ofstream configFileStream((KERNEL.name + ".config").c_str(), std::ios::out);
+
+    for (PlotWindow w : plotWindows)
+    {
+        std::string exportString = w.ExportAsString();
+        configFileStream.write(exportString.c_str(), exportString.length());
+    }
+
+    configFileStream.close();
+}
+
+void loadWindows()
+{
+    std::ifstream configFileStream((KERNEL.name + ".config").c_str(), std::ios::in);
+
+    for (std::string line; getline(configFileStream, line); )
+    {
+        PlotWindow plotWindow = PlotWindow(uniqueIds++);
+        plotWindow.ImportAsString(line);
+
+        plotWindows.push_back(plotWindow);
+    }
+
+    configFileStream.close();
+}
+
 void terminateBuffers()
 {
     if (computations[0].future.valid()) computations[0].future.wait();
     if (computations[1].future.valid()) computations[1].future.wait();
     if (computationHires.future.valid()) computationHires.future.wait();
-    deleteBuffers(false);
+    deleteBothBuffers();
     if (dataBuffer != nullptr)      { delete[] dataBuffer;      dataBuffer = nullptr; }
     if (particleBuffer != nullptr)  { delete[] particleBuffer;  particleBuffer = nullptr; }
+    //if (mapBuffer != nullptr)       { delete[] mapBuffer;  mapBuffer = nullptr; }
 
     executedOnLaunch = false;
     playedBufferIndex = bufferToFillIndex = 0;
@@ -283,9 +330,15 @@ void initializeKernel(bool needTerminate)
 void computationStatus(bool comp0, bool comp1)
 {
     if (comp0)
+    {
         ImGui::Text("Computing buffer 0...");
-    else if (comp1)
+        return;
+    }
+    
+    if (comp1)
+    {
         ImGui::Text("Computing buffer 1...");
+    }
 }
 
 void switchPlayedBuffer()
@@ -293,57 +346,90 @@ void switchPlayedBuffer()
     if (computations[1 - playedBufferIndex].ready)
     {
         playedBufferIndex = 1 - playedBufferIndex;
-        autofitTimeSeries = true;
         particleStep = 0;
         bufferNo++;
+        //printf("Switch occured and starting playing %i\n", playedBufferIndex);
         computing();
+    }
+    else
+    {
+        //ImGui::Text("Next buffer not ready for switching yet!");
     }
 }
 
 void removeHeatmapLimits()
 {
-    for (int i = 0; i < plotWindows.size(); i++) plotWindows[i].hmp.areHeatmapLimitsDefined = false;
+    for (int i = 0; i < plotWindows.size(); i++)
+    {
+        plotWindows[i].hmp.areHeatmapLimitsDefined = false;
+    }
 }
 
-void prepareAndCompute(bool hires)
+void prepareAndCompute()
 {
-    bool comp0inProgress = !computations[0].ready && computations[0].marshal.trajectory != nullptr;
-    bool comp1inProgress = !computations[1].ready && computations[1].marshal.trajectory != nullptr;
-    bool compHiresinProgress = !computationHires.ready && computationHires.marshal.trajectory != nullptr;
-    if (comp0inProgress || comp1inProgress || compHiresinProgress)
+    if ((!computations[0].ready && computations[0].marshal.trajectory != nullptr)
+        || (!computations[1].ready && computations[1].marshal.trajectory != nullptr)
+        || (!computationHires.ready && computationHires.marshal.trajectory != nullptr))
     {
         printf("Preventing computing too fast!\n");
-        return;
     }
-    
-    if (hires) computationHires.Clear();
-
-    executedOnLaunch = true;
-    computeAfterShiftSelect = false;
-    bufferNo = 0;
-    particleStep = 0;
-    deleteBuffers(hires);
-    removeHeatmapLimits();
-
-    if (!hires)
+    else
     {
+        executedOnLaunch = true;
+        computeAfterShiftSelect = false;
+        bufferToFillIndex = 0;
+        playedBufferIndex = 0;
+        bufferNo = 0;
+        particleStep = 0;
+        deleteBothBuffers();
+        removeHeatmapLimits();
+
         computations[0].bufferNo = -2;
         computations[1].bufferNo = -1;
 
         KERNEL.CopyFrom(&kernelNew);
         KERNEL.PrepareAttributes();
         KERNEL.AssessMapAttributes(&attributeValueIndices);
+        //KERNEL.MapsSetSizes();
 
+        // TODO: All calc steps and stepcounts should be done beforehand, since ranging will be incorrect otherwise
+        // Done I guess? I forgor
+        //initAVI();
         computing();
+    }
+}
+
+void hiresPnC()
+{
+    if ((!computations[0].ready && computations[0].marshal.trajectory != nullptr)
+        || (!computations[1].ready && computations[1].marshal.trajectory != nullptr)
+        || (!computationHires.ready && computationHires.marshal.trajectory != nullptr))
+    {
+        printf("Preventing hi-res computing too fast!\n");
     }
     else
     {
+        computationHires.Clear();
+
+        executedOnLaunch = true;
+        hiresComputeAfterShiftSelect = false;
+        bufferToFillIndex = 0;
+        playedBufferIndex = 0;
+        bufferNo = 0;
+        particleStep = 0;
+        deleteHiresBuffer();
+        removeHeatmapLimits();
+
         kernelHiresComputed.CopyFrom(&kernelHiresNew);
         kernelHiresComputed.PrepareAttributes();
+        //kernelHiresComputed.AssessMapAttributes(&attributeValueIndices);
+        //kernelHiresComputed.MapsSetSizes();
 
+        // TODO: All calc steps and stepcounts should be done beforehand, since ranging will be incorrect otherwise
+        // Done I guess? I forgor
+        //initAVI();
         hiresComputing();
     }
-
 }
 
 void releaseHeatmap(PlotWindow* window, bool isHires)
@@ -429,6 +515,7 @@ int imgui_main(int, char**)
     computations[0].marshal.parameterVariations = computations[1].marshal.parameterVariations = nullptr;
     computations[0].isHires = computations[1].isHires = false;
     computationHires.isHires = true;
+
     computations[0].index = 0;
     computations[1].index = 1;
     computations[0].otherMarshal = &(computations[1].marshal);
@@ -516,8 +603,10 @@ int imgui_main(int, char**)
             {
                 if (applicationProhibited)
                 {
-                    ImGui::PushStyleColor(ImGuiCol_Text, CUSTOM_COLOR(DisabledText));
-                    PUSH_DISABLED_FRAME;
+                    ImGui::PushStyleColor(ImGuiCol_Text, disabledTextColor);
+                    ImGui::PushStyleColor(ImGuiCol_Button, disabledBackgroundColor);
+                    ImGui::PushStyleColor(ImGuiCol_ButtonActive, disabledBackgroundColor);
+                    ImGui::PushStyleColor(ImGuiCol_ButtonHovered, disabledBackgroundColor);
                 }
                 if (ImGui::Button("Apply") && !applicationProhibited)
                 {
@@ -525,7 +614,10 @@ int imgui_main(int, char**)
                 }
                 if (applicationProhibited)
                 {
-                    POP_FRAME(4);
+                    ImGui::PopStyleColor();
+                    ImGui::PopStyleColor();
+                    ImGui::PopStyleColor();
+                    ImGui::PopStyleColor();
                 }
             }
         }
@@ -560,7 +652,9 @@ int imgui_main(int, char**)
         // Steps
         if (playingParticles)
         {
-            PUSH_DISABLED_FRAME;
+            ImGui::PushStyleColor(ImGuiCol_FrameBg, disabledBackgroundColor);
+            ImGui::PushStyleColor(ImGuiCol_FrameBgActive, disabledBackgroundColor);
+            ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, disabledBackgroundColor);
         }
         popStyle = false;
         if (kernelNew.steps != KERNEL.steps)
@@ -569,33 +663,14 @@ int imgui_main(int, char**)
             PUSH_UNSAVED_FRAME;
             popStyle = true;
         }
-
-        float stepSize = getStepSize(KERNELNEWCURRENT);
-        if (!KERNELNEWCURRENT.usingTime)
-        {
-            ImGui::InputInt("##Steps", &(KERNELNEWCURRENT.steps), 1, 1000, playingParticles ? ImGuiInputTextFlags_ReadOnly : 0);
-            TOOLTIP("Amount of computed steps, the trajectory will be (1 + 'steps') steps long, including the initial state");
-            KERNELNEWCURRENT.time = KERNELNEWCURRENT.steps * stepSize;
-        }
-        else
-        {
-            ImGui::InputFloat("##Time(s)", &(KERNELNEWCURRENT.time), 1.0f, 10.0f, "%.3f", playingParticles ? ImGuiInputTextFlags_ReadOnly : 0);
-            TOOLTIP("Modelling time");
-            KERNELNEWCURRENT.steps = (int)(KERNELNEWCURRENT.time / stepSize);
-        }
-        ImGui::SameLine();
-        if (ImGui::BeginCombo("##stepsOrTime", !KERNELNEWCURRENT.usingTime ? "Steps" : "Time (s)"))
-        {
-            if (ImGui::Selectable("Steps", !KERNELNEWCURRENT.usingTime)) KERNELNEWCURRENT.usingTime = false;
-            if (ImGui::Selectable("Time (s)", KERNELNEWCURRENT.usingTime)) KERNELNEWCURRENT.usingTime = true;
-
-            ImGui::EndCombo();
-        }
-
+        ImGui::InputInt("Steps", &(KERNELNEWCURRENT.steps), 1, 1000, playingParticles ? ImGuiInputTextFlags_ReadOnly : 0);
+        TOOLTIP("Amount of computed steps, the trajectory will be (1 + 'steps') steps long, including the initial state");
         if (popStyle) POP_FRAME(3);
         if (playingParticles)
         {
-            POP_FRAME(3);
+            ImGui::PopStyleColor();
+            ImGui::PopStyleColor();
+            ImGui::PopStyleColor();
         }
 
         // Hi-res buffers per variation
@@ -609,7 +684,9 @@ int imgui_main(int, char**)
         ImGui::PushItemWidth(200.0f);
         if (playingParticles)
         {
-            PUSH_DISABLED_FRAME;
+            ImGui::PushStyleColor(ImGuiCol_FrameBg, disabledBackgroundColor);
+            ImGui::PushStyleColor(ImGuiCol_FrameBgActive, disabledBackgroundColor);
+            ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, disabledBackgroundColor);
         }
         popStyle = false;
         if (kernelNew.transientSteps != KERNEL.transientSteps)
@@ -618,25 +695,29 @@ int imgui_main(int, char**)
             PUSH_UNSAVED_FRAME;
             popStyle = true;
         }
-
-        if (!KERNELNEWCURRENT.usingTime)
-        {
-            ImGui::InputInt("Transient steps##Transient steps", &(KERNELNEWCURRENT.transientSteps), 1, 1000, playingParticles ? ImGuiInputTextFlags_ReadOnly : 0);
-            TOOLTIP("Steps to skip, including the initial state");
-            KERNELNEWCURRENT.transientTime = KERNELNEWCURRENT.transientSteps * stepSize;
-        }
-        else
-        {
-            ImGui::InputFloat("Transient time##Transient time(s)", &(KERNELNEWCURRENT.transientTime), 1.0f, 10.0f, "%.3f", playingParticles ? ImGuiInputTextFlags_ReadOnly : 0);
-            TOOLTIP("Time to skip");
-            KERNELNEWCURRENT.transientSteps = (int)(KERNELNEWCURRENT.transientTime / stepSize);
-        }
-
+        ImGui::InputInt("Transient steps", &(KERNELNEWCURRENT.transientSteps), 1, 1000, playingParticles ? ImGuiInputTextFlags_ReadOnly : 0);
+        TOOLTIP("Steps to skip, including the initial state");
         if (popStyle) POP_FRAME(3);
         if (playingParticles)
         {
-            POP_FRAME(3);
+            ImGui::PopStyleColor();
+            ImGui::PopStyleColor();
+            ImGui::PopStyleColor();
         }
+
+        /*popStyle = false;
+        if (kernelNew.stepSize != KERNEL.stepSize)
+        {
+            anyChanged = true;
+            PUSH_UNSAVED_FRAME;
+            popStyle = true;
+        }
+        float stepSizeFloat = (float)KERNELNEWCURRENT.stepSize;
+        ImGui::InputFloat("Step size", &stepSizeFloat, 0.0f, 0.0f, "%f");
+        KERNELNEWCURRENT.stepSize = (numb)stepSizeFloat;
+        TOOLTIP("Step size of the simulation, h");
+        ImGui::PopItemWidth();
+        if (popStyle) POP_FRAME(3);*/
 
         variation = 0;
 
@@ -680,7 +761,7 @@ int imgui_main(int, char**)
 
             if (anyChanged)
             {
-                ImGui::PushStyleColor(ImGuiCol_Text, CUSTOM_COLOR(DisabledText));
+                ImGui::PushStyleColor(ImGuiCol_Text, disabledTextColor);
                 PUSH_DISABLED_FRAME;
             }
 
@@ -702,6 +783,25 @@ int imgui_main(int, char**)
                 }
             }
             if (anyChanged) POP_FRAME(4);
+
+            /*bool tempContinuous = continuousComputingEnabled;
+            if (ImGui::Checkbox("Continuous computing", &(tempContinuous)))
+            {
+                // Flags of having buffers computed, to not interrupt computations in progress when switching
+                bool noncont = !continuousComputingEnabled && computations[0].ready;
+                bool cont = continuousComputingEnabled && computations[0].ready && computations[1].ready;
+
+                if (noComputedData || noncont || cont)
+                {
+                    continuousComputingEnabled = !continuousComputingEnabled;
+
+                    bufferNo = 0;
+                    deleteBothBuffers();
+                    playingParticles = false;
+                    particleStep = 0;
+                }
+            }
+            TOOLTIP("Keep computing next buffers for continuous playback");*/
 
             // PARTICLES MODE
             if (playingParticles/* && enabledParticles*/)
@@ -739,6 +839,9 @@ int imgui_main(int, char**)
             }
             TOOLTIP("Automatically applies new parameter values to the new buffers mid-playback");
 
+
+          
+
             // Map continuous computing
             popStyle = false;
             if (kernelNew.mapWeight != KERNEL.mapWeight)
@@ -757,6 +860,7 @@ int imgui_main(int, char**)
             ImGui::InputFloat("Value drag speed", &(dragChangeSpeed));
             TOOLTIP("Drag speed of attribute values, allows for precise automatic parameter setting");
 
+            //if (ImGui::BeginTabItem("Orbit Mode", NULL, selectOrbitTab ? ImGuiTabItemFlags_SetSelected : 0))
             ImGui::NewLine();
 
             // RANGING, ORBIT MODE
@@ -767,7 +871,6 @@ int imgui_main(int, char**)
                     bool isVar = i < KERNEL.VAR_COUNT;
                     Attribute* attr = isVar ? &(computations[playedBufferIndex].marshal.kernel.variables[i]) : &(computations[playedBufferIndex].marshal.kernel.parameters[i - KERNEL.VAR_COUNT]);
                     Attribute* kernelNewAttr = isVar ? &(kernelNew.variables[i]) : &(kernelNew.parameters[i - KERNEL.VAR_COUNT]);
-                    bool isEnum = attr->rangingType == Enum;
 
                     if (attr->TrueStepCount() == 1) continue;
 
@@ -778,32 +881,10 @@ int imgui_main(int, char**)
                     ImGui::PopItemWidth();
                     attributeValueIndices[i] = index;
 
-                    if (!isEnum)
+                    if (attr->rangingType != Enum)
                     {
                         ImGui::SameLine();
                         ImGui::Text(("Value: " + std::to_string(calculateValue(attr->min, attr->step, index))).c_str());
-                    }
-                    else
-                    {
-                        ImGui::SameLine();
-                        ImGui::Text(attr->enumNames[index].c_str());
-                    }
-
-                    ImGui::SameLine();
-                    if (ImGui::Button(("Fix##FixRanging" + std::to_string(i)).c_str()))
-                    {
-                        if (!isEnum)
-                        {
-                            kernelNewAttr->rangingType = None;
-                            kernelNewAttr->min = calculateValue(attr->min, attr->step, index);
-                        }
-                        else
-                        {
-                            for (int i = 0; i < attr->enumCount; i++) kernelNewAttr->enumEnabled[i] = false;
-                            kernelNewAttr->enumEnabled[index] = true;
-                        }
-
-                        playingParticles = false;
                     }
                 }
 
@@ -814,6 +895,8 @@ int imgui_main(int, char**)
             {
                 switchPlayedBuffer(); OrbitRedraw = true;
             }
+
+            //selectParticleTab = selectOrbitTab = false;
         }
 
         // COMMON
@@ -831,7 +914,7 @@ int imgui_main(int, char**)
             if (playBreath) ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.137f * buttonBreathMult, 0.271f * buttonBreathMult, 0.427f * buttonBreathMult, 1.0f));
             if (ImGui::Button("= COMPUTE =") || (KERNEL.executeOnLaunch && !executedOnLaunch) || computeAfterShiftSelect)
             {
-                prepareAndCompute(false); OrbitRedraw = true;
+                prepareAndCompute(); OrbitRedraw = true;
             }
             if (playBreath) ImGui::PopStyleColor();
             if (!playingParticles) computationStatus(computation0InProgress, computation1InProgress);
@@ -840,14 +923,14 @@ int imgui_main(int, char**)
         {
             if (computeAfterShiftSelect) // For shift-clicking the hires map
             {
-                prepareAndCompute(false); OrbitRedraw = true;
+                prepareAndCompute(); OrbitRedraw = true;
             }
 
             // Hi-res compute button
             if (ImGui::Button("= HI-RES COMPUTE =") || hiresComputeAfterShiftSelect)
             {
                 //printf("A\n");
-                prepareAndCompute(true); OrbitRedraw = true;
+                hiresPnC(); OrbitRedraw = true;
             }
         }
         if (computationHiresInProgress)
@@ -864,18 +947,6 @@ int imgui_main(int, char**)
             {
                 kernelNew.CopyFrom(&KERNEL);
             }
-        }
-
-        // Color style
-        ImGui::NewLine();
-        bool isDark = appStyle == ImGuiCustomStyle::Dark;
-        if (ImGui::Checkbox("Dark theme", &isDark))
-        {
-            if (isDark)
-                appStyle = ImGuiCustomStyle::Dark;
-            else
-                appStyle = ImGuiCustomStyle::Light;
-            SetupImGuiStyle(appStyle);
         }
 
         ImGui::End();
@@ -937,7 +1008,9 @@ int imgui_main(int, char**)
                     if (ImGui::Button(("x##" + std::to_string(v)).c_str()))
                     {
                         selectedPlotVarsSet.erase(v);
-                        break;
+                        break; // temporary workaround (hahaha)
+                        // What workaround? Why was it temporary?
+                        // I forgor what was the original problem and I'm too afraid to find out what'll happen if I remove this workaround :skull:
                     }
                     ImGui::SameLine();
                     ImGui::Text(("- " + KERNEL.variables[v].name).c_str());
@@ -1086,6 +1159,7 @@ int imgui_main(int, char**)
 
                             if (selectedPlotMapMetric == m) selectableFlags = ImGuiSelectableFlags_Disabled;
                             if (ImGui::Selectable(KERNEL.mapDatas[m].name.c_str(), isSelected, selectableFlags)) selectedPlotMapMetric = m;
+
                         }
                         ImGui::EndCombo();
                     }
@@ -1094,6 +1168,8 @@ int imgui_main(int, char**)
                 }
                 break;
             }
+
+            
 
             if (ImGui::Button("Create graph"))
             {
@@ -1105,7 +1181,7 @@ int imgui_main(int, char**)
                 if (plotType == Phase2D) plotWindow.AssignVariables(selectedPlotVars);
                 if (plotType == Heatmap) plotWindow.AssignVariables(selectedPlotMap);
                 if (plotType == Orbit) plotWindow.AssignVariables(selectedPlotVarsOrbitVer);
-                if (plotType == Metric) plotWindow.AssignVariables(selectedPlotMapMetric);
+                if (plotType == Metric)plotWindow.AssignVariables(selectedPlotMapMetric);
 
                 int indexOfColorsLutFrom = -1;
                 if (colorsLUTfrom != nullptr)
@@ -1119,8 +1195,6 @@ int imgui_main(int, char**)
                 plotWindows.push_back(plotWindow);
 
                 if (indexOfColorsLutFrom != -1) colorsLUTfrom = &(plotWindows[indexOfColorsLutFrom]);
-
-                saveWindows();
             }
 
             ImGui::End();
@@ -1138,13 +1212,14 @@ int imgui_main(int, char**)
 
             for (int m = 0; m < krn->MAP_COUNT; m++)
             {
-                bool mapUserEnabled = krn->mapDatas[m].userEnabled;
-                ImGui::Checkbox(("##MapEnabled" + krn->mapDatas[m].name).c_str(), &mapUserEnabled);
-                krn->mapDatas[m].userEnabled = mapUserEnabled;
-                ImGui::SameLine();
-
                 if (ImGui::TreeNode(std::string(krn->mapDatas[m].name + "##MapSettings_" + krn->mapDatas[m].name).c_str()))
                 {
+                    ImGui::Text("Is enabled");
+                    ImGui::SameLine();
+                    bool mapUserEnabled = krn->mapDatas[m].userEnabled;
+                    ImGui::Checkbox(("##MapEnabled" + krn->mapDatas[m].name).c_str(), &mapUserEnabled);
+                    krn->mapDatas[m].userEnabled = mapUserEnabled;
+
                     for (int s = 0; s < krn->mapDatas[m].settingsCount; s++)
                     {
                         ImGui::Text(krn->mapDatas[m].settingName[s].c_str());
@@ -1174,8 +1249,6 @@ int imgui_main(int, char**)
 
         bool toAutofit = autofitAfterComputing;
         autofitAfterComputing = false;
-        bool toAutofitTimeSeries = autofitTimeSeries;
-        autofitTimeSeries = false;
 
         // PLOT WINDOWS //
 
@@ -1205,20 +1278,16 @@ int imgui_main(int, char**)
             // Heatmap axes
             if (window->type == Heatmap)
             {
-                int mapIndex = window->variables[0];
                 bool isHires = window == hiresHeatmapWindow;
                 HeatmapProperties* heatmap = isHires ? &window->hireshmp : &window->hmp;
                 Kernel* krnl = isHires ? &kernelHiresComputed : &(KERNEL);
-                MapData* mapData = &(krnl->mapDatas[mapIndex]);
-                bool isSingleValue = mapData->valueCount == 1;
 
                 int prevIndexX = heatmap->indexX;
                 int prevIndexY = heatmap->indexY;
                 int prevTypeX = heatmap->typeX;
                 int prevTypeY = heatmap->typeY;
-                int prevValueIndex = heatmap->mapValueIndex;
 
-                ImGui::PushItemWidth(ImGui::GetWindowWidth() * (isSingleValue ? 0.485f : 0.31f));
+                ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.485f);
                 if (ImGui::BeginCombo(("##" + windowName + "_axisX").c_str(),
                     heatmap->typeX == VARIABLE ? krnl->variables[heatmap->indexX].name.c_str() : krnl->parameters[heatmap->indexX].name.c_str(), 0))
                 {
@@ -1269,15 +1338,9 @@ int imgui_main(int, char**)
                     ImGui::EndCombo();
                 }
 
-                if (!isSingleValue)
-                {
-                    ImGui::SameLine();
-                    ImGui::DragInt(("##" + windowName + "_value").c_str(), &(heatmap->mapValueIndex), 1.0f, 0, mapData->valueCount - 1, "%d", 0);
-                }
-
                 ImGui::PopItemWidth();
 
-                if (prevIndexX != heatmap->indexX || prevIndexY != heatmap->indexY || prevTypeX != heatmap->typeX || prevTypeY != heatmap->typeY || prevValueIndex != heatmap->mapValueIndex)
+                if (prevIndexX != heatmap->indexX || prevIndexY != heatmap->indexY || prevTypeX != heatmap->typeX || prevTypeY != heatmap->typeY)
                 {
                     heatmap->areValuesDirty = true;
                     heatmap->areHeatmapLimitsDefined = false;
@@ -1292,6 +1355,8 @@ int imgui_main(int, char**)
                 ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.2f);
                 if (ImGui::BeginCombo(("##" + windowName + "_axisX").c_str(), krnl->parameters[window->OrbitXIndex].name.c_str(), 0))
                 {
+
+
                     for (int p = 0; p < krnl->PARAM_COUNT; p++)
                     {
                         if (ImGui::Selectable(krnl->parameters[p].name.c_str()))
@@ -1337,8 +1402,9 @@ int imgui_main(int, char**)
 
                     ImGui::EndCombo();
                 }
-
                 ImGui::PopItemWidth();
+
+                
             }
 
             // Common variables
@@ -1346,7 +1412,7 @@ int imgui_main(int, char**)
             ImPlotPlot* plot;
             ImPlot3DPlot* plot3d;
             int mapIndex;
-            ImPlotColormap heatmapColorMap =  ImPlotColormap_Jet;
+            ImPlotColormap heatmapColorMap =  ImPlotColormap_Jet ;
             ImVec4 rotationEuler;
             ImVec4 rotationEulerEditable, rotationEulerBeforeEdit;
 
@@ -1359,21 +1425,6 @@ int imgui_main(int, char**)
                 {
                     plot = ImPlot::GetPlot(plotName.c_str());
 
-                    if (toAutofitTimeSeries)
-                    {
-                        plot->FitThisFrame = true;
-                        for (int i = 0; i < IMPLOT_NUM_X_AXES; i++)
-                        {
-                            ImPlotAxis& x_axis = plot->XAxis(i);
-                            x_axis.FitThisFrame = true;
-                        }
-                        for (int i = 0; i < IMPLOT_NUM_Y_AXES; i++)
-                        {
-                            ImPlotAxis& y_axis = plot->YAxis(i);
-                            y_axis.FitThisFrame = true;
-                        }
-                    }
-
                     plot->is3d = false;
 
                     if (computations[playedBufferIndex].ready)
@@ -1383,15 +1434,10 @@ int imgui_main(int, char**)
                         void* computedVariation = (numb*)(computations[playedBufferIndex].marshal.trajectory) + (variationSize * variation);
                         memcpy(dataBuffer, computedVariation, variationSize * sizeof(numb));
 
-                        bool isTime = KERNEL.usingTime;
-                        float stepSize = getStepSize(KERNEL);
-                        float start = !isTime ? bufferNo * KERNEL.steps + KERNEL.transientSteps : (bufferNo * KERNEL.steps + KERNEL.transientSteps) * stepSize;
-                        float scale = !isTime ? 1.0f : stepSize;
-
                         for (int v = 0; v < window->variableCount; v++)
                         {
                             ImPlot::PlotLine((KERNEL.variables[window->variables[v]].name + "##" + plotName + std::to_string(v)).c_str(),
-                                &((dataBuffer)[window->variables[v]]), computedSteps + 1, scale, start, ImPlotLineFlags_None, 0, sizeof(numb) * KERNEL.VAR_COUNT);
+                                &((dataBuffer)[window->variables[v]]), computedSteps + 1, 1.0f, 0.0f, ImPlotLineFlags_None, 0, sizeof(numb) * KERNEL.VAR_COUNT);
                         }
                     }
 
@@ -1461,13 +1507,13 @@ int imgui_main(int, char**)
 
                 if (window->whiteBg) { ImPlot::PushStyleColor(ImPlotCol_PlotBg, ImVec4(1.0f, 1.0f, 1.0f, 1.0f)); ImPlot::PushStyleColor(ImPlotCol_AxisGrid, ImVec4(0.2f, 0.2f, 0.2f, 1.0f)); }
 
-                bool isPlotBegun;
+                bool isPlotBegan;
                 if (window->isImplot3d)
-                    isPlotBegun = ImPlot3D::BeginPlot(plotName.c_str(), ImVec2(-1, -1), ImPlot3DFlags_NoLegend | ImPlot3DFlags_NoTitle | ImPlot3DFlags_NoClip);
+                    isPlotBegan = ImPlot3D::BeginPlot(plotName.c_str(), ImVec2(-1, -1), ImPlot3DFlags_NoLegend | ImPlot3DFlags_NoTitle | ImPlot3DFlags_NoClip);
                 else
-                    isPlotBegun = ImPlot::BeginPlot(plotName.c_str(), "", "", ImVec2(-1, -1), ImPlotFlags_NoLegend | ImPlotFlags_NoTitle, axisFlags, axisFlags);
+                    isPlotBegan = ImPlot::BeginPlot(plotName.c_str(), "", "", ImVec2(-1, -1), ImPlotFlags_NoLegend | ImPlotFlags_NoTitle, axisFlags, axisFlags);
 
-                if (isPlotBegun)
+                if (isPlotBegan)
                 {
                     float plotRangeSize;
 
@@ -1476,6 +1522,7 @@ int imgui_main(int, char**)
                     else
                     {
                         plot = ImPlot::GetCurrentPlot();
+
                         plotRangeSize = ((float)plot->Axes[ImAxis_X1].Range.Max - (float)plot->Axes[ImAxis_X1].Range.Min);
 
                         if (!computations[playedBufferIndex].ready)
@@ -1486,15 +1533,30 @@ int imgui_main(int, char**)
                         }
                     }
 
-                    float deltax = -window->deltarotation.x; window->deltarotation.x = 0;
-                    float deltay = -window->deltarotation.y; window->deltarotation.y = 0;
+                    float deltax = -window->deltarotation.x;
+                    float deltay = -window->deltarotation.y;
+
+                    window->deltarotation.x = 0;
+                    window->deltarotation.y = 0;
 
                     if (!window->isImplot3d)
                     {
                         plot->is3d = true;
                         plot->deltax = &(window->deltarotation.x);
                         plot->deltay = &(window->deltarotation.y);
-                        if (deltax != 0.0f || deltay != 0.0f) addDeltaQuatRotation(window, deltax, deltay);
+
+                        if (deltax != 0.0f || deltay != 0.0f)
+                        {
+                            quaternion::Quaternion<float> quat(window->quatRot.w, window->quatRot.x, window->quatRot.y, window->quatRot.z);
+                            quaternion::Quaternion<float> quatY(cosf(deltax * 0.5f * DEG2RAD), 0.0f, sinf(deltax * 0.5f * DEG2RAD), 0.0f);
+                            quaternion::Quaternion<float> quatX(cosf(deltay * 0.5f * DEG2RAD), sinf(deltay * 0.5f * DEG2RAD), 0.0f, 0.0f);
+                            quat = quatY * quatX * quat;
+                            quat = quaternion::normalize(quat);
+                            window->quatRot.w = quat.a();
+                            window->quatRot.x = quat.b();
+                            window->quatRot.y = quat.c();
+                            window->quatRot.z = quat.d();
+                        }
                         rotationEuler = ToEulerAngles(window->quatRot);
 
                         populateAxisBuffer(axisBuffer, plotRangeSize / 10.0f, plotRangeSize / 10.0f, plotRangeSize / 10.0f);
@@ -1503,21 +1565,24 @@ int imgui_main(int, char**)
                         // Axis
                         if (window->showAxis)
                         {
-                            ImPlot::SetNextLineStyle(CUSTOM_COLOR(XAxis)); ImPlot::PlotLine(plotName.c_str(), &(axisBuffer[0]), &(axisBuffer[1]), 2, 0, 0, sizeof(float) * 3);
-                            ImPlot::SetNextLineStyle(CUSTOM_COLOR(YAxis)); ImPlot::PlotLine(plotName.c_str(), &(axisBuffer[6]), &(axisBuffer[7]), 2, 0, 0, sizeof(float) * 3);
-                            ImPlot::SetNextLineStyle(CUSTOM_COLOR(ZAxis)); ImPlot::PlotLine(plotName.c_str(), &(axisBuffer[12]), &(axisBuffer[13]), 2, 0, 0, sizeof(float) * 3);
+                            ImPlot::SetNextLineStyle(xAxisColor);
+                            ImPlot::PlotLine(plotName.c_str(), &(axisBuffer[0]), &(axisBuffer[1]), 2, 0, 0, sizeof(float) * 3);
+                            ImPlot::SetNextLineStyle(yAxisColor);
+                            ImPlot::PlotLine(plotName.c_str(), &(axisBuffer[6]), &(axisBuffer[7]), 2, 0, 0, sizeof(float) * 3);
+                            ImPlot::SetNextLineStyle(zAxisColor);
+                            ImPlot::PlotLine(plotName.c_str(), &(axisBuffer[12]), &(axisBuffer[13]), 2, 0, 0, sizeof(float) * 3);
                         }
 
                         // Axis names
                         if (window->showAxisNames)
                         {
-                            ImPlot::PushStyleColor(ImPlotCol_InlayText, CUSTOM_COLOR(XAxis));
+                            ImPlot::PushStyleColor(ImPlotCol_InlayText, xAxisColor);
                             ImPlot::PlotText(KERNEL.variables[window->variables[0]].name.c_str(), axisBuffer[0], axisBuffer[1], ImVec2(0.0f, 0.0f));
                             ImPlot::PopStyleColor();
-                            ImPlot::PushStyleColor(ImPlotCol_InlayText, CUSTOM_COLOR(YAxis));
+                            ImPlot::PushStyleColor(ImPlotCol_InlayText, yAxisColor);
                             ImPlot::PlotText(KERNEL.variables[window->variables[1]].name.c_str(), axisBuffer[6], axisBuffer[7], ImVec2(0.0f, 0.0f));
                             ImPlot::PopStyleColor();
-                            ImPlot::PushStyleColor(ImPlotCol_InlayText, CUSTOM_COLOR(ZAxis));
+                            ImPlot::PushStyleColor(ImPlotCol_InlayText, zAxisColor);
                             ImPlot::PlotText(KERNEL.variables[window->variables[2]].name.c_str(), axisBuffer[12], axisBuffer[13], ImVec2(0.0f, 0.0f));
                             ImPlot::PopStyleColor();
                         }
@@ -1543,14 +1608,14 @@ int imgui_main(int, char**)
                                 ImPlot::PlotText(scaleString(scaleStr * 10.0f).c_str(), rulerBuffer[150 + 0], rulerBuffer[150 + 1], ImVec2(0.0f, 0.0f)); \
                                 ImPlot::PopStyleColor();
 
-                            DRAW_RULER_PART(CUSTOM_COLOR(XAxis).x, CUSTOM_COLOR(XAxis).y, CUSTOM_COLOR(XAxis).z, alpha0.x, scale0.x * window->scale.x, scale0.x, 0);
-                            DRAW_RULER_PART(CUSTOM_COLOR(XAxis).x, CUSTOM_COLOR(XAxis).y, CUSTOM_COLOR(XAxis).z, alpha1.x, scale1.x * window->scale.x, scale1.x, 0);
+                            DRAW_RULER_PART(xAxisColor.x, xAxisColor.y, xAxisColor.z, alpha0.x, scale0.x * window->scale.x, scale0.x, 0);
+                            DRAW_RULER_PART(xAxisColor.x, xAxisColor.y, xAxisColor.z, alpha1.x, scale1.x * window->scale.x, scale1.x, 0);
 
-                            DRAW_RULER_PART(CUSTOM_COLOR(YAxis).x, CUSTOM_COLOR(YAxis).y, CUSTOM_COLOR(YAxis).z, alpha0.y, scale0.y * window->scale.y, scale0.y, 1);
-                            DRAW_RULER_PART(CUSTOM_COLOR(YAxis).x, CUSTOM_COLOR(YAxis).y, CUSTOM_COLOR(YAxis).z, alpha1.y, scale1.y * window->scale.y, scale1.y, 1);
+                            DRAW_RULER_PART(yAxisColor.x, yAxisColor.y, yAxisColor.z, alpha0.y, scale0.y * window->scale.y, scale0.y, 1);
+                            DRAW_RULER_PART(yAxisColor.x, yAxisColor.y, yAxisColor.z, alpha1.y, scale1.y * window->scale.y, scale1.y, 1);
 
-                            DRAW_RULER_PART(CUSTOM_COLOR(ZAxis).x, CUSTOM_COLOR(ZAxis).y, CUSTOM_COLOR(ZAxis).z, alpha0.z, scale0.z * window->scale.z, scale0.z, 2);
-                            DRAW_RULER_PART(CUSTOM_COLOR(ZAxis).x, CUSTOM_COLOR(ZAxis).y, CUSTOM_COLOR(ZAxis).z, alpha1.z, scale1.z * window->scale.z, scale1.z, 2);
+                            DRAW_RULER_PART(zAxisColor.x, zAxisColor.y, zAxisColor.z, alpha0.z, scale0.z * window->scale.z, scale0.z, 2);
+                            DRAW_RULER_PART(zAxisColor.x, zAxisColor.y, zAxisColor.z, alpha1.z, scale1.z * window->scale.z, scale1.z, 2);
                         }
                     }
 
@@ -1570,6 +1635,7 @@ int imgui_main(int, char**)
                                     rotationEuler, window->offset, window->scale);
 
                                 getMinMax2D(dataBuffer, computedSteps + 1, &(plot->dataMin), &(plot->dataMax), KERNEL.VAR_COUNT);
+                                //getMinMax2D(computedVariation, computedSteps + 1, &(plot->dataMin), &(plot->dataMax));
 
                                 if (colorsLUTfrom == nullptr)
                                 {
@@ -1600,6 +1666,7 @@ int imgui_main(int, char**)
                             }
                             else
                             {
+                                //ImPlot3D::SetNextLineStyle(window->plotColor);
                                 ImPlot3D::SetupAxes(KERNEL.variables[window->variables[0]].name.c_str(), KERNEL.variables[window->variables[1]].name.c_str(), KERNEL.variables[window->variables[2]].name.c_str());
                                 
                                 if (colorsLUTfrom == nullptr)
@@ -1774,10 +1841,37 @@ int imgui_main(int, char**)
                             plot->dataMax = ImVec2(10.0f, 10.0f);
                         }
 
-                        float deltax = -window->deltarotation.x; window->deltarotation.x = 0; plot->deltax = &(window->deltarotation.x);
-                        float deltay = -window->deltarotation.y; window->deltarotation.y = 0; plot->deltay = &(window->deltarotation.y);
+                        float deltax = -window->deltarotation.x;
+                        float deltay = -window->deltarotation.y;
+
+                        window->deltarotation.x = 0;
+                        window->deltarotation.y = 0;
 
                         plot->is3d = false;
+                        plot->deltax = &(window->deltarotation.x);
+                        plot->deltay = &(window->deltarotation.y);
+
+                        /*populateAxisBuffer(axisBuffer, plotRangeSize / 10.0f, plotRangeSize / 10.0f, plotRangeSize / 10.0f);
+
+                        // Axis
+                        if (window->showAxis)
+                        {
+                            ImPlot::SetNextLineStyle(xAxisColor);
+                            ImPlot::PlotLine(plotName.c_str(), &(axisBuffer[0]), &(axisBuffer[1]), 2, 0, 0, sizeof(float) * 3);
+                            ImPlot::SetNextLineStyle(yAxisColor);
+                            ImPlot::PlotLine(plotName.c_str(), &(axisBuffer[6]), &(axisBuffer[7]), 2, 0, 0, sizeof(float) * 3);
+                        }
+
+                        // Axis names
+                        if (window->showAxisNames)
+                        {
+                            ImPlot::PushStyleColor(ImPlotCol_InlayText, xAxisColor);
+                            ImPlot::PlotText(KERNEL.variables[window->variables[0]].name.c_str(), axisBuffer[0], axisBuffer[1], ImVec2(0.0f, 0.0f));
+                            ImPlot::PopStyleColor();
+                            ImPlot::PushStyleColor(ImPlotCol_InlayText, yAxisColor);
+                            ImPlot::PlotText(KERNEL.variables[window->variables[1]].name.c_str(), axisBuffer[6], axisBuffer[7], ImVec2(0.0f, 0.0f));
+                            ImPlot::PopStyleColor();
+                        }*/
 
                         if (computations[playedBufferIndex].ready)
                         {
@@ -1788,6 +1882,7 @@ int imgui_main(int, char**)
                             {
                                 numb* computedVariation = computations[playedBufferIndex].marshal.trajectory + (computations[playedBufferIndex].marshal.variationSize * variation);
 
+                                //ImPlot::SetNextLineStyle(ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
                                 ImPlot::SetNextLineStyle(window->plotColor);
                                 ImPlot::PlotLine(plotName.c_str(), &(computedVariation[xIndex]), &(computedVariation[yIndex]), computedSteps + 1, 0, 0, sizeof(numb) * KERNEL.VAR_COUNT);
                             }
@@ -1854,6 +1949,7 @@ int imgui_main(int, char**)
 
                                         int peakCount = 0;
                                         bool firstpeakreached = false;
+                                        numb tempPeakAmp=0, tempPeakTime=0; bool tempPeakFound=false;
                                         numb temppeakindex;
                                         numb* computedVariation = computations[playedBufferIndex].marshal.trajectory + (computations[playedBufferIndex].marshal.variationSize * variation);
                                         for (int i = 1; i < variationSize / varCount - 1 && peakCount < MAX_PEAKS; i++)
@@ -1863,6 +1959,7 @@ int imgui_main(int, char**)
                                             numb next = computedVariation[xIndex + varCount * i + varCount];
                                             if (curr > prev && curr > next)
                                             {
+                                                tempPeakFound = false;
                                                 if (firstpeakreached == false)
                                                 {
                                                     firstpeakreached = true;
@@ -1875,6 +1972,25 @@ int imgui_main(int, char**)
                                                     peakIntervals[peakCount] = (i - temppeakindex)* krnl->stepSize;
                                                     peakCount++;
                                                     temppeakindex = (float)i;
+                                                }
+                                            }
+                                            else if (curr==next && curr>prev) {
+                                                tempPeakFound = true; tempPeakAmp = curr; tempPeakTime = i;
+                                            }
+                                            else if (curr < next) {
+                                                tempPeakFound = false;
+                                            }
+                                            else if (curr > next && tempPeakFound) {
+                                                if (firstpeakreached) {
+                                                    peakAmplitudes[peakCount] = tempPeakAmp;  peakIntervals[peakCount] = (tempPeakTime - temppeakindex) * krnl->stepSize;
+                                                    peakCount++;
+                                                    temppeakindex = (float)tempPeakTime;
+                                                    tempPeakFound = false;
+                                                }
+                                                else {
+                                                    firstpeakreached = true;
+                                                    temppeakindex = (float)tempPeakTime;
+                                                    tempPeakFound = false;
                                                 }
                                             }
                                         }
@@ -1900,7 +2016,7 @@ int imgui_main(int, char**)
                                                 ImPlot::EndPlot();
                                             }
 
-                                            /*float a = 1, b = 1;
+                                            float a = 1, b = 1;
                                             if (maxX - minX > maxY - minY) a = (maxY - minY) / (maxX - minX);
                                             else b = (maxX-minX) / (maxY-minY);
                                             vector<Point> PointsVector;
@@ -1914,7 +2030,7 @@ int imgui_main(int, char**)
                                             DBSCAN *clusters = new DBSCAN(3, 0.0005, PointsVector);
                                             clusters->run();
                                             
-                                            ImGui::Text("Cluster count: "); ImGui::SameLine(); ImGui::Text(std::to_string(clusters->clusterCount).c_str());*/
+                                            ImGui::Text("Cluster count: "); ImGui::SameLine(); ImGui::Text(std::to_string(clusters->clusterCount).c_str());
 
 
                                     }
@@ -1942,6 +2058,7 @@ int imgui_main(int, char**)
                                                 numb* computedVariation = computations[playedBufferIndex].marshal.trajectory + (computations[playedBufferIndex].marshal.variationSize * variation);
                                                 int peakCount = 0;
                                                 bool firstpeakreached = false;
+                                                numb tempPeakAmp = 0, tempPeakTime = 0; bool tempPeakFound = false;
                                                 numb temppeakindex;
                                                 for (int i = 1; i < variationSize / varCount - 1 && peakCount < MAX_PEAKS; i++)
                                                 {
@@ -1950,6 +2067,7 @@ int imgui_main(int, char**)
                                                     numb next = computedVariation[xIndex + varCount * i + varCount];
                                                     if (curr > prev && curr > next)
                                                     {
+                                                        tempPeakFound = false;
                                                         if (firstpeakreached == false)
                                                         {
                                                             firstpeakreached = true;
@@ -1964,6 +2082,25 @@ int imgui_main(int, char**)
                                                             peakCount++;
                                                             BifDotAmount++;
 
+                                                        }
+                                                    }
+                                                    else if (curr == next && curr > prev) {
+                                                        tempPeakFound = true; tempPeakAmp = curr; tempPeakTime = i;
+                                                    }
+                                                    else if (curr < next) {
+                                                        tempPeakFound = false;
+                                                    }
+                                                    else if (curr > next && tempPeakFound) {
+                                                        if (firstpeakreached) {
+                                                            window->bifAmps[BifDotAmount] = tempPeakAmp;  window->bifIntervals[BifDotAmount] = (tempPeakTime - temppeakindex) * krnl->stepSize; window->bifParamIndices[BifDotAmount] = paramMin + j * paramStep;
+                                                            peakCount++;
+                                                            temppeakindex = (float)tempPeakTime;
+                                                            tempPeakFound = false;
+                                                        }
+                                                        else {
+                                                            firstpeakreached = true;
+                                                            temppeakindex = (float)tempPeakTime;
+                                                            tempPeakFound = false;
                                                         }
                                                     }
                                                 }
@@ -2016,7 +2153,7 @@ int imgui_main(int, char**)
                                             minY = window->bifIntervals[0], maxY = window->bifIntervals[0];
                                             for (int i = 0; i < window->BifDotAmount - 1; ++i)
                                             {
-                                                maxX = window->bifParamIndices[i];
+                                                maxX = window->bifParamIndices[i]; 
                                                 if (window->bifIntervals[i + 1] < minY) minY = window->bifIntervals[i + 1];
                                                 if (window->bifIntervals[i + 1] > maxY) maxY = window->bifIntervals[i + 1];
                                             }
@@ -2084,41 +2221,42 @@ int imgui_main(int, char**)
 
                     }
                     break;
-                case Metric:
+                    case Metric:
                     {
-                    if (window->whiteBg)
-                        ImPlot::PushStyleColor(ImPlotCol_PlotBg, ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
+                        if (window->whiteBg)
+                            ImPlot::PushStyleColor(ImPlotCol_PlotBg, ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
                         mapIndex = window->variables[0];
-                        Kernel* krnl =  &(KERNEL);
-                        Computation* cmp =  &(computations[playedBufferIndex]);
+                        Kernel* krnl = &(KERNEL);
+                        Computation* cmp = &(computations[playedBufferIndex]);
                         Attribute* axis = window->typeX == VARIABLE ? &(krnl->variables[window->indexX]) : &(krnl->parameters[window->indexX]);
                         bool axisIsRanging = axis->TrueStepCount() > 1;
+
                         if (axisIsRanging) {
                             //numb minX, stepX, maxX;
                             //int xSize;
                             HeatmapProperties* hmp = nullptr;
-                            int variation=0;
-                            
-                            
-                            numb* MapSlice = cmp->marshal.maps + cmp->marshal.kernel.mapDatas[mapIndex].offset * cmp->marshal.totalVariations ;
+                            int variation = 0;
+
+
+                            numb* MapSlice = cmp->marshal.maps + cmp->marshal.kernel.mapDatas[mapIndex].offset * cmp->marshal.totalVariations;
                             numb* Xaxis = new numb[axis->stepCount];
                             numb* Yaxis = new numb[axis->stepCount];
                             std::vector<int> tempattributeValueIndices = attributeValueIndices;
                             for (int i = 0; i < axis->stepCount; i++) {
-                                if(window->typeX==VARIABLE)tempattributeValueIndices[window->indexX] = i;
+                                if (window->typeX == VARIABLE)tempattributeValueIndices[window->indexX] = i;
                                 else tempattributeValueIndices[window->indexX + krnl->VAR_COUNT] = i;
                                 steps2Variation(&variation, &(tempattributeValueIndices.data()[0]), &KERNEL);
                                 Xaxis[i] = axis->min + axis->step * i;
                                 Yaxis[i] = MapSlice[variation];
                             }
-                            if (ImPlot::BeginPlot(("##Metric_Plot" + plotName).c_str(), ImVec2(-1,-1),ImPlotFlags_NoTitle)) {
+                            if (ImPlot::BeginPlot(("##Metric_Plot" + plotName).c_str(), ImVec2(-1, -1), ImPlotFlags_NoTitle)) {
                                 plot = ImPlot::GetPlot(("##Metric_Plot" + plotName).c_str()); plot->is3d = false;
                                 ImPlot::SetNextLineStyle(window->markerColor, window->markerWidth);
                                 ImPlot::PlotLine("##Metric_Line_Plot", Xaxis, Yaxis, axis->stepCount);
                                 if (ImGui::IsMouseDown(0) && ImGui::IsKeyPressed(ImGuiMod_Shift) && ImGui::IsMouseHoveringRect(plot->PlotRect.Min, plot->PlotRect.Max)) {
                                     numb MousePosX = (numb)ImPlot::GetPlotMousePos().x;
-                                    if (axis->min > MousePosX)window->typeX == VARIABLE ? attributeValueIndices[window->indexX] = 0: attributeValueIndices[window->indexX +krnl->VAR_COUNT] = 0;
-                                    else if (axis->max < MousePosX)window->typeX == VARIABLE ? attributeValueIndices[window->indexX] = axis->stepCount-1 : attributeValueIndices[window->indexX + krnl->VAR_COUNT] = axis->stepCount;
+                                    if (axis->min > MousePosX)window->typeX == VARIABLE ? attributeValueIndices[window->indexX] = 0 : attributeValueIndices[window->indexX + krnl->VAR_COUNT] = 0;
+                                    else if (axis->max < MousePosX)window->typeX == VARIABLE ? attributeValueIndices[window->indexX] = axis->stepCount - 1 : attributeValueIndices[window->indexX + krnl->VAR_COUNT] = axis->stepCount;
                                     else {
                                         numb NotRoundedIndex = (MousePosX - axis->min) / (axis->max - axis->min) * axis->stepCount;
                                         int index = static_cast<int>(std::round(NotRoundedIndex)); if (index > axis->stepCount - 1)index = axis->stepCount - 1;
@@ -2127,13 +2265,15 @@ int imgui_main(int, char**)
                                 }
 
                                 if (window->ShowOrbitParLines) {
-                                    double value = axis->min + axis->step * attributeValueIndices[window->typeX==VARIABLE ?  window->indexX : window->indexX+krnl->VAR_COUNT];
+                                    double value = axis->min + axis->step * attributeValueIndices[window->typeX == VARIABLE ? window->indexX : window->indexX + krnl->VAR_COUNT];
                                     ImPlot::DragLineX(0, &value, window->OrbitMarkerColor, window->OrbitMarkerWidth, ImPlotDragToolFlags_NoInputs);
                                 }
                                 ImPlot::EndPlot();
                             }
                             delete[] Xaxis;
                             delete[] Yaxis;
+                            
+                        
                         }
                         else {
                             ImGui::Text(("Axis " + axis->name + " is fixed").c_str());
@@ -2156,7 +2296,7 @@ int imgui_main(int, char**)
                         break;
                     }
 
-                    if (!cmp->marshal.kernel.mapDatas[mapIndex].toCompute)
+                    if (/*!krnl->mapDatas[mapIndex].toCompute || */!cmp->marshal.kernel.mapDatas[mapIndex].toCompute)
                     {
                         ImGui::Text(("Map " + krnl->mapDatas[mapIndex].name + " has not been computed").c_str());
                         break;
@@ -2243,6 +2383,9 @@ int imgui_main(int, char**)
                                                 stepY = (int)floor(plot->shiftClickLocation.y);
                                             }
 
+                                            //enabledParticles = false;
+                                            //playingParticles = false;
+
 #define IGNOREOUTOFREACH    if (stepX < 0 || stepX >= (sizing.hmp->typeX == VARIABLE ? krnl->variables[sizing.hmp->indexX].TrueStepCount() : krnl->parameters[sizing.hmp->indexX].TrueStepCount())) break; \
                             if (stepY < 0 || stepY >= (sizing.hmp->typeY == VARIABLE ? krnl->variables[sizing.hmp->indexY].TrueStepCount() : krnl->parameters[sizing.hmp->indexY].TrueStepCount())) break;
 
@@ -2284,7 +2427,8 @@ int imgui_main(int, char**)
                                     {
                                         if (plot->shiftClicked && plot->shiftClickLocation.x != 0.0)
                                         {
-                                            numb valueX = 0.0; numb valueY = 0.0;
+                                            numb valueX = 0.0;
+                                            numb valueY = 0.0;
 
                                             if (heatmap->showActualDiapasons)
                                             {
@@ -2341,7 +2485,7 @@ int imgui_main(int, char**)
 
                                     if (heatmap->areValuesDirty)
                                     {
-                                        extractMap(cmp->marshal.maps + (cmp->marshal.kernel.mapDatas[mapIndex].offset + heatmap->mapValueIndex) * cmp->marshal.totalVariations,
+                                        extractMap(cmp->marshal.maps + cmp->marshal.kernel.mapDatas[mapIndex].offset * cmp->marshal.totalVariations,
                                             heatmap->valueBuffer, heatmap->indexBuffer, &(attributeValueIndices.data()[0]),
                                             sizing.hmp->typeX == PARAMETER ? sizing.hmp->indexX + krnl->VAR_COUNT : sizing.hmp->indexX,
                                             sizing.hmp->typeY == PARAMETER ? sizing.hmp->indexY + krnl->VAR_COUNT : sizing.hmp->indexY,
@@ -2350,6 +2494,8 @@ int imgui_main(int, char**)
                                         heatmap->isHeatmapDirty = true;
                                     }
 
+                                    //numb* mapData = computations[playedBufferIndex].marshal.maps2 + sizing.map->offset;
+
                                     if (!heatmap->areHeatmapLimitsDefined)
                                     {
                                         if (!heatmap->ignoreNextLimitsRecalculation)
@@ -2357,11 +2503,14 @@ int imgui_main(int, char**)
 
                                         heatmap->ignoreNextLimitsRecalculation = false;
                                         heatmap->areHeatmapLimitsDefined = true;
+                                        //heatmap->isHeatmapDirty = true;
                                     }
 
                                     // Do not reload values when variating map axes (map values don't change anyway)
-                                    if (variation != prevVariation) heatmap->isHeatmapDirty = true;
-
+                                    if (variation != prevVariation)
+                                    {
+                                        heatmap->isHeatmapDirty = true;
+                                    }
                                     // Image init
                                     if (heatmap->isHeatmapDirty)
                                     {
@@ -2381,8 +2530,8 @@ int imgui_main(int, char**)
                                         heatmap->staticLUT.lutSizes = new int[staticLUTsize];
                                         heatmap->dynamicLUT.lutSizes = new int[dynamicLUTsize];
 
-                                        setupLUT(cmp->marshal.maps, cmp->marshal.totalVariations, heatmap->staticLUT.lut, heatmap->staticLUT.lutSizes, staticLUTsize, heatmap->heatmapMin, heatmap->heatmapMax);
-                                        setupLUT(cmp->marshal.maps, cmp->marshal.totalVariations, heatmap->dynamicLUT.lut, heatmap->dynamicLUT.lutSizes, dynamicLUTsize, heatmap->heatmapMin, heatmap->heatmapMax);
+                                        setupLUT(cmp->marshal.maps + cmp->marshal.kernel.mapDatas[mapIndex].offset * cmp->marshal.totalVariations, cmp->marshal.totalVariations, heatmap->staticLUT.lut, heatmap->staticLUT.lutSizes, staticLUTsize, heatmap->heatmapMin, heatmap->heatmapMax);
+                                        setupLUT(cmp->marshal.maps + cmp->marshal.kernel.mapDatas[mapIndex].offset * cmp->marshal.totalVariations, cmp->marshal.totalVariations, heatmap->dynamicLUT.lut, heatmap->dynamicLUT.lutSizes, dynamicLUTsize, heatmap->heatmapMin, heatmap->heatmapMax);
                                     
                                         releaseHeatmap(window, isHires);
                                     }
@@ -2398,6 +2547,7 @@ int imgui_main(int, char**)
 
                                     ImPlot::SetupAxes(sizing.hmp->typeX == PARAMETER ? krnl->parameters[sizing.hmp->indexX].name.c_str() : krnl->variables[sizing.hmp->indexX].name.c_str(),
                                         sizing.hmp->typeY == PARAMETER ? krnl->parameters[sizing.hmp->indexY].name.c_str() : krnl->variables[sizing.hmp->indexY].name.c_str());
+
                                     ImPlot::PlotImage(("Map " + std::to_string(mapIndex) + "##" + plotName + std::to_string(0)).c_str(), (ImTextureID)(heatmap->texture),
                                         from, to, ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f), ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
 
@@ -2422,7 +2572,8 @@ int imgui_main(int, char**)
 
                                     if (heatmap->showDragLines)
                                     {
-                                        double valueX; double valueY;
+                                        double valueX;
+                                        double valueY;
 
                                         if (!isHires)
                                         {
@@ -2447,7 +2598,8 @@ int imgui_main(int, char**)
 
                             // Table column should be here
 
-                            float minBefore = heatmap->heatmapMin; float maxBefore = heatmap->heatmapMax;
+                            float minBefore = heatmap->heatmapMin;
+                            float maxBefore = heatmap->heatmapMax;
 
                             if (heatmap->showLegend)
                             {
@@ -2478,6 +2630,7 @@ int imgui_main(int, char**)
                         if (!axisYisRanging) ImGui::Text(("Axis " + axisY->name + " is fixed").c_str());
                         if (sameAxis) ImGui::Text("X and Y axis are the same");
                     }
+
 
                     break;
             }          
@@ -2612,6 +2765,245 @@ LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 
 // Non-ImGui functions
 
+#define ATTR_BEGIN  ImGui::SameLine(); popStyle = false; \
+    if (hiresHeatmapWindow == nullptr) { if (isChanged && !autoLoadNewParams) { PUSH_UNSAVED_FRAME; popStyle = true; } } \
+    else { PUSH_HIRES_FRAME; popStyle = true; }
+#define ATTR_END    ImGui::PopItemWidth(); if (popStyle) POP_FRAME(3);
+
+void listAttrRanging(Attribute* attr, bool isChanged)
+{
+    ATTR_BEGIN;
+    ImGui::PushItemWidth(120.0f);
+    if (ImGui::BeginCombo(("##RANGING_" + attr->name).c_str(), (rangingTypes[attr->rangingType]).c_str()))
+    {
+        for (int r = 0; r < /*5*/3; r++) // 3 without randoms, 5 with randoms
+        {
+            bool isSelected = attr->rangingType == r;
+            ImGuiSelectableFlags selectableFlags = 0;
+            if (ImGui::Selectable(rangingTypes[r].c_str(), isSelected, selectableFlags) && !playingParticles)
+            {
+                attr->rangingType = (RangingType)r;
+            }
+            TOOLTIP(rangingDescriptions[r].c_str());
+        }
+
+        ImGui::EndCombo();
+    }
+    ATTR_END;
+}
+
+void listAttrNumb(Attribute* attr, numb* field, std::string name, std::string inner, bool isChanged)
+{
+    ATTR_BEGIN;
+    ImGui::PushItemWidth(200.0f);
+    float var = (float)(*field);
+    ImGui::DragFloat(("##" + name + attr->name).c_str(), &var, dragChangeSpeed, 0.0f, 0.0f, (inner + "%f").c_str(), dragFlag);
+    (*field) = (numb)var;
+    ATTR_END;
+}
+
+void listAttrInt(Attribute* attr, int* field, std::string name, std::string inner, bool isChanged)
+{
+    ATTR_BEGIN;
+    ImGui::PushItemWidth(200.0f);
+    ImGui::DragInt(("##" + name + attr->name).c_str(), field, dragChangeSpeed, 0, 0, (inner + "%i").c_str(), dragFlag);
+    ATTR_END;
+}
+
+void listVariable(int i)
+{
+    thisChanged = false;
+    if (KERNELNEWCURRENT.variables[i].IsDifferentFrom(&(KERNEL.variables[i]))) { anyChanged = true; thisChanged = true; }
+    //if (thisChanged) varNew.recountSteps(i); // TODO
+
+    ImGui::Text(padString(KERNEL.variables[i].name, maxNameLength).c_str());
+
+    if (playingParticles)
+    {
+        ImGui::PushStyleColor(ImGuiCol_Text, disabledTextColor);
+        PUSH_DISABLED_FRAME;
+    }
+
+    // Ranging
+    listAttrRanging(&(KERNELNEWCURRENT.variables[i]), KERNELNEWCURRENT.variables[i].rangingType != KERNEL.variables[i].rangingType);
+
+    dragFlag = !playingParticles ? 0 : ImGuiSliderFlags_ReadOnly;
+
+    switch (KERNELNEWCURRENT.variables[i].rangingType)
+    {
+    case None:
+        listAttrNumb(&(KERNELNEWCURRENT.variables[i]), &(KERNELNEWCURRENT.variables[i].min), "", "", KERNELNEWCURRENT.variables[i].min != KERNEL.variables[i].min);
+        break;
+    case Step:
+        listAttrNumb(&(KERNELNEWCURRENT.variables[i]), &(KERNELNEWCURRENT.variables[i].min), "", "Min: ", KERNELNEWCURRENT.variables[i].min != KERNEL.variables[i].min);
+        listAttrNumb(&(KERNELNEWCURRENT.variables[i]), &(KERNELNEWCURRENT.variables[i].max), "MAX", "Max: ", KERNELNEWCURRENT.variables[i].max != KERNEL.variables[i].max);
+        listAttrNumb(&(KERNELNEWCURRENT.variables[i]), &(KERNELNEWCURRENT.variables[i].step), "STEP", "Step: ", KERNELNEWCURRENT.variables[i].step != KERNEL.variables[i].step);
+        KERNELNEWCURRENT.variables[i].CalcStepCount();
+        ImGui::SameLine(); ImGui::Text((std::to_string(KERNELNEWCURRENT.variables[i].stepCount) + " steps").c_str());
+        break;
+    case Linear:
+        listAttrNumb(&(KERNELNEWCURRENT.variables[i]), &(KERNELNEWCURRENT.variables[i].min), "", "Min: ", KERNELNEWCURRENT.variables[i].min != KERNEL.variables[i].min);
+        listAttrNumb(&(KERNELNEWCURRENT.variables[i]), &(KERNELNEWCURRENT.variables[i].max), "MAX", "Max: ", KERNELNEWCURRENT.variables[i].max != KERNEL.variables[i].max);
+        listAttrInt(&(KERNELNEWCURRENT.variables[i]), &(KERNELNEWCURRENT.variables[i].stepCount), "STEPCOUNT", "Count: ", KERNELNEWCURRENT.variables[i].stepCount != KERNEL.variables[i].stepCount);
+        KERNELNEWCURRENT.variables[i].CalcStep();
+        ImGui::SameLine(); ImGui::Text(("Step: " + (std::to_string(KERNELNEWCURRENT.variables[i].step))).c_str());
+        break;
+    case UniformRandom:
+        listAttrNumb(&(KERNELNEWCURRENT.variables[i]), &(KERNELNEWCURRENT.variables[i].mean), "MEAN", "Mean: ", KERNELNEWCURRENT.variables[i].mean != KERNEL.variables[i].mean);
+        listAttrNumb(&(KERNELNEWCURRENT.variables[i]), &(KERNELNEWCURRENT.variables[i].deviation), "DEV", "Dev: ", KERNELNEWCURRENT.variables[i].deviation != KERNEL.variables[i].deviation);
+        listAttrInt(&(KERNELNEWCURRENT.variables[i]), &(KERNELNEWCURRENT.variables[i].stepCount), "STEPCOUNT", "Count: ", KERNELNEWCURRENT.variables[i].stepCount != KERNEL.variables[i].stepCount);
+        break;
+    case NormalRandom:
+        listAttrNumb(&(KERNELNEWCURRENT.variables[i]), &(KERNELNEWCURRENT.variables[i].mean), "MU", "Mu: ", KERNELNEWCURRENT.variables[i].mean != KERNEL.variables[i].mean);
+        listAttrNumb(&(KERNELNEWCURRENT.variables[i]), &(KERNELNEWCURRENT.variables[i].deviation), "SIGMA", "Sigma: ", KERNELNEWCURRENT.variables[i].deviation != KERNEL.variables[i].deviation);
+        listAttrInt(&(KERNELNEWCURRENT.variables[i]), &(KERNELNEWCURRENT.variables[i].stepCount), "STEPCOUNT", "Count: ", KERNELNEWCURRENT.variables[i].stepCount != KERNEL.variables[i].stepCount);
+        break;
+    }
+
+    if (playingParticles)
+    {
+        ImGui::PopStyleColor();
+        POP_FRAME(3);
+    }
+}
+
+void listParameter(int i)
+{
+    bool changeAllowed = KERNELNEWCURRENT.parameters[i].rangingType == None || !playingParticles || !autoLoadNewParams;
+
+    thisChanged = false;
+    if (KERNELNEWCURRENT.parameters[i].IsDifferentFrom(&(KERNEL.parameters[i]))) { anyChanged = true; thisChanged = true; }
+    //if (thisChanged) paramNew.recountSteps(i); // TODO
+
+    ImGui::Text(padString(KERNEL.parameters[i].name, maxNameLength).c_str());
+
+    if (!changeAllowed)
+    {
+        ImGui::PushStyleColor(ImGuiCol_Text, disabledTextColor); // disabledText push
+        PUSH_DISABLED_FRAME;
+    }
+
+    // Ranging
+    if (playingParticles)
+    {
+        ImGui::PushStyleColor(ImGuiCol_Text, disabledTextColor);
+        PUSH_DISABLED_FRAME;
+    }
+
+    listAttrRanging(&(KERNELNEWCURRENT.parameters[i]), KERNELNEWCURRENT.parameters[i].rangingType != KERNEL.parameters[i].rangingType);
+
+    dragFlag = (!playingParticles || KERNELNEWCURRENT.parameters[i].rangingType == None) ? 0 : ImGuiSliderFlags_ReadOnly;
+
+    switch (KERNELNEWCURRENT.parameters[i].rangingType)
+    {
+    case Step:
+        listAttrNumb(&(KERNELNEWCURRENT.parameters[i]), &(KERNELNEWCURRENT.parameters[i].min), "", "Min: ", KERNELNEWCURRENT.parameters[i].min != KERNEL.parameters[i].min);
+        listAttrNumb(&(KERNELNEWCURRENT.parameters[i]), &(KERNELNEWCURRENT.parameters[i].max), "MAX", "Max: ", KERNELNEWCURRENT.parameters[i].max != KERNEL.parameters[i].max);
+        listAttrNumb(&(KERNELNEWCURRENT.parameters[i]), &(KERNELNEWCURRENT.parameters[i].step), "STEP", "Step: ", KERNELNEWCURRENT.parameters[i].step != KERNEL.parameters[i].step);
+        KERNELNEWCURRENT.parameters[i].CalcStepCount();
+        ImGui::SameLine(); ImGui::Text((std::to_string(KERNELNEWCURRENT.parameters[i].stepCount) + " steps").c_str());
+        break;
+    case Linear:
+        listAttrNumb(&(KERNELNEWCURRENT.parameters[i]), &(KERNELNEWCURRENT.parameters[i].min), "", "Min: ", KERNELNEWCURRENT.parameters[i].min != KERNEL.parameters[i].min);
+        listAttrNumb(&(KERNELNEWCURRENT.parameters[i]), &(KERNELNEWCURRENT.parameters[i].max), "MAX", "Max: ", KERNELNEWCURRENT.parameters[i].max != KERNEL.parameters[i].max);
+        listAttrInt(&(KERNELNEWCURRENT.parameters[i]), &(KERNELNEWCURRENT.parameters[i].stepCount), "STEPCOUNT", "Count: ", KERNELNEWCURRENT.parameters[i].stepCount != KERNEL.parameters[i].stepCount);
+        KERNELNEWCURRENT.parameters[i].CalcStep();
+        ImGui::SameLine(); ImGui::Text(("Step: " + (std::to_string(KERNELNEWCURRENT.parameters[i].step))).c_str());
+        break;
+    case UniformRandom:
+        listAttrNumb(&(KERNELNEWCURRENT.parameters[i]), &(KERNELNEWCURRENT.parameters[i].mean), "MEAN", "Mean: ", KERNELNEWCURRENT.parameters[i].mean != KERNEL.parameters[i].mean);
+        listAttrNumb(&(KERNELNEWCURRENT.parameters[i]), &(KERNELNEWCURRENT.parameters[i].deviation), "DEV", "Dev: ", KERNELNEWCURRENT.parameters[i].deviation != KERNEL.parameters[i].deviation);
+        listAttrInt(&(KERNELNEWCURRENT.parameters[i]), &(KERNELNEWCURRENT.parameters[i].stepCount), "STEPCOUNT", "Count: ", KERNELNEWCURRENT.parameters[i].stepCount != KERNEL.parameters[i].stepCount);
+        break;
+    case NormalRandom:
+        listAttrNumb(&(KERNELNEWCURRENT.parameters[i]), &(KERNELNEWCURRENT.parameters[i].mean), "MU", "Mu: ", KERNELNEWCURRENT.parameters[i].mean != KERNEL.parameters[i].mean);
+        listAttrNumb(&(KERNELNEWCURRENT.parameters[i]), &(KERNELNEWCURRENT.parameters[i].deviation), "SIGMA", "Sigma: ", KERNELNEWCURRENT.parameters[i].deviation != KERNEL.parameters[i].deviation);
+        listAttrInt(&(KERNELNEWCURRENT.parameters[i]), &(KERNELNEWCURRENT.parameters[i].stepCount), "STEPCOUNT", "Count: ", KERNELNEWCURRENT.parameters[i].stepCount != KERNEL.parameters[i].stepCount);
+        break;
+    }
+
+    if (playingParticles)
+    {
+        ImGui::PopStyleColor();
+        POP_FRAME(3);
+    }
+
+    if (KERNELNEWCURRENT.parameters[i].rangingType == None)
+    {
+        listAttrNumb(&(KERNELNEWCURRENT.parameters[i]), &(KERNELNEWCURRENT.parameters[i].min), "", "", KERNELNEWCURRENT.parameters[i].min != KERNEL.parameters[i].min);
+    }
+
+    if (!changeAllowed) POP_FRAME(4); // disabledText popped as well
+}
+
+// TODO: changing enabled enums should force recomputation
+void listEnum(int i)
+{
+    bool changeAllowed = KERNELNEWCURRENT.parameters[i].rangingType == None || !playingParticles || !autoLoadNewParams;
+
+    thisChanged = false;
+    if (KERNELNEWCURRENT.parameters[i].IsDifferentFrom(&(KERNEL.parameters[i]))) { anyChanged = true; thisChanged = true; }
+
+    ImGui::Text(padString(KERNEL.parameters[i].name, maxNameLength).c_str());
+
+    if (!changeAllowed)
+    {
+        ImGui::PushStyleColor(ImGuiCol_Text, disabledTextColor); // disabledText push
+        PUSH_DISABLED_FRAME;
+    }
+
+    // Ranging
+    if (playingParticles)
+    {
+        ImGui::PushStyleColor(ImGuiCol_Text, disabledTextColor);
+        PUSH_DISABLED_FRAME;
+    }
+
+    dragFlag = (!playingParticles || KERNELNEWCURRENT.parameters[i].rangingType == None) ? 0 : ImGuiSliderFlags_ReadOnly;
+
+    int selectedCount = 0;
+    std::string selectedKernelsString;
+    for (int e = 0; e < KERNELNEWCURRENT.parameters[i].enumCount; e++) if (KERNELNEWCURRENT.parameters[i].enumEnabled[e])
+    {
+        selectedKernelsString += (selectedCount == 0 ? "" : ", ") + KERNELNEWCURRENT.parameters[i].enumNames[e];
+        selectedCount++;
+    }
+
+    if (selectedKernelsString.length() > 52)
+        selectedKernelsString = selectedKernelsString.substr(0, 52) + "...";
+
+    ImGui::SameLine();
+    ImGui::PushItemWidth(740.0f);
+    bool isChanged = false;
+    ATTR_BEGIN;
+    if (ImGui::BeginCombo(("##ENUMSELECT_" + KERNELNEWCURRENT.parameters[i].name).c_str(), selectedCount == 0 ? "None" : selectedKernelsString.c_str()))
+    {
+        for (int e = 0; e < KERNELNEWCURRENT.parameters[i].enumCount; e++)
+        {
+            bool isSelected = KERNELNEWCURRENT.parameters[i].enumEnabled[e];
+            if (ImGui::Checkbox(KERNELNEWCURRENT.parameters[i].enumNames[e].c_str(), &(isSelected)) && dragFlag == 0)
+            {
+                KERNELNEWCURRENT.parameters[i].enumEnabled[e] = !KERNELNEWCURRENT.parameters[i].enumEnabled[e];
+            }
+            TOOLTIP("Enable this method in computations");
+        }
+
+        ImGui::EndCombo();
+    }
+    ATTR_END;
+    //ImGui::PopItemWidth();
+
+    ImGui::SameLine(); ImGui::Text((std::to_string(selectedCount) + " method" + ((selectedCount % 10 != 1 || selectedCount == 11) ? "s" : "")).c_str());
+
+    if (playingParticles)
+    {
+        ImGui::PopStyleColor();
+        POP_FRAME(3);
+    }
+
+    if (!changeAllowed) POP_FRAME(4); // disabledText popped as well
+}
+
 void heatmapRangingSelection(PlotWindow* window, ImPlotPlot* plot, HeatmapSizing* sizing, bool isHires)
 {
     Kernel* krnl = !isHires ? &kernelNew : &kernelHiresNew;
@@ -2677,17 +3069,13 @@ void heatmapRangingSelection(PlotWindow* window, ImPlotPlot* plot, HeatmapSizing
 
     if (window->hmp.isHeatmapAutoComputeOn && !isHires)
     {
-        if (window->hmp.ignoreLimitsRecalculationOnSelection) 
-            for (int w = 0; w < plotWindows.size(); w++)
-                plotWindows[w].hmp.ignoreNextLimitsRecalculation = true;
+        if (window->hmp.ignoreLimitsRecalculationOnSelection) for (PlotWindow w : plotWindows) w.hmp.ignoreNextLimitsRecalculation = true;
         computeAfterShiftSelect = true;
     }
 
     if (window->hireshmp.isHeatmapAutoComputeOn)
     {
-        if (window->hmp.ignoreLimitsRecalculationOnSelection) 
-            for (int w = 0; w < plotWindows.size(); w++)
-                plotWindows[w].hmp.ignoreNextLimitsRecalculation = true;
+        if (window->hmp.ignoreLimitsRecalculationOnSelection) for (PlotWindow w : plotWindows) w.hmp.ignoreNextLimitsRecalculation = true;
         hiresComputeAfterShiftSelect = true;
     }
 }
