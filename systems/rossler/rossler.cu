@@ -6,29 +6,28 @@ namespace attributes
     enum variables { x, y, z };
     enum parameters { a, b, c, stepsize, symmetry, method };
     enum methods { ExplicitEuler, ExplicitMidpoint, ExplicitRungeKutta4, VariableSymmetryCD};
-    enum maps { LLE, Periodicity };
+    enum maps { LLE, MAX, Period };
 }
 
 __global__ void kernelProgram_rossler(Computation* data)
 {
-    int b = blockIdx.x;                                     // Current block of THREADS_PER_BLOCK threads
-    int t = threadIdx.x;                                    // Current thread in the block, from 0 to THREADS_PER_BLOCK-1
-    int variation = (b * data->threads_per_block) + t;            // Variation (parameter combination) index
+    int variation = (blockIdx.x * blockDim.x) + threadIdx.x;            // Variation (parameter combination) index
     if (variation >= CUDA_marshal.totalVariations) return;      // Shutdown thread if there isn't a variation to compute
-    int variationStart = variation * CUDA_marshal.variationSize;         // Start index to store the modelling data for the variation
-    int stepStart = variationStart;                         // Start index for the current modelling step
+    int stepStart, variationStart = variation * CUDA_marshal.variationSize;         // Start index to store the modelling data for the variation
+    numb variables[MAX_ATTRIBUTES];
+    numb variablesNext[MAX_ATTRIBUTES];
+    numb parameters[MAX_ATTRIBUTES];
+    LOAD_ATTRIBUTES;
 
     // Custom area (usually) starts here
 
-    TRANSIENT_SKIP(finiteDifferenceScheme_rossler);
+    TRANSIENT_SKIP_NEW(finiteDifferenceScheme_rossler);
 
     for (int s = 0; s < CUDA_kernel.steps; s++)
     {
         stepStart = variationStart + s * CUDA_kernel.VAR_COUNT;
-
-        finiteDifferenceScheme_rossler(&(CUDA_marshal.trajectory[stepStart]),
-            &(CUDA_marshal.trajectory[stepStart + CUDA_kernel.VAR_COUNT]),
-            &(CUDA_marshal.parameterVariations[variation * CUDA_kernel.PARAM_COUNT]));
+        finiteDifferenceScheme_rossler(FDS_ARGUMENTS);
+        RECORD_STEP;
     }
 
     // Analysis
@@ -40,14 +39,20 @@ __global__ void kernelProgram_rossler(Computation* data)
         LLE(data, lle_settings, variation, &finiteDifferenceScheme_rossler, MO(LLE));
     }
 
-    if (M(Periodicity).toCompute)
+    if (M(MAX).toCompute)
     {
-        DBscan_Settings dbscan_settings(MS(Periodicity, 0), MS(Periodicity, 1), MS(Periodicity, 2), MS(Periodicity,3));
-        Periodicity(data, dbscan_settings, variation, MO(Periodicity));
+        MAX_Settings max_settings(MS(MAX, 0));
+        MAX(data, max_settings, variation, &finiteDifferenceScheme_rossler, MO(MAX));
+    }
+
+    if (M(Period).toCompute)
+    {
+        DBscan_Settings dbscan_settings(MS(Period, 0), MS(Period, 1), MS(Period, 2), MS(Period, 3));
+        Period(data, dbscan_settings, variation,  MO(Period));
     }
 }
 
-__device__ void finiteDifferenceScheme_rossler(numb* currentV, numb* nextV, numb* parameters)
+__device__ __forceinline__ void finiteDifferenceScheme_rossler(numb* currentV, numb* nextV, numb* parameters)
 {
     ifMETHOD(P(method), ExplicitEuler)
     {

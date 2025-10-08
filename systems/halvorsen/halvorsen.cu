@@ -6,40 +6,53 @@ namespace attributes
     enum variables { x, y, z };
     enum parameters { alpha, beta, stepsize, symmetry, method };
     enum methods { ExplicitEuler, ExplicitMidpoint, ExplicitRungeKutta4, VariableSymmetryCD };
-    enum maps { LLE };
+    enum maps { LLE, MAX, Period };
 }
 
 __global__ void kernelProgram_halvorsen(Computation* data)
 {
-    int b = blockIdx.x;                                     // Current block of THREADS_PER_BLOCK threads
-    int t = threadIdx.x;                                    // Current thread in the block, from 0 to THREADS_PER_BLOCK-1
-    int variation = (b * data->threads_per_block) + t;            // Variation (parameter combination) index
+    int variation = (blockIdx.x * blockDim.x) + threadIdx.x;            // Variation (parameter combination) index
     if (variation >= CUDA_marshal.totalVariations) return;      // Shutdown thread if there isn't a variation to compute
-    int variationStart = variation * CUDA_marshal.variationSize;         // Start index to store the modelling data for the variation
-    int stepStart = variationStart;                         // Start index for the current modelling step
+    int stepStart, variationStart = variation * CUDA_marshal.variationSize;         // Start index to store the modelling data for the variation
+    numb variables[MAX_ATTRIBUTES];
+    numb variablesNext[MAX_ATTRIBUTES];
+    numb parameters[MAX_ATTRIBUTES];
+    LOAD_ATTRIBUTES;
 
     // Custom area (usually) starts here
+
+    TRANSIENT_SKIP_NEW(finiteDifferenceScheme_halvorsen);
 
     for (int s = 0; s < CUDA_kernel.steps; s++)
     {
         stepStart = variationStart + s * CUDA_kernel.VAR_COUNT;
-
-        finiteDifferenceScheme_halvorsen(&(CUDA_marshal.trajectory[stepStart]),
-            &(CUDA_marshal.trajectory[stepStart + CUDA_kernel.VAR_COUNT]),
-            &(CUDA_marshal.parameterVariations[variation * CUDA_kernel.PARAM_COUNT]));
+        finiteDifferenceScheme_halvorsen(FDS_ARGUMENTS);
+        RECORD_STEP;
     }
 
     // Analysis
 
     if (M(LLE).toCompute)
     {
-        LLE_Settings lle_settings(0.01f, 50, 0);
+        LLE_Settings lle_settings(MS(LLE, 0), MS(LLE, 1), MS(LLE, 2));
         lle_settings.Use3DNorm();
         LLE(data, lle_settings, variation, &finiteDifferenceScheme_halvorsen, MO(LLE));
     }
+
+    if (M(MAX).toCompute)
+    {
+        MAX_Settings max_settings(MS(MAX, 0));
+        MAX(data, max_settings, variation, &finiteDifferenceScheme_halvorsen, MO(MAX));
+    }
+
+    if (M(Period).toCompute)
+    {
+        DBscan_Settings dbscan_settings(MS(Period, 0), MS(Period, 1), MS(Period, 2), MS(Period, 3));
+        Period(data, dbscan_settings, variation, MO(Period));
+    }
 }
 
-__device__ void finiteDifferenceScheme_halvorsen(numb* currentV, numb* nextV, numb* parameters)
+__device__ __forceinline__ void finiteDifferenceScheme_halvorsen(numb* currentV, numb* nextV, numb* parameters)
 {
     ifMETHOD(P(method), ExplicitEuler)
     {
