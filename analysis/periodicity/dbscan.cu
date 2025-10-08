@@ -1,7 +1,7 @@
 #include "dbscan.h"
 
 
-__device__  void Periodicity(Computation* data, DBscan_Settings settings, int variation, int offset) {
+__device__  void Period(Computation* data, DBscan_Settings settings, int variation,  int offset) {
     int variationStart = variation * CUDA_marshal.variationSize;
     numb eps = settings.eps;
     int analysedVariable = settings.analysedVariable;

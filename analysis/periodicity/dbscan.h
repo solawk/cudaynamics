@@ -28,7 +28,7 @@ typedef struct Point_
 
 struct DBscan_Settings
 {
-    numb eps;			// Initial deflection
+    numb eps;			
     int analysedVariable;	// Variable to analyse
     numb CoefIntervals;
     numb CoefPeaks;
@@ -75,6 +75,6 @@ private:
     float m_epsilon;
 };
 
-__device__ void Periodicity(Computation* data, DBscan_Settings settings, int variation, int offset);
+__device__ void Period(Computation* data, DBscan_Settings settings, int variation,  int offset);
 
 #endif // DBSCAN_H
