@@ -1562,10 +1562,10 @@ int imgui_main(int, char**)
                     {
                         if (!enabledParticles) // Trajectory - one variation, all steps
                         {
-                            //for (int vv = 0; vv < computations[playedBufferIndex].marshal.totalVariations; vv++)
+                            for (int vv = 0; vv < (!window->drawAllTrajectories ? 1 : computations[playedBufferIndex].marshal.totalVariations); vv++)
                             {
-                                //numb* computedVariation = computations[playedBufferIndex].marshal.trajectory + (computations[playedBufferIndex].marshal.variationSize * vv);
                                 numb* computedVariation = computations[playedBufferIndex].marshal.trajectory + (computations[playedBufferIndex].marshal.variationSize * variation);
+                                if (window->drawAllTrajectories) computedVariation = computations[playedBufferIndex].marshal.trajectory + (computations[playedBufferIndex].marshal.variationSize * vv);
 
                                 if (!window->isImplot3d)
                                 {
@@ -1590,7 +1590,7 @@ int imgui_main(int, char**)
                                             lutsize = lut->lutSizes[g];
                                             for (int v = 0; v < lutsize && variationGroup < 0; v++)
                                             {
-                                                if (variation == lut->lut[g][v])
+                                                if ((!window->drawAllTrajectories ? variation : vv) == lut->lut[g][v])
                                                 {
                                                     variationGroup = g;
                                                 }

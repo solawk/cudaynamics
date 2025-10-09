@@ -89,6 +89,9 @@ void plotWindowMenu_PhasePlot(PlotWindow* window)
 			bool tempIsI3d = window->isImplot3d; if (ImGui::Checkbox(("##" + windowName + "isI3D").c_str(), &tempIsI3d)) window->isImplot3d = !window->isImplot3d;
 			ImGui::SameLine(); ImGui::Text("Use ImPlot3D");
 
+			bool tempDAT = window->drawAllTrajectories; if (ImGui::Checkbox(("##" + windowName + "allTraj").c_str(), &tempDAT)) window->drawAllTrajectories = !window->drawAllTrajectories;
+			ImGui::SameLine(); ImGui::Text("Draw all trajectories (intensive!)");
+
 			bool tempSettingsEnabled = window->settingsListEnabled; if (ImGui::Checkbox(("##" + windowName + "setList").c_str(), &tempSettingsEnabled)) window->settingsListEnabled = !window->settingsListEnabled;
 			ImGui::SameLine(); ImGui::Text("View settings");
 		}

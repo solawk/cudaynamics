@@ -40,6 +40,7 @@ public:
 	float gridAlpha;
 	bool whiteBg;
 	bool isImplot3d;
+	bool drawAllTrajectories;
 
 	HeatmapProperties hmp;
 	HeatmapProperties hireshmp;
@@ -99,6 +100,7 @@ public:
 		gridAlpha = 0.15f;
 		whiteBg = false;
 		isImplot3d = false;
+		drawAllTrajectories = false;
 
 		dragLineHiresPos = ImVec2(0.0f, 0.0f);
 
