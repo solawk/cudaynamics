@@ -1562,76 +1562,80 @@ int imgui_main(int, char**)
                     {
                         if (!enabledParticles) // Trajectory - one variation, all steps
                         {
-                            numb* computedVariation = computations[playedBufferIndex].marshal.trajectory + (computations[playedBufferIndex].marshal.variationSize * variation);
-
-                            if (!window->isImplot3d)
+                            //for (int vv = 0; vv < computations[playedBufferIndex].marshal.totalVariations; vv++)
                             {
-                                memcpy(dataBuffer, computedVariation, computations[playedBufferIndex].marshal.variationSize * sizeof(numb));
+                                //numb* computedVariation = computations[playedBufferIndex].marshal.trajectory + (computations[playedBufferIndex].marshal.variationSize * vv);
+                                numb* computedVariation = computations[playedBufferIndex].marshal.trajectory + (computations[playedBufferIndex].marshal.variationSize * variation);
 
-                                rotateOffsetBuffer(dataBuffer, computedSteps + 1, KERNEL.VAR_COUNT, window->variables[0], window->variables[1], window->variables[2],
-                                    rotationEuler, window->offset, window->scale);
-
-                                getMinMax2D(dataBuffer, computedSteps + 1, &(plot->dataMin), &(plot->dataMax), KERNEL.VAR_COUNT);
-
-                                if (colorsLUTfrom == nullptr)
+                                if (!window->isImplot3d)
                                 {
-                                    ImPlot::SetNextLineStyle(window->plotColor);
+                                    memcpy(dataBuffer, computedVariation, computations[playedBufferIndex].marshal.variationSize * sizeof(numb));
+
+                                    rotateOffsetBuffer(dataBuffer, computedSteps + 1, KERNEL.VAR_COUNT, window->variables[0], window->variables[1], window->variables[2],
+                                        rotationEuler, window->offset, window->scale);
+
+                                    getMinMax2D(dataBuffer, computedSteps + 1, &(plot->dataMin), &(plot->dataMax), KERNEL.VAR_COUNT);
+
+                                    if (colorsLUTfrom == nullptr)
+                                    {
+                                        ImPlot::SetNextLineStyle(window->plotColor);
+                                    }
+                                    else
+                                    {
+                                        colorLUT* lut = playingParticles ? &(colorsLUTfrom->hmp.dynamicLUT) : &(colorsLUTfrom->hmp.staticLUT);
+                                        int variationGroup = -1;
+                                        int lutsize;
+                                        for (int g = 0; g < lut->lutGroups && variationGroup < 0; g++)
+                                        {
+                                            lutsize = lut->lutSizes[g];
+                                            for (int v = 0; v < lutsize && variationGroup < 0; v++)
+                                            {
+                                                if (variation == lut->lut[g][v])
+                                                {
+                                                    variationGroup = g;
+                                                }
+                                            }
+                                        }
+
+                                        ImVec4 clr = ImPlot::SampleColormap((float)variationGroup / (lut->lutGroups - 1), ImPlotColormap_Jet);
+                                        clr.w = window->plotColor.w;
+                                        ImPlot::SetNextLineStyle(clr);
+                                    }
+                                    ImPlot::PlotLine(plotName.c_str(), &(dataBuffer[0]), &(dataBuffer[1]), computedSteps + 1, 0, 0, sizeof(numb) * KERNEL.VAR_COUNT);
                                 }
                                 else
                                 {
-                                    colorLUT* lut = playingParticles ? &(colorsLUTfrom->hmp.dynamicLUT) : &(colorsLUTfrom->hmp.staticLUT);
-                                    int variationGroup = -1;
-                                    int lutsize;
-                                    for (int g = 0; g < lut->lutGroups && variationGroup < 0; g++)
+                                    ImPlot3D::SetupAxes(KERNEL.variables[window->variables[0]].name.c_str(), KERNEL.variables[window->variables[1]].name.c_str(), KERNEL.variables[window->variables[2]].name.c_str());
+
+                                    if (colorsLUTfrom == nullptr)
                                     {
-                                        lutsize = lut->lutSizes[g];
-                                        for (int v = 0; v < lutsize && variationGroup < 0; v++)
+                                        ImPlot3D::SetNextLineStyle(window->plotColor);
+                                    }
+                                    else
+                                    {
+                                        colorLUT* lut = playingParticles ? &(colorsLUTfrom->hmp.dynamicLUT) : &(colorsLUTfrom->hmp.staticLUT);
+                                        int variationGroup = -1;
+                                        int lutsize;
+                                        for (int g = 0; g < lut->lutGroups && variationGroup < 0; g++)
                                         {
-                                            if (variation == lut->lut[g][v])
+                                            lutsize = lut->lutSizes[g];
+                                            for (int v = 0; v < lutsize && variationGroup < 0; v++)
                                             {
-                                                variationGroup = g;
+                                                if (variation == lut->lut[g][v])
+                                                {
+                                                    variationGroup = g;
+                                                }
                                             }
                                         }
+
+                                        ImVec4 clr = ImPlot3D::SampleColormap((float)variationGroup / (lut->lutGroups - 1), ImPlotColormap_Jet);
+                                        clr.w = window->plotColor.w;
+                                        ImPlot3D::SetNextLineStyle(clr);
                                     }
 
-                                    ImVec4 clr = ImPlot::SampleColormap((float)variationGroup / (lut->lutGroups - 1), ImPlotColormap_Jet);
-                                    clr.w = window->plotColor.w;
-                                    ImPlot::SetNextLineStyle(clr);
+                                    ImPlot3D::PlotLine(plotName.c_str(), &(computedVariation[window->variables[0]]), &(computedVariation[window->variables[1]]), &(computedVariation[window->variables[2]]),
+                                        computedSteps + 1, 0, 0, sizeof(numb) * KERNEL.VAR_COUNT);
                                 }
-                                ImPlot::PlotLine(plotName.c_str(), &(dataBuffer[0]), &(dataBuffer[1]), computedSteps + 1, 0, 0, sizeof(numb) * KERNEL.VAR_COUNT);
-                            }
-                            else
-                            {
-                                ImPlot3D::SetupAxes(KERNEL.variables[window->variables[0]].name.c_str(), KERNEL.variables[window->variables[1]].name.c_str(), KERNEL.variables[window->variables[2]].name.c_str());
-                                
-                                if (colorsLUTfrom == nullptr)
-                                {
-                                    ImPlot3D::SetNextLineStyle(window->plotColor);
-                                }
-                                else
-                                {
-                                    colorLUT* lut = playingParticles ? &(colorsLUTfrom->hmp.dynamicLUT) : &(colorsLUTfrom->hmp.staticLUT);
-                                    int variationGroup = -1;
-                                    int lutsize;
-                                    for (int g = 0; g < lut->lutGroups && variationGroup < 0; g++)
-                                    {
-                                        lutsize = lut->lutSizes[g];
-                                        for (int v = 0; v < lutsize && variationGroup < 0; v++)
-                                        {
-                                            if (variation == lut->lut[g][v])
-                                            {
-                                                variationGroup = g;
-                                            }
-                                        }
-                                    }
-
-                                    ImVec4 clr = ImPlot3D::SampleColormap((float)variationGroup / (lut->lutGroups - 1), ImPlotColormap_Jet);
-                                    clr.w = window->plotColor.w;
-                                    ImPlot3D::SetNextLineStyle(clr);
-                                }
-
-                                ImPlot3D::PlotLine(plotName.c_str(), &(computedVariation[window->variables[0]]), &(computedVariation[window->variables[1]]), &(computedVariation[window->variables[2]]),
-                                    computedSteps + 1, 0, 0, sizeof(numb)* KERNEL.VAR_COUNT);
                             }
                         }
                         else // Particles - all variations, one certain step
@@ -2367,7 +2371,7 @@ int imgui_main(int, char**)
                                     // Image init
                                     if (heatmap->isHeatmapDirty)
                                     {
-                                        MapToImg(heatmap->valueBuffer, &(heatmap->pixelBuffer), sizing.xSize, sizing.ySize, heatmap->heatmapMin, heatmap->heatmapMax);
+                                        MapToImg(heatmap->valueBuffer, &(heatmap->pixelBuffer), sizing.xSize, sizing.ySize, heatmap->heatmapMin, heatmap->heatmapMax, heatmap->colormap);
                                         heatmap->isHeatmapDirty = false;
 
                                         // COLORS
@@ -2458,7 +2462,7 @@ int imgui_main(int, char**)
                                 ImGui::SetNextItemWidth(120);
                                 float heatMinFloat = heatmap->heatmapMin, heatMaxFloat = heatmap->heatmapMax;
                                 ImGui::DragFloat("Max", &heatMaxFloat, 0.01f);
-                                ImPlot::ColormapScale("##HeatScale", heatmap->heatmapMin, heatmap->heatmapMax, ImVec2(120, plotSize.y - 30.0f));
+                                ImPlot::ColormapScale("##HeatScale", heatmap->heatmapMin, heatmap->heatmapMax, ImVec2(120, plotSize.y - 30.0f), "%g", 0, heatmap->colormap);
                                 //
                                 ImGui::SetNextItemWidth(120);
                                 ImGui::DragFloat("Min", &heatMinFloat, 0.01f);

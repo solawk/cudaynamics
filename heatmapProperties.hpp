@@ -4,7 +4,7 @@
 
 struct HeatmapProperties
 {
-	int stride; // deprecated
+	//int stride; // deprecated
 
 	numb heatmapMax;
 	numb heatmapMin;
@@ -37,6 +37,7 @@ struct HeatmapProperties
 	ImVec2 lastClickedLocation;
 	bool showDragLines;
 	bool showLegend;
+	ImPlotColormap colormap;
 
 	bool ignoreLimitsRecalculationOnSelection;
 	bool ignoreNextLimitsRecalculation;
@@ -74,6 +75,7 @@ struct HeatmapProperties
 		lastClickedLocation = ImVec2(0.0f, 0.0f);
 		showDragLines = true;
 		showLegend = true;
+		colormap = ImPlotColormap_Jet;
 
 		ignoreLimitsRecalculationOnSelection = false;
 		ignoreNextLimitsRecalculation = false;

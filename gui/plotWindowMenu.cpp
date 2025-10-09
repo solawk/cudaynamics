@@ -200,9 +200,26 @@ void plotWindowMenu_HeatmapPlot(PlotWindow* window)
 
 void plotWindowMenu_HeatmapColors(PlotWindow* window)
 {
-	if (ImGui::BeginMenu("Painting"))
+	if (ImGui::BeginMenu("Colors"))
 	{
 		std::string windowName = window->name + std::to_string(window->id);
+		bool isHires = window == hiresHeatmapWindow;
+		HeatmapProperties* heatmap = isHires ? &window->hireshmp : &window->hmp;
+
+		std::string colormapStrings[] = { "Deep", "Dark", "Pastel", "Paired", "Viridis", "Plasma", "Hot", "Cool", "Pink", "Jet", "Twilight", "RdBu", "BrBG", "PiYG", "Spectral", "Greys" };
+		ImGui::PushItemFlag(ImGuiItemFlags_AutoClosePopups, false);
+		if (ImGui::BeginCombo(("##" + windowName + "colormap").c_str(), (colormapStrings[heatmap->colormap]).c_str()))
+		{
+			for (int i = 0; i < 16; i++)
+				if (ImGui::Selectable(colormapStrings[i].c_str(), heatmap->colormap == i))
+				{
+					heatmap->colormap = i;
+					heatmap->isHeatmapDirty = true;
+				}
+			
+			ImGui::EndCombo();
+		}
+		ImGui::PopItemFlag();
 
 		if (colorsLUTfrom != window)
 		{

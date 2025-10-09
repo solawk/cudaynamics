@@ -50,7 +50,7 @@ public:
         m_minPoints = minPts;
         m_epsilon = eps;
         m_points = points;
-        m_pointSize = points.size();
+        m_pointSize = (unsigned int)points.size();
         clusterCount = 0;
     }
     ~DBSCAN(){}
@@ -62,7 +62,7 @@ public:
 
     int getTotalPointSize() {return m_pointSize;}
     int getMinimumClusterSize() {return m_minPoints;}
-    int getEpsilonSize() {return m_epsilon;}
+    float getEpsilonSize() {return m_epsilon;}
     
 public:
     vector<Point> m_points;
