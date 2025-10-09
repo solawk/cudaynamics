@@ -1597,7 +1597,7 @@ int imgui_main(int, char**)
                                             }
                                         }
 
-                                        ImVec4 clr = ImPlot::SampleColormap((float)variationGroup / (lut->lutGroups - 1), ImPlotColormap_Jet);
+                                        ImVec4 clr = ImPlot::SampleColormap((float)variationGroup / (lut->lutGroups - 1), colorsLUTfrom->hmp.colormap);
                                         clr.w = window->plotColor.w;
                                         ImPlot::SetNextLineStyle(clr);
                                     }
@@ -1628,7 +1628,7 @@ int imgui_main(int, char**)
                                             }
                                         }
 
-                                        ImVec4 clr = ImPlot3D::SampleColormap((float)variationGroup / (lut->lutGroups - 1), ImPlotColormap_Jet);
+                                        ImVec4 clr = ImPlot3D::SampleColormap((float)variationGroup / (lut->lutGroups - 1), colorsLUTfrom->hmp.colormap);
                                         clr.w = window->plotColor.w;
                                         ImPlot3D::SetNextLineStyle(clr);
                                     }
@@ -1688,7 +1688,7 @@ int imgui_main(int, char**)
                                         ImPlot::PushStyleVar(ImPlotStyleVar_MarkerWeight, window->markerOutlineWidth);
                                         ImPlot::SetNextMarkerStyle(window->markerShape, window->markerWidth);
 
-                                        ImVec4 clr = ImPlot::SampleColormap((float)g / (lut->lutGroups - 1), ImPlotColormap_Jet);
+                                        ImVec4 clr = ImPlot::SampleColormap((float)g / (lut->lutGroups - 1), colorsLUTfrom->hmp.colormap);
                                         clr.w = window->markerColor.w;
                                         ImPlot::SetNextLineStyle(clr);
                                         ImPlot::PlotScatter(plotName.c_str(), &((particleBuffer)[0]), &((particleBuffer)[1]),
