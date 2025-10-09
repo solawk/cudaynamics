@@ -29,4 +29,4 @@ enum method 0ExplicitEuler 1SemiExplicitEuler 0ExplicitMidpoint 0ExplicitRungeKu
 // Defining maps:
 map LLE 1 7 r n0.01 L i50 variableToDeflect i0 norm0 i0 norm1 i1 norm2 i2 norm3 i-1
 map MAX 1 1 i i0
-map Periodicity 1 4 eps n10.0 analysedVariable i0 CoefIntervals n17.0 CoefPeaks n5.3 i1
+map Periodicity 1 4 eps n1.0 analysedVariable i3 CoefIntervals n20.0 CoefPeaks n80.0 i1

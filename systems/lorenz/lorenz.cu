@@ -113,8 +113,8 @@ __device__ __forceinline__ void finiteDifferenceScheme_lorenz(numb* currentV, nu
         numb h2 = 0.5f * P(stepsize) + P(symmetry);
 
         numb xmp = V(x) + h1 * (P(sigma) * (V(y) - V(x)));
-        numb ymp = V(y) + h1 * (V(x) * (P(rho) - V(z)) - V(y));
-        numb zmp = V(z) + h1 * (V(x) * V(y) - P(beta) * V(z));
+        numb ymp = V(y) + h1 * (xmp * (P(rho) - V(z)) - V(y));
+        numb zmp = V(z) + h1 * (xmp * ymp - P(beta) * V(z));
 
         Vnext(z) = (zmp + xmp * ymp * h2) / (1.0f + P(beta) * h2);
         Vnext(y) = (ymp + xmp * (P(rho) - Vnext(z)) * h2) / (1.0f + h2);
