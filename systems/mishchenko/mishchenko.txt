@@ -1,7 +1,7 @@
-Name: Josephson junction MRLC-shunted
-Steps: 10000
-Transient: 5000
-Step size: 0.1
+Name: Mishchenko neuron model
+Steps: 1000
+Transient: 0
+Step size: 1
 // Compute on CUDAynamics launch: yes/no
 Execute on launch: yes
 // Ranging types:
@@ -13,22 +13,20 @@ Execute on launch: yes
 //
 // Defining variables/parameters:
 // var/param <name> <ranging type> <minimum value> <maximum value> <step> <step count> <normal mean> <normal deviation>
-var theta Fixed 3.14 50.0 1.0 50 0.0 0.0
-var sin_theta Fixed 0.0 50.0 0.1 50 0.0 0.0
-var v Fixed 3.3 29.0 0.1 0 0.0 0.0
-var iL Fixed 0.76 29.0 0.1 0 0.0 0.0
-param betaL Fixed 50.0 50.0 0.1 250 0.0 0.0
-param betaC Fixed 0.5 50.0 0.1 250 0.0 0.0
-param betaM Fixed 1.0 29.0 0.1 0 0.0 0.0
-param i Linear 0.9 1.5 0.01 200 0.0 0.0
-param epsilon Linear -2.0 0.0 0.01 200 0.0 0.0
-param delta Fixed 1.0 29.0 0.1 0 0.0 0.0
-param stepsize Fixed 0.1 0.1 0.01 10 0.0 0.0
-param symmetry Fixed 0.0 29.0 0.1 0 0.0 0.0
+var x Fixed 0.01 1.0 0.1 10 0.0 0.0
+var cosx Fixed 1.0 1.0 0.1 10 0.0 0.0
+var y Fixed 0.01 1.0 0.1 10 0.0 0.0
+var z Fixed 0.01 1.0 0.1 10 0.0 0.0
+param gamma Fixed 0.05 1.0 0.01 50 0.0 0.0
+param eps1 Fixed 5.0 1.0 0.01 100 0.0 0.0
+param eps2 Fixed 10.0 10.0 0.1 100 0.0 0.0
+param h Fixed 0.01 10.0 0.1 100 0.0 0.0
+
 // Defining enumerated parameters (useful for methods):
 // enum <name> <ranging type> <minimum value> <maximum value> <step> <step count> <normal mean> <normal deviation> <enum names, no spaces>
-enum method 0ExplicitEuler 0SemiExplicitEuler 0ExplicitMidpoint 0ExplicitRungeKutta4 1VariableSymmetryCD
+
 // Defining maps:
-map LLE 1 7 r n0.01 L i1000 variableToDeflect i2 norm0 i0 norm1 i1 norm2 i2 norm3 i-1
+// map <name> <map settings count (inside its struct)> <map settings, beginning with "n" for numbs and "i" for ints>
+map LLE 1 7 r n0.01 L i50 variableToDeflect i2 norm0 i0 norm1 i1 norm2 i2 norm3 i-1
 map MAX 1 1 i i0
 map Periodicity 1 4 eps n10.0 analysedVariable i0 CoefIntervals n17.0 CoefPeaks n5.3 i1

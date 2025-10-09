@@ -1,14 +1,14 @@
 ﻿#include "main.h"
-#include "bolshakov.h"
+#include "mishchenko.h"
 
 namespace attributes
 {
-    enum variables { Q, S, X, Y, c };
-    enum parameters { i, p, k, r };
-    enum maps { LLE, MAX, Period };
+    enum variables { x, cosx, y, z };
+    enum parameters { gamma, eps1, eps2, stepsize };
+    enum maps { LLE, MAX, Period};
 }
 
-__global__ void kernelProgram_bolshakov(Computation* data)
+__global__ void kernelProgram_mishchenko(Computation* data)
 {
     int variation = (blockIdx.x * blockDim.x) + threadIdx.x;            // Variation (parameter combination) index
     if (variation >= CUDA_marshal.totalVariations) return;      // Shutdown thread if there isn't a variation to compute
@@ -20,12 +20,12 @@ __global__ void kernelProgram_bolshakov(Computation* data)
 
     // Custom area (usually) starts here
 
-    TRANSIENT_SKIP_NEW(finiteDifferenceScheme_bolshakov);
+    TRANSIENT_SKIP_NEW(finiteDifferenceScheme_mishchenko);
 
     for (int s = 0; s < CUDA_kernel.steps; s++)
     {
         stepStart = variationStart + s * CUDA_kernel.VAR_COUNT;
-        finiteDifferenceScheme_bolshakov(FDS_ARGUMENTS);
+        finiteDifferenceScheme_mishchenko(FDS_ARGUMENTS);
         RECORD_STEP;
     }
 
@@ -35,13 +35,13 @@ __global__ void kernelProgram_bolshakov(Computation* data)
     {
         LLE_Settings lle_settings(MS(LLE, 0), MS(LLE, 1), MS(LLE, 2));
         lle_settings.Use3DNorm();
-        LLE(data, lle_settings, variation, &finiteDifferenceScheme_bolshakov, MO(LLE));
+        LLE(data, lle_settings, variation, &finiteDifferenceScheme_mishchenko, MO(LLE));
     }
 
     if (M(MAX).toCompute)
     {
         MAX_Settings max_settings(MS(MAX, 0));
-        MAX(data, max_settings, variation, &finiteDifferenceScheme_bolshakov, MO(MAX));
+        MAX(data, max_settings, variation, &finiteDifferenceScheme_mishchenko, MO(MAX));
     }
 
     if (M(Period).toCompute)
@@ -51,15 +51,14 @@ __global__ void kernelProgram_bolshakov(Computation* data)
     }
 }
 
-__device__  __forceinline__ void finiteDifferenceScheme_bolshakov(numb* currentV, numb* nextV, numb* parameters)
+__device__ __forceinline__ void finiteDifferenceScheme_mishchenko(numb* currentV, numb* nextV, numb* parameters)
 {
-    Vnext(Q) = V(Q) + V(c) * (P(i) + V(S)) - !V(c) * (P(i) + V(S));
+    numb xmp = fmodf(V(x) + P(stepsize) * 0.5 * V(y), 2.0f * 3.141592f);
+    numb ymp = V(y) + P(stepsize) * 0.5 * V(z);
+    numb zmp = V(z) + P(stepsize) * 0.5 * ((1 / (P(eps1) * P(eps2))) * (P(gamma) - (P(eps1) + P(eps2)) * V(z) - (1 - (P(eps1) * cosf(V(x)))) * V(y)));
 
-    if (Vnext(Q) < 0) Vnext(Q) = 0;
-    if (Vnext(Q) > P(r)) Vnext(Q) = P(r);
-
-    Vnext(X) = P(p) * (Vnext(Q) + V(X));
-    Vnext(Y) = 1/P(k) * (Vnext(X) - V(Y)) + V(Y);
-    Vnext(S) = Vnext(X) - Vnext(Y);
-    Vnext(c) = (V(c) || (Vnext(Q) > 0 ? 0 : 1)) && (Vnext(Q) < P(r) ? 1 : 0);
+    Vnext(x) = fmodf(V(x) + P(stepsize) * ymp, 2.0f * 3.141592f);
+    Vnext(cosx) = cosf(Vnext(x));
+    Vnext(y) = V(y) + P(stepsize) * zmp;
+    Vnext(z) = V(z) + P(stepsize) * 0.5 * ((1 / (P(eps1) * P(eps2))) * (P(gamma) - (P(eps1) + P(eps2)) * zmp - (1 - (P(eps1) * cosf(xmp))) * ymp));
 }

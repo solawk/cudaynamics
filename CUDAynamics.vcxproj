@@ -108,7 +108,6 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="benchmarking\cpu_bm.cpp" />
-    <ClCompile Include="dbscan\dbscan.cpp" />
     <ClCompile Include="file_export.cpp" />
     <ClCompile Include="gui\fullscreen_funcs.cpp" />
     <ClCompile Include="gui\imgui_ui_funcs.cpp" />
@@ -139,12 +138,12 @@
     <ClInclude Include="analysis.h" />
     <ClInclude Include="analysis\lle\lle.h" />
     <ClInclude Include="analysis\max\max.h" />
+    <ClInclude Include="analysis\periodicity\dbscan.h" />
     <ClInclude Include="attribute_struct.h" />
     <ClInclude Include="benchmarking\cpu_bm.h" />
     <ClInclude Include="colorLUT_struct.h" />
     <ClInclude Include="computation_struct.h" />
     <ClInclude Include="cuda_macros.h" />
-    <ClInclude Include="dbscan\dbscan.h" />
     <ClInclude Include="file_export.h" />
     <ClInclude Include="gui\d3dx11tex.h" />
     <ClInclude Include="gui\fullscreen_funcs.h" />
@@ -188,6 +187,7 @@
   <ItemGroup>
     <CudaCompile Include="analysis\lle\lle.cu" />
     <CudaCompile Include="analysis\max\max.cu" />
+    <CudaCompile Include="analysis\periodicity\dbscan.cu" />
     <CudaCompile Include="systems\bolshakov\bolshakov.cu" />
     <CudaCompile Include="systems\chen\chen.cu" />
     <CudaCompile Include="systems\dadras\dadras.cu" />
@@ -204,7 +204,7 @@
     <CudaCompile Include="systems\lorenz\lorenz.cu">
       <FastMath Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</FastMath>
     </CudaCompile>
-    <CudaCompile Include="systems\nngu\nngu.cu" />
+    <CudaCompile Include="systems\mishchenko\mishchenko.cu" />
     <CudaCompile Include="systems\rabinovich_fabrikant\rabinovich_fabrikant.cu" />
     <CudaCompile Include="systems\rossler\rossler.cu" />
     <CudaCompile Include="systems\sang\sang.cu" />

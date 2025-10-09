@@ -7,7 +7,7 @@ namespace attributes
     enum parameters { C, tau, p0, p1, p2, p3, p4, p5, p6, p7, Idc, Iamp, Ifreq, Idel, Idf, stepsize, signal, method };
     enum waveforms { square, sine, triangle };
     enum methods { ExplicitEuler, ExplicitMidpoint };
-    enum maps { LLE, MAX };
+    enum maps { LLE, MAX, Period };
 }
 
 __global__ void kernelProgram_wilson(Computation* data)
@@ -45,9 +45,15 @@ __global__ void kernelProgram_wilson(Computation* data)
         MAX_Settings max_settings(MS(MAX, 0));
         MAX(data, max_settings, variation, &finiteDifferenceScheme_wilson, MO(MAX));
     }
+
+    if (M(Period).toCompute)
+    {
+        DBscan_Settings dbscan_settings(MS(Period, 0), MS(Period, 1), MS(Period, 2), MS(Period, 3));
+        Period(data, dbscan_settings, variation, MO(Period));
+    }
 }
 
-__device__ void finiteDifferenceScheme_wilson(numb* currentV, numb* nextV, numb* parameters)
+__device__ __forceinline__ void finiteDifferenceScheme_wilson(numb* currentV, numb* nextV, numb* parameters)
 {
     ifSIGNAL(P(signal), square)
     {

@@ -4,6 +4,10 @@
 #include <vector>
 #include <cmath>
 
+#include "../analysis.h"
+#include "../computation_struct.h"
+#include "../mapData_struct.h"
+
 #define UNCLASSIFIED -1
 #define CORE_POINT 1
 #define BORDER_POINT 2
@@ -13,11 +17,32 @@
 
 using namespace std;
 
+
+
 typedef struct Point_
 {
-    float x, y, z;  // X, Y, Z position
+    float x, y;  // X, Y, Z position
     int clusterID;  // clustered ID
 }Point;
+
+
+struct DBscan_Settings
+{
+    numb eps;			
+    int analysedVariable;	// Variable to analyse
+    numb CoefIntervals;
+    numb CoefPeaks;
+
+
+    __device__ DBscan_Settings(numb _eps, int _analysedVariable, numb _CoefIntervals, numb _CoefPeaks)
+    {
+        CoefIntervals = _CoefIntervals;
+        CoefPeaks = _CoefPeaks;
+        eps = _eps;
+        analysedVariable = _analysedVariable;
+    }
+
+};
 
 class DBSCAN {
 public:    
@@ -26,6 +51,7 @@ public:
         m_epsilon = eps;
         m_points = points;
         m_pointSize = points.size();
+        clusterCount = 0;
     }
     ~DBSCAN(){}
 
@@ -40,11 +66,15 @@ public:
     
 public:
     vector<Point> m_points;
+    int clusterCount;
     
 private:    
+    
     unsigned int m_pointSize;
     unsigned int m_minPoints;
     float m_epsilon;
 };
+
+__device__ void Period(Computation* data, DBscan_Settings settings, int variation,  int offset);
 
 #endif // DBSCAN_H

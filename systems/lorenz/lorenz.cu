@@ -6,7 +6,7 @@ namespace attributes
     enum variables { x, y, z };
     enum parameters { sigma, rho, beta, stepsize, symmetry, method };
     enum methods { ExplicitEuler, ExplicitMidpoint, ExplicitRungeKutta4, VariableSymmetryCD };
-    enum maps { LLE, MAX };
+    enum maps { LLE, MAX, Period };
 }
 
 __global__ void kernelProgram_lorenz(Computation* data)
@@ -43,6 +43,12 @@ __global__ void kernelProgram_lorenz(Computation* data)
     {
         MAX_Settings max_settings(MS(MAX, 0));
         MAX(data, max_settings, variation, &finiteDifferenceScheme_lorenz, MO(MAX));
+    }
+
+    if (M(Period).toCompute)
+    {
+        DBscan_Settings dbscan_settings(MS(Period, 0), MS(Period, 1), MS(Period, 2), MS(Period, 3));
+        Period(data, dbscan_settings, variation, MO(Period));
     }
 }
 
