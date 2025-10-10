@@ -23,7 +23,7 @@ __global__ void kernelProgram_lorenzVar(Computation* data)
 
     TRANSIENT_SKIP_NEW(finiteDifferenceScheme_lorenzVar);
 
-    for (int s = 0; s < CUDA_kernel.steps; s++)
+    for (int s = 0; s < CUDA_kernel.steps && !data->isHires; s++)
     {
         stepStart = variationStart + s * CUDA_kernel.VAR_COUNT;
         finiteDifferenceScheme_lorenzVar(FDS_ARGUMENTS);
@@ -48,7 +48,7 @@ __global__ void kernelProgram_lorenzVar(Computation* data)
     if (M(Period).toCompute)
     {
         DBscan_Settings dbscan_settings(MS(Period, 0), MS(Period, 1), MS(Period, 2), MS(Period, 3));
-        Period(data, dbscan_settings, variation, MO(Period));
+        Period(data, dbscan_settings, variation, &finiteDifferenceScheme_lorenzVar, MO(Period));
     }
 }
 

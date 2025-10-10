@@ -2,15 +2,18 @@
 
 __device__ void LLE(Computation* data, LLE_Settings settings, int variation, void(* finiteDifferenceScheme)(numb*, numb*, numb*), int offset)
 {
-    int variationStart = variation * CUDA_marshal.variationSize;
-    int stepStart = variationStart;
+    int stepStart, variationStart = variation * CUDA_marshal.variationSize;
+    LOCAL_BUFFERS;
+    LOAD_ATTRIBUTES;
+    TRANSIENT_SKIP_NEW(finiteDifferenceScheme);
 
-    numb LLE_array[MAX_ATTRIBUTES]; // The deflected trajectory
-    numb LLE_array_temp[MAX_ATTRIBUTES]; // Buffer for the next step of the deflected trajectory
+    numb LLE_array[MAX_ATTRIBUTES]{ 0 }; // The deflected trajectory
+    numb LLE_array_next[MAX_ATTRIBUTES]; // Buffer for the next step of the deflected trajectory
     numb LLE_value = 0.0f;
 
     for (int i = 0; i < CUDA_kernel.VAR_COUNT; i++)
-        LLE_array[i] = CUDA_marshal.trajectory[stepStart + i];
+        if (!data->isHires)     LLE_array[i] = CUDA_marshal.trajectory[variationStart + i];
+        else                    LLE_array[i] = variables[i];
 
     numb r = settings.r;
     int L = settings.L;
@@ -20,11 +23,16 @@ __device__ void LLE(Computation* data, LLE_Settings settings, int variation, voi
     {
         stepStart = variationStart + s * CUDA_kernel.VAR_COUNT;
 
+        // Normal step, if hi-res
+        NORMAL_STEP_IN_ANALYSIS_IF_HIRES;
+
+        // Deflected step
+        finiteDifferenceScheme(LLE_array, LLE_array_next, &(parameters[0]));
+
         for (int i = 0; i < CUDA_kernel.VAR_COUNT; i++)
-            LLE_array_temp[i] = LLE_array[i];
+            LLE_array[i] = LLE_array_next[i];
 
-        finiteDifferenceScheme(LLE_array_temp, LLE_array, &(CUDA_marshal.parameterVariations[variation * CUDA_kernel.PARAM_COUNT]));
-
+        // LLE calculations
         if (s % L == 0)
         {
             numb norm = 0.0;
@@ -33,7 +41,7 @@ __device__ void LLE(Computation* data, LLE_Settings settings, int variation, voi
                 if (settings.normVariables[i] == -1) break;
 
                 numb x1 = LLE_array[settings.normVariables[i]];
-                numb x2 = CUDA_marshal.trajectory[stepStart + settings.normVariables[i]];
+                numb x2 = !data->isHires ? CUDA_marshal.trajectory[stepStart + settings.normVariables[i]] : variables[settings.normVariables[i]];
                 norm += (x2 - x1) * (x2 - x1);
             }
 
@@ -44,7 +52,8 @@ __device__ void LLE(Computation* data, LLE_Settings settings, int variation, voi
 
             // Reset
             for (int i = 0; i < CUDA_kernel.VAR_COUNT; i++)
-                LLE_array[i] = CUDA_marshal.trajectory[stepStart + i] + (LLE_array[i] - CUDA_marshal.trajectory[stepStart + i]) / growth;
+                if (!data->isHires) LLE_array[i] = CUDA_marshal.trajectory[stepStart + i] + (LLE_array[i] - CUDA_marshal.trajectory[stepStart + i]) / growth;
+                else LLE_array[i] = variables[i] + (LLE_array[i] - variables[i]) / growth;
         }
     }
 

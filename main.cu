@@ -16,10 +16,17 @@ cudaError_t execute(Computation* data)
     unsigned long long size = CUDA_marshal.variationSize * variations;
     int totalMapValues = !data->isHires ? CUDA_marshal.totalMapValuesPerVariation : 1; // We always only calculate one map in hi-res, controlled by "toCompute"s
 
+    // How Hi-res is optimized:
+    // 1. We don't need to transfer any of the trajectory data at all. In fact, we don't need any host-side trajectory buffers.
+    //    But we still need trajectory memory on the device to then use in LLE and other analysis maps.
+    //    In theory, we could calculate the trajectories and analyze them on the fly.
+    //    This requires modifying all analysis functions but could greatly decrease the memory cost.
+    // 2. We still need to send the end state back, but we'll do this via "variableInits" buffer, not the "trajectory"
+
     //std::chrono::steady_clock::time_point before = std::chrono::steady_clock::now();
     //std::chrono::steady_clock::time_point precompute, incompute;
     //std::chrono::steady_clock::time_point postcompute;
-    std::chrono::steady_clock::time_point tp[7];
+    std::chrono::steady_clock::time_point tp[8];
 
     cudaError_t cudaStatus;
 
@@ -35,19 +42,21 @@ cudaError_t execute(Computation* data)
     int* cuda_stepIndices = nullptr;
     numb* cuda_maps = nullptr;
 
+    tp[0] = std::chrono::steady_clock::now();
+
     CUDA_SET_DEVICE;
 
-    tp[0] = std::chrono::steady_clock::now();
+    tp[1] = std::chrono::steady_clock::now();
 
     // Allocation memory on the device for the Computation struct and the buffers
     CUDA_MALLOC(&cuda_computation, sizeof(Computation), "cudaMalloc computation failed!");
-    CUDA_MALLOC(&cuda_trajectory, size * sizeof(numb), "cudaMalloc data failed!");
+    if (!data->isHires) CUDA_MALLOC(&cuda_trajectory, size * sizeof(numb), "cudaMalloc data failed!");
     CUDA_MALLOC(&cuda_variables, variations * CUDA_kernel.VAR_COUNT * sizeof(numb), "cudaMalloc vars failed!");
     CUDA_MALLOC(&cuda_parameters, variations * CUDA_kernel.PARAM_COUNT * sizeof(numb), "cudaMalloc params failed!");
     CUDA_MALLOC(&cuda_stepIndices, variations * CUDA_ATTR_COUNT * sizeof(int), "cudaMalloc indices failed!");
     if (totalMapValues > 0 && variations > 1) CUDA_MALLOC(&cuda_maps, variations * totalMapValues * sizeof(numb), "cudaMalloc maps failed!");
 
-    tp[1] = std::chrono::steady_clock::now();
+    tp[2] = std::chrono::steady_clock::now();
 
     // Copying the Computation struct to the device
     CUDA_MEMCPY(cuda_computation, data, cudaMemcpyHostToDevice, sizeof(Computation), "cudaMemcpy computation failed!");
@@ -58,7 +67,7 @@ cudaError_t execute(Computation* data)
     CUDA_MEMCPY(&(cuda_computation->marshal.stepIndices), &cuda_stepIndices, cudaMemcpyHostToDevice, sizeof(int*), "cudaMemcpy indices address failed!");
     if (totalMapValues > 0 && variations > 1) CUDA_MEMCPY(&(cuda_computation->marshal.maps), &cuda_maps, cudaMemcpyHostToDevice, sizeof(numb*), "cudaMemcpy maps address failed!");
 
-    tp[2] = std::chrono::steady_clock::now();
+    tp[3] = std::chrono::steady_clock::now();
 
     // Copying the values in the buffers themselves to the device
     //CUDA_MEMCPY(cuda_trajectory, CUDA_marshal.trajectory, cudaMemcpyHostToDevice, size * sizeof(numb), "cudaMemcpy data failed!");
@@ -69,7 +78,7 @@ cudaError_t execute(Computation* data)
     if (variations > 1) CUDA_MEMCPY(cuda_maps, CUDA_marshal.maps + (!data->isHires ? 0 : data->startVariationInCurrentExecute),
         cudaMemcpyHostToDevice, variations * totalMapValues * sizeof(numb), "cudaMemcpy maps failed!");
 
-    tp[3] = std::chrono::steady_clock::now();
+    tp[4] = std::chrono::steady_clock::now();
 
     // Kernel execution
     //precompute = std::chrono::steady_clock::now();
@@ -78,14 +87,23 @@ cudaError_t execute(Computation* data)
     CUDA_SYNCHRONIZE;
     //incompute = std::chrono::steady_clock::now();
 
-    tp[4] = std::chrono::steady_clock::now();
+    tp[5] = std::chrono::steady_clock::now();
 
     // Copying the trajectories and the maps back to the host
-    CUDA_MEMCPY(CUDA_marshal.trajectory, cuda_trajectory, cudaMemcpyDeviceToHost, size * sizeof(numb), "cudaMemcpy back failed!");
+    if (!data->isHires)
+    {
+        // Copying back the entire trajectory in interactive mode
+        CUDA_MEMCPY(CUDA_marshal.trajectory, cuda_trajectory, cudaMemcpyDeviceToHost, size * sizeof(numb), "cudaMemcpy back failed!");
+    }
+    else
+    {
+        // Only copying back the end state in hi-res mode
+        CUDA_MEMCPY(CUDA_marshal.variableInits, cuda_variables, cudaMemcpyDeviceToHost, variations * CUDA_kernel.VAR_COUNT * sizeof(numb), "cudaMemcpy vars back failed!");
+    }
     if (variations > 1) CUDA_MEMCPY(CUDA_marshal.maps + (!data->isHires ? 0 : data->startVariationInCurrentExecute), cuda_maps,
         cudaMemcpyDeviceToHost, variations * totalMapValues * sizeof(numb), "cudaMemcpy maps back failed!");
 
-    tp[5] = std::chrono::steady_clock::now();
+    tp[6] = std::chrono::steady_clock::now();
 
 Error:
     if (cuda_trajectory != nullptr) cudaFree(cuda_trajectory);
@@ -96,12 +114,14 @@ Error:
 
     CUDA_RESET;
 
-    tp[6] = std::chrono::steady_clock::now();
+    tp[7] = std::chrono::steady_clock::now();
 
-    for (int i = 0; i < 6; i++)
+    for (int i = 0; i < 7; i++)
     {
-        //printf("tp %i-%i: %Ii ms\n", i, i + 1, std::chrono::duration_cast<std::chrono::milliseconds>(tp[i + 1] - tp[i]).count());
+        printf("tp %i-%i: %Ii ms\n", i, i + 1, std::chrono::duration_cast<std::chrono::milliseconds>(tp[i + 1] - tp[i]).count());
     }
+
+    printf("execute time: %Ii ms\n", std::chrono::duration_cast<std::chrono::milliseconds>(tp[7] - tp[0]).count());
 
     //postcompute = std::chrono::steady_clock::now();
     //printf("Precompute time: %Ii ms\n", std::chrono::duration_cast<std::chrono::milliseconds>(precompute - before).count());
@@ -134,7 +154,7 @@ int compute(Computation* data)
 
     unsigned long long variationsInBuffers = !data->isHires ? variations : data->variationsPerParallelization;
     
-    if (CUDA_marshal.trajectory == nullptr)
+    if (CUDA_marshal.trajectory == nullptr && !data->isHires)
     {
         CUDA_marshal.trajectory = new numb[variationSize * variationsInBuffers];
         //cudaHostAlloc(&(CUDA_marshal.trajectory), variationSize * variationsInBuffers * sizeof(numb), cudaHostAllocDefault);
@@ -180,6 +200,8 @@ int compute(Computation* data)
             data->isFirst = true;
             for (int b = 0; b < data->buffersPerVariation; b++)
             {
+                std::chrono::steady_clock::time_point hiresBefore = std::chrono::steady_clock::now();
+
                 fillAttributeBuffers(data, attributeStepIndices, v, v + variationsCurrent, !data->isFirst);
 
 #if IS_CPU_BENCHMARKING
@@ -191,6 +213,11 @@ int compute(Computation* data)
 
                 if (cudaStatus != cudaSuccess) { fprintf(stderr, "execute failed!\n"); hasFailed = true; break; }
                 data->isFirst = false;
+
+                std::chrono::steady_clock::time_point hiresAfter = std::chrono::steady_clock::now();
+                std::chrono::steady_clock::duration hiresElapsed = hiresAfter - hiresBefore;
+                auto hiresTimeElapsed = std::chrono::duration_cast<std::chrono::milliseconds>(hiresElapsed).count();
+                printf("Hires buffer elapsed: %f ms\n", (float)hiresTimeElapsed);
             }
 
             data->variationsFinished = v;
@@ -227,8 +254,8 @@ void fillAttributeBuffers(Computation* data, int* attributeStepIndices, unsigned
             {
                 // i * stride - start of the variation, + v for the variable
                 // setting a value from the variable's ranged values, knowing the step index is among the first of "attribute step indices"
-                CUDA_marshal.trajectory[i * varStride + v] = CUDA_marshal.variableInits[i * varInitStride + v]
-                    = CUDA_kernel.variables[v].values[attributeStepIndices[v]];
+                CUDA_marshal.variableInits[i * varInitStride + v] = CUDA_kernel.variables[v].values[attributeStepIndices[v]];
+                if (!data->isHires) CUDA_marshal.trajectory[i * varStride + v] = CUDA_marshal.variableInits[i * varInitStride + v];
             }
         }
         else
@@ -238,8 +265,18 @@ void fillAttributeBuffers(Computation* data, int* attributeStepIndices, unsigned
             {
                 // Left side is the first step of the trajectory
                 // Right side is the last step of the previous trajectory
-                CUDA_marshal.trajectory[i * varStride + v] = CUDA_marshal.variableInits[i * varInitStride + v] 
-                    = data->otherMarshal->trajectory[i * varStride + (CUDA_kernel.steps * CUDA_kernel.VAR_COUNT) + v];
+                if (!data->isHires)
+                {
+                    // Left side is the first step of the trajectory
+                    // Right side is the last step of the previous trajectory
+                    CUDA_marshal.trajectory[i * varStride + v] = CUDA_marshal.variableInits[i * varInitStride + v]
+                        = data->otherMarshal->trajectory[i * varStride + (CUDA_kernel.steps * CUDA_kernel.VAR_COUNT) + v];
+                }
+                else
+                {
+                    // In Hi-res we only store the end state in "variableInits" to pick up in the next buffer
+                    CUDA_marshal.variableInits[i * varInitStride + v] = data->otherMarshal->variableInits[i * varInitStride + v];
+                }
             }
         }
 

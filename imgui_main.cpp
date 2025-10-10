@@ -823,7 +823,7 @@ int imgui_main(int, char**)
 
         bool computation0InProgress = !computations[0].ready && computations[0].marshal.trajectory != nullptr;
         bool computation1InProgress = !computations[1].ready && computations[1].marshal.trajectory != nullptr;
-        bool computationHiresInProgress = !computationHires.ready && computationHires.marshal.trajectory != nullptr;
+        bool computationHiresInProgress = !computationHires.ready && computationHires.marshal.variableInits != nullptr;
         if (autoLoadNewParams || playingParticles || computation0InProgress || computation1InProgress || computationHiresInProgress)OrbitRedraw = true; else OrbitRedraw = false;
 
         if (!HIRES_ON)

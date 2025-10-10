@@ -14,16 +14,14 @@ __global__ void kernelProgram_lorenz(Computation* data)
     int variation = (blockIdx.x * blockDim.x) + threadIdx.x;            // Variation (parameter combination) index
     if (variation >= CUDA_marshal.totalVariations) return;      // Shutdown thread if there isn't a variation to compute
     int stepStart, variationStart = variation * CUDA_marshal.variationSize;         // Start index to store the modelling data for the variation
-    numb variables[MAX_ATTRIBUTES];
-    numb variablesNext[MAX_ATTRIBUTES];
-    numb parameters[MAX_ATTRIBUTES];
+    LOCAL_BUFFERS;
     LOAD_ATTRIBUTES;
 
     // Custom area (usually) starts here
 
     TRANSIENT_SKIP_NEW(finiteDifferenceScheme_lorenz);
 
-    for (int s = 0; s < CUDA_kernel.steps; s++)
+    for (int s = 0; s < CUDA_kernel.steps && !data->isHires; s++)
     {
         stepStart = variationStart + s * CUDA_kernel.VAR_COUNT;
         finiteDifferenceScheme_lorenz(FDS_ARGUMENTS);
@@ -48,7 +46,7 @@ __global__ void kernelProgram_lorenz(Computation* data)
     if (M(Period).toCompute)
     {
         DBscan_Settings dbscan_settings(MS(Period, 0), MS(Period, 1), MS(Period, 2), MS(Period, 3));
-        Period(data, dbscan_settings, variation, MO(Period));
+        Period(data, dbscan_settings, variation, &finiteDifferenceScheme_lorenz, MO(Period));
     }
 }
 

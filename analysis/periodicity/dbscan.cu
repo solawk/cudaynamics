@@ -1,15 +1,25 @@
 #include "dbscan.h"
 
-
-__device__  void Period(Computation* data, DBscan_Settings settings, int variation,  int offset) {
+__device__  void Period(Computation* data, DBscan_Settings settings, int variation, void(*finiteDifferenceScheme)(numb*, numb*, numb*), int offset) {
     int variationStart = variation * CUDA_marshal.variationSize;
+    int varCount = CUDA_kernel.VAR_COUNT;
+    int variationSize = CUDA_marshal.variationSize;
+
+    LOCAL_BUFFERS;
+    LOAD_ATTRIBUTES;
+    TRANSIENT_SKIP_NEW(finiteDifferenceScheme);
+    int stepStart, s = -1;
+    numb variablesPrev[MAX_ATTRIBUTES]{ 0 }, variablesCurr[MAX_ATTRIBUTES]{ 0 }; // variables will store "next" values, variablesPrev – "prev", variablesCurr – "curr"
+    // When using hi-res (with no trajectory buffer available), one trajectory steps is precomputed, making first "prev" and "curr" values
+    // Each next computed step will be a "next" one
+    for (int v = 0; v < varCount; v++) variablesPrev[v] = variables[v];
+    NORMAL_STEP_IN_ANALYSIS_IF_HIRES;
+    for (int v = 0; v < varCount; v++) variablesCurr[v] = variables[v];
+
     numb eps = settings.eps;
     int analysedVariable = settings.analysedVariable;
     numb coefPeaks = settings.CoefPeaks;
     numb coefIntervals = settings.CoefIntervals;
-
-    int varCount = CUDA_kernel.VAR_COUNT;
-    int variationSize = CUDA_marshal.variationSize;
 
     // Buffer to hold peak data (amplitudes and indices)
     constexpr int MAX_PEAKS = 512;
@@ -21,11 +31,31 @@ __device__  void Period(Computation* data, DBscan_Settings settings, int variati
     bool firstpeakreached = false;
     numb temppeakindex;
     numb* computedVariation = CUDA_marshal.trajectory + variationStart;
-    for (int i = 1; i < variationSize / varCount - 1 && peakCount < MAX_PEAKS; i++)
+    for (int i = 1; i < (variationSize / varCount) - 1 && peakCount < MAX_PEAKS; i++)
     {
-        numb prev = computedVariation[analysedVariable + varCount * i - varCount];
-        numb curr = computedVariation[analysedVariable + varCount * i];
-        numb next = computedVariation[analysedVariable + varCount * i + varCount];
+        NORMAL_STEP_IN_ANALYSIS_IF_HIRES;
+
+        numb prev, curr, next;
+
+        if (!data->isHires)
+        {
+            prev = computedVariation[analysedVariable + varCount * i - varCount];
+            curr = computedVariation[analysedVariable + varCount * i];
+            next = computedVariation[analysedVariable + varCount * i + varCount];
+        }
+        else
+        {
+            prev = variablesPrev[analysedVariable];
+            curr = variablesCurr[analysedVariable];
+            next = variablesNext[analysedVariable];
+
+            for (int v = 0; v < varCount; v++)
+            {
+                variablesPrev[v] = variablesCurr[v];
+                variablesCurr[v] = variables[v];
+            }
+        }
+
         if (curr > prev && curr > next)
         {
             tempPeakFound = false;

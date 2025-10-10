@@ -9,8 +9,13 @@
 // Parameter value in the FDS
 #define P(n)			parameters[attributes::parameters::n]
 
-#define LOAD_ATTRIBUTES for (int i = 0; i < CUDA_kernel.VAR_COUNT; i++) CUDA_marshal.trajectory[variationStart + i] = variables[i] = CUDA_marshal.variableInits[variation * CUDA_kernel.VAR_COUNT + i]; \
-                        for (int i = 0; i < CUDA_kernel.PARAM_COUNT; i++) parameters[i] = CUDA_marshal.parameterVariations[variation * CUDA_kernel.PARAM_COUNT + i];
+#define LOCAL_BUFFERS   numb variables[MAX_ATTRIBUTES]; \
+                        numb variablesNext[MAX_ATTRIBUTES]; \
+                        numb parameters[MAX_ATTRIBUTES];
+
+#define LOAD_ATTRIBUTES for (int i = 0; i < CUDA_kernel.VAR_COUNT; i++) variables[i] = CUDA_marshal.variableInits[variation * CUDA_kernel.VAR_COUNT + i]; \
+                        for (int i = 0; i < CUDA_kernel.PARAM_COUNT; i++) parameters[i] = CUDA_marshal.parameterVariations[variation * CUDA_kernel.PARAM_COUNT + i]; \
+                        if (!data->isHires) for (int i = 0; i < CUDA_kernel.VAR_COUNT; i++) CUDA_marshal.trajectory[variationStart + i] = variables[i];
 
 // Map
 #define M(n)			CUDA_kernel.mapDatas[attributes::maps::n]
@@ -83,12 +88,22 @@
                                     FDS(&(variables[0]), &(transientBuffer[0]), &(parameters[0]));  \
                                     for (int v = 0; v < CUDA_kernel.VAR_COUNT; v++) variables[v] = transientBuffer[v];  \
                                 }  \
-                                for (int v = 0; v < CUDA_kernel.VAR_COUNT; v++) CUDA_marshal.trajectory[variationStart + v] = variables[v]; \
+                                if (!data->isHires) for (int v = 0; v < CUDA_kernel.VAR_COUNT; v++) CUDA_marshal.trajectory[variationStart + v] = variables[v]; \
+                                else for (int v = 0; v < CUDA_kernel.VAR_COUNT; v++) CUDA_marshal.variableInits[v] = variables[v]; \
                             }
 
 #define FDS_ARGUMENTS   &(variables[0]), &(variablesNext[0]), &(parameters[0])
 
-#define RECORD_STEP for (int i = 0; i < CUDA_kernel.VAR_COUNT; i++) CUDA_marshal.trajectory[stepStart + CUDA_kernel.VAR_COUNT + i] = variables[i] = variablesNext[i];
+#define RECORD_STEP     if (!data->isHires) for (int i = 0; i < CUDA_kernel.VAR_COUNT; i++) CUDA_marshal.trajectory[stepStart + CUDA_kernel.VAR_COUNT + i] = variables[i] = variablesNext[i]; \
+                        else for (int i = 0; i < CUDA_kernel.VAR_COUNT; i++) \
+                        {   \
+                            variables[i] = variablesNext[i];    \
+                            if (s == CUDA_kernel.steps - 1) CUDA_marshal.variableInits[variation * CUDA_kernel.VAR_COUNT + i] = variables[i];   \
+                        }
+
+#define NORMAL_STEP_IN_ANALYSIS_IF_HIRES    if (data->isHires) { finiteDifferenceScheme(FDS_ARGUMENTS); RECORD_STEP; }
+
+//#define RECORD_STEP     for (int i = 0; i < CUDA_kernel.VAR_COUNT; i++) CUDA_marshal.trajectory[stepStart + CUDA_kernel.VAR_COUNT + i] = variables[i] = variablesNext[i];
 
 #define NORM_3D(x1, x2, y1, y2, z1, z2) sqrt((x2-x1)*(x2-x1) + (y2-y1)*(y2-y1) + (z2-z1)*(z2-z1))
 

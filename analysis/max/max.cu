@@ -2,8 +2,10 @@
 
 __device__ void MAX(Computation* data, MAX_Settings settings, int variation, void(* finiteDifferenceScheme)(numb*, numb*, numb*), int offset)
 {
-    int variationStart = variation * CUDA_marshal.variationSize;
-    int stepStart = variationStart;
+    int stepStart, variationStart = variation * CUDA_marshal.variationSize;
+    LOCAL_BUFFERS;
+    LOAD_ATTRIBUTES;
+    TRANSIENT_SKIP_NEW(finiteDifferenceScheme);
 
     int var = settings.maxVariableIndex;
     numb maxValue = 0.0;
@@ -11,7 +13,11 @@ __device__ void MAX(Computation* data, MAX_Settings settings, int variation, voi
     for (int s = 0; s < CUDA_kernel.steps; s++)
     {
         stepStart = variationStart + s * CUDA_kernel.VAR_COUNT;
-        if (s == 0 || maxValue < CUDA_marshal.trajectory[stepStart + var]) maxValue = CUDA_marshal.trajectory[stepStart + var];
+
+        NORMAL_STEP_IN_ANALYSIS_IF_HIRES;
+
+        numb value = !data->isHires ? CUDA_marshal.trajectory[stepStart + var] : variables[var];
+        if (s == 0 || maxValue < value) maxValue = value;
     }
 
     numb mapValue = maxValue;

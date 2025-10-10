@@ -17,8 +17,6 @@
 
 using namespace std;
 
-
-
 typedef struct Point_
 {
     float x, y;  // X, Y, Z position
@@ -75,6 +73,6 @@ private:
     float m_epsilon;
 };
 
-__device__ void Period(Computation* data, DBscan_Settings settings, int variation,  int offset);
+__device__ void Period(Computation* data, DBscan_Settings settings, int variation, void(*finiteDifferenceScheme)(numb*, numb*, numb*), int offset);
 
 #endif // DBSCAN_H
