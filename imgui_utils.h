@@ -34,3 +34,6 @@ void getMinMax2D(numb* data, int size, ImVec2* min, ImVec2* max, int varCount);
 std::string padString(std::string str, int length);
 
 void addDeltaQuatRotation(PlotWindow* window, float deltax, float deltay);
+
+// Get color of the plot/particle when heatmap-painting
+int getVariationGroup(colorLUT* lut, int variation);

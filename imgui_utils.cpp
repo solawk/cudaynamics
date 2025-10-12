@@ -366,3 +366,17 @@ void addDeltaQuatRotation(PlotWindow* window, float deltax, float deltay)
 	window->quatRot.y = quat.c();
 	window->quatRot.z = quat.d();
 }
+
+int getVariationGroup(colorLUT* lut, int variation)
+{
+	int variationGroup = -1;
+	int lutsize;
+	for (int g = 0; g < lut->lutGroups && variationGroup < 0; g++)
+	{
+		lutsize = lut->lutSizes[g];
+		for (int v = 0; v < lutsize && variationGroup < 0; v++)
+			if (variation == lut->lut[g][v]) variationGroup = g;
+	}
+
+	return variationGroup;
+}

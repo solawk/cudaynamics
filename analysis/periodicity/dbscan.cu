@@ -94,17 +94,19 @@ __device__  void Period(Computation* data, DBscan_Settings settings, int variati
         }
     }
    
+    
     for (int i = 0; i < peakCount-1; i++) {
         peakIntervals[i] *= coefIntervals; peakAmplitudes[i] *= coefPeaks;
     }
-
+    
     int cluster = 0;
     int NumNeibor = 0;
     int helpfulArray[MAX_PEAKS];
     for (int i = 0; i < MAX_PEAKS; ++i) {
         helpfulArray[i] = 0;
     }
-
+    
+    //
      for (int i = 0; i < peakCount; i++)
         if (NumNeibor >= 1)
         {
@@ -138,6 +140,7 @@ __device__  void Period(Computation* data, DBscan_Settings settings, int variati
             }
         }  
      cluster--;
+     //
 
      numb mapValue = cluster;
 
@@ -154,7 +157,6 @@ __device__  void Period(Computation* data, DBscan_Settings settings, int variati
      {
          CUDA_marshal.maps[mapPosition] = CUDA_marshal.maps[mapPosition] * (1.0f - CUDA_kernel.mapWeight) + mapValue * CUDA_kernel.mapWeight;
      }
-    
 }
 
 int DBSCAN::run()

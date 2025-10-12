@@ -9,6 +9,8 @@
 #include <objects.h>
 #include "benchmarking/cpu_bm.h"
 
+#define PRINT_TIME 0
+
 cudaError_t execute(Computation* data)
 {
     // Hi-res only requires limited amount of variations
@@ -118,10 +120,14 @@ Error:
 
     for (int i = 0; i < 7; i++)
     {
+#if (PRINT_TIME)
         printf("tp %i-%i: %Ii ms\n", i, i + 1, std::chrono::duration_cast<std::chrono::milliseconds>(tp[i + 1] - tp[i]).count());
+#endif
     }
 
+#if (PRINT_TIME)
     printf("execute time: %Ii ms\n", std::chrono::duration_cast<std::chrono::milliseconds>(tp[7] - tp[0]).count());
+#endif
 
     //postcompute = std::chrono::steady_clock::now();
     //printf("Precompute time: %Ii ms\n", std::chrono::duration_cast<std::chrono::milliseconds>(precompute - before).count());
@@ -217,7 +223,9 @@ int compute(Computation* data)
                 std::chrono::steady_clock::time_point hiresAfter = std::chrono::steady_clock::now();
                 std::chrono::steady_clock::duration hiresElapsed = hiresAfter - hiresBefore;
                 auto hiresTimeElapsed = std::chrono::duration_cast<std::chrono::milliseconds>(hiresElapsed).count();
+#if (PRINT_TIME)
                 printf("Hires buffer elapsed: %f ms\n", (float)hiresTimeElapsed);
+#endif
             }
 
             data->variationsFinished = v;
