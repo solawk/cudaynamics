@@ -42,3 +42,43 @@ void MapToImg(numb* mapBuffer, unsigned char** dataBuffer, int width, int height
 			(*dataBuffer)[i4(3)] = (int)(c.w * 255);
 		}
 }
+
+void MultichannelMapToImg(HeatmapProperties* heatmap, unsigned char** dataBuffer, int width, int height, bool ch0, bool ch1, bool ch2)
+{
+	numb v[3];
+	ImVec4 c;
+	int i;
+	numb min, max;
+	bool channelExists[3]{ heatmap->channel[0].valueBuffer != nullptr && ch0, heatmap->channel[1].valueBuffer != nullptr && ch1, heatmap->channel[2].valueBuffer != nullptr && ch2 };
+
+	for (int y = 0; y < height; y++)
+		for (int x = 0; x < width; x++)
+		{
+			i = y * width + x;
+			for (int c = 0; c < 3; c++)
+			{
+				v[c] = channelExists[c] ? heatmap->channel[c].valueBuffer[i] : (numb)0.0;
+
+				if (isnan(v[c]) || isinf(v[c]))
+				{
+					(*dataBuffer)[i4(c)] = 0;
+					continue;
+				}
+
+				min = heatmap->channel[c].heatmapMin;
+				max = heatmap->channel[c].heatmapMax;
+
+				if (v[c] <= min)
+					(*dataBuffer)[i4(c)] = 0;
+				else if (v[c] >= max)
+					(*dataBuffer)[i4(c)] = 255;
+				else
+					(*dataBuffer)[i4(c)] = (char)(255.0f * (v[c] - min) / (max - min));
+			}
+
+			if (!channelExists[0] && !channelExists[1] && !channelExists[2])
+				(*dataBuffer)[i4(3)] = 0;
+			else
+				(*dataBuffer)[i4(3)] = 255;
+		}
+}

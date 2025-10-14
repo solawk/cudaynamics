@@ -6,7 +6,7 @@
 // Maximum amount of variables and parameters in the plot
 #define MAX_VARS_PARAMS 32
 
-enum PlotType { Series, Phase, Phase2D, Orbit, Heatmap, Metric, PlotType_COUNT };
+enum PlotType { Series, Phase, Phase2D, Orbit, Heatmap, MCHeatmap, Metric, PlotType_COUNT };
 enum OrbitPlotType {  Peak_Bifurcation, Interval_Bifurcation, Bifurcation_3D, Selected_Var_Section, OrbitPlotType_COUNT};
 struct PlotWindow
 {

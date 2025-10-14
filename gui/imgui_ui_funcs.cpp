@@ -252,3 +252,26 @@ void listEnum(int i)
 
     if (!changeAllowed) POP_FRAME(4); // disabledText popped as well
 }
+
+void mapSelectionCombo(std::string name, int& selectedIndex, bool addEmpty)
+{
+    if (ImGui::BeginCombo(name.c_str(), (selectedIndex == -1 ? "-" : KERNEL.mapDatas[selectedIndex].name.c_str())))
+    {
+        for (int m = (addEmpty ? -1 : 0); m < KERNEL.MAP_COUNT; m++)
+        {
+            bool isSelected = selectedIndex == m;
+            ImGuiSelectableFlags selectableFlags = 0;
+
+            if (selectedIndex == m) selectableFlags = ImGuiSelectableFlags_Disabled;
+            if (m == -1)
+            {
+                if (ImGui::Selectable(("-##-_" + name).c_str(), isSelected, selectableFlags)) selectedIndex = m;
+            }
+            else
+            {
+                if (ImGui::Selectable((KERNEL.mapDatas[m].name + "##" + KERNEL.mapDatas[m].name + "_" + name).c_str(), isSelected, selectableFlags)) selectedIndex = m;
+            }
+        }
+        ImGui::EndCombo();
+    }
+}

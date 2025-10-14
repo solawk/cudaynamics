@@ -2,15 +2,26 @@
 #include "mapData_struct.h"
 #include "colorLUT_struct.h"
 
-struct HeatmapProperties
+struct HeatmapValues
 {
-	//int stride; // deprecated
-
+	numb* valueBuffer;
 	numb heatmapMax;
 	numb heatmapMin;
+	int mapValueIndex;
 	bool areHeatmapLimitsDefined;
-	void* texture;
 
+	HeatmapValues()
+	{
+		valueBuffer = nullptr;
+		areHeatmapLimitsDefined = false; 
+		heatmapMax = 0.0f;
+		heatmapMin = 0.0f;
+		mapValueIndex = 0;
+	}
+};
+
+struct HeatmapProperties
+{
 	bool areValuesDirty; // Values have changed and heatmap should be updated
 	bool isHeatmapDirty; // Values have not changed but its look has and should be updated
 
@@ -19,8 +30,14 @@ struct HeatmapProperties
 	bool isHeatmapSelectionModeOn;
 	bool isHeatmapAutoComputeOn;
 
-	numb* valueBuffer;			// values of the heatmap
+	// Default heatmaps (even hi-res ones) are not multichannel
+	// When a heatmap is multichannel, it uses the "channel[]" values to make up an RGB image
+	HeatmapValues values;
+	bool isMultichannel;
+	HeatmapValues channel[3];
+
 	unsigned char* pixelBuffer;	// pixel RGBA values of the heatmap
+	void* texture;
 	int* indexBuffer;
 	int lastBufferSize;
 
@@ -31,7 +48,6 @@ struct HeatmapProperties
 	int indexY;
 	MapDimensionType typeX;
 	MapDimensionType typeY;
-	int mapValueIndex;
 
 	bool initClickedLocation;
 	ImVec2 lastClickedLocation;
@@ -44,12 +60,8 @@ struct HeatmapProperties
 
 	HeatmapProperties()
 	{
-		heatmapMax = 0.0f;
-		heatmapMin = 0.0f;
-
 		isHeatmapSelectionModeOn = false;
 		isHeatmapAutoComputeOn = false;
-		areHeatmapLimitsDefined = false;
 
 		areValuesDirty = true;
 		isHeatmapDirty = true;
@@ -58,7 +70,6 @@ struct HeatmapProperties
 		showHeatmapValues = false;
 		showActualDiapasons = true;
 
-		valueBuffer = nullptr;
 		pixelBuffer = nullptr;
 		indexBuffer = nullptr;
 		lastBufferSize = -1;
@@ -69,8 +80,6 @@ struct HeatmapProperties
 		typeX = VARIABLE;
 		typeY = VARIABLE;
 
-		mapValueIndex = 0;
-
 		initClickedLocation = false;
 		lastClickedLocation = ImVec2(0.0f, 0.0f);
 		showDragLines = true;
@@ -80,13 +89,4 @@ struct HeatmapProperties
 		ignoreLimitsRecalculationOnSelection = false;
 		ignoreNextLimitsRecalculation = false;
 	}
-
-	/*void obtainAxis(MapData& mapData)
-	{
-		indexX = mapData.indexX;
-		indexY = mapData.indexY;
-
-		typeX = mapData.typeX;
-		typeY = mapData.typeY;
-	}*/
 };

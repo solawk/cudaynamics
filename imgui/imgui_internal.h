@@ -2590,7 +2590,7 @@ struct ImGuiContext
     ImGuiDockNode*          DebugHoveredDockNode;               // Hovered dock node.
 
     // Misc
-    float                   FramerateSecPerFrame[60];           // Calculate estimate of framerate for user over the last 60 frames..
+    float                   FramerateSecPerFrame[10];           // Calculate estimate of framerate for user over the last 60 frames..
     int                     FramerateSecPerFrameIdx;
     int                     FramerateSecPerFrameCount;
     float                   FramerateSecPerFrameAccum;

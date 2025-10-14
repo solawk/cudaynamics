@@ -42,7 +42,7 @@ void plotWindowMenu_File(PlotWindow* window)
 			{
 			case Heatmap:
 				bool isHires = hiresHeatmapWindow == window;
-				numb* values = isHires ? window->hireshmp.valueBuffer : window->hmp.valueBuffer;
+				numb* values = isHires ? window->hireshmp.values.valueBuffer : window->hmp.values.valueBuffer;
 				int valuesCount = isHires ? window->hireshmp.lastBufferSize : window->hmp.lastBufferSize;
 				std::string mapName = KERNEL.mapDatas[window->variables[0]].name;
 				if (values == nullptr) break;

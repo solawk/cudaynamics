@@ -13,3 +13,5 @@ void listVariable(int i);
 void listParameter(int i);
 
 void listEnum(int i);
+
+void mapSelectionCombo(std::string name, int& selectedIndex, bool addEmpty);
