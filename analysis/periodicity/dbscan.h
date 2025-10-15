@@ -30,14 +30,24 @@ struct DBscan_Settings
     int analysedVariable;	// Variable to analyse
     numb CoefIntervals;
     numb CoefPeaks;
+    numb maxAllowedValue;
+    numb epsFXP;
+    numb timeFractionEXP;
+    numb peakThreshold;
+    int stepsizeParamIndex;
 
 
-    __device__ DBscan_Settings(numb _eps, int _analysedVariable, numb _CoefIntervals, numb _CoefPeaks)
+    __device__ DBscan_Settings(numb _eps, int _analysedVariable, numb _CoefIntervals, numb _CoefPeaks, numb _maxAllowedValue, numb _epsFXP, numb _timeFractionEXP, numb _peakThreshold, int _stepsizeParamIndex)
     {
         CoefIntervals = _CoefIntervals;
         CoefPeaks = _CoefPeaks;
         eps = _eps;
         analysedVariable = _analysedVariable;
+        maxAllowedValue = _maxAllowedValue;
+        epsFXP = _epsFXP;
+        timeFractionEXP = _timeFractionEXP;
+        peakThreshold = _peakThreshold;
+        stepsizeParamIndex = _stepsizeParamIndex;
     }
 
 };
