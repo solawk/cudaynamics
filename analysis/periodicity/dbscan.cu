@@ -16,20 +16,29 @@ __device__  void Period(Computation* data, DBscan_Settings settings, int variati
     NORMAL_STEP_IN_ANALYSIS_IF_HIRES;
     for (int v = 0; v < varCount; v++) variablesCurr[v] = variables[v];
 
-    numb eps = settings.eps;
+    numb epsDBSCAN = settings.eps;
     int analysedVariable = settings.analysedVariable;
     numb coefPeaks = settings.CoefPeaks;
     numb coefIntervals = settings.CoefIntervals;
+    numb maxAllowedValue = settings.maxAllowedValue;
+    numb epsFXP = settings.epsFXP;
+    numb timeFractionFXP = settings.timeFractionEXP;
+    numb peakThreshold = settings.peakThreshold;
+    numb stepSize = settings.stepsizeParamIndex == -1 ? 1 : CUDA_kernel.parameters[settings.stepsizeParamIndex].min;
+    int fixedPointMaxCount = round((variationSize / varCount) * timeFractionFXP);
 
     // Buffer to hold peak data (amplitudes and indices)
-    constexpr int MAX_PEAKS = 512;
+    constexpr int MAX_PEAKS = 128;
     numb peakAmplitudes[MAX_PEAKS];
     numb peakIntervals[MAX_PEAKS];
 
+    bool returnNan = false, returnZero = false, WritingData = true;
+   
     int peakCount = 0;
     numb tempPeakAmp = 0, tempPeakTime = 0; bool tempPeakFound = false;
     bool firstpeakreached = false;
     numb temppeakindex;
+    int fixedPointCount = 0;
     numb* computedVariation = CUDA_marshal.trajectory + variationStart;
     for (int i = 1; i < (variationSize / varCount) - 1 && peakCount < MAX_PEAKS; i++)
     {
@@ -55,95 +64,127 @@ __device__  void Period(Computation* data, DBscan_Settings settings, int variati
                 variablesCurr[v] = variables[v];
             }
         }
+        
+        if (abs(next - curr) / stepSize < epsFXP) 
+        { 
+            fixedPointCount++; 
+            if (fixedPointCount > fixedPointMaxCount) 
+            { 
+                returnZero = true;  
+            } 
+        }
+        else 
+        { 
+            fixedPointCount = 0;  
+        }
 
-        if (curr > prev && curr > next)
-        {
-            tempPeakFound = false;
-            if (firstpeakreached == false)
-            {
-                firstpeakreached = true;
-                temppeakindex = (float)i;
-            }
-            else
+        
+        if (abs(curr) > maxAllowedValue) {
+            returnNan = true;
+        }
+        else if(curr>peakThreshold) {
+            if (curr > prev && curr > next)
             {
 
-                peakAmplitudes[peakCount] = curr;
-                peakIntervals[peakCount] = (i - temppeakindex) * CUDA_kernel.stepSize;
-                peakCount++;
-                temppeakindex = (float)i;
+                tempPeakFound = false;
+                if (firstpeakreached == false)
+                {
+                    firstpeakreached = true;
+                    temppeakindex = (float)i;
+                }
+                else
+                {
+                    if (WritingData) {
+                        peakAmplitudes[peakCount] = curr;
+                        peakIntervals[peakCount] = (i - temppeakindex) * stepSize;
+                        peakCount++;
+                    }
+                   
+                    temppeakindex = (float)i;
+                }
             }
-        }
-        else if (curr == next && curr > prev) {
-            tempPeakFound = true; tempPeakAmp = curr; tempPeakTime = i;
-        }
-        else if (curr < next) {
-            tempPeakFound = false;
-        }
-        else if (curr > next && tempPeakFound) {
-            if (firstpeakreached) {
-                peakAmplitudes[peakCount] = tempPeakAmp;  peakIntervals[peakCount] = (tempPeakTime - temppeakindex) * CUDA_kernel.stepSize;
-                peakCount++;
-                temppeakindex = (float)tempPeakTime;
+            else if (curr == next && curr > prev) {
+                tempPeakFound = true; tempPeakAmp = curr; tempPeakTime = i;
+            }
+            else if (curr < next) {
                 tempPeakFound = false;
             }
-            else {
-                firstpeakreached = true;
-                temppeakindex = (float)tempPeakTime;
-                tempPeakFound = false;
+            else if (curr > next && tempPeakFound) {
+                if (firstpeakreached) {
+                    if (WritingData) 
+                    { 
+                        peakAmplitudes[peakCount] = tempPeakAmp;  peakIntervals[peakCount] = (tempPeakTime - temppeakindex) * stepSize; peakCount++;
+                    }
+                    
+                    temppeakindex = (float)tempPeakTime;
+                    tempPeakFound = false;
+                }
+                else {
+                    firstpeakreached = true;
+                    temppeakindex = (float)tempPeakTime;
+                    tempPeakFound = false;
+                }
             }
+            if (peakCount >= MAX_PEAKS - 1) WritingData = false;
         }
     }
-   
-    
-    for (int i = 0; i < peakCount-1; i++) {
-        peakIntervals[i] *= coefIntervals; peakAmplitudes[i] *= coefPeaks;
-    }
-    
-    int cluster = 0;
-    int NumNeibor = 0;
-    int helpfulArray[MAX_PEAKS];
-    for (int i = 0; i < MAX_PEAKS; ++i) {
-        helpfulArray[i] = 0;
-    }
-    
-    //
-     for (int i = 0; i < peakCount; i++)
-        if (NumNeibor >= 1)
-        {
-            i = helpfulArray[peakCount + NumNeibor - 1];
-            helpfulArray[peakCount + NumNeibor - 1] = 0;
-            NumNeibor = NumNeibor - 1;
-            for (int k = 0; k < peakCount - 1; k++) {
-                if (i != k && helpfulArray[k] == 0) {
-                    if (sqrt(pow(peakAmplitudes[i] - peakAmplitudes[k], 2) + pow(peakIntervals[i] - peakIntervals[k], 2)) <= eps) {
-                        helpfulArray[k] = cluster;
-                        helpfulArray[peakCount + k] = k;
-                        ++NumNeibor;
-                    }
-                }
-
-            }
+    if (peakCount == 0)returnZero = true;
+    numb mapValue;
+    if (returnZero) { mapValue = 0; }
+    else if (returnNan) { mapValue = NAN; }
+    else{
+        for (int i = 0; i < peakCount - 1; i++) {
+            peakIntervals[i] *= coefIntervals; peakAmplitudes[i] *= coefPeaks;
         }
-        else if (helpfulArray[i] == 0) {
-            NumNeibor = 0;
-            ++cluster;
-            helpfulArray[i] = cluster;
-            for (int k = 0; k < peakCount - 1; k++) {
-                if (i != k && helpfulArray[peakCount + k] == 0) {
-                    if (sqrt(pow(peakAmplitudes[i] - peakAmplitudes[k], 2) + pow(peakIntervals[i] - peakIntervals[k], 2)) <= eps) {
-                        helpfulArray[k] = cluster;
-                        helpfulArray[peakCount + k] = k;
-                        ++NumNeibor;
+
+        int cluster = 0;
+        int NumNeibor = 0;
+        int helpfulArraySize = 2 * MAX_PEAKS;
+        int helpfulArray[2*MAX_PEAKS];
+        for (int i = 0; i < helpfulArraySize; ++i) {
+            helpfulArray[i] = 0;
+        }
+
+        //
+        for (int i = 0; i < peakCount; i++)
+            if (NumNeibor >= 1)
+            {
+                i = helpfulArray[peakCount + NumNeibor - 1];
+                helpfulArray[peakCount + NumNeibor - 1] = 0;
+                NumNeibor = NumNeibor - 1;
+                for (int k = 0; k < peakCount - 1; k++) {
+                    if (i != k && helpfulArray[k] == 0) {
+                        if (sqrt(pow(peakAmplitudes[i] - peakAmplitudes[k], 2) + pow(peakIntervals[i] - peakIntervals[k], 2)) <= epsDBSCAN) {
+                            helpfulArray[k] = cluster;
+                            helpfulArray[peakCount + k] = k;
+                            ++NumNeibor;
+                        }
                     }
+
                 }
-
             }
-        }  
-     cluster--;
-     //
+            else if (helpfulArray[i] == 0) {
+                NumNeibor = 0;
+                ++cluster;
+                helpfulArray[i] = cluster;
+                for (int k = 0; k < peakCount - 1; k++) {
+                    if (i != k && helpfulArray[peakCount + k] == 0) {
+                        if (sqrt(pow(peakAmplitudes[i] - peakAmplitudes[k], 2) + pow(peakIntervals[i] - peakIntervals[k], 2)) <= epsDBSCAN) {
+                            helpfulArray[k] = cluster;
+                            helpfulArray[peakCount + k] = k;
+                            ++NumNeibor;
+                        }
+                    }
 
-     numb mapValue = cluster;
+                }
+            }
+        cluster--;
 
+        //
+
+        mapValue = cluster;
+    }
+    
      if (CUDA_kernel.mapWeight == 0.0f)
      {
          numb existingValue = CUDA_marshal.maps[mapPosition] * data->bufferNo;
