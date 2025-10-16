@@ -41,8 +41,7 @@ struct HeatmapProperties
 	int* indexBuffer;
 	int lastBufferSize;
 
-	colorLUT dynamicLUT;
-	colorLUT staticLUT;
+	colorLUT paintLUT;
 
 	int indexX;
 	int indexY;

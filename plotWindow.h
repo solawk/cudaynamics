@@ -88,7 +88,7 @@ public:
 
 		settingsListEnabled = true;
 
-		markerWidth = 2.0f;
+		markerWidth = 1.0f;
 		markerOutlineWidth = 0.0f;
 		markerColor = ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
 

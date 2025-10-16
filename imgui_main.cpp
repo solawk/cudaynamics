@@ -54,8 +54,7 @@ float dragChangeSpeed = 1.0f;
 int bufferNo = 0;
 
 PlotWindow* colorsLUTfrom = nullptr;
-int staticLUTsize = 32;
-int dynamicLUTsize = 32;
+int paintLUTsize = 32;
 
 bool selectParticleTab = false;
 bool selectOrbitTab = true;
@@ -246,8 +245,7 @@ void unloadPlotWindows()
 {
     for (PlotWindow w : plotWindows)
     {
-        w.hmp.staticLUT.Clear();
-        w.hmp.dynamicLUT.Clear();
+        w.hmp.paintLUT.Clear();
         if (w.hmp.pixelBuffer != nullptr) delete[] w.hmp.pixelBuffer;
         // TODO: Delete hi-res, delete other buffers
     }
@@ -857,7 +855,6 @@ int imgui_main(int, char**)
             // Hi-res compute button
             if (ImGui::Button("= HI-RES COMPUTE =") || hiresComputeAfterShiftSelect)
             {
-                //printf("A\n");
                 prepareAndCompute(true); OrbitRedraw = true;
             }
         }
@@ -900,7 +897,7 @@ int imgui_main(int, char**)
             FullscreenButtonPressLogic(&graphBuilderWindow, ImGui::GetCurrentWindow());
 
             // Type
-            std::string plottypes[] = { "Time series", "3D Phase diagram", "2D Phase diagram", "Orbit diagram", "Heatmap", "Multichannel heatmap", "Metric diagram"};
+            std::string plottypes[] = { "Time series", "3D Phase diagram", "2D Phase diagram", "Orbit diagram", "Heatmap", "RGB Heatmap", "Metric diagram"};
             ImGui::Text("Plot type ");
             ImGui::SameLine();
             ImGui::PushItemWidth(250.0f);
@@ -1568,7 +1565,7 @@ int imgui_main(int, char**)
                                         ImPlot::SetNextLineStyle(window->plotColor);
                                     else
                                     {
-                                        colorLUT* lut = playingParticles ? &(colorsLUTfrom->hmp.dynamicLUT) : &(colorsLUTfrom->hmp.staticLUT);
+                                        colorLUT* lut = &(colorsLUTfrom->hmp.paintLUT);
                                         int variationGroup = getVariationGroup(lut, !window->drawAllTrajectories ? variation : vv);
                                         ImVec4 clr = ImPlot::SampleColormap((float)variationGroup / (lut->lutGroups - 1), colorsLUTfrom->hmp.colormap);
                                         clr.w = window->plotColor.w;
@@ -1584,7 +1581,7 @@ int imgui_main(int, char**)
                                         ImPlot3D::SetNextLineStyle(window->plotColor);
                                     else
                                     {
-                                        colorLUT* lut = playingParticles ? &(colorsLUTfrom->hmp.dynamicLUT) : &(colorsLUTfrom->hmp.staticLUT);
+                                        colorLUT* lut = &(colorsLUTfrom->hmp.paintLUT);
                                         int variationGroup = getVariationGroup(lut, variation);
                                         ImVec4 clr = ImPlot3D::SampleColormap((float)variationGroup / (lut->lutGroups - 1), colorsLUTfrom->hmp.colormap);
                                         clr.w = window->plotColor.w;
@@ -1629,7 +1626,7 @@ int imgui_main(int, char**)
                                 }
                                 else if (!colorsLUTfrom->hmp.isHeatmapDirty)
                                 {
-                                    colorLUT* lut = playingParticles ? &(colorsLUTfrom->hmp.dynamicLUT) : &(colorsLUTfrom->hmp.staticLUT);
+                                    colorLUT* lut = &(colorsLUTfrom->hmp.paintLUT);
 
                                     for (int g = 0; g < lut->lutGroups; g++)
                                     {
@@ -1667,7 +1664,7 @@ int imgui_main(int, char**)
                                 }
                                 else if (!colorsLUTfrom->hmp.isHeatmapDirty)
                                 {
-                                    colorLUT* lut = playingParticles ? &(colorsLUTfrom->hmp.dynamicLUT) : &(colorsLUTfrom->hmp.staticLUT);
+                                    colorLUT* lut = &(colorsLUTfrom->hmp.paintLUT);
 
                                     for (int g = 0; g < lut->lutGroups; g++)
                                     {
@@ -2355,8 +2352,6 @@ int imgui_main(int, char**)
 
                                 if (heatmap->areValuesDirty)
                                 {
-                                    printf("extracting\n");
-
                                     if (!isMC)
                                     {
                                         extractMap(cmp->marshal.maps + (cmp->marshal.kernel.mapDatas[mapIndex].offset + heatmap->values.mapValueIndex) * cmp->marshal.totalVariations,
@@ -2410,20 +2405,14 @@ int imgui_main(int, char**)
                                     // COLORS
                                     if (!isMC)
                                     {
-                                        heatmap->staticLUT.Clear();
-                                        heatmap->dynamicLUT.Clear();
+                                        heatmap->paintLUT.Clear();
 
-                                        heatmap->staticLUT.lutGroups = staticLUTsize;
-                                        heatmap->dynamicLUT.lutGroups = dynamicLUTsize;
-                                        heatmap->staticLUT.lut = new int* [staticLUTsize];
-                                        heatmap->dynamicLUT.lut = new int* [dynamicLUTsize];
-                                        for (int i = 0; i < staticLUTsize; i++) heatmap->staticLUT.lut[i] = new int[cmp->marshal.totalVariations];
-                                        for (int i = 0; i < dynamicLUTsize; i++) heatmap->dynamicLUT.lut[i] = new int[cmp->marshal.totalVariations];
-                                        heatmap->staticLUT.lutSizes = new int[staticLUTsize];
-                                        heatmap->dynamicLUT.lutSizes = new int[dynamicLUTsize];
+                                        heatmap->paintLUT.lutGroups = paintLUTsize;
+                                        heatmap->paintLUT.lut = new int*[paintLUTsize];
+                                        for (int i = 0; i < paintLUTsize; i++) heatmap->paintLUT.lut[i] = new int[cmp->marshal.totalVariations];
+                                        heatmap->paintLUT.lutSizes = new int[paintLUTsize];
 
-                                        setupLUT(cmp->marshal.maps + (cmp->marshal.kernel.mapDatas[mapIndex].offset + heatmap->values.mapValueIndex) * cmp->marshal.totalVariations, cmp->marshal.totalVariations, heatmap->staticLUT.lut, heatmap->staticLUT.lutSizes, staticLUTsize, heatmap->values.heatmapMin, heatmap->values.heatmapMax);
-                                        setupLUT(cmp->marshal.maps + (cmp->marshal.kernel.mapDatas[mapIndex].offset + heatmap->values.mapValueIndex) * cmp->marshal.totalVariations, cmp->marshal.totalVariations, heatmap->dynamicLUT.lut, heatmap->dynamicLUT.lutSizes, dynamicLUTsize, heatmap->values.heatmapMin, heatmap->values.heatmapMax);
+                                        setupLUT(cmp->marshal.maps + (cmp->marshal.kernel.mapDatas[mapIndex].offset + heatmap->values.mapValueIndex) * cmp->marshal.totalVariations, cmp->marshal.totalVariations, heatmap->paintLUT.lut, heatmap->paintLUT.lutSizes, paintLUTsize, heatmap->values.heatmapMin, heatmap->values.heatmapMax);
                                     }
 
                                     releaseHeatmap(window, isHires);
@@ -2455,7 +2444,7 @@ int imgui_main(int, char**)
                                             sizing.xSize, sizing.ySize, sizing.cutMinX, sizing.cutMinY, sizing.cutMaxX, sizing.cutMaxY);
 
                                         ImPlot::PlotHeatmap(("MapLabels " + std::to_string(mapIndex) + "##" + plotName + std::to_string(0)).c_str(),
-                                            (numb*)cutoffHeatmap, rows, cols, -1234.0, 1.0, "%.3f",
+                                            (numb*)cutoffHeatmap, rows, cols, -1234.0, 1.0, "test\n%.3f",
                                             ImPlotPoint(sizing.mapX1Cut, sizing.mapY1Cut), ImPlotPoint(sizing.mapX2Cut, sizing.mapY2Cut));
 
                                         delete[] cutoffHeatmap;

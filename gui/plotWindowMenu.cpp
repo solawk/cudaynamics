@@ -13,8 +13,7 @@ void plotWindowMenu_MetricPlot(PlotWindow* window);
 extern bool enabledParticles;
 extern bool autofitHeatmap;
 extern PlotWindow* colorsLUTfrom;
-extern int staticLUTsize;
-extern int dynamicLUTsize;
+extern int paintLUTsize;
 extern PlotWindow* hiresHeatmapWindow;
 
 void plotWindowMenu(PlotWindow* window)
@@ -239,16 +238,10 @@ void plotWindowMenu_HeatmapColors(PlotWindow* window)
 			}
 		}
 
-		int tempDLS = dynamicLUTsize;
-		int tempSLS = staticLUTsize;
-
-		ImGui::DragInt(("##" + windowName + "_dynamicLUT").c_str(), &(dynamicLUTsize));	ImGui::SameLine(); ImGui::Text("Colors when playing");
-		ImGui::DragInt(("##" + windowName + "_staticLUT").c_str(), &(staticLUTsize));	ImGui::SameLine(); ImGui::Text("Colors when paused");
-
-		if (dynamicLUTsize < 2) dynamicLUTsize = 2;
-		if (staticLUTsize < 2) staticLUTsize = 2;
-
-		if (tempDLS != dynamicLUTsize || tempSLS != staticLUTsize) window->hmp.isHeatmapDirty = true;
+		int tempLS = paintLUTsize;
+		ImGui::DragInt(("##" + windowName + "_paintLUT").c_str(), &(paintLUTsize));	ImGui::SameLine(); ImGui::Text("Colors");
+		if (paintLUTsize < 2) paintLUTsize = 2;
+		if (tempLS != paintLUTsize) window->hmp.isHeatmapDirty = true;
 
 		ImGui::EndMenu();
 	}
