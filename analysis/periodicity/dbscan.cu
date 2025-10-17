@@ -16,30 +16,33 @@ __device__  void Period(Computation* data, DBscan_Settings settings, int variati
     NORMAL_STEP_IN_ANALYSIS_IF_HIRES;
     for (int v = 0; v < varCount; v++) variablesCurr[v] = variables[v];
 
-    numb epsDBSCAN = settings.eps;
-    int analysedVariable = settings.analysedVariable;
-    numb coefPeaks = settings.CoefPeaks;
-    numb coefIntervals = settings.CoefIntervals;
-    numb maxAllowedValue = settings.maxAllowedValue;
-    numb epsFXP = settings.epsFXP;
-    numb timeFractionFXP = settings.timeFractionEXP;
-    numb peakThreshold = settings.peakThreshold;
-    numb stepSize = settings.stepsizeParamIndex == -1 ? 1 : CUDA_kernel.parameters[settings.stepsizeParamIndex].min;
-    int fixedPointMaxCount = round((variationSize / varCount) * timeFractionFXP);
+    // Map Settings for peak finder and DBSCAN analysis
+    numb epsDBSCAN = settings.eps;  //eps value for dbscan
+    int analysedVariable = settings.analysedVariable; //variable of which peak finder analyses trajectory
+    numb coefPeaks = settings.CoefPeaks;    //coefficient for peaks found in peakfinder
+    numb coefIntervals = settings.CoefIntervals; //coefficient for intervals found in peakfinder
+    numb maxAllowedValue = settings.maxAllowedValue;    //the maximum value allowed before peak finder deems system dispersive
+    numb epsFXP = settings.epsFXP;  //eps area used in checking if system is a fixed point
+    numb peakThreshold = settings.peakThreshold;    //minimum value of peak that can be found in peak finder, -inf by default
+    numb stepSize = settings.stepSize == -1 ? 1 : settings.stepSize;    //stepsize of system
+    numb timeFractionFXP = settings.timeFractionEXP;    //fraction of the trajectory that the system need to b e fixed point for peak finder to deem it a fixed point
+    int fixedPointMaxCount = round((variationSize / varCount) * timeFractionFXP);   //amount of steps in trajectory that the system need to be fixed point for peak finder to deem it a fixed point
 
     // Buffer to hold peak data (amplitudes and indices)
     constexpr int MAX_PEAKS = 128;
     numb peakAmplitudes[MAX_PEAKS];
     numb peakIntervals[MAX_PEAKS];
 
-    bool returnNan = false, returnZero = false, WritingData = true;
+    bool returnNan = false, returnZero = false, WritingData = true; //flags for if the system is dispersive, is a fixed point or if peakfinder has filled buffer and wont write any new peaks
    
-    int peakCount = 0;
-    numb tempPeakAmp = 0, tempPeakTime = 0; bool tempPeakFound = false;
-    bool firstpeakreached = false;
-    numb temppeakindex;
-    int fixedPointCount = 0;
+    //temp data used in analysis
+    int peakCount = 0; 
+    numb tempPeakAmp = 0, tempPeakTime = 0; bool tempPeakFound = false; // used in case if peak finder finds a horizontal line of equal values and doesnt know if there is a peak there until the line ends, while the line is being analysed the first value of the line is save into tempPeakAmp and tempPeakTime
+    bool firstpeakreached = false; // flag for the first peak in trajectory which we dont save into data and use just for its interval with the next peak
+    numb temppeakindex;     // used to save the time of last peak in trajectory
+    int fixedPointCount = 0;    // used to count how many continuous values in trajectory fulfiil the epsFXP requirement
     numb* computedVariation = CUDA_marshal.trajectory + variationStart;
+    //  Peak finder
     for (int i = 1; i < (variationSize / varCount) - 1 && peakCount < MAX_PEAKS; i++)
     {
         NORMAL_STEP_IN_ANALYSIS_IF_HIRES;
@@ -65,7 +68,7 @@ __device__  void Period(Computation* data, DBscan_Settings settings, int variati
             }
         }
         
-        if (abs(next - curr) / stepSize < epsFXP) 
+        if (abs(next - curr) / stepSize < epsFXP) // check the derivative for fixed point requirement
         { 
             fixedPointCount++; 
             if (fixedPointCount > fixedPointMaxCount) 
@@ -79,11 +82,11 @@ __device__  void Period(Computation* data, DBscan_Settings settings, int variati
         }
 
         
-        if (abs(curr) > maxAllowedValue) {
+        if (abs(curr) > maxAllowedValue) { //check if value is too big to be a dispesive system
             returnNan = true;
         }
-        else if(curr>peakThreshold) {
-            if (curr > prev && curr > next)
+        else if(curr>peakThreshold) { 
+            if (curr > prev && curr > next)     //peak found
             {
 
                 tempPeakFound = false;
@@ -103,13 +106,13 @@ __device__  void Period(Computation* data, DBscan_Settings settings, int variati
                     temppeakindex = (float)i;
                 }
             }
-            else if (curr == next && curr > prev) {
+            else if (curr == next && curr > prev) { // found a possible peak solved as a line by finiteDifferenceScheme
                 tempPeakFound = true; tempPeakAmp = curr; tempPeakTime = i;
             }
-            else if (curr < next) {
+            else if (curr < next) {    // case in which the line was likely not a peak
                 tempPeakFound = false;
             }
-            else if (curr > next && tempPeakFound) {
+            else if (curr > next && tempPeakFound) {    // the line value is larger than values before and after the line, which means first value of line is taken as peak
                 if (firstpeakreached) {
                     if (WritingData) 
                     { 
@@ -125,15 +128,17 @@ __device__  void Period(Computation* data, DBscan_Settings settings, int variati
                     tempPeakFound = false;
                 }
             }
-            if (peakCount >= MAX_PEAKS - 1) WritingData = false;
+            if (peakCount >= MAX_PEAKS - 1) WritingData = false; // case for filled buffer
         }
     }
     if (peakCount == 0)returnZero = true;
-    numb mapValue;
-    if (returnZero) { mapValue = 0; }
-    else if (returnNan) { mapValue = NAN; }
+    //
+
+    numb mapValue; 
+    if (returnZero) { mapValue = 0; }   // result if FXP system
+    else if (returnNan) { mapValue = NAN; } // result if dispersive system
     else{
-        for (int i = 0; i < peakCount - 1; i++) {
+        for (int i = 0; i < peakCount - 1; i++) {   // normalization of intervals and peak values for dbscan
             peakIntervals[i] *= coefIntervals; peakAmplitudes[i] *= coefPeaks;
         }
 
@@ -145,7 +150,7 @@ __device__  void Period(Computation* data, DBscan_Settings settings, int variati
             helpfulArray[i] = 0;
         }
 
-        //
+        //      DBSCAN
         for (int i = 0; i < peakCount; i++)
             if (NumNeibor >= 1)
             {
@@ -200,99 +205,6 @@ __device__  void Period(Computation* data, DBscan_Settings settings, int variati
      }
 }
 
-int DBSCAN::run()
-{
-    int clusterID = 1;
-    vector<Point>::iterator iter;
-    for(iter = m_points.begin(); iter != m_points.end(); ++iter)
-    {
-        if ( iter->clusterID == UNCLASSIFIED )
-        {
-            if ( expandCluster(*iter, clusterID) != FAILURE )
-            {
-                clusterID += 1; clusterCount++;
-            }
-        }
-    }
-    for (iter = m_points.begin(); iter != m_points.end(); ++iter) {
-        if (iter->clusterID == NOISE || iter->clusterID == FAILURE || iter->clusterID == UNCLASSIFIED) {
-            clusterCount++;
-        }
-    }
-
-    return 0;
-}
-
-int DBSCAN::expandCluster(Point point, int clusterID)
-{    
-    vector<int> clusterSeeds = calculateCluster(point);
-
-    if ( clusterSeeds.size() < m_minPoints )
-    {
-        point.clusterID = NOISE;
-        return FAILURE;
-    }
-    else
-    {
-        int index = 0, indexCorePoint = 0;
-        vector<int>::iterator iterSeeds;
-        for( iterSeeds = clusterSeeds.begin(); iterSeeds != clusterSeeds.end(); ++iterSeeds)
-        {
-            m_points.at(*iterSeeds).clusterID = clusterID;
-            if (m_points.at(*iterSeeds).x == point.x && m_points.at(*iterSeeds).y == point.y )
-            {
-                indexCorePoint = index;
-            }
-            ++index;
-        }
-        clusterSeeds.erase(clusterSeeds.begin()+indexCorePoint);
-
-        for( vector<int>::size_type i = 0, n = clusterSeeds.size(); i < n; ++i )
-        {
-            vector<int> clusterNeighors = calculateCluster(m_points.at(clusterSeeds[i]));
-
-            if ( clusterNeighors.size() >= m_minPoints )
-            {
-                vector<int>::iterator iterNeighors;
-                for ( iterNeighors = clusterNeighors.begin(); iterNeighors != clusterNeighors.end(); ++iterNeighors )
-                {
-                    if ( m_points.at(*iterNeighors).clusterID == UNCLASSIFIED || m_points.at(*iterNeighors).clusterID == NOISE )
-                    {
-                        if ( m_points.at(*iterNeighors).clusterID == UNCLASSIFIED )
-                        {
-                            clusterSeeds.push_back(*iterNeighors);
-                            n = clusterSeeds.size();
-                        }
-                        m_points.at(*iterNeighors).clusterID = clusterID;
-                    }
-                }
-            }
-        }
-
-        return SUCCESS;
-    }
-}
-
-vector<int> DBSCAN::calculateCluster(Point point)
-{
-    int index = 0;
-    vector<Point>::iterator iter;
-    vector<int> clusterIndex;
-    for( iter = m_points.begin(); iter != m_points.end(); ++iter)
-    {
-        if ( calculateDistance(point, *iter) <= m_epsilon )
-        {
-            clusterIndex.push_back(index);
-        }
-        index++;
-    }
-    return clusterIndex;
-}
-
-inline double DBSCAN::calculateDistance(const Point& pointCore, const Point& pointTarget )
-{
-    return pow(pointCore.x - pointTarget.x,2)+pow(pointCore.y - pointTarget.y,2);
-}
 
 
 

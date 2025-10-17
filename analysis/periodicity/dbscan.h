@@ -8,20 +8,8 @@
 #include "../computation_struct.h"
 #include "../mapData_struct.h"
 
-#define UNCLASSIFIED -1
-#define CORE_POINT 1
-#define BORDER_POINT 2
-#define NOISE -2
-#define SUCCESS 0
-#define FAILURE -3
-
 using namespace std;
 
-typedef struct Point_
-{
-    float x, y;  // X, Y, Z position
-    int clusterID;  // clustered ID
-}Point;
 
 
 struct DBscan_Settings
@@ -34,10 +22,10 @@ struct DBscan_Settings
     numb epsFXP;
     numb timeFractionEXP;
     numb peakThreshold;
-    int stepsizeParamIndex;
+    numb stepSize;
 
 
-    __device__ DBscan_Settings(numb _eps, int _analysedVariable, numb _CoefIntervals, numb _CoefPeaks, numb _maxAllowedValue, numb _epsFXP, numb _timeFractionEXP, numb _peakThreshold, int _stepsizeParamIndex)
+    __device__ DBscan_Settings(numb _eps, int _analysedVariable, numb _CoefIntervals, numb _CoefPeaks, numb _maxAllowedValue, numb _epsFXP, numb _timeFractionEXP, numb _peakThreshold, numb _stepSize)
     {
         CoefIntervals = _CoefIntervals;
         CoefPeaks = _CoefPeaks;
@@ -47,41 +35,11 @@ struct DBscan_Settings
         epsFXP = _epsFXP;
         timeFractionEXP = _timeFractionEXP;
         peakThreshold = _peakThreshold;
-        stepsizeParamIndex = _stepsizeParamIndex;
+        stepSize = _stepSize;
     }
 
 };
 
-class DBSCAN {
-public:    
-    DBSCAN(unsigned int minPts, float eps, vector<Point> points){
-        m_minPoints = minPts;
-        m_epsilon = eps;
-        m_points = points;
-        m_pointSize = (unsigned int)points.size();
-        clusterCount = 0;
-    }
-    ~DBSCAN(){}
-
-    int run();
-    vector<int> calculateCluster(Point point);
-    int expandCluster(Point point, int clusterID);
-    inline double calculateDistance(const Point& pointCore, const Point& pointTarget);
-
-    int getTotalPointSize() {return m_pointSize;}
-    int getMinimumClusterSize() {return m_minPoints;}
-    float getEpsilonSize() {return m_epsilon;}
-    
-public:
-    vector<Point> m_points;
-    int clusterCount;
-    
-private:    
-    
-    unsigned int m_pointSize;
-    unsigned int m_minPoints;
-    float m_epsilon;
-};
 
 __device__ void Period(Computation* data, DBscan_Settings settings, int variation, void(*finiteDifferenceScheme)(numb*, numb*, numb*), int offset);
 
