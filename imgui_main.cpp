@@ -425,6 +425,14 @@ int imgui_main(int, char**)
     int selectedPlotMCMaps[3]{ 0 };
     int selectedPlotMapMetric = 0;
 
+#define RESET_GRAPH_BUILDER_SETTINGS \
+    selectedPlotVars[0] = 0; for (int i = 1; i < 3; i++) selectedPlotVars[i] = -1;  \
+    selectedPlotVars[0] = 0; for (int i = 1; i < 3; i++) selectedPlotVars[i] = -1;  \
+    selectedPlotVarsSet.clear();  \
+    selectedPlotMap = 0;  \
+    for (int i = 0; i < 3; i++) selectedPlotMCMaps[i] = 0; \
+    selectedPlotMapMetric = 0;
+
     computations[0].marshal.trajectory = computations[1].marshal.trajectory = nullptr;
     computations[0].marshal.parameterVariations = computations[1].marshal.parameterVariations = nullptr;
     computations[0].isHires = computations[1].isHires = false;
@@ -893,7 +901,7 @@ int imgui_main(int, char**)
         if (/*graphBuilderWindowEnabled*/ 1)
         {
             FullscreenActLogic(&graphBuilderWindow, &fullscreenSize);
-            ImGui::Begin("Graph Builder", &graphBuilderWindowEnabled);
+            ImGui::Begin("Graph Builder", /*&graphBuilderWindowEnabled*/nullptr);
             FullscreenButtonPressLogic(&graphBuilderWindow, ImGui::GetCurrentWindow());
 
             // Type
@@ -907,7 +915,11 @@ int imgui_main(int, char**)
                 {
                     bool isSelected = plotType == t;
                     ImGuiSelectableFlags selectableFlags = 0;
-                    if (ImGui::Selectable(plottypes[t].c_str(), isSelected, selectableFlags)) plotType = (PlotType)t;
+                    if (ImGui::Selectable(plottypes[t].c_str(), isSelected, selectableFlags))
+                    {
+                        plotType = (PlotType)t;
+                        RESET_GRAPH_BUILDER_SETTINGS;
+                    }
                 }
 
                 ImGui::EndCombo();
@@ -954,41 +966,9 @@ int imgui_main(int, char**)
                 break;
 
             case Phase:
-                ImGui::PushItemWidth(150.0f);
-                for (int sv = 0; sv < 3; sv++)
-                {
-                    ImGui::Text(("Variable " + variablexyz[sv]).c_str());
-                    ImGui::SameLine();
-                    if (ImGui::BeginCombo(("##Plot builder var " + std::to_string(sv + 1)).c_str(), selectedPlotVars[sv] > -1 ? KERNEL.variables[selectedPlotVars[sv]].name.c_str() : "-"))
-                    {
-                        for (int v = (sv > 0 ? -1 : 0); v < KERNEL.VAR_COUNT; v++)
-                        {
-                            bool isSelected = selectedPlotVars[sv] == v;
-                            ImGuiSelectableFlags selectableFlags = 0;
-
-                            if (v == -1)
-                            {
-                                if (sv == 0 && (selectedPlotVars[1] > -1 || selectedPlotVars[2] > -1)) selectableFlags = ImGuiSelectableFlags_Disabled;
-                                if (sv == 1 && (selectedPlotVars[2] > -1)) selectableFlags = ImGuiSelectableFlags_Disabled;
-                                if (ImGui::Selectable("-", isSelected, selectableFlags)) selectedPlotVars[sv] = -1;
-                            }
-                            else
-                            {
-                                if (sv == 1 && selectedPlotVars[0] == -1) selectableFlags = ImGuiSelectableFlags_Disabled;
-                                if (sv == 2 && selectedPlotVars[1] == -1) selectableFlags = ImGuiSelectableFlags_Disabled;
-                                if (v == selectedPlotVars[(sv + 1) % 3] || v == selectedPlotVars[(sv + 2) % 3]) selectableFlags = ImGuiSelectableFlags_Disabled;
-                                if (ImGui::Selectable(v > -1 ? KERNEL.variables[v].name.c_str() : "-", isSelected, selectableFlags)) selectedPlotVars[sv] = v;
-                            }
-                        }
-                        ImGui::EndCombo();
-                    }
-                }
-                ImGui::PopItemWidth();
-                break;
-
             case Phase2D:
                 ImGui::PushItemWidth(150.0f);
-                for (int sv = 0; sv < 2; sv++)
+                for (int sv = 0; sv < (plotType == Phase ? 3 : 2); sv++)
                 {
                     ImGui::Text(("Variable " + variablexyz[sv]).c_str());
                     ImGui::SameLine();
@@ -1051,6 +1031,7 @@ int imgui_main(int, char**)
                 }
                 ImGui::PopItemWidth();
                 break;
+
             case Heatmap:
                 if (KERNEL.MAP_COUNT > 0)
                 {
@@ -1067,6 +1048,7 @@ int imgui_main(int, char**)
                 break;
             case MCHeatmap:
                 break;
+
             case Metric:
                 if (KERNEL.MAP_COUNT > 0)
                 {
@@ -1310,9 +1292,6 @@ int imgui_main(int, char**)
 
                 ImGui::SameLine();
                 ImGui::Text(("Variable: " + KERNEL.variables[window->variables[0]].name).c_str());
-
-                
-
             }
             if (window->type == Metric) {
                 Kernel* krnl =  &(KERNEL);
@@ -1355,6 +1334,8 @@ int imgui_main(int, char**)
             ImPlotColormap heatmapColorMap =  ImPlotColormap_Jet;
             ImVec4 rotationEuler;
             ImVec4 rotationEulerEditable, rotationEulerBeforeEdit;
+            enum PhaseSubType { Phase3D, PhaseImplot3D, Phase2D };
+            PhaseSubType subtype;
 
             switch (window->type)
             {
@@ -1410,66 +1391,89 @@ int imgui_main(int, char**)
                 break;
 
             case Phase:
+            case Phase2D:
                 // PHASE DIAGRAM
-                rotationEuler = ToEulerAngles(window->quatRot);
-                if (isnan(rotationEuler.x))
+                subtype = Phase3D;
+                if (window->isImplot3d) subtype = PhaseImplot3D;
+                if (window->type == Phase2D) subtype = Phase2D;
+
+                if (subtype != Phase2D)
                 {
-                    window->quatRot = ImVec4(1.0f, 0.0f, 0.0f, 0.0f);
+                    // Rotations (only useful for Phase 3D)
                     rotationEuler = ToEulerAngles(window->quatRot);
+                    if (isnan(rotationEuler.x))
+                    {
+                        window->quatRot = ImVec4(1.0f, 0.0f, 0.0f, 0.0f);
+                        rotationEuler = ToEulerAngles(window->quatRot);
+                    }
+
+                    rotationEulerEditable = rotationEuler.Div(DEG2RAD, false);
+                    rotationEulerBeforeEdit = rotationEulerEditable;
+                    rotationEulerEditable = rotationEulerEditable.Add(window->autorotate.ScalMult(frameTime, false));
+
+                    if (!window->isImplot3d && window->settingsListEnabled)
+                    {
+                        ImGui::DragFloat3("Rotation", (float*)&rotationEulerEditable, 1.0f);
+                        ImGui::DragFloat3("Automatic rotation", (float*)&window->autorotate, 0.1f);
+                        ImGui::DragFloat3("Offset", (float*)&window->offset, 0.01f);
+                        ImGui::DragFloat3("Scale", (float*)&window->scale, 0.01f);
+                    }
+
+                    if (window->scale.x < 0.0f) window->scale.x = 0.0f; if (window->scale.y < 0.0f) window->scale.y = 0.0f; if (window->scale.z < 0.0f) window->scale.z = 0.0f;
+
+                    if (rotationEulerBeforeEdit != rotationEulerEditable)
+                    {
+                        // Rotate quaternion by euler drag
+
+                        ImVec4 deltaEuler = rotationEulerEditable - rotationEulerBeforeEdit;
+
+                        quaternion::Quaternion<float> quatEditable(1.0f, 0.0f, 0.0f, 0.0f);
+                        quaternion::Quaternion<float> quatRot(window->quatRot.w, window->quatRot.x, window->quatRot.y, window->quatRot.z);
+                        quaternion::Quaternion<float> quatZ(cosf(deltaEuler.z * 0.5f * DEG2RAD), 0.0f, 0.0f, sinf(deltaEuler.z * 0.5f * DEG2RAD));
+                        quaternion::Quaternion<float> quatY(cosf(deltaEuler.y * 0.5f * DEG2RAD), 0.0f, sinf(deltaEuler.y * 0.5f * DEG2RAD), 0.0f);
+                        quaternion::Quaternion<float> quatX(cosf(deltaEuler.x * 0.5f * DEG2RAD), sinf(deltaEuler.x * 0.5f * DEG2RAD), 0.0f, 0.0f);
+
+                        if (deltaEuler.x != 0.0f) quatEditable = quatX * quatEditable;
+                        if (deltaEuler.y != 0.0f) quatEditable = quatY * quatEditable;
+                        if (deltaEuler.z != 0.0f) quatEditable = quatZ * quatEditable;
+
+                        quatEditable = quatRot * quatEditable;
+                        quatEditable = quaternion::normalize(quatEditable);
+
+                        window->quatRot = ImVec4(quatEditable.b(), quatEditable.c(), quatEditable.d(), quatEditable.a());
+                    }
+                    // Rotations end
                 }
 
-                rotationEulerEditable = rotationEuler.Div(DEG2RAD, false);
-                rotationEulerBeforeEdit = rotationEulerEditable;
-                rotationEulerEditable = rotationEulerEditable.Add(window->autorotate.ScalMult(frameTime, false));
-
-                if (!window->isImplot3d && window->settingsListEnabled)
-                {
-                    ImGui::DragFloat3("Rotation", (float*)&rotationEulerEditable, 1.0f);
-                    ImGui::DragFloat3("Automatic rotation", (float*)&window->autorotate, 0.1f);
-                    ImGui::DragFloat3("Offset", (float*)&window->offset, 0.01f);
-                    ImGui::DragFloat3("Scale", (float*)&window->scale, 0.01f);
-                }
-
-                if (window->scale.x < 0.0f) window->scale.x = 0.0f; if (window->scale.y < 0.0f) window->scale.y = 0.0f; if (window->scale.z < 0.0f) window->scale.z = 0.0f;
-
-                if (rotationEulerBeforeEdit != rotationEulerEditable)
-                {
-                    // Rotate quaternion by euler drag
-
-                    ImVec4 deltaEuler = rotationEulerEditable - rotationEulerBeforeEdit;
-
-                    quaternion::Quaternion<float> quatEditable(1.0f, 0.0f, 0.0f, 0.0f);
-                    quaternion::Quaternion<float> quatRot(window->quatRot.w, window->quatRot.x, window->quatRot.y, window->quatRot.z);
-                    quaternion::Quaternion<float> quatZ(cosf(deltaEuler.z * 0.5f * DEG2RAD), 0.0f, 0.0f, sinf(deltaEuler.z * 0.5f * DEG2RAD));
-                    quaternion::Quaternion<float> quatY(cosf(deltaEuler.y * 0.5f * DEG2RAD), 0.0f, sinf(deltaEuler.y * 0.5f * DEG2RAD), 0.0f);
-                    quaternion::Quaternion<float> quatX(cosf(deltaEuler.x * 0.5f * DEG2RAD), sinf(deltaEuler.x * 0.5f * DEG2RAD), 0.0f, 0.0f);
-
-                    if (deltaEuler.x != 0.0f) quatEditable = quatX * quatEditable;
-                    if (deltaEuler.y != 0.0f) quatEditable = quatY * quatEditable;
-                    if (deltaEuler.z != 0.0f) quatEditable = quatZ * quatEditable;
-
-                    quatEditable = quatRot * quatEditable;
-                    quatEditable = quaternion::normalize(quatEditable);
-
-                    window->quatRot = ImVec4(quatEditable.b(), quatEditable.c(), quatEditable.d(), quatEditable.a());
-                }
-
-                axisFlags |= ImPlotAxisFlags_NoGridLines | ImPlotAxisFlags_NoTickMarks | ImPlotAxisFlags_NoTickLabels;
                 if (window->whiteBg) { ImPlot::PushStyleColor(ImPlotCol_PlotBg, ImVec4(1.0f, 1.0f, 1.0f, 1.0f)); ImPlot::PushStyleColor(ImPlotCol_AxisGrid, ImVec4(0.2f, 0.2f, 0.2f, 1.0f)); }
 
+                axisFlags |= ImPlotAxisFlags_NoGridLines | ImPlotAxisFlags_NoTickMarks | ImPlotAxisFlags_NoTickLabels;
                 bool isPlotBegun;
-                if (window->isImplot3d)
-                    isPlotBegun = ImPlot3D::BeginPlot(plotName.c_str(), ImVec2(-1, -1), ImPlot3DFlags_NoLegend | ImPlot3DFlags_NoTitle | ImPlot3DFlags_NoClip);
-                else
+                switch (subtype)
+                {
+                case Phase3D:
                     isPlotBegun = ImPlot::BeginPlot(plotName.c_str(), "", "", ImVec2(-1, -1), ImPlotFlags_NoLegend | ImPlotFlags_NoTitle, axisFlags, axisFlags);
-
+                    break;
+                case PhaseImplot3D:
+                    isPlotBegun = ImPlot3D::BeginPlot(plotName.c_str(), ImVec2(-1, -1), ImPlot3DFlags_NoLegend | ImPlot3DFlags_NoTitle | ImPlot3DFlags_NoClip);
+                    break;
+                case Phase2D:
+                    isPlotBegun = ImPlot::BeginPlot(plotName.c_str(), "", "", ImVec2(-1, -1), ImPlotFlags_NoLegend | ImPlotFlags_NoTitle, 0, 0);
+                    break;
+                }
+                
                 if (isPlotBegun)
                 {
+                    if (subtype == Phase2D) ImPlot::SetupAxes(KERNEL.variables[window->variables[0]].name.c_str(), KERNEL.variables[window->variables[1]].name.c_str());
+
                     float plotRangeSize;
-                    if (window->isImplot3d)
-                        plot3d = ImPlot3D::GetCurrentPlot();
-                    else
+                    switch (subtype)
                     {
+                    case PhaseImplot3D:
+                        plot3d = ImPlot3D::GetCurrentPlot();
+                        break;
+                    case Phase3D:
+                    case Phase2D:
                         plot = ImPlot::GetCurrentPlot();
                         plotRangeSize = ((float)plot->Axes[ImAxis_X1].Range.Max - (float)plot->Axes[ImAxis_X1].Range.Min);
                         if (!computations[playedBufferIndex].ready)
@@ -1483,8 +1487,9 @@ int imgui_main(int, char**)
                     float deltax = -window->deltarotation.x; window->deltarotation.x = 0;
                     float deltay = -window->deltarotation.y; window->deltarotation.y = 0;
 
-                    if (!window->isImplot3d)
+                    switch (subtype)
                     {
+                    case Phase3D:
                         plot->is3d = true;
                         plot->deltax = &(window->deltarotation.x);
                         plot->deltay = &(window->deltarotation.y);
@@ -1539,42 +1544,52 @@ int imgui_main(int, char**)
                             DRAW_RULER_PART(CUSTOM_COLOR(ZAxis).x, CUSTOM_COLOR(ZAxis).y, CUSTOM_COLOR(ZAxis).z, alpha0.z, scale0.z * window->scale.z, scale0.z, 2);
                             DRAW_RULER_PART(CUSTOM_COLOR(ZAxis).x, CUSTOM_COLOR(ZAxis).y, CUSTOM_COLOR(ZAxis).z, alpha1.z, scale1.z * window->scale.z, scale1.z, 2);
                         }
+                        break;
+                    case PhaseImplot3D:
+                        ImPlot3D::PushStyleColor(ImPlot3DCol_FrameBg, ImVec4(0.07f, 0.07f, 0.07f, 1.0f));
+                        break;
+                    case Phase2D:
+                        plot->is3d = false;
+                        break;
                     }
 
-                    if (window->isImplot3d) ImPlot3D::PushStyleColor(ImPlot3DCol_FrameBg, ImVec4(0.07f, 0.07f, 0.07f, 1.0f));
-
+                    // Drawing
                     if (computations[playedBufferIndex].ready)
                     {
                         if (!enabledParticles) // Trajectory - one variation, all steps
                         {
-                            for (int vv = 0; vv < (!window->drawAllTrajectories ? 1 : computations[playedBufferIndex].marshal.totalVariations); vv++) // In case of drawing all trajectories
+                            for (int drawnVariation = 0; drawnVariation < (!window->drawAllTrajectories ? 1 : computations[playedBufferIndex].marshal.totalVariations); drawnVariation++) // In case of drawing all trajectories
                             {
-                                numb* computedVariation = computations[playedBufferIndex].marshal.trajectory + (computations[playedBufferIndex].marshal.variationSize * variation);
-                                if (window->drawAllTrajectories) computedVariation = computations[playedBufferIndex].marshal.trajectory + (computations[playedBufferIndex].marshal.variationSize * vv);
-
-                                if (!window->isImplot3d)
+                                numb* computedVariation =
+                                    computations[playedBufferIndex].marshal.trajectory + (computations[playedBufferIndex].marshal.variationSize * (window->drawAllTrajectories ? drawnVariation : variation));
+                                
+                                switch (subtype)
                                 {
+                                case Phase3D:
                                     memcpy(dataBuffer, computedVariation, computations[playedBufferIndex].marshal.variationSize * sizeof(numb));
 
                                     rotateOffsetBuffer(dataBuffer, computedSteps + 1, KERNEL.VAR_COUNT, window->variables[0], window->variables[1], window->variables[2],
                                         rotationEuler, window->offset, window->scale);
-
-                                    getMinMax2D(dataBuffer, computedSteps + 1, &(plot->dataMin), &(plot->dataMax), KERNEL.VAR_COUNT);
+                                    [[fallthrough]];
+                                case Phase2D:
+                                    getMinMax2D(subtype == Phase3D ? dataBuffer : computedVariation, computedSteps + 1, &(plot->dataMin), &(plot->dataMax), KERNEL.VAR_COUNT);
 
                                     if (colorsLUTfrom == nullptr)
                                         ImPlot::SetNextLineStyle(window->plotColor);
                                     else
                                     {
                                         colorLUT* lut = &(colorsLUTfrom->hmp.paintLUT);
-                                        int variationGroup = getVariationGroup(lut, !window->drawAllTrajectories ? variation : vv);
+                                        int variationGroup = getVariationGroup(lut, !window->drawAllTrajectories ? variation : drawnVariation);
                                         ImVec4 clr = ImPlot::SampleColormap((float)variationGroup / (lut->lutGroups - 1), colorsLUTfrom->hmp.colormap);
                                         clr.w = window->plotColor.w;
                                         ImPlot::SetNextLineStyle(clr);
                                     }
-                                    ImPlot::PlotLine(plotName.c_str(), &(dataBuffer[0]), &(dataBuffer[1]), computedSteps + 1, 0, 0, sizeof(numb) * KERNEL.VAR_COUNT);
-                                }
-                                else
-                                {
+                                    ImPlot::PlotLine(plotName.c_str(),
+                                        subtype == Phase3D ? &(dataBuffer[0]) : &(computedVariation[window->variables[0]]),
+                                        subtype == Phase3D ? &(dataBuffer[1]) : &(computedVariation[window->variables[1]]),
+                                        computedSteps + 1, 0, 0, sizeof(numb) * KERNEL.VAR_COUNT);
+                                    break;
+                                case PhaseImplot3D:
                                     ImPlot3D::SetupAxes(KERNEL.variables[window->variables[0]].name.c_str(), KERNEL.variables[window->variables[1]].name.c_str(), KERNEL.variables[window->variables[2]].name.c_str());
 
                                     if (colorsLUTfrom == nullptr)
@@ -1590,38 +1605,38 @@ int imgui_main(int, char**)
 
                                     ImPlot3D::PlotLine(plotName.c_str(), &(computedVariation[window->variables[0]]), &(computedVariation[window->variables[1]]), &(computedVariation[window->variables[2]]),
                                         computedSteps + 1, 0, 0, sizeof(numb) * KERNEL.VAR_COUNT);
+                                    break;
                                 }
                             }
                         }
                         else // Particles - all variations, one certain step
                         {
                             if (particleStep > KERNEL.steps) particleStep = KERNEL.steps;
-
                             int totalVariations = computations[playedBufferIndex].marshal.totalVariations;
                             int varCount = KERNEL.VAR_COUNT; // If you don't make this local, it increases the copying time by 30 times, tee-hee
                             int variationSize = computations[playedBufferIndex].marshal.variationSize;
                             numb* trajectory = computations[playedBufferIndex].marshal.trajectory;
-
                             for (int v = 0; v < totalVariations; v++)
-                            {
                                 for (int var = 0; var < varCount; var++)
                                     particleBuffer[v * varCount + var] = trajectory[(variationSize * v) + (varCount * particleStep) + var];
-                            }
 
-                            if (!window->isImplot3d)
+                            switch (subtype)
                             {
+                            case Phase3D:
                                 rotateOffsetBuffer(particleBuffer, computations[playedBufferIndex].marshal.totalVariations, KERNEL.VAR_COUNT, window->variables[0], window->variables[1], window->variables[2],
                                     rotationEuler, window->offset, window->scale);
-
+                                [[fallthrough]];
+                            case Phase2D:
                                 getMinMax2D(particleBuffer, computations[playedBufferIndex].marshal.totalVariations, &(plot->dataMin), &(plot->dataMax), KERNEL.VAR_COUNT);
-
-                                ImPlot::PushStyleVar(ImPlotStyleVar_MarkerWeight, window->markerOutlineWidth);
-                                ImPlot::SetNextMarkerStyle(window->markerShape, window->markerWidth);
 
                                 if (colorsLUTfrom == nullptr)
                                 {
                                     ImPlot::SetNextLineStyle(window->markerColor);
-                                    ImPlot::PlotScatter(plotName.c_str(), &((particleBuffer)[0]), &((particleBuffer)[1]),
+                                    ImPlot::PushStyleVar(ImPlotStyleVar_MarkerWeight, window->markerOutlineWidth);
+                                    ImPlot::SetNextMarkerStyle(window->markerShape, window->markerWidth);
+                                    ImPlot::PlotScatter(plotName.c_str(),
+                                        subtype == Phase3D ? &((particleBuffer)[0]) : &((particleBuffer)[window->variables[0]]),
+                                        subtype == Phase3D ? &((particleBuffer)[1]) : &((particleBuffer)[window->variables[1]]),
                                         computations[playedBufferIndex].marshal.totalVariations, 0, 0, sizeof(numb) * KERNEL.VAR_COUNT);
                                 }
                                 else if (!colorsLUTfrom->hmp.isHeatmapDirty)
@@ -1631,28 +1646,31 @@ int imgui_main(int, char**)
                                     for (int g = 0; g < lut->lutGroups; g++)
                                     {
                                         int lutsize = lut->lutSizes[g];
+
+                                        // TODO: Look into making this step a single time, not doing it before
                                         for (int v = 0; v < lutsize; v++)
                                         {
                                             for (int var = 0; var < varCount; var++)
                                                 particleBuffer[v * varCount + var] = trajectory[(variationSize * lut->lut[g][v]) + (varCount * particleStep) + var];
                                         }
 
-                                        rotateOffsetBuffer(particleBuffer, lutsize, KERNEL.VAR_COUNT, window->variables[0], window->variables[1], window->variables[2],
-                                            rotationEuler, window->offset, window->scale);
-
-                                        ImPlot::PushStyleVar(ImPlotStyleVar_MarkerWeight, window->markerOutlineWidth);
-                                        ImPlot::SetNextMarkerStyle(window->markerShape, window->markerWidth);
+                                        if (subtype == Phase3D)
+                                            rotateOffsetBuffer(particleBuffer, lutsize, KERNEL.VAR_COUNT, window->variables[0], window->variables[1], window->variables[2],
+                                                rotationEuler, window->offset, window->scale);
 
                                         ImVec4 clr = ImPlot::SampleColormap((float)g / (lut->lutGroups - 1), colorsLUTfrom->hmp.colormap);
                                         clr.w = window->markerColor.w;
                                         ImPlot::SetNextLineStyle(clr);
-                                        ImPlot::PlotScatter(plotName.c_str(), &((particleBuffer)[0]), &((particleBuffer)[1]),
+                                        ImPlot::PushStyleVar(ImPlotStyleVar_MarkerWeight, window->markerOutlineWidth);
+                                        ImPlot::SetNextMarkerStyle(window->markerShape, window->markerWidth);
+                                        ImPlot::PlotScatter(plotName.c_str(), 
+                                            subtype == Phase3D ? &((particleBuffer)[0]) : &((particleBuffer)[window->variables[0]]),
+                                            subtype == Phase3D ? &((particleBuffer)[1]) : &((particleBuffer)[window->variables[1]]),
                                             lutsize, 0, 0, sizeof(numb) * KERNEL.VAR_COUNT);
                                     }
                                 }
-                            }
-                            else
-                            {
+                                break;
+                            case PhaseImplot3D:
                                 ImPlot3D::PushStyleVar(ImPlotStyleVar_MarkerWeight, window->markerOutlineWidth);
                                 ImPlot3D::SetNextMarkerStyle(window->markerShape, window->markerWidth);
 
@@ -1685,104 +1703,36 @@ int imgui_main(int, char**)
                                             lutsize, 0, 0, sizeof(numb) * KERNEL.VAR_COUNT);
                                     }
                                 }
+                                break;
                             }
                         }
                     }
                     else // if computation is not ready
                     {
-                        if (window->isImplot3d)
+                        if (subtype == PhaseImplot3D)
                         {
-                            float justPlotOneDotFFS[3]{ 0.0f, 0.0f, 0.0f };
-                            ImPlot3D::PlotScatter(plotName.c_str(), &(justPlotOneDotFFS[0]), &(justPlotOneDotFFS[1]), &(justPlotOneDotFFS[2]), 1);
+                            float justPlotOneDot[3]{ 0.0f, 0.0f, 0.0f }; // It needs at least one dot, don't remember the details
+                            ImPlot3D::PlotScatter(plotName.c_str(), &(justPlotOneDot[0]), &(justPlotOneDot[1]), &(justPlotOneDot[2]), 1);
                         }
                     }
 
                     // PHASE DIAGRAM END
-                    if (window->isImplot3d)
+                    switch (subtype)
                     {
+                    case PhaseImplot3D:
                         ImPlot3D::PopStyleColor(1);
                         ImPlot3D::EndPlot();
-                    }
-                    else
+                        break;
+                    case Phase3D:
+                    case Phase2D:
                         ImPlot::EndPlot();
+                        break;
+                    }
                 }
                 if (window->whiteBg) ImPlot::PopStyleColor(2);
                 break;
 
-                case Phase2D:
-                    // PHASE DIAGRAM 2D
-                    rotationEuler = ToEulerAngles(window->quatRot);
-                    if (isnan(rotationEuler.x))
-                    {
-                        window->quatRot = ImVec4(1.0f, 0.0f, 0.0f, 0.0f);
-                        rotationEuler = ToEulerAngles(window->quatRot);
-                    }
-
-                    if (window->whiteBg) { ImPlot::PushStyleColor(ImPlotCol_PlotBg, ImVec4(1.0f, 1.0f, 1.0f, 1.0f)); ImPlot::PushStyleColor(ImPlotCol_AxisGrid, ImVec4(0.2f, 0.2f, 0.2f, 1.0f)); }
-
-                    if (ImPlot::BeginPlot(plotName.c_str(), "", "", ImVec2(-1, -1), ImPlotFlags_NoLegend | ImPlotFlags_NoTitle, axisFlags, axisFlags))
-                    {
-                        plot = ImPlot::GetPlot(plotName.c_str());
-
-                        ImPlot::SetupAxes(KERNEL.variables[window->variables[0]].name.c_str(), KERNEL.variables[window->variables[1]].name.c_str());
-
-                        float plotRangeSize = ((float)plot->Axes[ImAxis_X1].Range.Max - (float)plot->Axes[ImAxis_X1].Range.Min);
-
-                        if (!computations[playedBufferIndex].ready)
-                        {
-                            plotRangeSize = 10.0f;
-                            plot->dataMin = ImVec2(-10.0f, -10.0f);
-                            plot->dataMax = ImVec2(10.0f, 10.0f);
-                        }
-
-                        float deltax = -window->deltarotation.x; window->deltarotation.x = 0; plot->deltax = &(window->deltarotation.x);
-                        float deltay = -window->deltarotation.y; window->deltarotation.y = 0; plot->deltay = &(window->deltarotation.y);
-
-                        plot->is3d = false;
-
-                        if (computations[playedBufferIndex].ready)
-                        {
-                            int xIndex = window->variables[0];
-                            int yIndex = window->variables[1];
-
-                            if (!enabledParticles) // Trajectory - one variation, all steps
-                            {
-                                numb* computedVariation = computations[playedBufferIndex].marshal.trajectory + (computations[playedBufferIndex].marshal.variationSize * variation);
-
-                                ImPlot::SetNextLineStyle(window->plotColor);
-                                ImPlot::PlotLine(plotName.c_str(), &(computedVariation[xIndex]), &(computedVariation[yIndex]), computedSteps + 1, 0, 0, sizeof(numb) * KERNEL.VAR_COUNT);
-                            }
-                            else // Particles - all variations, one certain step
-                            {
-                                if (particleStep > KERNEL.steps) particleStep = KERNEL.steps;
-
-                                int totalVariations = computations[playedBufferIndex].marshal.totalVariations;
-                                int varCount = KERNEL.VAR_COUNT; // If you don't make this local, it increases the copying time by 30 times, tee-hee
-                                int variationSize = computations[playedBufferIndex].marshal.variationSize;
-                                numb* trajectory = computations[playedBufferIndex].marshal.trajectory;
-
-                                for (int v = 0; v < totalVariations; v++)
-                                {
-                                    for (int var = 0; var < varCount; var++)
-                                        particleBuffer[v * varCount + var] = trajectory[(variationSize * v) + (varCount * particleStep) + var];
-                                }
-
-                                getMinMax2D(particleBuffer, computations[playedBufferIndex].marshal.totalVariations, &(plot->dataMin), &(plot->dataMax), KERNEL.VAR_COUNT);
-
-                                ImPlot::SetNextLineStyle(window->markerColor);
-                                ImPlot::PushStyleVar(ImPlotStyleVar_MarkerWeight, window->markerOutlineWidth);
-                                ImPlot::SetNextMarkerStyle(window->markerShape, window->markerWidth);
-                                ImPlot::PlotScatter(plotName.c_str(), &((particleBuffer)[xIndex]), &((particleBuffer)[yIndex]), totalVariations, 0, 0, sizeof(numb) * KERNEL.VAR_COUNT);
-                            }
-                        }
-
-                        // PHASE DIAGRAM END
-                        ImPlot::EndPlot();
-                    }
-                    if (window->whiteBg) ImPlot::PopStyleColor(2);
-                    break;
-
-                    case Orbit:
+                case Orbit:
                     {
                         if (window->whiteBg)
                             ImPlot::PushStyleColor(ImPlotCol_PlotBg, ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
@@ -2444,7 +2394,7 @@ int imgui_main(int, char**)
                                             sizing.xSize, sizing.ySize, sizing.cutMinX, sizing.cutMinY, sizing.cutMaxX, sizing.cutMaxY);
 
                                         ImPlot::PlotHeatmap(("MapLabels " + std::to_string(mapIndex) + "##" + plotName + std::to_string(0)).c_str(),
-                                            (numb*)cutoffHeatmap, rows, cols, -1234.0, 1.0, "test\n%.3f",
+                                            (numb*)cutoffHeatmap, rows, cols, -1234.0, 1.0, "%.3f",
                                             ImPlotPoint(sizing.mapX1Cut, sizing.mapY1Cut), ImPlotPoint(sizing.mapX2Cut, sizing.mapY2Cut));
 
                                         delete[] cutoffHeatmap;
