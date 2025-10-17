@@ -6,7 +6,7 @@ namespace attributes
     enum variables { x1, sin_x1, x2, x3 };
     enum parameters { betaL, betaC, i, gThreshold, Rn, Rsg, stepsize, symmetry, method };
     enum methods { ExplicitEuler, SemiExplicitEuler, ExplicitMidpoint, ExplicitRungeKutta4, VariableSymmetryCD };
-    enum maps { LLE, MAX, Period };
+    enum maps { LLE, MAX, MeanInterval, MeanPeak, Period };
 }
 
 __global__ void kernelProgram_jj_rlcs(Computation* data)
@@ -44,10 +44,10 @@ __global__ void kernelProgram_jj_rlcs(Computation* data)
         MAX_Settings max_settings(MS(MAX, 0));
         MAX(data, max_settings, variation, &finiteDifferenceScheme_jj_rlcs, MO(MAX));
     }
-    if (M(Period).toCompute)
+    if (M(Period).toCompute || M(MeanInterval).toCompute || M(MeanPeak).toCompute)
     {
-        DBscan_Settings dbscan_settings(MS(Period, 0), MS(Period, 1), MS(Period, 2), MS(Period, 3), MS(Period, 4), MS(Period, 5), MS(Period, 6), MS(Period, 7), P(stepsize));
-        Period(data, dbscan_settings, variation, &finiteDifferenceScheme_jj_rlcs, MO(Period));
+        DBscan_Settings dbscan_settings(MS(Period, 0), MS(MeanInterval, 0), MS(Period, 1), MS(Period, 2), MS(MeanInterval, 1), MS(MeanInterval, 2), MS(MeanInterval, 3), MS(MeanInterval, 4), P(stepsize));
+        Period(data, dbscan_settings, variation, &finiteDifferenceScheme_rossler, MO(Period), MO(MeanPeak), MO(MeanInterval));
     }
 }
 
