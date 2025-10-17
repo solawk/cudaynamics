@@ -56,7 +56,7 @@ std::string scaleString(float scale)
 	}
 }
 
-void populateAxisBuffer(numb* buffer, float x, float y, float z)
+void populateAxisBuffer(float* buffer, float x, float y, float z)
 {
 	for (int i = 0; i < 18; i++) buffer[i] = 0.0f;
 
@@ -70,9 +70,9 @@ void populateAxisBuffer(numb* buffer, float x, float y, float z)
 	buffer[17] = -z * 0.5f;
 }
 
-void rotateOffsetBuffer(numb* buffer, int pointCount, int varCount, int xdo, int ydo, int zdo, ImVec4 rotation, ImVec4 offset, ImVec4 scale)
+void rotateOffsetBuffer(float* buffer, int pointCount, int varCount, int xdo, int ydo, int zdo, ImVec4 rotation, ImVec4 offset, ImVec4 scale)
 {
-	numb x, y, z;
+	float x, y, z;
 
 	float alpha = rotation.x; // yaw
 	float beta = rotation.y; // pitch
@@ -98,9 +98,37 @@ void rotateOffsetBuffer(numb* buffer, int pointCount, int varCount, int xdo, int
 	}
 }
 
-void rotateOffsetBufferQuat(numb* buffer, int pointCount, int varCount, int xdo, int ydo, int zdo, ImVec4 rotation, ImVec4 offset, ImVec4 scale)
+void rotateOffsetBuffer(double* buffer, int pointCount, int varCount, int xdo, int ydo, int zdo, ImVec4 rotation, ImVec4 offset, ImVec4 scale)
 {
-	numb x, y, z;
+	double x, y, z;
+
+	float alpha = rotation.x; // yaw
+	float beta = rotation.y; // pitch
+	float gamma = rotation.z; // roll
+
+	float ac = cosf(alpha);
+	float bc = cosf(beta);
+	float gc = cosf(gamma);
+
+	float as = sinf(alpha);
+	float bs = sinf(beta);
+	float gs = sinf(gamma);
+
+	for (int i = 0; i < pointCount; i++)
+	{
+		x = -(buffer[i * varCount + xdo] * scale.x + offset.x);
+		y = buffer[i * varCount + ydo] * scale.y + offset.y;
+		z = buffer[i * varCount + zdo] * scale.z + offset.z;
+
+		buffer[i * varCount + 0] = (x * bc * gc) + (y * (as * bs * gc - (ac * gs))) + (z * (ac * bs * gc + as * gs));
+		buffer[i * varCount + 1] = (x * bc * gs) + (y * (as * bs * gs + (ac * gc))) + (z * (ac * bs * gs - as * gc));
+		buffer[i * varCount + 2] = (x * -bs) + (y * (as * bc)) + (z * (ac * bc));
+	}
+}
+
+void rotateOffsetBufferQuat(float* buffer, int pointCount, int varCount, int xdo, int ydo, int zdo, ImVec4 rotation, ImVec4 offset, ImVec4 scale)
+{
+	float x, y, z;
 
 	float r = rotation.w;
 	float i = rotation.x;
@@ -124,7 +152,7 @@ void rotateOffsetBufferQuat(numb* buffer, int pointCount, int varCount, int xdo,
 	}
 }
 
-void populateRulerBuffer(numb* buffer, float s, int dim)
+void populateRulerBuffer(float* buffer, float s, int dim)
 {
 	for (int i = 0; i < (51*3); i++) buffer[i] = 0.0f;
 
@@ -183,7 +211,7 @@ void populateRulerBuffer(numb* buffer, float s, int dim)
 	}
 }
 
-void populateGridBuffer(numb* buffer) // One axis of a grid
+void populateGridBuffer(float* buffer) // One axis of a grid
 {
 	// 10 ticks per axis, 4+1=5 vertices per tick, 3 coordinates per vertex, 2 directions
 	//for (int i = 0; i < 10*5*3*2; i++) buffer[i] = 0;
@@ -241,21 +269,21 @@ void populateGridBuffer(numb* buffer) // One axis of a grid
 	}
 }
 
-void gridX2Y(numb* buffer)
+void gridX2Y(float* buffer)
 {
 	for (int i = 0; i < 10 * 5 * 2; i++)
 	{
-		numb z = buffer[i * 3 + 2];
+		float z = buffer[i * 3 + 2];
 		buffer[i * 3 + 2] = buffer[i * 3 + 0];
 		buffer[i * 3 + 0] = z;
 	}
 }
 
-void gridY2Z(numb* buffer)
+void gridY2Z(float* buffer)
 {
 	for (int i = 0; i < 10 * 5 * 2; i++)
 	{
-		numb z = buffer[i * 3 + 2];
+		float z = buffer[i * 3 + 2];
 		buffer[i * 3 + 2] = buffer[i * 3 + 1];
 		buffer[i * 3 + 1] = z;
 	}

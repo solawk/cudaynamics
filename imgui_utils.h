@@ -13,15 +13,16 @@ const float DEG2RAD = 3.141592f / 180.0f;
 std::string memoryString(unsigned long long bytes);
 std::string scaleString(float scale);
 
-void populateAxisBuffer(numb* buffer, float x, float y, float z);
-void rotateOffsetBuffer(numb* buffer, int pointCount, int varCount, int xdo, int ydo, int zdo, ImVec4 rotation, ImVec4 offset, ImVec4 scale);
-void rotateOffsetBufferQuat(numb* buffer, int pointCount, int varCount, int xdo, int ydo, int zdo, ImVec4 rotation, ImVec4 offset, ImVec4 scale);
+void populateAxisBuffer(float* buffer, float x, float y, float z);
+void rotateOffsetBuffer(float* buffer, int pointCount, int varCount, int xdo, int ydo, int zdo, ImVec4 rotation, ImVec4 offset, ImVec4 scale);
+void rotateOffsetBuffer(double* buffer, int pointCount, int varCount, int xdo, int ydo, int zdo, ImVec4 rotation, ImVec4 offset, ImVec4 scale);
+void rotateOffsetBufferQuat(float* buffer, int pointCount, int varCount, int xdo, int ydo, int zdo, ImVec4 rotation, ImVec4 offset, ImVec4 scale);
 
-void populateRulerBuffer(numb* buffer, float s, int dim);
+void populateRulerBuffer(float* buffer, float s, int dim);
 
-void populateGridBuffer(numb* buffer);
-void gridX2Y(numb* buffer);
-void gridY2Z(numb* buffer);
+void populateGridBuffer(float* buffer);
+void gridX2Y(float* buffer);
+void gridY2Z(float* buffer);
 
 ImVec4 ToEulerAngles(ImVec4 q);
 

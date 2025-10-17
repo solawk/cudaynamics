@@ -137,7 +137,7 @@ void initAVI(bool hires)
         for (int i = 0; i < kernelHiresNew.VAR_COUNT + kernelHiresNew.PARAM_COUNT; i++) attributeValueIndices.push_back(0);
 }
 
-float getStepSize(Kernel& kernel)
+numb getStepSize(Kernel& kernel)
 {
     for (int i = 0; i < kernel.PARAM_COUNT; i++) if (kernel.parameters[i].name == "stepsize") return kernel.parameters[i].min;
     return 1.0f;
@@ -2184,8 +2184,8 @@ int imgui_main(int, char**)
 
                                 if (heatmap->initClickedLocation)
                                 {
-                                    heatmap->lastClickedLocation = ImVec2(sizing.minX, sizing.minY);
-                                    window->dragLineHiresPos = ImVec2(sizing.minX, sizing.minY);
+                                    heatmap->lastClickedLocation = ImVec2((float)sizing.minX, (float)sizing.minY);
+                                    window->dragLineHiresPos = ImVec2((float)sizing.minX, (float)sizing.minY);
                                     heatmap->initClickedLocation = false;
                                 }
 
@@ -2194,9 +2194,9 @@ int imgui_main(int, char**)
                                     if (heatmap->showActualDiapasons)
                                     {
                                         // Values
-                                        heatmap->lastClickedLocation.x = valueFromStep(sizing.minX, sizing.stepX,
+                                        heatmap->lastClickedLocation.x = (float)valueFromStep(sizing.minX, sizing.stepX,
                                             attributeValueIndices[sizing.hmp->indexX + (sizing.hmp->typeX == VARIABLE ? 0 : krnl->VAR_COUNT)]);
-                                        heatmap->lastClickedLocation.y = valueFromStep(sizing.minY, sizing.stepY,
+                                        heatmap->lastClickedLocation.y = (float)valueFromStep(sizing.minY, sizing.stepY,
                                             attributeValueIndices[sizing.hmp->indexY + (sizing.hmp->typeY == VARIABLE ? 0 : krnl->VAR_COUNT)]);
                                     }
                                     else
@@ -2273,7 +2273,7 @@ int imgui_main(int, char**)
                                             // Values
                                             valueX = plot->shiftClickLocation.x;
                                             valueY = plot->shiftClickLocation.y;
-                                            window->dragLineHiresPos = ImVec2(valueX, valueY);
+                                            window->dragLineHiresPos = ImVec2((float)valueX, (float)valueY);
                                         }
                                         else
                                         {
@@ -2481,7 +2481,7 @@ int imgui_main(int, char**)
                         for (int ch = 0; ch < (isMC ? 3 : 1); ch++)
                         {
                             HeatmapValues* values = !isMC ? &(heatmap->values) : &(heatmap->channel[ch]);
-                            float minBefore = values->heatmapMin, maxBefore = values->heatmapMax;
+                            numb minBefore = values->heatmapMin, maxBefore = values->heatmapMax;
                             if (heatmap->showLegend)
                             {
                                 ImGui::TableSetColumnIndex(ch + 1);

@@ -29,11 +29,11 @@ void extractMap(numb* src, numb* dst, int* indeces, int* steps, int axisXattr, i
 	delete[] localSteps;
 }
 
-void setupLUT(numb* src, int particleCount, int** lut, int* groupSizes, int groupCount, float min, float max)
+void setupLUT(numb* src, int particleCount, int** lut, int* groupSizes, int groupCount, numb min, numb max)
 {
-	float* thresholds = new float[groupCount];
+	numb* thresholds = new numb[groupCount];
 
-	float valueDiapasonPerGroup = (max - min) / groupCount;
+	numb valueDiapasonPerGroup = (max - min) / groupCount;
 	for (int g = 0; g < groupCount; g++)
 	{
 		groupSizes[g] = 0;

@@ -33,7 +33,7 @@ void MapToImg(numb* mapBuffer, unsigned char** dataBuffer, int width, int height
 			}
 			else
 			{
-				c = ImPlot::SampleColormap((v - min) / (max - min), colormap);
+				c = ImPlot::SampleColormap((float)((v - min) / (max - min)), colormap);
 			}
 
 			(*dataBuffer)[i4(0)] = (int)(c.x * 255);
