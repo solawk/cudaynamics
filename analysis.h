@@ -7,4 +7,4 @@
 
 #include "analysis/lle/lle.h"
 #include "analysis/max/max.h"
-#include "analysis/periodicity/dbscan.h"
+#include "analysis/period/period.h"
