@@ -48,7 +48,7 @@ __global__ void kernelProgram_wilson(Computation* data)
 
     if (M(Period).toCompute)
     {
-        DBscan_Settings dbscan_settings(MS(Period, 0), MS(Period, 1), MS(Period, 2), MS(Period, 3), MS(Period, 4), MS(Period, 5), MS(Period, 6), MS(Period, 7), attributes::parameters::stepsize);
+        DBscan_Settings dbscan_settings(MS(Period, 0), MS(Period, 1), MS(Period, 2), MS(Period, 3), MS(Period, 4), MS(Period, 5), MS(Period, 6), MS(Period, 7), P(stepsize));
         Period(data, dbscan_settings, variation, &finiteDifferenceScheme_wilson, MO(Period));
     }
 }

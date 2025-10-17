@@ -11,6 +11,7 @@ namespace attributes
 
 __global__ void kernelProgram_rossler(Computation* data)
 {
+    
     int variation = (blockIdx.x * blockDim.x) + threadIdx.x;            // Variation (parameter combination) index
     if (variation >= CUDA_marshal.totalVariations) return;      // Shutdown thread if there isn't a variation to compute
     int stepStart, variationStart = variation * CUDA_marshal.variationSize;         // Start index to store the modelling data for the variation
@@ -47,7 +48,7 @@ __global__ void kernelProgram_rossler(Computation* data)
 
     if (M(Period).toCompute)
     {
-        DBscan_Settings dbscan_settings(MS(Period, 0), MS(Period, 1), MS(Period, 2), MS(Period, 3), MS(Period, 4), MS(Period, 5), MS(Period, 6), MS(Period, 7), attributes::parameters::stepsize);
+        DBscan_Settings dbscan_settings(MS(Period, 0), MS(Period, 1), MS(Period, 2), MS(Period, 3), MS(Period, 4), MS(Period, 5), MS(Period, 6), MS(Period, 7), P(stepsize));
         Period(data, dbscan_settings, variation, &finiteDifferenceScheme_rossler,  MO(Period));
     }
 }
