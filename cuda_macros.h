@@ -9,9 +9,13 @@
 // Parameter value in the FDS
 #define P(n)			parameters[attributes::parameters::n]
 
-#define LOCAL_BUFFERS   numb variables[MAX_ATTRIBUTES]; \
-                        numb variablesNext[MAX_ATTRIBUTES]; \
-                        numb parameters[MAX_ATTRIBUTES];
+#define STEP_BRANCH(p, v)   (CUDA_kernel.stepType == 0 ? p : (CUDA_kernel.stepType == 1 ? v : (numb)1.0))
+
+#define STEP            STEP_BRANCH(parameters[CUDA_kernel.PARAM_COUNT - 1], currentV[CUDA_kernel.VAR_COUNT - 1])
+
+#define LOCAL_BUFFERS   numb variables[MAX_ATTRIBUTES]{0}; \
+                        numb variablesNext[MAX_ATTRIBUTES]{0}; \
+                        numb parameters[MAX_ATTRIBUTES]{0};
 
 #define LOAD_ATTRIBUTES for (int i = 0; i < CUDA_kernel.VAR_COUNT; i++) variables[i] = CUDA_marshal.variableInits[variation * CUDA_kernel.VAR_COUNT + i]; \
                         for (int i = 0; i < CUDA_kernel.PARAM_COUNT; i++) parameters[i] = CUDA_marshal.parameterVariations[variation * CUDA_kernel.PARAM_COUNT + i]; \
@@ -85,14 +89,14 @@
                                 numb transientBuffer[MAX_ATTRIBUTES];  \
                                 for (int ts = 0; ts < CUDA_kernel.transientSteps; ts++)  \
                                 {  \
-                                    FDS(&(variables[0]), &(transientBuffer[0]), &(parameters[0]));  \
+                                    FDS(&(variables[0]), &(transientBuffer[0]), &(parameters[0]), data);  \
                                     for (int v = 0; v < CUDA_kernel.VAR_COUNT; v++) variables[v] = transientBuffer[v];  \
                                 }  \
                                 if (!data->isHires) for (int v = 0; v < CUDA_kernel.VAR_COUNT; v++) CUDA_marshal.trajectory[variationStart + v] = variables[v]; \
                                 else for (int v = 0; v < CUDA_kernel.VAR_COUNT; v++) CUDA_marshal.variableInits[v] = variables[v]; \
                             }
 
-#define FDS_ARGUMENTS   &(variables[0]), &(variablesNext[0]), &(parameters[0])
+#define FDS_ARGUMENTS   &(variables[0]), &(variablesNext[0]), &(parameters[0]), data
 
 #define RECORD_STEP     if (!data->isHires) for (int i = 0; i < CUDA_kernel.VAR_COUNT; i++) CUDA_marshal.trajectory[stepStart + CUDA_kernel.VAR_COUNT + i] = variables[i] = variablesNext[i]; \
                         else for (int i = 0; i < CUDA_kernel.VAR_COUNT; i++) \

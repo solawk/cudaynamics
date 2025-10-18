@@ -76,8 +76,10 @@ struct HeatmapProperties
 		indexX = 0;
 		indexY = 1;
 
-		typeX = VARIABLE;
-		typeY = VARIABLE;
+		typeX = MDT_Variable;
+		typeY = MDT_Variable;
+
+		isMultichannel = false;
 
 		initClickedLocation = false;
 		lastClickedLocation = ImVec2(0.0f, 0.0f);

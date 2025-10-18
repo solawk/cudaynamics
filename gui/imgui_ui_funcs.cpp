@@ -80,29 +80,29 @@ void listVariable(int i)
 
     switch (KERNELNEWCURRENT.variables[i].rangingType)
     {
-    case None:
+    case RT_None:
         listAttrNumb(&(KERNELNEWCURRENT.variables[i]), &(KERNELNEWCURRENT.variables[i].min), "", "", KERNELNEWCURRENT.variables[i].min != KERNEL.variables[i].min);
         break;
-    case Step:
+    case RT_Step:
         listAttrNumb(&(KERNELNEWCURRENT.variables[i]), &(KERNELNEWCURRENT.variables[i].min), "", "Min: ", KERNELNEWCURRENT.variables[i].min != KERNEL.variables[i].min);
         listAttrNumb(&(KERNELNEWCURRENT.variables[i]), &(KERNELNEWCURRENT.variables[i].max), "MAX", "Max: ", KERNELNEWCURRENT.variables[i].max != KERNEL.variables[i].max);
         listAttrNumb(&(KERNELNEWCURRENT.variables[i]), &(KERNELNEWCURRENT.variables[i].step), "STEP", "Step: ", KERNELNEWCURRENT.variables[i].step != KERNEL.variables[i].step);
         KERNELNEWCURRENT.variables[i].CalcStepCount();
         ImGui::SameLine(); ImGui::Text((std::to_string(KERNELNEWCURRENT.variables[i].stepCount) + " steps").c_str());
         break;
-    case Linear:
+    case RT_Linear:
         listAttrNumb(&(KERNELNEWCURRENT.variables[i]), &(KERNELNEWCURRENT.variables[i].min), "", "Min: ", KERNELNEWCURRENT.variables[i].min != KERNEL.variables[i].min);
         listAttrNumb(&(KERNELNEWCURRENT.variables[i]), &(KERNELNEWCURRENT.variables[i].max), "MAX", "Max: ", KERNELNEWCURRENT.variables[i].max != KERNEL.variables[i].max);
         listAttrInt(&(KERNELNEWCURRENT.variables[i]), &(KERNELNEWCURRENT.variables[i].stepCount), "STEPCOUNT", "Count: ", KERNELNEWCURRENT.variables[i].stepCount != KERNEL.variables[i].stepCount);
         KERNELNEWCURRENT.variables[i].CalcStep();
         ImGui::SameLine(); ImGui::Text(("Step: " + (std::to_string(KERNELNEWCURRENT.variables[i].step))).c_str());
         break;
-    case UniformRandom:
+    case RT_UniformRandom:
         listAttrNumb(&(KERNELNEWCURRENT.variables[i]), &(KERNELNEWCURRENT.variables[i].mean), "MEAN", "Mean: ", KERNELNEWCURRENT.variables[i].mean != KERNEL.variables[i].mean);
         listAttrNumb(&(KERNELNEWCURRENT.variables[i]), &(KERNELNEWCURRENT.variables[i].deviation), "DEV", "Dev: ", KERNELNEWCURRENT.variables[i].deviation != KERNEL.variables[i].deviation);
         listAttrInt(&(KERNELNEWCURRENT.variables[i]), &(KERNELNEWCURRENT.variables[i].stepCount), "STEPCOUNT", "Count: ", KERNELNEWCURRENT.variables[i].stepCount != KERNEL.variables[i].stepCount);
         break;
-    case NormalRandom:
+    case RT_NormalRandom:
         listAttrNumb(&(KERNELNEWCURRENT.variables[i]), &(KERNELNEWCURRENT.variables[i].mean), "MU", "Mu: ", KERNELNEWCURRENT.variables[i].mean != KERNEL.variables[i].mean);
         listAttrNumb(&(KERNELNEWCURRENT.variables[i]), &(KERNELNEWCURRENT.variables[i].deviation), "SIGMA", "Sigma: ", KERNELNEWCURRENT.variables[i].deviation != KERNEL.variables[i].deviation);
         listAttrInt(&(KERNELNEWCURRENT.variables[i]), &(KERNELNEWCURRENT.variables[i].stepCount), "STEPCOUNT", "Count: ", KERNELNEWCURRENT.variables[i].stepCount != KERNEL.variables[i].stepCount);
@@ -118,7 +118,7 @@ void listVariable(int i)
 
 void listParameter(int i)
 {
-    bool changeAllowed = KERNELNEWCURRENT.parameters[i].rangingType == None || !playingParticles || !autoLoadNewParams;
+    bool changeAllowed = KERNELNEWCURRENT.parameters[i].rangingType == RT_None || !playingParticles || !autoLoadNewParams;
 
     thisChanged = false;
     if (KERNELNEWCURRENT.parameters[i].IsDifferentFrom(&(KERNEL.parameters[i]))) { anyChanged = true; thisChanged = true; }
@@ -141,30 +141,30 @@ void listParameter(int i)
 
     listAttrRanging(&(KERNELNEWCURRENT.parameters[i]), KERNELNEWCURRENT.parameters[i].rangingType != KERNEL.parameters[i].rangingType);
 
-    dragFlag = (!playingParticles || KERNELNEWCURRENT.parameters[i].rangingType == None) ? 0 : ImGuiSliderFlags_ReadOnly;
+    dragFlag = (!playingParticles || KERNELNEWCURRENT.parameters[i].rangingType == RT_None) ? 0 : ImGuiSliderFlags_ReadOnly;
 
     switch (KERNELNEWCURRENT.parameters[i].rangingType)
     {
-    case Step:
+    case RT_Step:
         listAttrNumb(&(KERNELNEWCURRENT.parameters[i]), &(KERNELNEWCURRENT.parameters[i].min), "", "Min: ", KERNELNEWCURRENT.parameters[i].min != KERNEL.parameters[i].min);
         listAttrNumb(&(KERNELNEWCURRENT.parameters[i]), &(KERNELNEWCURRENT.parameters[i].max), "MAX", "Max: ", KERNELNEWCURRENT.parameters[i].max != KERNEL.parameters[i].max);
         listAttrNumb(&(KERNELNEWCURRENT.parameters[i]), &(KERNELNEWCURRENT.parameters[i].step), "STEP", "Step: ", KERNELNEWCURRENT.parameters[i].step != KERNEL.parameters[i].step);
         KERNELNEWCURRENT.parameters[i].CalcStepCount();
         ImGui::SameLine(); ImGui::Text((std::to_string(KERNELNEWCURRENT.parameters[i].stepCount) + " steps").c_str());
         break;
-    case Linear:
+    case RT_Linear:
         listAttrNumb(&(KERNELNEWCURRENT.parameters[i]), &(KERNELNEWCURRENT.parameters[i].min), "", "Min: ", KERNELNEWCURRENT.parameters[i].min != KERNEL.parameters[i].min);
         listAttrNumb(&(KERNELNEWCURRENT.parameters[i]), &(KERNELNEWCURRENT.parameters[i].max), "MAX", "Max: ", KERNELNEWCURRENT.parameters[i].max != KERNEL.parameters[i].max);
         listAttrInt(&(KERNELNEWCURRENT.parameters[i]), &(KERNELNEWCURRENT.parameters[i].stepCount), "STEPCOUNT", "Count: ", KERNELNEWCURRENT.parameters[i].stepCount != KERNEL.parameters[i].stepCount);
         KERNELNEWCURRENT.parameters[i].CalcStep();
         ImGui::SameLine(); ImGui::Text(("Step: " + (std::to_string(KERNELNEWCURRENT.parameters[i].step))).c_str());
         break;
-    case UniformRandom:
+    case RT_UniformRandom:
         listAttrNumb(&(KERNELNEWCURRENT.parameters[i]), &(KERNELNEWCURRENT.parameters[i].mean), "MEAN", "Mean: ", KERNELNEWCURRENT.parameters[i].mean != KERNEL.parameters[i].mean);
         listAttrNumb(&(KERNELNEWCURRENT.parameters[i]), &(KERNELNEWCURRENT.parameters[i].deviation), "DEV", "Dev: ", KERNELNEWCURRENT.parameters[i].deviation != KERNEL.parameters[i].deviation);
         listAttrInt(&(KERNELNEWCURRENT.parameters[i]), &(KERNELNEWCURRENT.parameters[i].stepCount), "STEPCOUNT", "Count: ", KERNELNEWCURRENT.parameters[i].stepCount != KERNEL.parameters[i].stepCount);
         break;
-    case NormalRandom:
+    case RT_NormalRandom:
         listAttrNumb(&(KERNELNEWCURRENT.parameters[i]), &(KERNELNEWCURRENT.parameters[i].mean), "MU", "Mu: ", KERNELNEWCURRENT.parameters[i].mean != KERNEL.parameters[i].mean);
         listAttrNumb(&(KERNELNEWCURRENT.parameters[i]), &(KERNELNEWCURRENT.parameters[i].deviation), "SIGMA", "Sigma: ", KERNELNEWCURRENT.parameters[i].deviation != KERNEL.parameters[i].deviation);
         listAttrInt(&(KERNELNEWCURRENT.parameters[i]), &(KERNELNEWCURRENT.parameters[i].stepCount), "STEPCOUNT", "Count: ", KERNELNEWCURRENT.parameters[i].stepCount != KERNEL.parameters[i].stepCount);
@@ -177,7 +177,7 @@ void listParameter(int i)
         POP_FRAME(3);
     }
 
-    if (KERNELNEWCURRENT.parameters[i].rangingType == None)
+    if (KERNELNEWCURRENT.parameters[i].rangingType == RT_None)
     {
         listAttrNumb(&(KERNELNEWCURRENT.parameters[i]), &(KERNELNEWCURRENT.parameters[i].min), "", "", KERNELNEWCURRENT.parameters[i].min != KERNEL.parameters[i].min);
     }
@@ -188,7 +188,7 @@ void listParameter(int i)
 // TODO: changing enabled enums should force recomputation
 void listEnum(int i)
 {
-    bool changeAllowed = KERNELNEWCURRENT.parameters[i].rangingType == None || !playingParticles || !autoLoadNewParams;
+    bool changeAllowed = KERNELNEWCURRENT.parameters[i].rangingType == RT_None || !playingParticles || !autoLoadNewParams;
 
     thisChanged = false;
     if (KERNELNEWCURRENT.parameters[i].IsDifferentFrom(&(KERNEL.parameters[i]))) { anyChanged = true; thisChanged = true; }
@@ -208,7 +208,7 @@ void listEnum(int i)
         PUSH_DISABLED_FRAME;
     }
 
-    dragFlag = (!playingParticles || KERNELNEWCURRENT.parameters[i].rangingType == None) ? 0 : ImGuiSliderFlags_ReadOnly;
+    dragFlag = (!playingParticles || KERNELNEWCURRENT.parameters[i].rangingType == RT_None) ? 0 : ImGuiSliderFlags_ReadOnly;
 
     int selectedCount = 0;
     std::string selectedKernelsString;

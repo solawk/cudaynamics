@@ -15,4 +15,4 @@ struct MAX_Settings
 	}
 };
 
-__device__ void MAX(Computation* data, MAX_Settings settings, int variation, void(*finiteDifferenceScheme)(numb*, numb*, numb*), int offset);
+__device__ void MAX(Computation* data, MAX_Settings settings, int variation, void(*finiteDifferenceScheme)(numb*, numb*, numb*, Computation*), int offset);

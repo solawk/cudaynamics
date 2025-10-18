@@ -52,7 +52,7 @@ __global__ void kernelProgram_three_scroll(Computation* data)
     }
 }
 
-__device__ __forceinline__  void finiteDifferenceScheme_three_scroll(numb* currentV, numb* nextV, numb* parameters)
+__device__ __forceinline__  void finiteDifferenceScheme_three_scroll(numb* currentV, numb* nextV, numb* parameters, Computation* data)
 {
     ifMETHOD(P(method), ExplicitEuler)
     {

@@ -811,7 +811,7 @@ struct ImPlotAxis
     }
 
     inline void UpdateTransformCache() {
-        ScaleToPixel = (PixelMax - PixelMin) / Range.Size();
+        ScaleToPixel = (double)(PixelMax - PixelMin) / Range.Size();
         if (TransformForward != nullptr) {
             ScaleMin = TransformForward(Range.Min, TransformData);
             ScaleMax = TransformForward(Range.Max, TransformData);

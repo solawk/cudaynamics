@@ -1,11 +1,13 @@
 #include "lle.h"
+#pragma warning(push)
+#pragma warning(disable:6385)
 
-__device__ void LLE(Computation* data, LLE_Settings settings, int variation, void(* finiteDifferenceScheme)(numb*, numb*, numb*), int offset)
+__device__ void LLE(Computation* data, LLE_Settings settings, int variation, void(* finiteDifferenceScheme)(numb*, numb*, numb*, Computation*), int offset)
 {
     int stepStart, variationStart = variation * CUDA_marshal.variationSize;
     LOCAL_BUFFERS;
     LOAD_ATTRIBUTES;
-    TRANSIENT_SKIP_NEW(finiteDifferenceScheme);
+    if (data->isHires) TRANSIENT_SKIP_NEW(finiteDifferenceScheme);
 
     numb LLE_array[MAX_ATTRIBUTES]{ 0 }; // The deflected trajectory
     numb LLE_array_next[MAX_ATTRIBUTES]; // Buffer for the next step of the deflected trajectory
@@ -27,7 +29,7 @@ __device__ void LLE(Computation* data, LLE_Settings settings, int variation, voi
         NORMAL_STEP_IN_ANALYSIS_IF_HIRES;
 
         // Deflected step
-        finiteDifferenceScheme(LLE_array, LLE_array_next, &(parameters[0]));
+        finiteDifferenceScheme(LLE_array, LLE_array_next, &(parameters[0]), data);
 
         for (int i = 0; i < CUDA_kernel.VAR_COUNT; i++)
             LLE_array[i] = LLE_array_next[i];
@@ -48,7 +50,11 @@ __device__ void LLE(Computation* data, LLE_Settings settings, int variation, voi
             norm = sqrt(norm);
 
             numb growth = norm / r; // How many times the deflection has grown
-            if (growth > 0.0f) LLE_value += log(growth);
+            if (growth > 0.0f)
+                LLE_value += log(growth) / STEP_BRANCH(
+                    parameters[CUDA_kernel.PARAM_COUNT - 1], 
+                    !data->isHires ? CUDA_marshal.trajectory[stepStart + CUDA_kernel.VAR_COUNT - 1] : variables[CUDA_kernel.VAR_COUNT - 1]
+                );
 
             // Reset
             for (int i = 0; i < CUDA_kernel.VAR_COUNT; i++)
@@ -57,7 +63,7 @@ __device__ void LLE(Computation* data, LLE_Settings settings, int variation, voi
         }
     }
 
-    numb mapValue = LLE_value / ((CUDA_kernel.steps + 1) * CUDA_kernel.stepSize);
+    numb mapValue = LLE_value / (CUDA_kernel.steps + 1);
 
     if (CUDA_kernel.mapWeight == 0.0f)
     {
@@ -72,3 +78,5 @@ __device__ void LLE(Computation* data, LLE_Settings settings, int variation, voi
         CUDA_marshal.maps[mapPosition] = CUDA_marshal.maps[mapPosition] * (1.0f - CUDA_kernel.mapWeight) + mapValue * CUDA_kernel.mapWeight;
     }
 }
+
+#pragma warning(pop)

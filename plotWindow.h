@@ -125,7 +125,7 @@ public:
 		bifIntervals = NULL;
 
 		indexX = 0;
-		typeX = VARIABLE;
+		typeX = MDT_Variable;
 	}
 
 	void AssignVariables(int* variablesArray)

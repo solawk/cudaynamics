@@ -52,7 +52,7 @@ __global__ void kernelProgram_rabinovich_fabrikant(Computation* data)
     }
 }
 
-__device__ __forceinline__ void finiteDifferenceScheme_rabinovich_fabrikant(numb* currentV, numb* nextV, numb* parameters)
+__device__ __forceinline__ void finiteDifferenceScheme_rabinovich_fabrikant(numb* currentV, numb* nextV, numb* parameters, Computation* data)
 {
     ifMETHOD(P(method), ExplicitEuler)
     {

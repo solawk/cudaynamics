@@ -52,7 +52,7 @@ __global__ void kernelProgram_vnm(Computation* data)
     }
 }
 
-__device__ __forceinline__ void finiteDifferenceScheme_vnm(numb* currentV, numb* nextV, numb* parameters)
+__device__ __forceinline__ void finiteDifferenceScheme_vnm(numb* currentV, numb* nextV, numb* parameters, Computation* data)
 {
     int system = (int)(V(t) / P(timePerSystem)) % 4;
 

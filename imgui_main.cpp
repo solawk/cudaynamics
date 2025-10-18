@@ -517,7 +517,7 @@ int imgui_main(int, char**)
         ImGui::SeparatorText("Parameters");
         for (int i = 0; i < KERNEL.PARAM_COUNT; i++)
         {
-            if (KERNEL.parameters[i].rangingType != Enum)
+            if (KERNEL.parameters[i].rangingType != RT_Enum)
                 listParameter(i);
             else
                 listEnum(i);
@@ -784,7 +784,7 @@ int imgui_main(int, char**)
                     bool isVar = i < KERNEL.VAR_COUNT;
                     Attribute* attr = isVar ? &(computations[playedBufferIndex].marshal.kernel.variables[i]) : &(computations[playedBufferIndex].marshal.kernel.parameters[i - KERNEL.VAR_COUNT]);
                     Attribute* kernelNewAttr = isVar ? &(kernelNew.variables[i]) : &(kernelNew.parameters[i - KERNEL.VAR_COUNT]);
-                    bool isEnum = attr->rangingType == Enum;
+                    bool isEnum = attr->rangingType == RT_Enum;
 
                     if (attr->TrueStepCount() == 1) continue;
 
@@ -811,7 +811,7 @@ int imgui_main(int, char**)
                     {
                         if (!isEnum)
                         {
-                            kernelNewAttr->rangingType = None;
+                            kernelNewAttr->rangingType = RT_None;
                             kernelNewAttr->min = calculateValue(attr->min, attr->step, index);
                         }
                         else
@@ -1207,14 +1207,14 @@ int imgui_main(int, char**)
 
                 ImGui::PushItemWidth(ImGui::GetWindowWidth() * (isSingleValue ? 0.485f : 0.31f));
                 if (ImGui::BeginCombo(("##" + windowName + "_axisX").c_str(),
-                    heatmap->typeX == VARIABLE ? krnl->variables[heatmap->indexX].name.c_str() : krnl->parameters[heatmap->indexX].name.c_str(), 0))
+                    heatmap->typeX == MDT_Variable ? krnl->variables[heatmap->indexX].name.c_str() : krnl->parameters[heatmap->indexX].name.c_str(), 0))
                 {
                     for (int v = 0; v < krnl->VAR_COUNT; v++)
                     {
                         if (ImGui::Selectable(krnl->variables[v].name.c_str()))
                         {
                             heatmap->indexX = v;
-                            heatmap->typeX = VARIABLE;
+                            heatmap->typeX = MDT_Variable;
                         }
                     }
 
@@ -1223,7 +1223,7 @@ int imgui_main(int, char**)
                         if (ImGui::Selectable(krnl->parameters[p].name.c_str()))
                         {
                             heatmap->indexX = p;
-                            heatmap->typeX = PARAMETER;
+                            heatmap->typeX = MDT_Parameter;
                         }
                     }
 
@@ -1233,14 +1233,14 @@ int imgui_main(int, char**)
                 ImGui::SameLine();
 
                 if (ImGui::BeginCombo(("##" + windowName + "_axisY").c_str(),
-                    heatmap->typeY == VARIABLE ? krnl->variables[heatmap->indexY].name.c_str() : krnl->parameters[heatmap->indexY].name.c_str(), 0))
+                    heatmap->typeY == MDT_Variable ? krnl->variables[heatmap->indexY].name.c_str() : krnl->parameters[heatmap->indexY].name.c_str(), 0))
                 {
                     for (int v = 0; v < krnl->VAR_COUNT; v++)
                     {
                         if (ImGui::Selectable(krnl->variables[v].name.c_str()))
                         {
                             heatmap->indexY = v;
-                            heatmap->typeY = VARIABLE;
+                            heatmap->typeY = MDT_Variable;
                         }
                     }
 
@@ -1249,7 +1249,7 @@ int imgui_main(int, char**)
                         if (ImGui::Selectable(krnl->parameters[p].name.c_str()))
                         {
                             heatmap->indexY = p;
-                            heatmap->typeY = PARAMETER;
+                            heatmap->typeY = MDT_Parameter;
                         }
                     }
 
@@ -1299,14 +1299,14 @@ int imgui_main(int, char**)
 
                 ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.485f);
                 if (ImGui::BeginCombo(("##" + windowName + "_axisX").c_str(),
-                    window->typeX == VARIABLE ? krnl->variables[window->indexX].name.c_str() : krnl->parameters[window->indexX].name.c_str(), 0))
+                    window->typeX == MDT_Variable ? krnl->variables[window->indexX].name.c_str() : krnl->parameters[window->indexX].name.c_str(), 0))
                 {
                     for (int v = 0; v < krnl->VAR_COUNT; v++)
                     {
                         if (ImGui::Selectable(krnl->variables[v].name.c_str()))
                         {
                             window->indexX = v;
-                            window->typeX = VARIABLE;
+                            window->typeX = MDT_Variable;
                         }
                     }
 
@@ -1315,7 +1315,7 @@ int imgui_main(int, char**)
                         if (ImGui::Selectable(krnl->parameters[p].name.c_str()))
                         {
                             window->indexX = p;
-                            window->typeX = PARAMETER;
+                            window->typeX = MDT_Parameter;
                         }
                     }
 
@@ -2000,7 +2000,7 @@ int imgui_main(int, char**)
                         mapIndex = window->variables[0];
                         Kernel* krnl =  &(KERNEL);
                         Computation* cmp =  &(computations[playedBufferIndex]);
-                        Attribute* axis = window->typeX == VARIABLE ? &(krnl->variables[window->indexX]) : &(krnl->parameters[window->indexX]);
+                        Attribute* axis = window->typeX == MDT_Variable ? &(krnl->variables[window->indexX]) : &(krnl->parameters[window->indexX]);
                         bool axisIsRanging = axis->TrueStepCount() > 1;
                         if (axisIsRanging) {
                             //numb minX, stepX, maxX;
@@ -2014,7 +2014,7 @@ int imgui_main(int, char**)
                             numb* Yaxis = new numb[axis->stepCount];
                             std::vector<int> tempattributeValueIndices = attributeValueIndices;
                             for (int i = 0; i < axis->stepCount; i++) {
-                                if(window->typeX==VARIABLE)tempattributeValueIndices[window->indexX] = i;
+                                if(window->typeX== MDT_Variable)tempattributeValueIndices[window->indexX] = i;
                                 else tempattributeValueIndices[window->indexX + krnl->VAR_COUNT] = i;
                                 steps2Variation(&variation, &(tempattributeValueIndices.data()[0]), &KERNEL);
                                 Xaxis[i] = axis->min + axis->step * i;
@@ -2026,17 +2026,17 @@ int imgui_main(int, char**)
                                 ImPlot::PlotLine("##Metric_Line_Plot", Xaxis, Yaxis, axis->stepCount);
                                 if (ImGui::IsMouseDown(0) && ImGui::IsKeyPressed(ImGuiMod_Shift) && ImGui::IsMouseHoveringRect(plot->PlotRect.Min, plot->PlotRect.Max)) {
                                     numb MousePosX = (numb)ImPlot::GetPlotMousePos().x;
-                                    if (axis->min > MousePosX)window->typeX == VARIABLE ? attributeValueIndices[window->indexX] = 0: attributeValueIndices[window->indexX +krnl->VAR_COUNT] = 0;
-                                    else if (axis->max < MousePosX)window->typeX == VARIABLE ? attributeValueIndices[window->indexX] = axis->stepCount-1 : attributeValueIndices[window->indexX + krnl->VAR_COUNT] = axis->stepCount;
+                                    if (axis->min > MousePosX)window->typeX == MDT_Variable ? attributeValueIndices[window->indexX] = 0: attributeValueIndices[window->indexX +krnl->VAR_COUNT] = 0;
+                                    else if (axis->max < MousePosX)window->typeX == MDT_Variable ? attributeValueIndices[window->indexX] = axis->stepCount-1 : attributeValueIndices[window->indexX + krnl->VAR_COUNT] = axis->stepCount;
                                     else {
                                         numb NotRoundedIndex = (MousePosX - axis->min) / (axis->max - axis->min) * axis->stepCount;
                                         int index = static_cast<int>(std::round(NotRoundedIndex)); if (index > axis->stepCount - 1)index = axis->stepCount - 1;
-                                        window->typeX == VARIABLE ? attributeValueIndices[window->indexX] = index : attributeValueIndices[window->indexX + krnl->VAR_COUNT] = index;
+                                        window->typeX == MDT_Variable ? attributeValueIndices[window->indexX] = index : attributeValueIndices[window->indexX + krnl->VAR_COUNT] = index;
                                     }
                                 }
 
                                 if (window->ShowOrbitParLines) {
-                                    double value = axis->min + axis->step * attributeValueIndices[window->typeX==VARIABLE ?  window->indexX : window->indexX+krnl->VAR_COUNT];
+                                    double value = axis->min + axis->step * attributeValueIndices[window->typeX== MDT_Variable ?  window->indexX : window->indexX+krnl->VAR_COUNT];
                                     ImPlot::DragLineX(0, &value, window->OrbitMarkerColor, window->OrbitMarkerWidth, ImPlotDragToolFlags_NoInputs);
                                 }
                                 ImPlot::EndPlot();
@@ -2082,8 +2082,8 @@ int imgui_main(int, char**)
                         if (!cmp->marshal.kernel.mapDatas[mapIndex].toCompute) { ImGui::Text(("Map " + krnl->mapDatas[mapIndex].name + " has not been computed").c_str()); break; }
                     }
 
-                    Attribute* axisX = heatmap->typeX == VARIABLE ? &(krnl->variables[heatmap->indexX]) : &(krnl->parameters[heatmap->indexX]);
-                    Attribute* axisY = heatmap->typeY == VARIABLE ? &(krnl->variables[heatmap->indexY]) : &(krnl->parameters[heatmap->indexY]);
+                    Attribute* axisX = heatmap->typeX == MDT_Variable ? &(krnl->variables[heatmap->indexX]) : &(krnl->parameters[heatmap->indexX]);
+                    Attribute* axisY = heatmap->typeY == MDT_Variable ? &(krnl->variables[heatmap->indexY]) : &(krnl->parameters[heatmap->indexY]);
 
                     bool axisXisRanging = axisX->TrueStepCount() > 1; bool axisYisRanging = axisY->TrueStepCount() > 1; bool sameAxis = axisX == axisY;
 
@@ -2143,15 +2143,15 @@ int imgui_main(int, char**)
                                     {
                                         // Values
                                         heatmap->lastClickedLocation.x = (float)valueFromStep(sizing.minX, sizing.stepX,
-                                            attributeValueIndices[sizing.hmp->indexX + (sizing.hmp->typeX == VARIABLE ? 0 : krnl->VAR_COUNT)]);
+                                            attributeValueIndices[sizing.hmp->indexX + (sizing.hmp->typeX == MDT_Variable ? 0 : krnl->VAR_COUNT)]);
                                         heatmap->lastClickedLocation.y = (float)valueFromStep(sizing.minY, sizing.stepY,
-                                            attributeValueIndices[sizing.hmp->indexY + (sizing.hmp->typeY == VARIABLE ? 0 : krnl->VAR_COUNT)]);
+                                            attributeValueIndices[sizing.hmp->indexY + (sizing.hmp->typeY == MDT_Variable ? 0 : krnl->VAR_COUNT)]);
                                     }
                                     else
                                     {
                                         // Steps
-                                        heatmap->lastClickedLocation.x = (float)attributeValueIndices[sizing.hmp->indexX + (sizing.hmp->typeX == VARIABLE ? 0 : krnl->VAR_COUNT)];
-                                        heatmap->lastClickedLocation.y = (float)attributeValueIndices[sizing.hmp->indexY + (sizing.hmp->typeY == VARIABLE ? 0 : krnl->VAR_COUNT)];
+                                        heatmap->lastClickedLocation.x = (float)attributeValueIndices[sizing.hmp->indexX + (sizing.hmp->typeX == MDT_Variable ? 0 : krnl->VAR_COUNT)];
+                                        heatmap->lastClickedLocation.y = (float)attributeValueIndices[sizing.hmp->indexY + (sizing.hmp->typeY == MDT_Variable ? 0 : krnl->VAR_COUNT)];
                                     }
 
                                     // Choosing configuration
@@ -2173,17 +2173,17 @@ int imgui_main(int, char**)
                                             stepY = (int)floor(plot->shiftClickLocation.y);
                                         }
 
-#define IGNOREOUTOFREACH    if (stepX < 0 || stepX >= (sizing.hmp->typeX == VARIABLE ? krnl->variables[sizing.hmp->indexX].TrueStepCount() : krnl->parameters[sizing.hmp->indexX].TrueStepCount())) break; \
-                        if (stepY < 0 || stepY >= (sizing.hmp->typeY == VARIABLE ? krnl->variables[sizing.hmp->indexY].TrueStepCount() : krnl->parameters[sizing.hmp->indexY].TrueStepCount())) break;
+#define IGNOREOUTOFREACH    if (stepX < 0 || stepX >= (sizing.hmp->typeX == MDT_Variable ? krnl->variables[sizing.hmp->indexX].TrueStepCount() : krnl->parameters[sizing.hmp->indexX].TrueStepCount())) break; \
+                        if (stepY < 0 || stepY >= (sizing.hmp->typeY == MDT_Variable ? krnl->variables[sizing.hmp->indexY].TrueStepCount() : krnl->parameters[sizing.hmp->indexY].TrueStepCount())) break;
 
                                         switch (sizing.hmp->typeX)
                                         {
-                                        case VARIABLE:
+                                        case MDT_Variable:
                                             IGNOREOUTOFREACH;
                                             attributeValueIndices[sizing.hmp->indexX] = stepX;
                                             heatmap->lastClickedLocation.x = plot->shiftClickLocation.x;
                                             break;
-                                        case PARAMETER:
+                                        case MDT_Parameter:
                                             IGNOREOUTOFREACH;
                                             attributeValueIndices[krnl->VAR_COUNT + sizing.hmp->indexX] = stepX;
                                             heatmap->lastClickedLocation.x = plot->shiftClickLocation.x;
@@ -2192,12 +2192,12 @@ int imgui_main(int, char**)
 
                                         switch (sizing.hmp->typeY)
                                         {
-                                        case VARIABLE:
+                                        case MDT_Variable:
                                             IGNOREOUTOFREACH;
                                             attributeValueIndices[sizing.hmp->indexY] = stepY;
                                             heatmap->lastClickedLocation.y = plot->shiftClickLocation.y;
                                             break;
-                                        case PARAMETER:
+                                        case MDT_Parameter:
                                             IGNOREOUTOFREACH;
                                             attributeValueIndices[krnl->VAR_COUNT + sizing.hmp->indexY] = stepY;
                                             heatmap->lastClickedLocation.y = plot->shiftClickLocation.y;
@@ -2304,8 +2304,8 @@ int imgui_main(int, char**)
                                     {
                                         extractMap(cmp->marshal.maps + (cmp->marshal.kernel.mapDatas[mapIndex].offset + heatmap->values.mapValueIndex) * cmp->marshal.totalVariations,
                                             heatmap->values.valueBuffer, heatmap->indexBuffer, &(attributeValueIndices.data()[0]),
-                                            sizing.hmp->typeX == PARAMETER ? sizing.hmp->indexX + krnl->VAR_COUNT : sizing.hmp->indexX,
-                                            sizing.hmp->typeY == PARAMETER ? sizing.hmp->indexY + krnl->VAR_COUNT : sizing.hmp->indexY,
+                                            sizing.hmp->typeX == MDT_Parameter ? sizing.hmp->indexX + krnl->VAR_COUNT : sizing.hmp->indexX,
+                                            sizing.hmp->typeY == MDT_Parameter ? sizing.hmp->indexY + krnl->VAR_COUNT : sizing.hmp->indexY,
                                             krnl);
                                     }
                                     else
@@ -2317,8 +2317,8 @@ int imgui_main(int, char**)
 
                                             extractMap(cmp->marshal.maps + (cmp->marshal.kernel.mapDatas[channelMapIndex[c]].offset + heatmap->channel[c].mapValueIndex) * cmp->marshal.totalVariations,
                                                 heatmap->channel[c].valueBuffer, heatmap->indexBuffer, &(attributeValueIndices.data()[0]),
-                                                sizing.hmp->typeX == PARAMETER ? sizing.hmp->indexX + krnl->VAR_COUNT : sizing.hmp->indexX,
-                                                sizing.hmp->typeY == PARAMETER ? sizing.hmp->indexY + krnl->VAR_COUNT : sizing.hmp->indexY,
+                                                sizing.hmp->typeX == MDT_Parameter ? sizing.hmp->indexX + krnl->VAR_COUNT : sizing.hmp->indexX,
+                                                sizing.hmp->typeY == MDT_Parameter ? sizing.hmp->indexY + krnl->VAR_COUNT : sizing.hmp->indexY,
                                                 krnl);
                                         }
                                     }
@@ -2375,8 +2375,8 @@ int imgui_main(int, char**)
                                 ImPlotPoint from = heatmap->showActualDiapasons ? ImPlotPoint(sizing.minX, sizing.maxY + sizing.stepY) : ImPlotPoint(0, sizing.ySize);
                                 ImPlotPoint to = heatmap->showActualDiapasons ? ImPlotPoint(sizing.maxX + sizing.stepX, sizing.minY) : ImPlotPoint(sizing.xSize, 0);
 
-                                ImPlot::SetupAxes(sizing.hmp->typeX == PARAMETER ? krnl->parameters[sizing.hmp->indexX].name.c_str() : krnl->variables[sizing.hmp->indexX].name.c_str(),
-                                    sizing.hmp->typeY == PARAMETER ? krnl->parameters[sizing.hmp->indexY].name.c_str() : krnl->variables[sizing.hmp->indexY].name.c_str());
+                                ImPlot::SetupAxes(sizing.hmp->typeX == MDT_Parameter ? krnl->parameters[sizing.hmp->indexX].name.c_str() : krnl->variables[sizing.hmp->indexX].name.c_str(),
+                                    sizing.hmp->typeY == MDT_Parameter ? krnl->parameters[sizing.hmp->indexY].name.c_str() : krnl->variables[sizing.hmp->indexY].name.c_str());
                                 ImPlot::PlotImage(("Map " + std::to_string(mapIndex) + "##" + plotName + std::to_string(0)).c_str(), (ImTextureID)(heatmap->texture),
                                     from, to, ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f), ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
 
@@ -2618,35 +2618,35 @@ void heatmapRangingSelection(PlotWindow* window, ImPlotPlot* plot, HeatmapSizing
     //enabledParticles = false;
     playingParticles = false;
 
-    int xMaxStep = sizing->hmp->typeX == PARAMETER ? krnlComputed->parameters[sizing->hmp->indexX].TrueStepCount() :
-        (sizing->hmp->typeX == VARIABLE ? krnlComputed->variables[sizing->hmp->indexX].TrueStepCount() : 0);
-    int yMaxStep = sizing->hmp->typeY == PARAMETER ? krnlComputed->parameters[sizing->hmp->indexY].TrueStepCount() :
-        (sizing->hmp->typeY == VARIABLE ? krnlComputed->variables[sizing->hmp->indexY].TrueStepCount() : 0);
+    int xMaxStep = sizing->hmp->typeX == MDT_Parameter ? krnlComputed->parameters[sizing->hmp->indexX].TrueStepCount() :
+        (sizing->hmp->typeX == MDT_Variable ? krnlComputed->variables[sizing->hmp->indexX].TrueStepCount() : 0);
+    int yMaxStep = sizing->hmp->typeY == MDT_Parameter ? krnlComputed->parameters[sizing->hmp->indexY].TrueStepCount() :
+        (sizing->hmp->typeY == MDT_Variable ? krnlComputed->variables[sizing->hmp->indexY].TrueStepCount() : 0);
 
-    if (sizing->hmp->typeX == VARIABLE)
+    if (sizing->hmp->typeX == MDT_Variable)
     {
         krnl->variables[sizing->hmp->indexX].min = calculateValue(krnlComputed->variables[sizing->hmp->indexX].min, krnlComputed->variables[sizing->hmp->indexX].step, stepX1);
         krnl->variables[sizing->hmp->indexX].max = calculateValue(krnlComputed->variables[sizing->hmp->indexX].min, krnlComputed->variables[sizing->hmp->indexX].step, stepX2);
-        krnl->variables[sizing->hmp->indexX].rangingType = Linear;
+        krnl->variables[sizing->hmp->indexX].rangingType = RT_Linear;
     }
     else
     {
         krnl->parameters[sizing->hmp->indexX].min = calculateValue(krnlComputed->parameters[sizing->hmp->indexX].min, krnlComputed->parameters[sizing->hmp->indexX].step, stepX1);
         krnl->parameters[sizing->hmp->indexX].max = calculateValue(krnlComputed->parameters[sizing->hmp->indexX].min, krnlComputed->parameters[sizing->hmp->indexX].step, stepX2);
-        krnl->parameters[sizing->hmp->indexX].rangingType = Linear;
+        krnl->parameters[sizing->hmp->indexX].rangingType = RT_Linear;
     }
 
-    if (sizing->hmp->typeY == VARIABLE)
+    if (sizing->hmp->typeY == MDT_Variable)
     {
         krnl->variables[sizing->hmp->indexY].min = calculateValue(krnlComputed->variables[sizing->hmp->indexY].min, krnlComputed->variables[sizing->hmp->indexY].step, stepY1);
         krnl->variables[sizing->hmp->indexY].max = calculateValue(krnlComputed->variables[sizing->hmp->indexY].min, krnlComputed->variables[sizing->hmp->indexY].step, stepY2);
-        krnl->variables[sizing->hmp->indexY].rangingType = Linear;
+        krnl->variables[sizing->hmp->indexY].rangingType = RT_Linear;
     }
     else
     {
         krnl->parameters[sizing->hmp->indexY].min = calculateValue(krnlComputed->parameters[sizing->hmp->indexY].min, krnlComputed->parameters[sizing->hmp->indexY].step, stepY1);
         krnl->parameters[sizing->hmp->indexY].max = calculateValue(krnlComputed->parameters[sizing->hmp->indexY].min, krnlComputed->parameters[sizing->hmp->indexY].step, stepY2);
-        krnl->parameters[sizing->hmp->indexY].rangingType = Linear;
+        krnl->parameters[sizing->hmp->indexY].rangingType = RT_Linear;
     }
 
     autoLoadNewParams = false; // Otherwise the map immediately starts drawing the cut region
@@ -2672,26 +2672,26 @@ void hiresShiftClickCompute(PlotWindow* window, HeatmapSizing* sizing, numb valu
 {
     kernelNew.CopyFrom(&kernelHiresNew);
 
-    if (sizing->hmp->typeX == VARIABLE)
+    if (sizing->hmp->typeX == MDT_Variable)
     {
         kernelNew.variables[sizing->hmp->indexX].min = valueX;
-        kernelNew.variables[sizing->hmp->indexX].rangingType = None;
+        kernelNew.variables[sizing->hmp->indexX].rangingType = RT_None;
     }
     else
     {
         kernelNew.parameters[sizing->hmp->indexX].min = valueX;
-        kernelNew.parameters[sizing->hmp->indexX].rangingType = None;
+        kernelNew.parameters[sizing->hmp->indexX].rangingType = RT_None;
     }
 
-    if (sizing->hmp->typeY == VARIABLE)
+    if (sizing->hmp->typeY == MDT_Variable)
     {
         kernelNew.variables[sizing->hmp->indexY].min = valueY;
-        kernelNew.variables[sizing->hmp->indexY].rangingType = None;
+        kernelNew.variables[sizing->hmp->indexY].rangingType = RT_None;
     }
     else
     {
         kernelNew.parameters[sizing->hmp->indexY].min = valueY;
-        kernelNew.parameters[sizing->hmp->indexY].rangingType = None;
+        kernelNew.parameters[sizing->hmp->indexY].rangingType = RT_None;
     }
 
     autoLoadNewParams = false; // Otherwise the map immediately starts drawing the cut region

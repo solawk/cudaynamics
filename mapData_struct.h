@@ -2,7 +2,7 @@
 
 #define MAX_SETTINGS_PER_MAP 32
 
-enum MapDimensionType { VARIABLE, PARAMETER, STEP };
+enum MapDimensionType { MDT_Variable, MDT_Parameter, MDT_Step };
 
 struct MapData
 {

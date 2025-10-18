@@ -52,7 +52,7 @@ __global__ void kernelProgram_jj_mrlcs(Computation* data)
     }
 }
 
-__device__ __forceinline__  void finiteDifferenceScheme_jj_mrlcs(numb* currentV, numb* nextV, numb* parameters)
+__device__ __forceinline__  void finiteDifferenceScheme_jj_mrlcs(numb* currentV, numb* nextV, numb* parameters, Computation* data)
 {
     ifMETHOD(P(method), ExplicitEuler)
     {

@@ -51,7 +51,7 @@ __global__ void kernelProgram_lorenz83(Computation* data)
     }
 }
 
-__device__ __forceinline__ void finiteDifferenceScheme_lorenz83(numb* currentV, numb* nextV, numb* parameters)
+__device__ __forceinline__ void finiteDifferenceScheme_lorenz83(numb* currentV, numb* nextV, numb* parameters, Computation* data)
 {
     ifMETHOD(P(method), ExplicitEuler)
     {

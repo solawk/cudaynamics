@@ -4,7 +4,7 @@
 namespace attributes
 {
     enum variables { x, y, z };
-    enum parameters { sigma, rho, beta, stepsize, symmetry, method };
+    enum parameters { sigma, rho, beta, symmetry, method };
     enum methods { ExplicitEuler, ExplicitMidpoint, ExplicitRungeKutta4, VariableSymmetryCD };
     enum maps { LLE, MAX, MeanInterval, MeanPeak, Period };
 }
@@ -45,29 +45,30 @@ __global__ void kernelProgram_lorenz(Computation* data)
 
     if (M(Period).toCompute || M(MeanInterval).toCompute || M(MeanPeak).toCompute)
     {
-        DBscan_Settings dbscan_settings(MS(Period, 0), MS(MeanInterval, 0), MS(Period, 1), MS(Period, 2), MS(MeanInterval, 1), MS(MeanInterval, 2), MS(MeanInterval, 3), MS(MeanInterval, 4), P(stepsize));
+        DBscan_Settings dbscan_settings(MS(Period, 0), MS(MeanInterval, 0), MS(Period, 1), MS(Period, 2), MS(MeanInterval, 1), MS(MeanInterval, 2), MS(MeanInterval, 3), MS(MeanInterval, 4),
+            STEP_BRANCH(parameters[CUDA_kernel.PARAM_COUNT - 1], variables[CUDA_kernel.VAR_COUNT - 1]));
         Period(data, dbscan_settings, variation, &finiteDifferenceScheme_rossler, MO(Period), MO(MeanPeak), MO(MeanInterval));
     }
 }
 
-__device__ __forceinline__ void finiteDifferenceScheme_lorenz(numb* currentV, numb* nextV, numb* parameters)
+__device__ __forceinline__ void finiteDifferenceScheme_lorenz(numb* currentV, numb* nextV, numb* parameters, Computation* data)
 {
     ifMETHOD(P(method), ExplicitEuler)
     {
-        Vnext(x) = V(x) + P(stepsize) * (P(sigma) * (V(y) - V(x)));
-        Vnext(y) = V(y) + P(stepsize) * (V(x) * (P(rho) - V(z)) - V(y));
-        Vnext(z) = V(z) + P(stepsize) * (V(x) * V(y) - P(beta) * V(z));
+        Vnext(x) = V(x) + STEP * (P(sigma) * (V(y) - V(x)));
+        Vnext(y) = V(y) + STEP * (V(x) * (P(rho) - V(z)) - V(y));
+        Vnext(z) = V(z) + STEP * (V(x) * V(y) - P(beta) * V(z));
     }
 
     ifMETHOD(P(method), ExplicitMidpoint)
     {
-        numb xmp = V(x) + P(stepsize) * 0.5f * (P(sigma) * (V(y) - V(x)));
-        numb ymp = V(y) + P(stepsize) * 0.5f * (V(x) * (P(rho) - V(z)) - V(y));
-        numb zmp = V(z) + P(stepsize) * 0.5f * (V(x) * V(y) - P(beta) * V(z));
+        numb xmp = V(x) + STEP * 0.5f * (P(sigma) * (V(y) - V(x)));
+        numb ymp = V(y) + STEP * 0.5f * (V(x) * (P(rho) - V(z)) - V(y));
+        numb zmp = V(z) + STEP * 0.5f * (V(x) * V(y) - P(beta) * V(z));
 
-        Vnext(x) = V(x) + P(stepsize) * (P(sigma) * (ymp - xmp));
-        Vnext(y) = V(y) + P(stepsize) * (xmp * (P(rho) - zmp) - ymp);
-        Vnext(z) = V(z) + P(stepsize) * (xmp * ymp - P(beta) * zmp);
+        Vnext(x) = V(x) + STEP * (P(sigma) * (ymp - xmp));
+        Vnext(y) = V(y) + STEP * (xmp * (P(rho) - zmp) - ymp);
+        Vnext(z) = V(z) + STEP * (xmp * ymp - P(beta) * zmp);
     }
 
     ifMETHOD(P(method), ExplicitRungeKutta4)
@@ -76,39 +77,39 @@ __device__ __forceinline__ void finiteDifferenceScheme_lorenz(numb* currentV, nu
         numb ky1 = V(x) * (P(rho) - V(z)) - V(y);
         numb kz1 = V(x) * V(y) - P(beta) * V(z);
 
-        numb xmp = V(x) + 0.5f * P(stepsize) * kx1;
-        numb ymp = V(y) + 0.5f * P(stepsize) * ky1;
-        numb zmp = V(z) + 0.5f * P(stepsize) * kz1;
+        numb xmp = V(x) + 0.5f * STEP * kx1;
+        numb ymp = V(y) + 0.5f * STEP * ky1;
+        numb zmp = V(z) + 0.5f * STEP * kz1;
 
         numb kx2 = P(sigma) * (ymp - xmp);
         numb ky2 = xmp * (P(rho) - zmp) - ymp;
         numb kz2 = xmp * ymp - P(beta) * zmp;
 
-        xmp = V(x) + 0.5f * P(stepsize) * kx2;
-        ymp = V(y) + 0.5f * P(stepsize) * ky2;
-        zmp = V(z) + 0.5f * P(stepsize) * kz2;
+        xmp = V(x) + 0.5f * STEP * kx2;
+        ymp = V(y) + 0.5f * STEP * ky2;
+        zmp = V(z) + 0.5f * STEP * kz2;
 
         numb kx3 = P(sigma) * (ymp - xmp);
         numb ky3 = xmp * (P(rho) - zmp) - ymp;
         numb kz3 = xmp * ymp - P(beta) * zmp;
 
-        xmp = V(x) + P(stepsize) * kx3;
-        ymp = V(y) + P(stepsize) * ky3;
-        zmp = V(z) + P(stepsize) * kz3;
+        xmp = V(x) + STEP * kx3;
+        ymp = V(y) + STEP * ky3;
+        zmp = V(z) + STEP * kz3;
 
         numb kx4 = P(sigma) * (ymp - xmp);
         numb ky4 = xmp * (P(rho) - zmp) - ymp;
         numb kz4 = xmp * ymp - P(beta) * zmp;
 
-        Vnext(x) = V(x) + P(stepsize) * (kx1 + 2.0f * kx2 + 2.0f * kx3 + kx4) / 6.0f;
-        Vnext(y) = V(y) + P(stepsize) * (ky1 + 2.0f * ky2 + 2.0f * ky3 + ky4) / 6.0f;
-        Vnext(z) = V(z) + P(stepsize) * (kz1 + 2.0f * kz2 + 2.0f * kz3 + kz4) / 6.0f;
+        Vnext(x) = V(x) + STEP * (kx1 + 2.0f * kx2 + 2.0f * kx3 + kx4) / 6.0f;
+        Vnext(y) = V(y) + STEP * (ky1 + 2.0f * ky2 + 2.0f * ky3 + ky4) / 6.0f;
+        Vnext(z) = V(z) + STEP * (kz1 + 2.0f * kz2 + 2.0f * kz3 + kz4) / 6.0f;
     }
 
     ifMETHOD(P(method), VariableSymmetryCD)
     {
-        numb h1 = 0.5f * P(stepsize) - P(symmetry);
-        numb h2 = 0.5f * P(stepsize) + P(symmetry);
+        numb h1 = 0.5f * STEP - P(symmetry);
+        numb h2 = 0.5f * STEP + P(symmetry);
 
         numb xmp = V(x) + h1 * (P(sigma) * (V(y) - V(x)));
         numb ymp = V(y) + h1 * (xmp * (P(rho) - V(z)) - V(y));

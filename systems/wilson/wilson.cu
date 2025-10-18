@@ -53,7 +53,7 @@ __global__ void kernelProgram_wilson(Computation* data)
     }
 }
 
-__device__ __forceinline__ void finiteDifferenceScheme_wilson(numb* currentV, numb* nextV, numb* parameters)
+__device__ __forceinline__ void finiteDifferenceScheme_wilson(numb* currentV, numb* nextV, numb* parameters, Computation* data)
 {
     ifSIGNAL(P(signal), square)
     {

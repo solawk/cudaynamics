@@ -52,7 +52,7 @@ __global__ void kernelProgram_sprott14(Computation* data)
     }
 }
 
-__device__ __forceinline__ void finiteDifferenceScheme_sprott14(numb* currentV, numb* nextV, numb* parameters)
+__device__ __forceinline__ void finiteDifferenceScheme_sprott14(numb* currentV, numb* nextV, numb* parameters, Computation* data)
 {
     ifMETHOD(P(method), ExplicitEuler)
     {

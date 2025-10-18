@@ -21,22 +21,22 @@ struct HeatmapSizing
 
 	void initValues()
 	{
-		xSize = hmp->typeX == VARIABLE ? kernel->variables[hmp->indexX].TrueStepCount() : kernel->parameters[hmp->indexX].TrueStepCount();
-		ySize = hmp->typeY == VARIABLE ? kernel->variables[hmp->indexY].TrueStepCount() : kernel->parameters[hmp->indexY].TrueStepCount();
+		xSize = hmp->typeX == MDT_Variable ? kernel->variables[hmp->indexX].TrueStepCount() : kernel->parameters[hmp->indexX].TrueStepCount();
+		ySize = hmp->typeY == MDT_Variable ? kernel->variables[hmp->indexY].TrueStepCount() : kernel->parameters[hmp->indexY].TrueStepCount();
 
 		switch (hmp->typeX)
 		{
-		case PARAMETER:
+		case MDT_Parameter:
 			minX = kernel->parameters[hmp->indexX].min;
 			stepX = kernel->parameters[hmp->indexX].step;
 			maxX = kernel->parameters[hmp->indexX].max;
 			break;
-		case VARIABLE:
+		case MDT_Variable:
 			minX = kernel->variables[hmp->indexX].min;
 			stepX = kernel->variables[hmp->indexX].step;
 			maxX = kernel->variables[hmp->indexX].max;
 			break;
-		case STEP: // TODO
+		case MDT_Step: // TODO
 			minX = 0;
 			stepX = 0;
 			maxX = 0;
@@ -45,17 +45,17 @@ struct HeatmapSizing
 
 		switch (hmp->typeY)
 		{
-		case PARAMETER:
+		case MDT_Parameter:
 			minY = kernel->parameters[hmp->indexY].min;
 			stepY = kernel->parameters[hmp->indexY].step;
 			maxY = kernel->parameters[hmp->indexY].max;
 			break;
-		case VARIABLE:
+		case MDT_Variable:
 			minY = kernel->variables[hmp->indexY].min;
 			stepY = kernel->variables[hmp->indexY].step;
 			maxY = kernel->variables[hmp->indexY].max;
 			break;
-		case STEP: // TODO
+		case MDT_Step: // TODO
 			minY = 0;
 			stepY = 0;
 			maxY = 0;

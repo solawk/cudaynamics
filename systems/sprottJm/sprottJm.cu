@@ -90,7 +90,7 @@ __device__ numb sprottJm_F(numb y)
         return 0.0;
 }
 
-__device__ __forceinline__ void finiteDifferenceScheme_sprottJm(numb* currentV, numb* nextV, numb* parameters)
+__device__ __forceinline__ void finiteDifferenceScheme_sprottJm(numb* currentV, numb* nextV, numb* parameters, Computation* data)
 {  
     ifMETHOD(P(method), ExplicitEuler)
     {

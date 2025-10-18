@@ -51,7 +51,7 @@ __global__ void kernelProgram_sang(Computation* data)
         Period(data, dbscan_settings, variation, &finiteDifferenceScheme_rossler, MO(Period), MO(MeanPeak), MO(MeanInterval));
     }
 }
-__device__ __forceinline__ void finiteDifferenceScheme_sang(numb* currentV, numb* nextV, numb* parameters)
+__device__ __forceinline__ void finiteDifferenceScheme_sang(numb* currentV, numb* nextV, numb* parameters, Computation* data)
 {
     ifMETHOD(P(method), ExplicitEuler)
     {

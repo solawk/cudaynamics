@@ -52,7 +52,7 @@ __global__ void kernelProgram_halvorsen(Computation* data)
     }
 }
 
-__device__ __forceinline__ void finiteDifferenceScheme_halvorsen(numb* currentV, numb* nextV, numb* parameters)
+__device__ __forceinline__ void finiteDifferenceScheme_halvorsen(numb* currentV, numb* nextV, numb* parameters, Computation* data)
 {
     ifMETHOD(P(method), ExplicitEuler)
     {

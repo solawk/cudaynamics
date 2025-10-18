@@ -52,7 +52,7 @@ __global__ void kernelProgram_dadras(Computation* data)
     }
 }
 
-__device__ __forceinline__ void finiteDifferenceScheme_dadras(numb* currentV, numb* nextV, numb* parameters)
+__device__ __forceinline__ void finiteDifferenceScheme_dadras(numb* currentV, numb* nextV, numb* parameters, Computation* data)
 {
     ifMETHOD(P(method), ExplicitEuler)
     {

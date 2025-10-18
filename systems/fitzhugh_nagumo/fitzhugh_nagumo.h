@@ -5,4 +5,4 @@ const int THREADS_PER_BLOCK_fitzhugh_nagumo = 64;
 
 __global__ void kernelProgram_fitzhugh_nagumo(Computation* data);
 
-__device__ __forceinline__  void finiteDifferenceScheme_fitzhugh_nagumo(numb* currentV, numb* nextV, numb* parameters);
+__device__ __forceinline__  void finiteDifferenceScheme_fitzhugh_nagumo(numb* currentV, numb* nextV, numb* parameters, Computation* data);

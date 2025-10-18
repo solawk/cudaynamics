@@ -20,11 +20,11 @@ std::vector<std::string> splitString(std::string str)
 
 RangingType rangingTypeFromString(std::string str)
 {
-	if (str == "Fixed") return None;
-	if (str == "Linear") return Linear;
-	if (str == "Step") return Step;
-	if (str == "Random") return UniformRandom;
-	if (str == "Normal") return NormalRandom;
+	if (str == "Fixed") return RT_None;
+	if (str == "Linear") return RT_Linear;
+	if (str == "Step") return RT_Step;
+	if (str == "Random") return RT_UniformRandom;
+	if (str == "Normal") return RT_NormalRandom;
 
 	throw std::runtime_error("Invalid ranging type");
 }
@@ -39,6 +39,10 @@ Kernel readKernelText(std::string name)
 	MapData tempMapData;
 
 	int mapSettingsCount = 0;
+
+	bool stepLineFound = false;
+	std::string stepLine = "";
+	kernel.stepType = ST_Parameter;
 
 	for (std::string line; std::getline(fileStream, line); )
 	{
@@ -55,8 +59,16 @@ Kernel readKernelText(std::string name)
 		}
 		if (str[0] == "Steps:") { kernel.steps = atoi(str[1].c_str()); continue; }
 		if (str[0] == "Transient:") { kernel.transientSteps = atoi(str[1].c_str()); continue; }
-		if (str[0] == "Step") { kernel.stepSize = (numb)atof(str[2].c_str()); continue; }
 		if (str[0] == "Execute") { kernel.executeOnLaunch = str[3] == "yes"; continue; }
+
+		if (str[0] == "Step" && str[1] == "type:")
+		{ 
+			if (str[2] == "variable") kernel.stepType = ST_Variable;
+			if (str[2] == "discrete") kernel.stepType = ST_Discrete;
+			stepLineFound = true;
+			stepLine = line;
+			continue; 
+		}
 
 		if (str[0] == "var" || str[0] == "param")
 		{
@@ -85,7 +97,7 @@ Kernel readKernelText(std::string name)
 		{
 			tempAttribute.name = str[1];
 			tempAttribute.values = nullptr;
-			tempAttribute.rangingType = Enum;
+			tempAttribute.rangingType = RT_Enum;
 
 			tempAttribute.CalcStep();
 			tempAttribute.CalcStepCount();
@@ -123,11 +135,57 @@ Kernel readKernelText(std::string name)
 				kernel.mapSettings[currentSettingsCount++] = (numb)atof(str[4 + i * 2 + 1].c_str());
 			}
 
-			tempMapData.typeX = tempMapData.typeY = VARIABLE;
+			tempMapData.typeX = tempMapData.typeY = MDT_Variable;
 			tempMapData.indexX = tempMapData.indexY = 0;
 
 			kernel.mapDatas.push_back(tempMapData);
 		}
+	}
+
+	// Adding step
+	if (!stepLineFound)
+	{
+		// Default step values
+		tempAttribute.name = "h";
+		tempAttribute.rangingType = RT_None;
+		tempAttribute.min = (numb)0.01;
+		tempAttribute.max = (numb)0.1;
+		tempAttribute.step = (numb)0.01;
+		tempAttribute.stepCount = 10;
+		tempAttribute.mean = (numb)0.0;
+		tempAttribute.deviation = (numb)0.0;
+		tempAttribute.values = nullptr;
+
+		tempAttribute.CalcStep();
+		tempAttribute.CalcStepCount();
+
+		if (tempAttribute.stepCount < 2) tempAttribute.stepCount = 2;
+
+		kernel.parameters.push_back(tempAttribute);
+	}
+	else if (kernel.stepType != ST_Discrete)
+	{
+		// Import step values
+		str = splitString(stepLine);
+		tempAttribute.name = str[3];
+		tempAttribute.rangingType = rangingTypeFromString(str[4]);
+		tempAttribute.min = (numb)atof(str[5].c_str());
+		tempAttribute.max = (numb)atof(str[6].c_str());
+		tempAttribute.step = (numb)atof(str[7].c_str());
+		tempAttribute.stepCount = atoi(str[8].c_str());
+		tempAttribute.mean = (numb)atof(str[9].c_str());
+		tempAttribute.deviation = (numb)atof(str[10].c_str());
+		tempAttribute.values = nullptr;
+
+		tempAttribute.CalcStep();
+		tempAttribute.CalcStepCount();
+
+		if (tempAttribute.stepCount < 2) tempAttribute.stepCount = 2;
+
+		if (kernel.stepType == ST_Parameter)
+			kernel.parameters.push_back(tempAttribute);
+		else if (kernel.stepType == ST_Variable)
+			kernel.variables.push_back(tempAttribute);
 	}
 
 	fileStream.close();

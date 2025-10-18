@@ -25,12 +25,12 @@
 // Linear - fixed step values from min (inclusive) to max (not necessarily inclusive)
 // UniformRandom - random values from min to max with uniform distribution, step = quantity
 // NormalRandom - random values from min to max with normal distribution around midpoint, step = quantity
-enum RangingType { None, Step, Linear, UniformRandom, NormalRandom, Enum };
+enum RangingType { RT_None, RT_Step, RT_Linear, RT_UniformRandom, RT_NormalRandom, RT_Enum };
 
 // Parameter step – doesn't change throughout the simulation
 // Variable step - can change throughout the simulation and be plotted like a variable
 // Discrete step - equals 1
-enum StepType { Parameter, Variable, Discrete };
+enum StepType { ST_Parameter, ST_Variable, ST_Discrete };
 
 struct SinglePreRangingInfo
 {

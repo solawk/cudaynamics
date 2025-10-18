@@ -51,7 +51,7 @@ __global__ void kernelProgram_bolshakov(Computation* data)
     }
 }
 
-__device__  __forceinline__ void finiteDifferenceScheme_bolshakov(numb* currentV, numb* nextV, numb* parameters)
+__device__  __forceinline__ void finiteDifferenceScheme_bolshakov(numb* currentV, numb* nextV, numb* parameters, Computation* data)
 {
     Vnext(Q) = V(Q) + V(c) * (P(i) + V(S)) - !V(c) * (P(i) + V(S));
 

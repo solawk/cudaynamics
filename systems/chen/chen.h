@@ -5,4 +5,4 @@ const int THREADS_PER_BLOCK_chen = 64;
 
 __global__ void kernelProgram_chen(Computation* data);
 
-__device__ __forceinline__ void finiteDifferenceScheme_chen(numb* currentV, numb* nextV, numb* parameters);
+__device__ __forceinline__ void finiteDifferenceScheme_chen(numb* currentV, numb* nextV, numb* parameters, Computation* data);

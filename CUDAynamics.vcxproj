@@ -83,7 +83,8 @@
       <GenerateRelocatableDeviceCode>true</GenerateRelocatableDeviceCode>
       <PtxAsOptionV>false</PtxAsOptionV>
       <MaxRegCount>32</MaxRegCount>
-      <FastMath>true</FastMath>
+      <FastMath>false</FastMath>
+      <Warning>InheritFromHost</Warning>
     </CudaCompile>
     <CudaLink />
   </ItemDefinitionGroup>

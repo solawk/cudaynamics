@@ -31,4 +31,4 @@ struct LLE_Settings
 	}
 };
 
-__device__ void LLE(Computation* data, LLE_Settings settings, int variation, void(*finiteDifferenceScheme)(numb*, numb*, numb*), int offset);
+__device__ void LLE(Computation* data, LLE_Settings settings, int variation, void(*finiteDifferenceScheme)(numb*, numb*, numb*, Computation*), int offset);

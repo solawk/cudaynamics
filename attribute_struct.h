@@ -1,7 +1,7 @@
 #pragma once
 #include "objects.h"
 
-#define MAX_ENUMS 32
+#define MAX_ENUMS 8
 
 struct Attribute
 {
@@ -25,8 +25,8 @@ public:
 
 	int TrueStepCount()
 	{
-		if (rangingType == None) return 1;
-		if (rangingType == Enum)
+		if (rangingType == RT_None) return 1;
+		if (rangingType == RT_Enum)
 		{
 			stepCount = 0;
 			for (int e = 0; e < enumCount; e++) if (enumEnabled[e]) stepCount++;
@@ -38,20 +38,20 @@ public:
 	void CalcStepCount()
 	{
 		//if (rangingType == None) stepCount = 1;
-		if (rangingType == Enum)
+		if (rangingType == RT_Enum)
 		{
 			TrueStepCount();
 			return;
 		}
 
-		if (rangingType != Step) return;
+		if (rangingType != RT_Step) return;
 		stepCount = (int)((max - min) / step + 1);
 		if (stepCount < 1) stepCount = 1;
 	}
 
 	void CalcStep()
 	{
-		if (rangingType != Linear) return;
+		if (rangingType != RT_Linear) return;
 		step = (max - min) / (stepCount - 1);
 	}
 	
@@ -78,11 +78,11 @@ public:
 
 		switch (rangingType)
 		{
-		case None:
+		case RT_None:
 			values[0] = min;
 			break;
-		case Step:
-		case Linear:
+		case RT_Step:
+		case RT_Linear:
 			if (!preserveValues || oldValues == nullptr)
 			{
 				for (int i = 0; i < trueStepCount; i++)
@@ -99,7 +99,7 @@ public:
 				}
 			}
 			break;
-		case Enum:
+		case RT_Enum:
 			if (!preserveValues || oldValues == nullptr)
 			{
 				int i = 0;

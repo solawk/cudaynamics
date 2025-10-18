@@ -51,7 +51,7 @@ __global__ void kernelProgram_mishchenko(Computation* data)
     }
 }
 
-__device__ __forceinline__ void finiteDifferenceScheme_mishchenko(numb* currentV, numb* nextV, numb* parameters)
+__device__ __forceinline__ void finiteDifferenceScheme_mishchenko(numb* currentV, numb* nextV, numb* parameters, Computation* data)
 {
     numb xmp = fmodf(V(x) + P(stepsize) * 0.5 * V(y), 2.0f * 3.141592f);
     numb ymp = V(y) + P(stepsize) * 0.5 * V(z);
