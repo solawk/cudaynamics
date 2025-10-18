@@ -1399,7 +1399,6 @@ int imgui_main(int, char**)
 
                 if (subtype != Phase2D)
                 {
-                    // Rotations (only useful for Phase 3D)
                     rotationEuler = ToEulerAngles(window->quatRot);
                     if (isnan(rotationEuler.x))
                     {
@@ -1442,7 +1441,6 @@ int imgui_main(int, char**)
 
                         window->quatRot = ImVec4(quatEditable.b(), quatEditable.c(), quatEditable.d(), quatEditable.a());
                     }
-                    // Rotations end
                 }
 
                 if (window->whiteBg) { ImPlot::PushStyleColor(ImPlotCol_PlotBg, ImVec4(1.0f, 1.0f, 1.0f, 1.0f)); ImPlot::PushStyleColor(ImPlotCol_AxisGrid, ImVec4(0.2f, 0.2f, 0.2f, 1.0f)); }

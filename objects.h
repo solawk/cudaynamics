@@ -27,6 +27,11 @@
 // NormalRandom - random values from min to max with normal distribution around midpoint, step = quantity
 enum RangingType { None, Step, Linear, UniformRandom, NormalRandom, Enum };
 
+// Parameter step – doesn't change throughout the simulation
+// Variable step - can change throughout the simulation and be plotted like a variable
+// Discrete step - equals 1
+enum StepType { Parameter, Variable, Discrete };
+
 struct SinglePreRangingInfo
 {
 public:
