@@ -31,4 +31,6 @@ enum method 0ExplicitEuler 0ExplicitMidpoint 0ExplicitRungeKutta4 1VariableSymme
 // map <name> <map settings count (inside its struct)> <map settings, beginning with "n" for numbs and "i" for ints>
 map LLE 1 7 r n0.01 L i50 variableToDeflect i0 norm0 i0 norm1 i1 norm2 i2 norm3 i-1
 map MAX 1 1 i i0
-map Period 1 8 eps n1.0 analysedVariable i2 CoefIntervals n15.0 CoefPeaks n5.0 MaxAllowedValue n1e4 epsFXP n1e-3 timeFractionEXP n0.05 peakThreshold n-inf i1
+map MeanInterval 1 5 analysedVariable i2 MaxAllowedValue n1e4 epsFXP n1e-3 timeFractionFXP n0.05 peakThreshold n-inf i1
+map MeanPeak 1 0 i1
+map Period 1 3 epsDBSCAN n1.0 CoefIntervals n15.0 CoefPeaks n5.0 i1

@@ -6,7 +6,7 @@ namespace attributes
     enum variables { v, w };
     enum parameters { a, b, tau, R, Iext, stepsize, method };
     enum methods { ExplicitEuler, ExplicitMidpoint };
-    enum maps { LLE, MAX, Period};
+    enum maps { LLE, MAX, MeanInterval, MeanPeak, Period };
 }
 
 __global__ void kernelProgram_fitzhugh_nagumo(Computation* data)
@@ -45,10 +45,10 @@ __global__ void kernelProgram_fitzhugh_nagumo(Computation* data)
         MAX(data, max_settings, variation, &finiteDifferenceScheme_fitzhugh_nagumo, MO(MAX));
     }
 
-    if (M(Period).toCompute)
+    if (M(Period).toCompute || M(MeanInterval).toCompute || M(MeanPeak).toCompute)
     {
-        DBscan_Settings dbscan_settings(MS(Period, 0), MS(Period, 1), MS(Period, 2), MS(Period, 3), MS(Period, 4), MS(Period, 5), MS(Period, 6), MS(Period, 7), attributes::parameters::stepsize);
-        Period(data, dbscan_settings, variation, &finiteDifferenceScheme_fitzhugh_nagumo, MO(Period));
+        DBscan_Settings dbscan_settings(MS(Period, 0), MS(MeanInterval, 0), MS(Period, 1), MS(Period, 2), MS(MeanInterval, 1), MS(MeanInterval, 2), MS(MeanInterval, 3), MS(MeanInterval, 4), P(stepsize));
+        Period(data, dbscan_settings, variation, &finiteDifferenceScheme_rossler, MO(Period), MO(MeanPeak), MO(MeanInterval));
     }
 }
 

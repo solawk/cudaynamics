@@ -6,7 +6,7 @@ namespace attributes
     enum variables { x, y, z };
     enum parameters { a, b, c, stepsize, symmetry, method };
     enum methods { ExplicitEuler, ExplicitMidpoint, ExplicitRungeKutta4, VariableSymmetryCD};
-    enum maps { LLE, MAX, Period };
+    enum maps { LLE, MAX, MeanInterval, MeanPeak, Period };
 }
 
 __global__ void kernelProgram_sprott14(Computation* data)
@@ -45,10 +45,10 @@ __global__ void kernelProgram_sprott14(Computation* data)
         MAX(data, max_settings, variation, &finiteDifferenceScheme_sprott14, MO(MAX));
     }
 
-    if (M(Period).toCompute)
+    if (M(Period).toCompute || M(MeanInterval).toCompute || M(MeanPeak).toCompute)
     {
-        DBscan_Settings dbscan_settings(MS(Period, 0), MS(Period, 1), MS(Period, 2), MS(Period, 3), MS(Period, 4), MS(Period, 5), MS(Period, 6), MS(Period, 7), attributes::parameters::stepsize);
-        Period(data, dbscan_settings, variation, &finiteDifferenceScheme_sprott14, MO(Period));
+        DBscan_Settings dbscan_settings(MS(Period, 0), MS(MeanInterval, 0), MS(Period, 1), MS(Period, 2), MS(MeanInterval, 1), MS(MeanInterval, 2), MS(MeanInterval, 3), MS(MeanInterval, 4), P(stepsize));
+        Period(data, dbscan_settings, variation, &finiteDifferenceScheme_rossler, MO(Period), MO(MeanPeak), MO(MeanInterval));
     }
 }
 

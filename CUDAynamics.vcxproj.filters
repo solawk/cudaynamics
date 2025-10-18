@@ -97,8 +97,8 @@
     <Filter Include="benchmarking">
       <UniqueIdentifier>{77057837-ce30-4f25-a386-eaf1094d3b91}</UniqueIdentifier>
     </Filter>
-    <Filter Include="analysis\periodicity">
-      <UniqueIdentifier>{af4b7fc7-4be9-4f2b-8228-a7f75f715eba}</UniqueIdentifier>
+    <Filter Include="analysis\period">
+      <UniqueIdentifier>{7225bc9b-34c4-4ffd-a03f-a310f75ed79b}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -197,8 +197,8 @@
     <ClInclude Include="benchmarking\cpu_bm.h">
       <Filter>benchmarking</Filter>
     </ClInclude>
-    <ClInclude Include="analysis\periodicity\dbscan.h">
-      <Filter>analysis\periodicity</Filter>
+    <ClInclude Include="analysis\period\period.h">
+      <Filter>analysis\period</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -278,11 +278,11 @@
     <CudaCompile Include="systems\fitzhugh_nagumo\fitzhugh_nagumo.cu">
       <Filter>systems</Filter>
     </CudaCompile>
-    <CudaCompile Include="analysis\periodicity\dbscan.cu">
-      <Filter>analysis\periodicity</Filter>
-    </CudaCompile>
     <CudaCompile Include="systems\mishchenko\mishchenko.cu">
       <Filter>systems</Filter>
+    </CudaCompile>
+    <CudaCompile Include="analysis\period\period.cu">
+      <Filter>analysis\period</Filter>
     </CudaCompile>
   </ItemGroup>
   <ItemGroup>
