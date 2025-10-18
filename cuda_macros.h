@@ -9,9 +9,9 @@
 // Parameter value in the FDS
 #define P(n)			parameters[attributes::parameters::n]
 
-#define STEP_BRANCH(p, v)   (CUDA_kernel.stepType == 0 ? p : (CUDA_kernel.stepType == 1 ? v : (numb)1.0))
+#define H_BRANCH(p, v)  (CUDA_kernel.stepType == 0 ? p : (CUDA_kernel.stepType == 1 ? v : (numb)1.0))
 
-#define STEP            STEP_BRANCH(parameters[CUDA_kernel.PARAM_COUNT - 1], currentV[CUDA_kernel.VAR_COUNT - 1])
+#define H               H_BRANCH(parameters[CUDA_kernel.PARAM_COUNT - 1], currentV[CUDA_kernel.VAR_COUNT - 1])
 
 #define LOCAL_BUFFERS   numb variables[MAX_ATTRIBUTES]{0}; \
                         numb variablesNext[MAX_ATTRIBUTES]{0}; \

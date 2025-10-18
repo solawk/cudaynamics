@@ -51,7 +51,7 @@ __device__ void LLE(Computation* data, LLE_Settings settings, int variation, voi
 
             numb growth = norm / r; // How many times the deflection has grown
             if (growth > 0.0f)
-                LLE_value += log(growth) / STEP_BRANCH(
+                LLE_value += log(growth) / H_BRANCH(
                     parameters[CUDA_kernel.PARAM_COUNT - 1], 
                     !data->isHires ? CUDA_marshal.trajectory[stepStart + CUDA_kernel.VAR_COUNT - 1] : variables[CUDA_kernel.VAR_COUNT - 1]
                 );

@@ -67,14 +67,14 @@ void SetupImGuiStyle(ImGuiCustomStyle cs)
         for (int i = 0; i <= ImGuiCol_COUNT; i++)
         {
             ImVec4& col = style.Colors[i];
-            float H, S, V;
-            ImGui::ColorConvertRGBtoHSV(col.x, col.y, col.z, H, S, V);
+            float Hcomp, Scomp, Vcomp;
+            ImGui::ColorConvertRGBtoHSV(col.x, col.y, col.z, Hcomp, Scomp, Vcomp);
 
-            if (S < 0.1f)
+            if (Hcomp < 0.1f)
             {
-                V = 1.0f - V;
+                Vcomp = 1.0f - Vcomp;
             }
-            ImGui::ColorConvertHSVtoRGB(H, S, V, col.x, col.y, col.z);
+            ImGui::ColorConvertHSVtoRGB(Hcomp, Scomp, Vcomp, col.x, col.y, col.z);
         }
 
         style.Colors[ImGuiCol_C_Unsaved] = ImVec4(0.427f, 0.427f, 0.137f, 1.0f);
