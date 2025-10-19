@@ -144,6 +144,7 @@
     <ClInclude Include="benchmarking\cpu_bm.h" />
     <ClInclude Include="colorLUT_struct.h" />
     <ClInclude Include="computation_struct.h" />
+    <ClInclude Include="constraint.h" />
     <ClInclude Include="cuda_macros.h" />
     <ClInclude Include="file_export.h" />
     <ClInclude Include="gui\d3dx11tex.h" />

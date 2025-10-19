@@ -37,6 +37,8 @@ Kernel readKernelText(std::string name)
 	Kernel kernel;
 	Attribute tempAttribute;
 	MapData tempMapData;
+	Constraint tempConstraint;
+	bool constraintExpected = false;
 
 	int mapSettingsCount = 0;
 
@@ -70,6 +72,28 @@ Kernel readKernelText(std::string name)
 			continue; 
 		}
 
+		if (constraintExpected && str[0] != "constraint")
+		{
+			tempConstraint.Clear();
+			kernel.constraints.push_back(tempConstraint);
+			constraintExpected = false;
+		}
+
+		if (constraintExpected && str[0] == "constraint")
+		{
+			tempConstraint.Clear();
+			int constraintCount = ((int)str.size() - 1) / 2;
+			for (int i = 0; i < constraintCount; i++)
+			{
+				tempConstraint.lhs.push_back(str[1 + i * 2 + 0]);
+				tempConstraint.rhs.push_back(str[1 + i * 2 + 1]);
+			}
+			tempConstraint.hasConstraints = true;
+			tempConstraint.count = constraintCount;
+			kernel.constraints.push_back(tempConstraint);
+			constraintExpected = false;
+		}
+
 		if (str[0] == "var" || str[0] == "param")
 		{
 			tempAttribute.name = str[1];
@@ -90,7 +114,10 @@ Kernel readKernelText(std::string name)
 			if (str[0] == "var")
 				kernel.variables.push_back(tempAttribute);
 			else
+			{
 				kernel.parameters.push_back(tempAttribute);
+				constraintExpected = true;
+			}
 		}
 
 		if (str[0] == "enum")
@@ -113,6 +140,8 @@ Kernel readKernelText(std::string name)
 			if (tempAttribute.stepCount < 2) tempAttribute.stepCount = 2;
 
 			kernel.parameters.push_back(tempAttribute);
+
+			constraintExpected = true;
 		}
 
 		if (str[0] == "map")
@@ -140,6 +169,13 @@ Kernel readKernelText(std::string name)
 
 			kernel.mapDatas.push_back(tempMapData);
 		}
+	}
+
+	if (constraintExpected)
+	{
+		tempConstraint.Clear();
+		kernel.constraints.push_back(tempConstraint);
+		constraintExpected = false;
 	}
 
 	// Adding step

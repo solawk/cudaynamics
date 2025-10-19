@@ -408,3 +408,21 @@ int getVariationGroup(colorLUT* lut, int variation)
 
 	return variationGroup;
 }
+
+int findParameterByName(std::string name)
+{
+	for (int i = 0; i < KERNEL.PARAM_COUNT; i++) if (KERNEL.parameters[i].name == name) return i;
+
+	printf("No parameter exists by name %s\n", name.c_str());
+	return -1;
+}
+
+bool isEnumEnabledByString(Attribute& enumAttribute, std::string str)
+{
+	for (int i = 0; i < enumAttribute.enumCount; i++)
+		if (enumAttribute.enumNames[i] == str)
+			return enumAttribute.enumEnabled[i];
+
+	printf("Enum does not have an option by name %s\n", str.c_str());
+	return true;
+}

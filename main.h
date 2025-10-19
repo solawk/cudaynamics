@@ -11,7 +11,6 @@
 #include "mapData_struct.h"
 #include "variationSteps.h"
 
-
 #include "systems/lorenz/lorenz.h"
 #include "systems/lorenzVar/lorenzVar.h"
 #include "systems/lorenz83/lorenz83.h"

@@ -118,6 +118,8 @@ void listVariable(int i)
 
 void listParameter(int i)
 {
+    if (!isParameterUnconstrainted(i)) return;
+
     bool changeAllowed = KERNELNEWCURRENT.parameters[i].rangingType == RT_None || !playingParticles || !autoLoadNewParams;
 
     thisChanged = false;
@@ -188,6 +190,8 @@ void listParameter(int i)
 // TODO: changing enabled enums should force recomputation
 void listEnum(int i)
 {
+    if (!isParameterUnconstrainted(i)) return;
+
     bool changeAllowed = KERNELNEWCURRENT.parameters[i].rangingType == RT_None || !playingParticles || !autoLoadNewParams;
 
     thisChanged = false;
@@ -287,4 +291,23 @@ void mapValueSelectionCombo(int index, int channelIndex, std::string windowName,
         ImGui::DragInt(("##" + windowName + "_index" + std::to_string(index) + "value").c_str(),
             channelIndex == -1 ? &(heatmap->values.mapValueIndex) : &(heatmap->channel[channelIndex].mapValueIndex), 1.0f, 0, mapData->valueCount - 1, "%d", 0);
     }
+}
+
+bool isParameterUnconstrainted(int index)
+{
+    if (KERNELNEWCURRENT.stepType == ST_Parameter && index == KERNELNEWCURRENT.PARAM_COUNT - 1) return true;
+
+    Attribute* param = &(KERNELNEWCURRENT.parameters[index]);
+    Constraint* constraint = &(KERNELNEWCURRENT.constraints[index]);
+    if (!constraint->hasConstraints) return true;
+
+    bool isUnconstrained = false;
+    for (int i = 0; i < constraint->count; i++)
+    {
+        int lhs = findParameterByName(constraint->lhs[i]);
+        std::string enumName = constraint->rhs[i];
+        if (isEnumEnabledByString(KERNELNEWCURRENT.parameters[lhs], enumName)) return true;
+    }
+
+    return isUnconstrained;
 }

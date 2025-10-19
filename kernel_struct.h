@@ -2,6 +2,7 @@
 #include "objects.h"
 #include "attribute_struct.h"
 #include "mapData_struct.h"
+#include "constraint.h"
 
 #define MAX_MAP_SETTINGS 256
 
@@ -47,6 +48,8 @@ public:
 
 	std::vector<Attribute> variables;
 	std::vector<Attribute> parameters;
+	std::vector<Constraint> constraints;
+	
 	std::vector<MapData> mapDatas;
 
 	int VAR_COUNT;
@@ -78,6 +81,7 @@ public:
 
 		for (Attribute& v : variables)	v.ClearValues(); variables.clear();
 		for (Attribute& p : parameters)	p.ClearValues(); parameters.clear();
+		constraints.clear();
 		mapDatas.clear();
 
 		for (int i = 0; i < kernel->VAR_COUNT; i++)
@@ -90,6 +94,8 @@ public:
 			parameters.push_back(kernel->parameters[i]);
 			parameters[i].Generate(true);
 		}
+		for (int i = 0; i < kernel->constraints.size(); i++)
+			constraints.push_back(kernel->constraints[i]);
 		for (int i = 0; i < kernel->MAP_COUNT; i++)
 			mapDatas.push_back(kernel->mapDatas[i]);
 

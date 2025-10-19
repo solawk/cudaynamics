@@ -200,6 +200,9 @@
     <ClInclude Include="analysis\period\period.h">
       <Filter>analysis\period</Filter>
     </ClInclude>
+    <ClInclude Include="constraint.h">
+      <Filter>gui</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="main.cu" />

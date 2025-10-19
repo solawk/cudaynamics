@@ -7,6 +7,7 @@
 #include <objects.h>
 #include <vector>
 #include <implot_internal.h>
+#include "attribute_struct.h"
 
 const float DEG2RAD = 3.141592f / 180.0f;
 
@@ -38,3 +39,6 @@ void addDeltaQuatRotation(PlotWindow* window, float deltax, float deltay);
 
 // Get color of the plot/particle when heatmap-painting
 int getVariationGroup(colorLUT* lut, int variation);
+
+int findParameterByName(std::string name);
+bool isEnumEnabledByString(Attribute& enumAttribute, std::string str);
