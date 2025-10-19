@@ -1258,8 +1258,7 @@ int imgui_main(int, char**)
 
                 if (window->type == Heatmap && !isSingleValue)
                 {
-                    ImGui::SameLine();
-                    ImGui::DragInt(("##" + windowName + "_value").c_str(), &(heatmap->values.mapValueIndex), 1.0f, 0, mapData->valueCount - 1, "%d", 0);
+                    mapValueSelectionCombo(mapIndex, -1, windowName, heatmap);
                 }
 
                 ImGui::PopItemWidth();
@@ -2065,9 +2064,29 @@ int imgui_main(int, char**)
                     if (isMC)
                     {
                         int channels[3]{ window->variables[0], window->variables[1], window->variables[2] };
-                        mapSelectionCombo("Channel R map", window->variables[0], true);
-                        mapSelectionCombo("Channel G map", window->variables[1], true);
-                        mapSelectionCombo("Channel B map", window->variables[2], true);
+                        std::string channelNames[3]{ "R  ", "G  ", "B  " };
+
+                        for (int ch = 0; ch < 3; ch++)
+                        {
+                            ImGui::Text(channelNames[ch].c_str());
+                            ImGui::SameLine();
+
+                            ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.65f);
+                            mapSelectionCombo("##" + window->name + "_channel" + std::to_string(ch), window->variables[ch], true);
+                            ImGui::PopItemWidth();
+
+                            if (channels[ch] == -1) continue;
+                            
+                            int prevValueIndex = heatmap->channel[ch].mapValueIndex;
+                            ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.15f);
+                            mapValueSelectionCombo(window->variables[ch], ch, window->name, heatmap);
+                            ImGui::PopItemWidth();
+                            if (prevValueIndex != heatmap->channel[ch].mapValueIndex)
+                            {
+                                heatmap->areValuesDirty = true;
+                                heatmap->values.areHeatmapLimitsDefined = false;
+                            }
+                        }
 
                         for (int ch = 0; ch < 3; ch++)
                         {
@@ -2286,7 +2305,7 @@ int imgui_main(int, char**)
                                     {
                                         for (int ch = 0; ch < 3; ch++)
                                         {
-                                            if (cmp->marshal.kernel.mapDatas[channelMapIndex[ch]].toCompute)
+                                            //if (cmp->marshal.kernel.mapDatas[channelMapIndex[ch]].toCompute)
                                                 heatmap->channel[ch].valueBuffer = new numb[mapSize];
                                         }
                                     }
@@ -2387,15 +2406,40 @@ int imgui_main(int, char**)
                                     {
                                         int rows = sizing.cutHeight;
                                         int cols = sizing.cutWidth;
-                                        void* cutoffHeatmap = new numb[rows * cols];
-                                        cutoff2D(heatmap->values.valueBuffer, (numb*)cutoffHeatmap,
-                                            sizing.xSize, sizing.ySize, sizing.cutMinX, sizing.cutMinY, sizing.cutMaxX, sizing.cutMaxY);
 
-                                        ImPlot::PlotHeatmap(("MapLabels " + std::to_string(mapIndex) + "##" + plotName + std::to_string(0)).c_str(),
-                                            (numb*)cutoffHeatmap, rows, cols, -1234.0, 1.0, "%.3f",
-                                            ImPlotPoint(sizing.mapX1Cut, sizing.mapY1Cut), ImPlotPoint(sizing.mapX2Cut, sizing.mapY2Cut));
+                                        if (!isMC)
+                                        {
+                                            void* cutoffHeatmap = new numb[rows * cols];
+                                            cutoff2D(heatmap->values.valueBuffer, (numb*)cutoffHeatmap,
+                                                sizing.xSize, sizing.ySize, sizing.cutMinX, sizing.cutMinY, sizing.cutMaxX, sizing.cutMaxY);
 
-                                        delete[] cutoffHeatmap;
+                                            ImPlot::PlotHeatmap(("MapLabels " + std::to_string(mapIndex) + "##" + plotName + std::to_string(0)).c_str(),
+                                                (numb*)cutoffHeatmap, rows, cols, -1234.0, 1.0, "%.3f",
+                                                ImPlotPoint(sizing.mapX1Cut, sizing.mapY1Cut), ImPlotPoint(sizing.mapX2Cut, sizing.mapY2Cut));
+
+                                            delete[] cutoffHeatmap;
+                                        }
+                                        else
+                                        {
+                                            void* cutoffHeatmap; 
+                                            for (int ch = 0; ch < 3; ch++)
+                                            {
+                                                if (window->variables[ch] == -1) continue;
+
+                                                std::string mapName = krnl->mapDatas[window->variables[ch]].name;
+
+                                                cutoffHeatmap = new numb[rows * cols];
+                                                cutoff2D(heatmap->channel[ch].valueBuffer, (numb*)cutoffHeatmap,
+                                                    sizing.xSize, sizing.ySize, sizing.cutMinX, sizing.cutMinY, sizing.cutMaxX, sizing.cutMaxY);
+
+                                                ImPlot::PlotHeatmap(("MapLabels_" + std::to_string(mapIndex) + "##" + plotName + "_ch" + std::to_string(ch)).c_str(),
+                                                    (numb*)cutoffHeatmap, rows, cols, -1234.0, 1.0,
+                                                    (ch == 0 ? mapName + ": %.3f\n \n " : (ch == 1 ? " \n" + mapName + ": %.3f\n " : " \n \n" + mapName + ": %.3f")).c_str(),
+                                                    ImPlotPoint(sizing.mapX1Cut, sizing.mapY1Cut), ImPlotPoint(sizing.mapX2Cut, sizing.mapY2Cut));
+
+                                                delete[] cutoffHeatmap;
+                                            }
+                                        }
                                     }
                                 }
 

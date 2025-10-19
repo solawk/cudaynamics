@@ -22,7 +22,7 @@ void plotWindowMenu(PlotWindow* window)
 	{
 		plotWindowMenu_File(window);
 		if (window->type == Phase || window->type == Phase2D) plotWindowMenu_PhasePlot(window);
-		if (window->type == Heatmap) plotWindowMenu_HeatmapPlot(window);
+		if (window->type == Heatmap || window->type == MCHeatmap) plotWindowMenu_HeatmapPlot(window);
 		if (window->type == Heatmap) plotWindowMenu_HeatmapColors(window);
 		if (window->type == Orbit) plotWindowMenu_OrbitPlot(window);
 		if (window->type == Metric) plotWindowMenu_MetricPlot(window);
@@ -165,7 +165,7 @@ void plotWindowMenu_HeatmapPlot(PlotWindow* window)
 		ImGui::ColorEdit4(("##" + windowName + "_markerColor").c_str(), (float*)(&(window->markerColor)));		ImGui::SameLine(); ImGui::Text("Marker color");
 		ImGui::DragFloat("Marker width", &window->markerWidth, 0.1f, 0.5f, 4.0f, "%.1f");
 
-		bool tempShowLegend = heatmap->showDragLines; if (ImGui::Checkbox(("##" + windowName + "showLegend").c_str(), &tempShowLegend)) heatmap->showLegend = !heatmap->showLegend;
+		bool tempShowLegend = heatmap->showLegend; if (ImGui::Checkbox(("##" + windowName + "showLegend").c_str(), &tempShowLegend)) heatmap->showLegend = !heatmap->showLegend;
 		ImGui::SameLine(); ImGui::Text("Show colormap");
 
 		std::string diapasonsStrings[] = { "Values", "Steps" };

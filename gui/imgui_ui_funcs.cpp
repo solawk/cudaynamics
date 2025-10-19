@@ -275,3 +275,16 @@ void mapSelectionCombo(std::string name, int& selectedIndex, bool addEmpty)
         ImGui::EndCombo();
     }
 }
+
+void mapValueSelectionCombo(int index, int channelIndex, std::string windowName, HeatmapProperties* heatmap)
+{
+    if (index == -1) return;
+    MapData* mapData = &(KERNEL.mapDatas[index]);
+    bool isSingleValue = mapData->valueCount == 1;
+    if (!isSingleValue)
+    {
+        ImGui::SameLine();
+        ImGui::DragInt(("##" + windowName + "_index" + std::to_string(index) + "value").c_str(),
+            channelIndex == -1 ? &(heatmap->values.mapValueIndex) : &(heatmap->channel[channelIndex].mapValueIndex), 1.0f, 0, mapData->valueCount - 1, "%d", 0);
+    }
+}
