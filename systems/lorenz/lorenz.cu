@@ -47,7 +47,7 @@ __global__ void kernelProgram_lorenz(Computation* data)
     {
         DBscan_Settings dbscan_settings(MS(Period, 0), MS(MeanInterval, 0), MS(Period, 1), MS(Period, 2), MS(MeanInterval, 1), MS(MeanInterval, 2), MS(MeanInterval, 3), MS(MeanInterval, 4),
             H_BRANCH(parameters[CUDA_kernel.PARAM_COUNT - 1], variables[CUDA_kernel.VAR_COUNT - 1]));
-        Period(data, dbscan_settings, variation, &finiteDifferenceScheme_rossler, MO(Period), MO(MeanPeak), MO(MeanInterval));
+        Period(data, dbscan_settings, variation, &finiteDifferenceScheme_lorenz, MO(Period), MO(MeanPeak), MO(MeanInterval));
     }
 }
 

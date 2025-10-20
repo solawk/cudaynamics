@@ -95,7 +95,7 @@ public:
 			{
 				for (int i = 0; i < trueStepCount; i++)
 				{
-					values[i] = oldValues[i];
+					values[i] = oldValues[i]; // Heisenbug occurs here
 				}
 			}
 			break;

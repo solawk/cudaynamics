@@ -48,7 +48,7 @@ __global__ void kernelProgram_dadras(Computation* data)
     if (M(Period).toCompute || M(MeanInterval).toCompute || M(MeanPeak).toCompute)
     {
         DBscan_Settings dbscan_settings(MS(Period, 0), MS(MeanInterval, 0), MS(Period, 1), MS(Period, 2), MS(MeanInterval, 1), MS(MeanInterval, 2), MS(MeanInterval, 3), MS(MeanInterval, 4), P(stepsize));
-        Period(data, dbscan_settings, variation, &finiteDifferenceScheme_rossler, MO(Period), MO(MeanPeak), MO(MeanInterval));
+        Period(data, dbscan_settings, variation, &finiteDifferenceScheme_dadras, MO(Period), MO(MeanPeak), MO(MeanInterval));
     }
 }
 

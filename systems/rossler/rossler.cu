@@ -53,7 +53,7 @@ __global__ void kernelProgram_rossler(Computation* data)
     }
 }
 
-__device__ void finiteDifferenceScheme_rossler(numb* currentV, numb* nextV, numb* parameters, Computation* data)
+__device__ __forceinline__ void finiteDifferenceScheme_rossler(numb* currentV, numb* nextV, numb* parameters, Computation* data)
 {
     ifMETHOD(P(method), ExplicitEuler)
     {
