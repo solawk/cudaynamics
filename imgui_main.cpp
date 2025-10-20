@@ -511,17 +511,35 @@ int imgui_main(int, char**)
         popStyle = false;
 
         ImGui::SeparatorText("Variables");
-        for (int i = 0; i < KERNEL.VAR_COUNT; i++) listVariable(i);
+        for (int i = 0; i < KERNEL.VAR_COUNT - (KERNEL.stepType == ST_Variable ? 1 : 0); i++) listVariable(i);
+
+        if (KERNEL.stepType != ST_Discrete)
+        {
+            ImGui::SeparatorText("Step");
+            if (KERNEL.stepType == ST_Variable) listVariable(KERNEL.VAR_COUNT - 1);
+            if (KERNEL.stepType == ST_Parameter) listParameter(KERNEL.PARAM_COUNT - 1);
+        }
 
         bool applicationProhibited = false;
         ImGui::SeparatorText("Parameters");
-        for (int i = 0; i < KERNEL.PARAM_COUNT; i++)
+        for (int i = 0; i < KERNEL.PARAM_COUNT - (KERNEL.stepType == ST_Parameter ? 1 : 0); i++)
         {
             if (KERNEL.parameters[i].rangingType != RT_Enum)
                 listParameter(i);
             else
                 listEnum(i);
         }
+
+        // Parameter auto-loading
+        bool tempAutoLoadNewParams = autoLoadNewParams;
+
+        if (ImGui::Checkbox("Apply parameter changes automatically", &(tempAutoLoadNewParams)))
+        {
+            autoLoadNewParams = !autoLoadNewParams;
+            if (autoLoadNewParams) kernelNew.CopyParameterValuesFrom(&KERNEL);
+            else KERNEL.CopyParameterValuesFrom(&kernelNew);
+        }
+        TOOLTIP("Automatically applies new parameter values to the new buffers mid-playback");
 
         if (playingParticles && anyChanged)
         {
@@ -744,17 +762,6 @@ int imgui_main(int, char**)
                     }
                 }
             }
-
-            // Auto-loading
-            bool tempAutoLoadNewParams = autoLoadNewParams;
-            
-            if (ImGui::Checkbox("Apply parameter changes automatically", &(tempAutoLoadNewParams)))
-            {
-                autoLoadNewParams = !autoLoadNewParams;
-                if (autoLoadNewParams) kernelNew.CopyParameterValuesFrom(&KERNEL);
-                else KERNEL.CopyParameterValuesFrom(&kernelNew);
-            }
-            TOOLTIP("Automatically applies new parameter values to the new buffers mid-playback");
 
             // Map continuous computing
             popStyle = false;
