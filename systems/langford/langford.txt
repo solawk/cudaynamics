@@ -1,7 +1,11 @@
 Name: Langford system
 Steps: 1000
 Transient: 0
-Step size: 0.001
+// Defining step:
+// parameter/variable/discrete
+// Then, unless it is discrete, provide its name and define it like an attribute
+// If it is discrete, add nothing after
+Step type: parameter h Fixed 0.01 0.1 0.01 100 0.0 0.0
 // Compute on CUDAynamics launch: yes/no
 Execute on launch: yes
 // Ranging types:
@@ -23,7 +27,6 @@ param d Fixed 3.5 50.0 0.1 250 0.0 0.0
 param e Fixed 0.25 50.0 0.1 250 0.0 0.0
 param f Fixed 0.1 50.0 0.1 250 0.0 0.0
 param g Fixed 3.0 50.0 0.1 250 0.0 0.0
-param stepsize Fixed 0.001 0.01 0.001 100 0.0 0.0
 param symmetry Fixed 0.0 1.0 0.01 100 0.0 0.0
 // Defining enumerated parameters (useful for methods):
 // enum <name> <ranging type> <minimum value> <maximum value> <step> <step count> <normal mean> <normal deviation> <enum names, no spaces>
