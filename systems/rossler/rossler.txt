@@ -1,7 +1,11 @@
 Name: Rössler system
-Steps: 20000
+Steps: 10000
 Transient: 30000
-Step size: 0.01
+// Defining step:
+// parameter/variable/discrete
+// Then, unless it is discrete, provide its name and define it like an attribute
+// If it is discrete, add nothing after
+Step type: parameter h Fixed 0.01 0.1 0.01 100 0.0 0.0
 // Compute on CUDAynamics launch: yes/no
 Execute on launch: yes
 // Ranging types:
@@ -19,7 +23,6 @@ var z Fixed 0.0 29.0 0.1 0 0.0 0.0
 param a Linear 0.05 0.35 0.1 150 0.0 0.0
 param b Linear 0.05 0.35 0.1 150 0.0 0.0
 param c Fixed 5.7 29.0 0.1 0 0.0 0.0
-param stepsize Fixed 0.01 0.1 0.01 100 0.0 0.0
 param symmetry Fixed 0.0 1.0 0.01 100 0.0 0.0
 // Defining enumerated parameters (useful for methods):
 // enum <name> <ranging type> <minimum value> <maximum value> <step> <step count> <normal mean> <normal deviation> <enum names, no spaces>
