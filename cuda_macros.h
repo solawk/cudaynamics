@@ -17,9 +17,9 @@
                         numb variablesNext[MAX_ATTRIBUTES]{0}; \
                         numb parameters[MAX_ATTRIBUTES]{0};
 
-#define LOAD_ATTRIBUTES for (int i = 0; i < CUDA_kernel.VAR_COUNT; i++) variables[i] = CUDA_marshal.variableInits[variation * CUDA_kernel.VAR_COUNT + i]; \
-                        for (int i = 0; i < CUDA_kernel.PARAM_COUNT; i++) parameters[i] = CUDA_marshal.parameterVariations[variation * CUDA_kernel.PARAM_COUNT + i]; \
-                        if (!data->isHires) for (int i = 0; i < CUDA_kernel.VAR_COUNT; i++) CUDA_marshal.trajectory[variationStart + i] = variables[i];
+#define LOAD_ATTRIBUTES(isAnalysis)     for (int i = 0; i < CUDA_kernel.VAR_COUNT; i++) variables[i] = CUDA_marshal.variableInits[variation * CUDA_kernel.VAR_COUNT + i]; \
+                                        for (int i = 0; i < CUDA_kernel.PARAM_COUNT; i++) parameters[i] = CUDA_marshal.parameterVariations[variation * CUDA_kernel.PARAM_COUNT + i]; \
+                                        if (!isAnalysis && !data->isHires) for (int i = 0; i < CUDA_kernel.VAR_COUNT; i++) CUDA_marshal.trajectory[variationStart + i] = variables[i];
 
 // Map
 #define M(n)			CUDA_kernel.mapDatas[attributes::maps::n]
@@ -70,7 +70,7 @@
 // Computation macros
 
 // Skip transient steps using the provided finite difference scheme, akin to computing but without recording the trajectory
-#define TRANSIENT_SKIP(FDS)      if (data->isFirst)  \
+/*#define TRANSIENT_SKIP(FDS)      if (data->isFirst)  \
                             {  \
                                 numb transientBuffer[MAX_ATTRIBUTES];  \
                                 for (int ts = 0; ts < CUDA_kernel.transientSteps; ts++)  \
@@ -82,7 +82,7 @@
                                     for (int v = 0; v < CUDA_kernel.VAR_COUNT; v++)  \
                                         CUDA_marshal.variableInits[variation * CUDA_kernel.VAR_COUNT + v] = transientBuffer[v];  \
                                 }  \
-                            }
+                            }*/
 
 #define TRANSIENT_SKIP_NEW(FDS)      if (data->isFirst)  \
                             {  \

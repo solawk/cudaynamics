@@ -11,14 +11,13 @@ namespace attributes
 
 __global__ void kernelProgram_rossler(Computation* data)
 {
-    
     int variation = (blockIdx.x * blockDim.x) + threadIdx.x;            // Variation (parameter combination) index
     if (variation >= CUDA_marshal.totalVariations) return;      // Shutdown thread if there isn't a variation to compute
     int stepStart, variationStart = variation * CUDA_marshal.variationSize;         // Start index to store the modelling data for the variation
     numb variables[MAX_ATTRIBUTES];
     numb variablesNext[MAX_ATTRIBUTES];
     numb parameters[MAX_ATTRIBUTES];
-    LOAD_ATTRIBUTES;
+    LOAD_ATTRIBUTES(false);
 
     // Custom area (usually) starts here
 

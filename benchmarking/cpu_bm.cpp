@@ -150,7 +150,7 @@ void lorenz_cpu(Computation* data, int variation)
 
     // Custom area (usually) starts here
 
-    TRANSIENT_SKIP(finiteDifferenceScheme_lorenz_cpu);
+    //TRANSIENT_SKIP_NEW(finiteDifferenceScheme_lorenz_cpu);
 
     for (int s = 0; s < CUDA_kernel.steps; s++)
     {

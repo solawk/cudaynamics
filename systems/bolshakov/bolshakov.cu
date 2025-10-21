@@ -16,7 +16,7 @@ __global__ void kernelProgram_bolshakov(Computation* data)
     numb variables[MAX_ATTRIBUTES];
     numb variablesNext[MAX_ATTRIBUTES];
     numb parameters[MAX_ATTRIBUTES];
-    LOAD_ATTRIBUTES;
+    LOAD_ATTRIBUTES(false);
 
     // Custom area (usually) starts here
 

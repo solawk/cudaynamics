@@ -4,7 +4,7 @@ __device__ void MAX(Computation* data, MAX_Settings settings, int variation, voi
 {
     int stepStart, variationStart = variation * CUDA_marshal.variationSize;
     LOCAL_BUFFERS;
-    LOAD_ATTRIBUTES;
+    LOAD_ATTRIBUTES(true);
     if (data->isHires) TRANSIENT_SKIP_NEW(finiteDifferenceScheme);
 
     int var = settings.maxVariableIndex;

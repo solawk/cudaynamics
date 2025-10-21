@@ -6,7 +6,7 @@ __device__  void Period(Computation* data, DBscan_Settings settings, int variati
     int variationSize = CUDA_marshal.variationSize;
 
     LOCAL_BUFFERS;
-    LOAD_ATTRIBUTES;
+    LOAD_ATTRIBUTES(true);
     if (data->isHires) TRANSIENT_SKIP_NEW(finiteDifferenceScheme);
 
     int stepStart, s = -1;

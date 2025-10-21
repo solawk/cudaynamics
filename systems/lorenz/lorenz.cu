@@ -15,7 +15,7 @@ __global__ void kernelProgram_lorenz(Computation* data)
     if (variation >= CUDA_marshal.totalVariations) return;      // Shutdown thread if there isn't a variation to compute
     int stepStart, variationStart = variation * CUDA_marshal.variationSize;         // Start index to store the modelling data for the variation
     LOCAL_BUFFERS;
-    LOAD_ATTRIBUTES;
+    LOAD_ATTRIBUTES(false);
 
     // Custom area (usually) starts here
 

@@ -6,7 +6,7 @@ __device__ void LLE(Computation* data, LLE_Settings settings, int variation, voi
 {
     int stepStart, variationStart = variation * CUDA_marshal.variationSize;
     LOCAL_BUFFERS;
-    LOAD_ATTRIBUTES;
+    LOAD_ATTRIBUTES(true);
     if (data->isHires) TRANSIENT_SKIP_NEW(finiteDifferenceScheme);
 
     numb LLE_array[MAX_ATTRIBUTES]{ 0 }; // The deflected trajectory
