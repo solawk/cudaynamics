@@ -305,7 +305,11 @@ void switchPlayedBuffer()
 
 void removeHeatmapLimits()
 {
-    for (int i = 0; i < plotWindows.size(); i++) plotWindows[i].hmp.values.areHeatmapLimitsDefined = false;
+    for (int i = 0; i < plotWindows.size(); i++)
+    {
+        plotWindows[i].hmp.values.areHeatmapLimitsDefined = false;
+        for (int ch = 0; ch < 3; ch++) plotWindows[i].hmp.channel[ch].areHeatmapLimitsDefined = false;
+    }
 }
 
 void prepareAndCompute(bool hires)
@@ -1282,6 +1286,7 @@ int imgui_main(int, char**)
                 {
                     heatmap->areValuesDirty = true;
                     heatmap->values.areHeatmapLimitsDefined = false;
+                    for (int ch = 0; ch < 3; ch++) heatmap->channel[ch].areHeatmapLimitsDefined = false;
                 }
             }
 
@@ -2100,6 +2105,7 @@ int imgui_main(int, char**)
                             {
                                 heatmap->areValuesDirty = true;
                                 heatmap->values.areHeatmapLimitsDefined = false;
+                                for (int ch = 0; ch < 3; ch++) heatmap->channel[ch].areHeatmapLimitsDefined = false;
                             }
                         }
 
@@ -2369,6 +2375,18 @@ int imgui_main(int, char**)
 
                                     heatmap->ignoreNextLimitsRecalculation = false;
                                     heatmap->values.areHeatmapLimitsDefined = true;
+                                }
+                                if (isMC)
+                                {
+                                    for (int ch = 0; ch < 3; ch++)
+                                        if (!heatmap->channel[ch].areHeatmapLimitsDefined)
+                                        {
+                                            if (!heatmap->ignoreNextLimitsRecalculation)
+                                                getMinMax(heatmap->channel[ch].valueBuffer, sizing.xSize * sizing.ySize, &heatmap->channel[ch].heatmapMin, &heatmap->channel[ch].heatmapMax);
+
+                                            heatmap->ignoreNextLimitsRecalculation = false;
+                                            heatmap->channel[ch].areHeatmapLimitsDefined = true;
+                                        }
                                 }
 
                                 // Do not reload values when variating map axes (map values don't change anyway)
