@@ -52,6 +52,7 @@ int particleStep = 0; // Current step of the computations to show
 bool continuousComputingEnabled = true; // Continuously compute next batch of steps via double buffering
 float dragChangeSpeed = 1.0f;
 int bufferNo = 0;
+float lastHiresTime = -1.0f;
 
 PlotWindow* colorsLUTfrom = nullptr;
 int paintLUTsize = 32;
@@ -208,7 +209,10 @@ int hiresAsyncComputation()
     for (int i = 0; i < computationHires.marshal.kernel.MAP_COUNT; i++)
         computationHires.marshal.kernel.mapDatas[i].toCompute = computationHires.mapIndex == i;
 
+    std::chrono::steady_clock::time_point before = std::chrono::steady_clock::now();
     int computationResult = compute(&computationHires);
+    std::chrono::steady_clock::time_point after = std::chrono::steady_clock::now();
+    lastHiresTime = (float)(std::chrono::duration_cast<std::chrono::milliseconds>(after - before).count()) / 1000.0f;
 
     autofitAfterComputing = true;
     //resetTempBuffers(&computationHires);
@@ -878,6 +882,10 @@ int imgui_main(int, char**)
             float progressPercentage = (computationHires.variationsFinished * 100.0f) / computationHires.marshal.totalVariations;
             ImGui::Text((std::to_string(computationHires.variationsFinished) + "/" + std::to_string(computationHires.marshal.totalVariations) + " computed (" +
                 std::to_string(progressPercentage) + "%%)").c_str());
+        }
+        if (HIRES_ON && lastHiresTime >= 0.0f)
+        {
+            ImGui::Text("Last Hi-Res time: %f s", lastHiresTime);
         }
 
         // COMMON
