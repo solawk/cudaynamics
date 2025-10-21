@@ -4,7 +4,7 @@
 namespace attributes
 {
     enum variables { v, u, I, t };
-    enum parameters { a, b, c, d, p0, p1, p2, p3, Imax, Idc, stepsize, method };
+    enum parameters { a, b, c, d, p0, p1, p2, p3, Imax, Idc, method };
     enum methods { ExplicitEuler };
     enum maps { LLE, MAX, MeanInterval, MeanPeak, Period };
 }
@@ -47,7 +47,8 @@ __global__ void kernelProgram_izhikevich(Computation* data)
 
     if (M(Period).toCompute || M(MeanInterval).toCompute || M(MeanPeak).toCompute)
     {
-        DBscan_Settings dbscan_settings(MS(Period, 0), MS(MeanInterval, 0), MS(Period, 1), MS(Period, 2), MS(MeanInterval, 1), MS(MeanInterval, 2), MS(MeanInterval, 3), MS(MeanInterval, 4), P(stepsize));
+        DBscan_Settings dbscan_settings(MS(Period, 0), MS(MeanInterval, 0), MS(Period, 1), MS(Period, 2), MS(MeanInterval, 1), MS(MeanInterval, 2), MS(MeanInterval, 3), MS(MeanInterval, 4),
+            H_BRANCH(parameters[CUDA_kernel.PARAM_COUNT - 1], variables[CUDA_kernel.VAR_COUNT - 1]));
         Period(data, dbscan_settings, variation, &finiteDifferenceScheme_izhikevich, MO(Period), MO(MeanPeak), MO(MeanInterval));
     }
 }
@@ -57,9 +58,9 @@ __device__ __forceinline__  void finiteDifferenceScheme_izhikevich(numb* current
     ifMETHOD(P(method), ExplicitEuler)
     {
         Vnext(I) = fmodf(V(t), P(Idc)) < (0.5f * P(Idc)) ? P(Imax) : 0.0f;
-        Vnext(t) = V(t) + P(stepsize);
-        Vnext(v) = V(v) + P(stepsize) * (P(p0) * V(v) * V(v) + P(p1) * V(v) + P(p2) - V(u) + Vnext(I));
-        Vnext(u) = V(u) + P(stepsize) * (P(a) * (P(b) * V(v) - V(u)));
+        Vnext(t) = V(t) + H;
+        Vnext(v) = V(v) + H * (P(p0) * V(v) * V(v) + P(p1) * V(v) + P(p2) - V(u) + Vnext(I));
+        Vnext(u) = V(u) + H * (P(a) * (P(b) * V(v) - V(u)));
 
         if (Vnext(v) >= P(p3))
         {
