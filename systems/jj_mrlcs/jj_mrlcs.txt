@@ -1,7 +1,11 @@
 Name: Josephson junction MRLC-shunted
 Steps: 10000
 Transient: 5000
-Step size: 0.1
+// Defining step:
+// parameter/variable/discrete
+// Then, unless it is discrete, provide its name and define it like an attribute
+// If it is discrete, add nothing after
+Step type: parameter h Fixed 0.01 0.1 0.01 100 0.0 0.0
 // Compute on CUDAynamics launch: yes/no
 Execute on launch: yes
 // Ranging types:
@@ -23,7 +27,6 @@ param betaM Fixed 1.0 29.0 0.1 0 0.0 0.0
 param i Linear 0.9 1.5 0.01 200 0.0 0.0
 param epsilon Linear -2.0 0.0 0.01 200 0.0 0.0
 param delta Fixed 1.0 29.0 0.1 0 0.0 0.0
-param stepsize Fixed 0.1 0.1 0.01 10 0.0 0.0
 param symmetry Fixed 0.0 29.0 0.1 0 0.0 0.0
 // Defining enumerated parameters (useful for methods):
 // enum <name> <ranging type> <minimum value> <maximum value> <step> <step count> <normal mean> <normal deviation> <enum names, no spaces>
