@@ -143,6 +143,7 @@ __device__  void Period(Computation* data, DBscan_Settings settings, int variati
     //
     numb mapValue;
     
+    //if (data->marshal.kernel.mapDatas[offset_meanPeak/data->marshal.totalVariations].toCompute) {
     if (data->marshal.kernel.mapDatas[3].toCompute) {
         mapValue = sumPeak / peakCount;
         if (CUDA_kernel.mapWeight == 0.0f)
@@ -152,6 +153,7 @@ __device__  void Period(Computation* data, DBscan_Settings settings, int variati
         }
         else if (CUDA_kernel.mapWeight == 1.0f)
         {
+            //CUDA_marshal.maps[(variation + offset_meanPeak) + ( 0 *CUDA_marshal.totalVariations)] = mapValue;
             CUDA_marshal.maps[(variation + offset_meanPeak) + (data->isHires ? 3 : 0 * CUDA_marshal.totalVariations)] = mapValue;
         }
         else
@@ -169,6 +171,7 @@ __device__  void Period(Computation* data, DBscan_Settings settings, int variati
         }
         else if (CUDA_kernel.mapWeight == 1.0f)
         {
+            //CUDA_marshal.maps[(variation + offset_meanInterval) + ( 0 *CUDA_marshal.totalVariations)] = mapValue;
             CUDA_marshal.maps[(variation + offset_meanInterval) + (data->isHires ? 2 : 0 *CUDA_marshal.totalVariations)] = mapValue;
         }
         else
@@ -244,6 +247,7 @@ __device__  void Period(Computation* data, DBscan_Settings settings, int variati
         }
         else if (CUDA_kernel.mapWeight == 1.0f)
         {
+            //CUDA_marshal.maps[(variation + offset_period) + ( 0 * CUDA_marshal.totalVariations)] = mapValue;
             CUDA_marshal.maps[(variation + offset_period) + (data->isHires ? 4 : 0 * CUDA_marshal.totalVariations)] = mapValue;
         }
         else
