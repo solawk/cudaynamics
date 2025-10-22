@@ -139,12 +139,12 @@ __device__  void Period(Computation* data, DBscan_Settings settings, int variati
             if (peakCount >= MAX_PEAKS - 1) WritingData = false; // case for filled buffer
         }
     }
-    if (peakCount == 0)returnNan = true;
+    if (peakCount == 0)returnZero = true;
     //
     numb mapValue;
     
-    if (data->marshal.kernel.mapDatas[offset_meanPeak/ data->marshal.totalVariations].toCompute ) {
-        mapValue = NAN;
+    if (data->marshal.kernel.mapDatas[offset_meanPeak / data->marshal.totalVariations].toCompute) {
+        mapValue = sumPeak / peakCount;
         if (CUDA_kernel.mapWeight == 0.0f)
         {
             numb existingValue = CUDA_marshal.maps[variation + offset_meanPeak] * data->bufferNo;
@@ -152,7 +152,7 @@ __device__  void Period(Computation* data, DBscan_Settings settings, int variati
         }
         else if (CUDA_kernel.mapWeight == 1.0f)
         {
-            CUDA_marshal.maps[variation + offset_meanPeak] = mapValue;
+            CUDA_marshal.maps[(variation + offset_meanPeak) + (0 * CUDA_marshal.totalVariations)] = mapValue;
         }
         else
         {
@@ -160,7 +160,7 @@ __device__  void Period(Computation* data, DBscan_Settings settings, int variati
         }
     }
     if (data->marshal.kernel.mapDatas[offset_meanInterval/data->marshal.totalVariations].toCompute) {
-        mapValue = NAN;
+        mapValue = sumInterval / peakCount;
         if (CUDA_kernel.mapWeight == 0.0f)
         {
             numb existingValue = CUDA_marshal.maps[variation + offset_meanInterval] * data->bufferNo;
@@ -168,7 +168,7 @@ __device__  void Period(Computation* data, DBscan_Settings settings, int variati
         }
         else if (CUDA_kernel.mapWeight == 1.0f)
         {
-            CUDA_marshal.maps[variation + offset_meanInterval] = mapValue;
+            CUDA_marshal.maps[(variation + offset_meanInterval) + (0 * CUDA_marshal.totalVariations)] = mapValue;
         }
         else
         {
@@ -236,7 +236,7 @@ __device__  void Period(Computation* data, DBscan_Settings settings, int variati
             mapValue = cluster;
         }
     
-
+        mapValue = offset_period/data->marshal.totalVariations;
         if (CUDA_kernel.mapWeight == 0.0f)
         {
             numb existingValue = CUDA_marshal.maps[variation + offset_period] * data->bufferNo;
@@ -244,7 +244,7 @@ __device__  void Period(Computation* data, DBscan_Settings settings, int variati
         }
         else if (CUDA_kernel.mapWeight == 1.0f)
         {
-            CUDA_marshal.maps[variation + offset_period] = mapValue;
+            CUDA_marshal.maps[(variation + offset_period) + (0 * CUDA_marshal.totalVariations)] = mapValue;
         }
         else
         {
