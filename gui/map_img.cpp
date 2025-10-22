@@ -59,7 +59,7 @@ void MultichannelMapToImg(HeatmapProperties* heatmap, unsigned char** dataBuffer
 			{
 				v[c] = channelExists[c] ? heatmap->channel[c].valueBuffer[i] : (numb)0.0;
 
-				if (isnan(v[c]) || isinf(v[c]))
+				if (isnan(v[c]) || isinf(v[c]) || !channelExists[c])
 				{
 					(*dataBuffer)[i4(c)] = 0;
 					continue;

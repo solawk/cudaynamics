@@ -2369,7 +2369,6 @@ int imgui_main(int, char**)
                                     heatmap->isHeatmapDirty = true;
                                 }
 
-                                // TODO for MC
                                 if (!isMC && !heatmap->values.areHeatmapLimitsDefined)
                                 {
                                     if (!heatmap->ignoreNextLimitsRecalculation)
@@ -2381,7 +2380,7 @@ int imgui_main(int, char**)
                                 if (isMC)
                                 {
                                     for (int ch = 0; ch < 3; ch++)
-                                        if (!heatmap->channel[ch].areHeatmapLimitsDefined)
+                                        if (!heatmap->channel[ch].areHeatmapLimitsDefined && window->variables[ch] > -1)
                                         {
                                             if (!heatmap->ignoreNextLimitsRecalculation)
                                                 getMinMax(heatmap->channel[ch].valueBuffer, sizing.xSize * sizing.ySize, &heatmap->channel[ch].heatmapMin, &heatmap->channel[ch].heatmapMax);
