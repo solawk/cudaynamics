@@ -1,7 +1,11 @@
 Name: Lorenz Variation system
 Steps: 10000
 Transient: 0
-Step size: 0.001
+// Defining step:
+// parameter/variable/discrete
+// Then, unless it is discrete, provide its name and define it like an attribute
+// If it is discrete, add nothing after
+Step type: parameter h Fixed 0.01 0.1 0.01 100 0.0 0.0
 // Compute on CUDAynamics launch: yes/no
 Execute on launch: yes
 // Ranging types:
@@ -21,7 +25,6 @@ param rho Fixed 28.0 29.0 0.1 0 0.0 0.0
 param betta Fixed 2.67 29.0 0.1 0 0.0 0.0
 param kappa Fixed 200.0 400 0.1 0 0.0 0.0
 param gamma Fixed 5.0 29.0 0.1 0 0.0 0.0
-param stepsize Fixed 0.001 0.01 0.001 100 0.0 0.0
 param symmetry Fixed 0.0 1.0 0.01 100 0.0 0.0
 // Defining enumerated parameters (useful for methods):
 // enum <name> <ranging type> <minimum value> <maximum value> <step> <step count> <normal mean> <normal deviation> <enum names, no spaces>

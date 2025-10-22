@@ -4,7 +4,7 @@
 namespace attributes
 {
     enum variables { x, y, z };
-    enum parameters { a, b, f, g, stepsize, symmetry, method };
+    enum parameters { a, b, f, g, symmetry, method };
     enum methods { ExplicitEuler, ExplicitMidpoint, ExplicitRungeKutta4, VariableSymmetryCD };
     enum maps { LLE, MAX, MeanInterval, MeanPeak, Period };
 }
@@ -46,7 +46,8 @@ __global__ void kernelProgram_lorenz83(Computation* data)
     }
     if (M(Period).toCompute || M(MeanInterval).toCompute || M(MeanPeak).toCompute)
     {
-        DBscan_Settings dbscan_settings(MS(Period, 0), MS(MeanInterval, 0), MS(Period, 1), MS(Period, 2), MS(MeanInterval, 1), MS(MeanInterval, 2), MS(MeanInterval, 3), MS(MeanInterval, 4), P(stepsize));
+        DBscan_Settings dbscan_settings(MS(Period, 0), MS(MeanInterval, 0), MS(Period, 1), MS(Period, 2), MS(MeanInterval, 1), MS(MeanInterval, 2), MS(MeanInterval, 3), MS(MeanInterval, 4),
+            H_BRANCH(parameters[CUDA_kernel.PARAM_COUNT - 1], variables[CUDA_kernel.VAR_COUNT - 1]));
         Period(data, dbscan_settings, variation, &finiteDifferenceScheme_lorenz83, MO(Period), MO(MeanPeak), MO(MeanInterval));
     }
 }
@@ -55,20 +56,20 @@ __device__ __forceinline__ void finiteDifferenceScheme_lorenz83(numb* currentV, 
 {
     ifMETHOD(P(method), ExplicitEuler)
     {
-        Vnext(x) = V(x) + P(stepsize) * (-P(a) * V(x) - pow(V(y), 2) - pow(V(z), 2) + P(a) * P(f));
-        Vnext(y) = V(y) + P(stepsize) * (-V(y) + V(x) * V(y) - P(b) * V(x) * V(z) + P(g));
-        Vnext(z) = V(z) + P(stepsize) * (-V(z) + P(b) * V(x) * V(y) + V(x) * V(z));
+        Vnext(x) = V(x) + H * (-P(a) * V(x) - pow(V(y), 2) - pow(V(z), 2) + P(a) * P(f));
+        Vnext(y) = V(y) + H * (-V(y) + V(x) * V(y) - P(b) * V(x) * V(z) + P(g));
+        Vnext(z) = V(z) + H * (-V(z) + P(b) * V(x) * V(y) + V(x) * V(z));
     }
 
     ifMETHOD(P(method), ExplicitMidpoint)
     {
-        numb xmp = V(x) + P(stepsize) * 0.5 * (-P(a) * V(x) - pow(V(y), 2) - pow(V(z), 2) + P(a) * P(f));
-        numb ymp = V(y) + P(stepsize) * 0.5 * (-V(y) + V(x) * V(y) - P(b) * V(x) * V(z) + P(g));
-        numb zmp = V(z) + P(stepsize) * 0.5 * (-V(z) + P(b) * V(x) * V(y) + V(x) * V(z));
+        numb xmp = V(x) + H * 0.5 * (-P(a) * V(x) - pow(V(y), 2) - pow(V(z), 2) + P(a) * P(f));
+        numb ymp = V(y) + H * 0.5 * (-V(y) + V(x) * V(y) - P(b) * V(x) * V(z) + P(g));
+        numb zmp = V(z) + H * 0.5 * (-V(z) + P(b) * V(x) * V(y) + V(x) * V(z));
 
-        Vnext(x) = V(x) + P(stepsize) * (-P(a) * xmp - pow(ymp, 2) - pow(zmp, 2) + P(a) * P(f));
-        Vnext(y) = V(y) + P(stepsize) * (-ymp + xmp * ymp - P(b) * xmp * zmp + P(g));
-        Vnext(z) = V(z) + P(stepsize) * (-zmp + P(b) * xmp * ymp + xmp * zmp);
+        Vnext(x) = V(x) + H * (-P(a) * xmp - pow(ymp, 2) - pow(zmp, 2) + P(a) * P(f));
+        Vnext(y) = V(y) + H * (-ymp + xmp * ymp - P(b) * xmp * zmp + P(g));
+        Vnext(z) = V(z) + H * (-zmp + P(b) * xmp * ymp + xmp * zmp);
     }
     ifMETHOD(P(method), ExplicitRungeKutta4)
     {
@@ -76,38 +77,38 @@ __device__ __forceinline__ void finiteDifferenceScheme_lorenz83(numb* currentV, 
         numb ky1 = -V(y) + V(x) * V(y) - P(b) * V(x) * V(z) + P(g);
         numb kz1 = -V(z) + P(b) * V(x) * V(y) + V(x) * V(z);
 
-        numb xmp = V(x) + 0.5 * P(stepsize) * kx1;
-        numb ymp = V(y) + 0.5 * P(stepsize) * ky1;
-        numb zmp = V(z) + 0.5 * P(stepsize) * kz1;
+        numb xmp = V(x) + 0.5 * H * kx1;
+        numb ymp = V(y) + 0.5 * H * ky1;
+        numb zmp = V(z) + 0.5 * H * kz1;
 
         numb kx2 = -P(a) * xmp - pow(ymp, 2) - pow(zmp, 2) + P(a) * P(f);
         numb ky2 = -ymp + xmp * ymp - P(b) * xmp * zmp + P(g);
         numb kz2 = -zmp + P(b) * xmp * ymp + xmp * zmp;
 
-        xmp = V(x) + 0.5 * P(stepsize) * kx2;
-        ymp = V(y) + 0.5 * P(stepsize) * ky2;
-        zmp = V(z) + 0.5 * P(stepsize) * kz2;
+        xmp = V(x) + 0.5 * H * kx2;
+        ymp = V(y) + 0.5 * H * ky2;
+        zmp = V(z) + 0.5 * H * kz2;
 
         numb kx3 = -P(a) * xmp - pow(ymp, 2) - pow(zmp, 2) + P(a) * P(f);
         numb ky3 = -ymp + xmp * ymp - P(b) * xmp * zmp + P(g);
         numb kz3 = -zmp + P(b) * xmp * ymp + xmp * zmp;
 
-        xmp = V(x) + P(stepsize) * kx3;
-        ymp = V(y) + P(stepsize) * ky3;
-        zmp = V(z) + P(stepsize) * kz3;
+        xmp = V(x) + H * kx3;
+        ymp = V(y) + H * ky3;
+        zmp = V(z) + H * kz3;
 
         numb kx4 = -P(a) * xmp - pow(ymp, 2) - pow(zmp, 2) + P(a) * P(f);
         numb ky4 = -ymp + xmp * ymp - P(b) * xmp * zmp + P(g);
         numb kz4 = -zmp + P(b) * xmp * ymp + xmp * zmp;
 
-        Vnext(x) = V(x) + P(stepsize) * (kx1 + 2.0 * kx2 + 2.0 * kx3 + kx4) / 6.0;
-        Vnext(y) = V(y) + P(stepsize) * (ky1 + 2.0 * ky2 + 2.0 * ky3 + ky4) / 6.0;
-        Vnext(z) = V(z) + P(stepsize) * (kz1 + 2.0 * kz2 + 2.0 * kz3 + kz4) / 6.0;
+        Vnext(x) = V(x) + H * (kx1 + 2.0 * kx2 + 2.0 * kx3 + kx4) / 6.0;
+        Vnext(y) = V(y) + H * (ky1 + 2.0 * ky2 + 2.0 * ky3 + ky4) / 6.0;
+        Vnext(z) = V(z) + H * (kz1 + 2.0 * kz2 + 2.0 * kz3 + kz4) / 6.0;
     }
     ifMETHOD(P(method), VariableSymmetryCD)
     {
-        numb h1 = 0.5 * P(stepsize) - P(symmetry);
-        numb h2 = 0.5 * P(stepsize) + P(symmetry);
+        numb h1 = 0.5 * H - P(symmetry);
+        numb h2 = 0.5 * H + P(symmetry);
 
         numb xmp = V(x) + 0.5 * h1 * (-P(a) * V(x) - pow(V(y), 2) - pow(V(z), 2) + P(a) * P(f));
         numb ymp = V(y) + 0.5 * h1 * (-V(y) + xmp * V(y) - P(b) * xmp * V(z) + P(g));

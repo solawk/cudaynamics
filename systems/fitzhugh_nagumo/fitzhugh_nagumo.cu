@@ -4,7 +4,7 @@
 namespace attributes
 {
     enum variables { v, w };
-    enum parameters { a, b, tau, R, Iext, stepsize, method };
+    enum parameters { a, b, tau, R, Iext,method };
     enum methods { ExplicitEuler, ExplicitMidpoint };
     enum maps { LLE, MAX, MeanInterval, MeanPeak, Period };
 }
@@ -47,7 +47,8 @@ __global__ void kernelProgram_fitzhugh_nagumo(Computation* data)
 
     if (M(Period).toCompute || M(MeanInterval).toCompute || M(MeanPeak).toCompute)
     {
-        DBscan_Settings dbscan_settings(MS(Period, 0), MS(MeanInterval, 0), MS(Period, 1), MS(Period, 2), MS(MeanInterval, 1), MS(MeanInterval, 2), MS(MeanInterval, 3), MS(MeanInterval, 4), P(stepsize));
+        DBscan_Settings dbscan_settings(MS(Period, 0), MS(MeanInterval, 0), MS(Period, 1), MS(Period, 2), MS(MeanInterval, 1), MS(MeanInterval, 2), MS(MeanInterval, 3), MS(MeanInterval, 4),
+            H_BRANCH(parameters[CUDA_kernel.PARAM_COUNT - 1], variables[CUDA_kernel.VAR_COUNT - 1]));
         Period(data, dbscan_settings, variation, &finiteDifferenceScheme_fitzhugh_nagumo, MO(Period), MO(MeanPeak), MO(MeanInterval));
     }
 }
@@ -56,16 +57,16 @@ __device__ __forceinline__  void finiteDifferenceScheme_fitzhugh_nagumo(numb* cu
 {
     ifMETHOD(P(method), ExplicitEuler)
     {
-        Vnext(v) = V(v) + P(stepsize) * (V(v) - (V(v) * V(v) * V(v) / 3.0f) - V(w) + P(R) * P(Iext));
-        Vnext(w) = V(w) + P(stepsize) * ((V(v) + P(a) - P(b) * V(w)) / P(tau));
+        Vnext(v) = V(v) + H * (V(v) - (V(v) * V(v) * V(v) / 3.0f) - V(w) + P(R) * P(Iext));
+        Vnext(w) = V(w) + H * ((V(v) + P(a) - P(b) * V(w)) / P(tau));
     }
     
     ifMETHOD(P(method), ExplicitMidpoint)
     {
-        numb vmp = V(v) + P(stepsize) * 0.5f * (V(v) - (V(v) * V(v) * V(v) / 3.0f) - V(w) + P(R) * P(Iext));
-        numb wmp = V(w) + P(stepsize) * 0.5f * ((V(v) + P(a) - P(b) * V(w)) / P(tau));
+        numb vmp = V(v) + H * 0.5f * (V(v) - (V(v) * V(v) * V(v) / 3.0f) - V(w) + P(R) * P(Iext));
+        numb wmp = V(w) + H * 0.5f * ((V(v) + P(a) - P(b) * V(w)) / P(tau));
 
-        Vnext(v) = V(v) + P(stepsize) * (vmp - (vmp * vmp * vmp / 3.0f) - wmp + P(R) * P(Iext));
-        Vnext(w) = V(w) + P(stepsize) * ((vmp + P(a) - P(b) * wmp) / P(tau));
+        Vnext(v) = V(v) + H * (vmp - (vmp * vmp * vmp / 3.0f) - wmp + P(R) * P(Iext));
+        Vnext(w) = V(w) + H * ((vmp + P(a) - P(b) * wmp) / P(tau));
     }
 }

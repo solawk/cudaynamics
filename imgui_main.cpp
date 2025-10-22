@@ -1769,6 +1769,8 @@ int imgui_main(int, char**)
                                     int parCount = KERNEL.PARAM_COUNT;
                                     int variationSize = computations[playedBufferIndex].marshal.variationSize;
 
+                                    numb stepH = krnl->stepType == 0 ? krnl->parameters[parCount - 1].values[attributeValueIndices[varCount + parCount - 1]] : (krnl->stepType == 1 ? krnl->variables[varCount - 1].values[attributeValueIndices[varCount - 1]] : (numb)1.0);
+
                                     // Buffer to hold peak data (amplitudes and indices)
                                     constexpr int MAX_PEAKS = 1024;
                                     numb *peakAmplitudes = new numb[MAX_PEAKS];
@@ -1800,7 +1802,7 @@ int imgui_main(int, char**)
                                                 {
 
                                                     peakAmplitudes[peakCount] = curr;
-                                                    peakIntervals[peakCount] = (i - temppeakindex)* krnl->stepSize;
+                                                    peakIntervals[peakCount] = (i - temppeakindex)* stepH;
                                                     peakCount++;
                                                     temppeakindex = (float)i;
                                                 }
@@ -1886,7 +1888,7 @@ int imgui_main(int, char**)
                                                         else
                                                         {
                                                             window->bifAmps[BifDotAmount] = curr;
-                                                            window->bifIntervals[BifDotAmount] = (i - temppeakindex) * krnl->stepSize;
+                                                            window->bifIntervals[BifDotAmount] = (i - temppeakindex) * stepH;
                                                             window->bifParamIndices[BifDotAmount] = paramMin + j * paramStep;
                                                             temppeakindex = (float)i;
                                                             peakCount++;

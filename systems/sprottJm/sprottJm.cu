@@ -4,7 +4,7 @@
 namespace attributes
 {
     enum variables { x, y, z };
-    enum parameters { a, b, c, stepsize, method };
+    enum parameters { a, b, c, method };
     enum methods { ExplicitEuler, ExplicitRungeKutta4 };
     enum maps { LLE, MAX, MeanInterval, MeanPeak, Period };
 }
@@ -47,7 +47,8 @@ __global__ void kernelProgram_sprottJm(Computation* data)
 
     if (M(Period).toCompute || M(MeanInterval).toCompute || M(MeanPeak).toCompute)
     {
-        DBscan_Settings dbscan_settings(MS(Period, 0), MS(MeanInterval, 0), MS(Period, 1), MS(Period, 2), MS(MeanInterval, 1), MS(MeanInterval, 2), MS(MeanInterval, 3), MS(MeanInterval, 4), P(stepsize));
+        DBscan_Settings dbscan_settings(MS(Period, 0), MS(MeanInterval, 0), MS(Period, 1), MS(Period, 2), MS(MeanInterval, 1), MS(MeanInterval, 2), MS(MeanInterval, 3), MS(MeanInterval, 4),
+            H_BRANCH(parameters[CUDA_kernel.PARAM_COUNT - 1], variables[CUDA_kernel.VAR_COUNT - 1]));
         Period(data, dbscan_settings, variation, &finiteDifferenceScheme_sprottJm, MO(Period), MO(MeanPeak), MO(MeanInterval));
     }
 }
@@ -94,9 +95,9 @@ __device__ __forceinline__ void finiteDifferenceScheme_sprottJm(numb* currentV, 
 {  
     ifMETHOD(P(method), ExplicitEuler)
     {
-        Vnext(x) = V(x) + P(stepsize) * (P(a) * V(z));
-        Vnext(y) = V(y) + P(stepsize) * (P(b) * V(y) + V(z));
-        Vnext(z) = V(z) + P(stepsize) * (-V(x) + V(y) + P(c) * sprottJm_F(V(y)));
+        Vnext(x) = V(x) + H * (P(a) * V(z));
+        Vnext(y) = V(y) + H * (P(b) * V(y) + V(z));
+        Vnext(z) = V(z) + H * (-V(x) + V(y) + P(c) * sprottJm_F(V(y)));
     }
 
     ifMETHOD(P(method), ExplicitRungeKutta4)
@@ -105,32 +106,32 @@ __device__ __forceinline__ void finiteDifferenceScheme_sprottJm(numb* currentV, 
         numb ky1 = P(b) * V(y) + V(z);
         numb kz1 = -V(x) + V(y) + P(c) * sprottJm_F(V(y));
 
-        numb xmp = V(x) + 0.5 * P(stepsize) * kx1;
-        numb ymp = V(y) + 0.5 * P(stepsize) * ky1;
-        numb zmp = V(z) + 0.5 * P(stepsize) * kz1;
+        numb xmp = V(x) + 0.5 * H * kx1;
+        numb ymp = V(y) + 0.5 * H * ky1;
+        numb zmp = V(z) + 0.5 * H * kz1;
 
         numb kx2 = P(a) * zmp;
         numb ky2 = P(b) * ymp + zmp;
         numb kz2 = -xmp + ymp + P(c) * sprottJm_F(ymp);
 
-        xmp = V(x) + 0.5 * P(stepsize) * kx2;
-        ymp = V(y) + 0.5 * P(stepsize) * ky2;
-        zmp = V(z) + 0.5 * P(stepsize) * kz2;
+        xmp = V(x) + 0.5 * H * kx2;
+        ymp = V(y) + 0.5 * H * ky2;
+        zmp = V(z) + 0.5 * H * kz2;
 
         numb kx3 = P(a) * zmp;
         numb ky3 = P(b) * ymp + zmp;
         numb kz3 = -xmp + ymp + P(c) * sprottJm_F(ymp);
 
-        xmp = V(x) + P(stepsize) * kx3;
-        ymp = V(y) + P(stepsize) * ky3;
-        zmp = V(z) + P(stepsize) * kz3;
+        xmp = V(x) + H * kx3;
+        ymp = V(y) + H * ky3;
+        zmp = V(z) + H * kz3;
 
         numb kx4 = P(a) * zmp;
         numb ky4 = P(b) * ymp + zmp;
         numb kz4 = -xmp + ymp + P(c) * sprottJm_F(ymp);
 
-        Vnext(x) = V(x) + P(stepsize) * (kx1 + 2 * kx2 + 2 * kx3 + kx4) / 6;
-        Vnext(y) = V(y) + P(stepsize) * (ky1 + 2 * ky2 + 2 * ky3 + ky4) / 6;
-        Vnext(z) = V(z) + P(stepsize) * (kz1 + 2 * kz2 + 2 * kz3 + kz4) / 6;
+        Vnext(x) = V(x) + H * (kx1 + 2 * kx2 + 2 * kx3 + kx4) / 6;
+        Vnext(y) = V(y) + H * (ky1 + 2 * ky2 + 2 * ky3 + ky4) / 6;
+        Vnext(z) = V(z) + H * (kz1 + 2 * kz2 + 2 * kz3 + kz4) / 6;
     }
 }

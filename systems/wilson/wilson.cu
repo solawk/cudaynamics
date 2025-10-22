@@ -4,7 +4,7 @@
 namespace attributes
 {
     enum variables { v, r, i, t };
-    enum parameters { C, tau, p0, p1, p2, p3, p4, p5, p6, p7, Idc, Iamp, Ifreq, Idel, Idf, stepsize, signal, method };
+    enum parameters { C, tau, p0, p1, p2, p3, p4, p5, p6, p7, Idc, Iamp, Ifreq, Idel, Idf, signal, method };
     enum waveforms { square, sine, triangle };
     enum methods { ExplicitEuler, ExplicitMidpoint };
     enum maps { LLE, MAX, MeanInterval, MeanPeak, Period };
@@ -48,7 +48,8 @@ __global__ void kernelProgram_wilson(Computation* data)
 
     if (M(Period).toCompute || M(MeanInterval).toCompute || M(MeanPeak).toCompute)
     {
-        DBscan_Settings dbscan_settings(MS(Period, 0), MS(MeanInterval, 0), MS(Period, 1), MS(Period, 2), MS(MeanInterval, 1), MS(MeanInterval, 2), MS(MeanInterval, 3), MS(MeanInterval, 4), P(stepsize));
+        DBscan_Settings dbscan_settings(MS(Period, 0), MS(MeanInterval, 0), MS(Period, 1), MS(Period, 2), MS(MeanInterval, 1), MS(MeanInterval, 2), MS(MeanInterval, 3), MS(MeanInterval, 4),
+            H_BRANCH(parameters[CUDA_kernel.PARAM_COUNT - 1], variables[CUDA_kernel.VAR_COUNT - 1]));
         Period(data, dbscan_settings, variation, &finiteDifferenceScheme_wilson, MO(Period), MO(MeanPeak), MO(MeanInterval));
     }
 }
@@ -60,21 +61,21 @@ __device__ __forceinline__ void finiteDifferenceScheme_wilson(numb* currentV, nu
         ifMETHOD(P(method), ExplicitEuler)
         {
             Vnext(i) = P(Idc) + (fmodf((V(t) - P(Idel)) > 0 ? (V(t) - P(Idel)) : (P(Idf) / P(Ifreq) + P(Idel) - V(t)), 1 / P(Ifreq)) < P(Idf) / P(Ifreq) ? P(Iamp) : 0.0f);
-            Vnext(t) = V(t) + P(stepsize);
-            Vnext(v) = V(v) + P(stepsize) * ((-(P(p0) + P(p1) * V(v) + P(p2) * V(v) * V(v)) * (V(v) - P(p3)) - P(p5) * V(r) * (V(v) - P(p4)) + Vnext(i)) / P(C));
-            Vnext(r) = V(r) + P(stepsize) * ((1.0 / P(tau)) * (-V(r) + P(p6) * V(v) + P(p7)));
+            Vnext(t) = V(t) + H;
+            Vnext(v) = V(v) + H * ((-(P(p0) + P(p1) * V(v) + P(p2) * V(v) * V(v)) * (V(v) - P(p3)) - P(p5) * V(r) * (V(v) - P(p4)) + Vnext(i)) / P(C));
+            Vnext(r) = V(r) + H * ((1.0 / P(tau)) * (-V(r) + P(p6) * V(v) + P(p7)));
         }
         ifMETHOD(P(method), ExplicitMidpoint)
         {
             numb imp = P(Idc) + (fmodf((V(t) - P(Idel)) > 0 ? (V(t) - P(Idel)) : (P(Idf) / P(Ifreq) + P(Idel) - V(t)), 1 / P(Ifreq)) < P(Idf) / P(Ifreq) ? P(Iamp) : 0.0f);
-            numb tmp = V(t) + P(stepsize) * 0.5;
-            numb vmp = V(v) + P(stepsize) * 0.5 * ((-(P(p0) + P(p1) * V(v) + P(p2) * V(v) * V(v)) * (V(v) - P(p3)) - P(p5) * V(r) * (V(v) - P(p4)) + imp) / P(C));
-            numb rmp = V(r) + P(stepsize) * 0.5 * ((1.0 / P(tau)) * (-V(r) + P(p6) * V(v) + P(p7)));
+            numb tmp = V(t) + H * 0.5;
+            numb vmp = V(v) + H * 0.5 * ((-(P(p0) + P(p1) * V(v) + P(p2) * V(v) * V(v)) * (V(v) - P(p3)) - P(p5) * V(r) * (V(v) - P(p4)) + imp) / P(C));
+            numb rmp = V(r) + H * 0.5 * ((1.0 / P(tau)) * (-V(r) + P(p6) * V(v) + P(p7)));
 
             Vnext(i) = P(Idc) + (fmodf((tmp - P(Idel)) > 0 ? (tmp - P(Idel)) : (P(Idf) / P(Ifreq) + P(Idel) - tmp), 1 / P(Ifreq)) < P(Idf) / P(Ifreq) ? P(Iamp) : 0.0f);
-            Vnext(t) = V(t) + P(stepsize);
-            Vnext(v) = V(v) + P(stepsize) * ((-(P(p0) + P(p1) * vmp + P(p2) * vmp * vmp) * (vmp - P(p3)) - P(p5) * rmp * (vmp - P(p4)) + Vnext(i)) / P(C));
-            Vnext(r) = V(r) + P(stepsize) * ((1.0 / P(tau)) * (-rmp + P(p6) * vmp + P(p7)));
+            Vnext(t) = V(t) + H;
+            Vnext(v) = V(v) + H * ((-(P(p0) + P(p1) * vmp + P(p2) * vmp * vmp) * (vmp - P(p3)) - P(p5) * rmp * (vmp - P(p4)) + Vnext(i)) / P(C));
+            Vnext(r) = V(r) + H * ((1.0 / P(tau)) * (-rmp + P(p6) * vmp + P(p7)));
         }
     }
     ifSIGNAL(P(signal), sine)
@@ -82,21 +83,21 @@ __device__ __forceinline__ void finiteDifferenceScheme_wilson(numb* currentV, nu
         ifMETHOD(P(method), ExplicitEuler)
         {
             Vnext(i) = P(Idc) + P(Iamp) * sinf(2.0f * 3.141592f * P(Ifreq) * (V(t) - P(Idel)));
-            Vnext(t) = V(t) + P(stepsize);
-            Vnext(v) = V(v) + P(stepsize) * ((-(P(p0) + P(p1) * V(v) + P(p2) * V(v) * V(v)) * (V(v) - P(p3)) - P(p5) * V(r) * (V(v) - P(p4)) + Vnext(i)) / P(C));
-            Vnext(r) = V(r) + P(stepsize) * ((1.0 / P(tau)) * (-V(r) + P(p6) * V(v) + P(p7)));
+            Vnext(t) = V(t) + H;
+            Vnext(v) = V(v) + H * ((-(P(p0) + P(p1) * V(v) + P(p2) * V(v) * V(v)) * (V(v) - P(p3)) - P(p5) * V(r) * (V(v) - P(p4)) + Vnext(i)) / P(C));
+            Vnext(r) = V(r) + H * ((1.0 / P(tau)) * (-V(r) + P(p6) * V(v) + P(p7)));
         }
         ifMETHOD(P(method), ExplicitMidpoint)
         {
             numb imp = P(Idc) + P(Iamp) * sinf(2.0f * 3.141592f * P(Ifreq) * (V(t) - P(Idel)));
-            numb tmp = V(t) + P(stepsize) * 0.5;
-            numb vmp = V(v) + P(stepsize) * 0.5 * ((-(P(p0) + P(p1) * V(v) + P(p2) * V(v) * V(v)) * (V(v) - P(p3)) - P(p5) * V(r) * (V(v) - P(p4)) + imp) / P(C));
-            numb rmp = V(r) + P(stepsize) * 0.5 * ((1.0 / P(tau)) * (-V(r) + P(p6) * V(v) + P(p7)));
+            numb tmp = V(t) + H * 0.5;
+            numb vmp = V(v) + H * 0.5 * ((-(P(p0) + P(p1) * V(v) + P(p2) * V(v) * V(v)) * (V(v) - P(p3)) - P(p5) * V(r) * (V(v) - P(p4)) + imp) / P(C));
+            numb rmp = V(r) + H * 0.5 * ((1.0 / P(tau)) * (-V(r) + P(p6) * V(v) + P(p7)));
 
             Vnext(i) = P(Idc) + P(Iamp) * sinf(2.0f * 3.141592f * P(Ifreq) * (tmp - P(Idel)));
-            Vnext(t) = V(t) + P(stepsize);
-            Vnext(v) = V(v) + P(stepsize) * ((-(P(p0) + P(p1) * vmp + P(p2) * vmp * vmp) * (vmp - P(p3)) - P(p5) * rmp * (vmp - P(p4)) + Vnext(i)) / P(C));
-            Vnext(r) = V(r) + P(stepsize) * ((1.0 / P(tau)) * (-rmp + P(p6) * vmp + P(p7)));
+            Vnext(t) = V(t) + H;
+            Vnext(v) = V(v) + H * ((-(P(p0) + P(p1) * vmp + P(p2) * vmp * vmp) * (vmp - P(p3)) - P(p5) * rmp * (vmp - P(p4)) + Vnext(i)) / P(C));
+            Vnext(r) = V(r) + H * ((1.0 / P(tau)) * (-rmp + P(p6) * vmp + P(p7)));
         }
     }
     ifSIGNAL(P(signal), triangle)
@@ -104,21 +105,21 @@ __device__ __forceinline__ void finiteDifferenceScheme_wilson(numb* currentV, nu
         ifMETHOD(P(method), ExplicitEuler)
         {
             Vnext(i) = P(Idc) + P(Iamp) * ((4 * P(Ifreq) * (V(t) - P(Idel)) - 2 * floorf((4 * P(Ifreq) * (V(t) - P(Idel)) + 1) / 2)) * pow((-1), floorf((4 * P(Ifreq) * (V(t) - P(Idel)) + 1) / 2)));
-            Vnext(t) = V(t) + P(stepsize);
-            Vnext(v) = V(v) + P(stepsize) * ((-(P(p0) + P(p1) * V(v) + P(p2) * V(v) * V(v)) * (V(v) - P(p3)) - P(p5) * V(r) * (V(v) - P(p4)) + Vnext(i)) / P(C));
-            Vnext(r) = V(r) + P(stepsize) * ((1.0 / P(tau)) * (-V(r) + P(p6) * V(v) + P(p7)));
+            Vnext(t) = V(t) + H;
+            Vnext(v) = V(v) + H * ((-(P(p0) + P(p1) * V(v) + P(p2) * V(v) * V(v)) * (V(v) - P(p3)) - P(p5) * V(r) * (V(v) - P(p4)) + Vnext(i)) / P(C));
+            Vnext(r) = V(r) + H * ((1.0 / P(tau)) * (-V(r) + P(p6) * V(v) + P(p7)));
         }
         ifMETHOD(P(method), ExplicitMidpoint)
         {
             numb imp = P(Idc) + P(Iamp) * ((4 * P(Ifreq) * (V(t) - P(Idel)) - 2 * floorf((4 * P(Ifreq) * (V(t) - P(Idel)) + 1) / 2)) * pow((-1), floorf((4 * P(Ifreq) * (V(t) - P(Idel)) + 1) / 2)));
-            numb tmp = V(t) + P(stepsize) * 0.5;
-            numb vmp = V(v) + P(stepsize) * 0.5 * ((-(P(p0) + P(p1) * V(v) + P(p2) * V(v) * V(v)) * (V(v) - P(p3)) - P(p5) * V(r) * (V(v) - P(p4)) + imp) / P(C));
-            numb rmp = V(r) + P(stepsize) * 0.5 * ((1.0 / P(tau)) * (-V(r) + P(p6) * V(v) + P(p7)));
+            numb tmp = V(t) + H * 0.5;
+            numb vmp = V(v) + H * 0.5 * ((-(P(p0) + P(p1) * V(v) + P(p2) * V(v) * V(v)) * (V(v) - P(p3)) - P(p5) * V(r) * (V(v) - P(p4)) + imp) / P(C));
+            numb rmp = V(r) + H * 0.5 * ((1.0 / P(tau)) * (-V(r) + P(p6) * V(v) + P(p7)));
 
             Vnext(i) = P(Idc) + P(Iamp) * ((4 * P(Ifreq) * (tmp - P(Idel)) - 2 * floorf((4 * P(Ifreq) * (tmp - P(Idel)) + 1) / 2)) * pow((-1), floorf((4 * P(Ifreq) * (tmp - P(Idel)) + 1) / 2)));
-            Vnext(t) = V(t) + P(stepsize);
-            Vnext(v) = V(v) + P(stepsize) * ((-(P(p0) + P(p1) * vmp + P(p2) * vmp * vmp) * (vmp - P(p3)) - P(p5) * rmp * (vmp - P(p4)) + Vnext(i)) / P(C));
-            Vnext(r) = V(r) + P(stepsize) * ((1.0 / P(tau)) * (-rmp + P(p6) * vmp + P(p7)));
+            Vnext(t) = V(t) + H;
+            Vnext(v) = V(v) + H * ((-(P(p0) + P(p1) * vmp + P(p2) * vmp * vmp) * (vmp - P(p3)) - P(p5) * rmp * (vmp - P(p4)) + Vnext(i)) / P(C));
+            Vnext(r) = V(r) + H * ((1.0 / P(tau)) * (-rmp + P(p6) * vmp + P(p7)));
         }
     }
 }

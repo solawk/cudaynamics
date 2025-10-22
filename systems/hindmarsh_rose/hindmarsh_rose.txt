@@ -1,7 +1,11 @@
 Name: Hindmarsh-Rose neuron model
 Steps: 10000
 Transient: 1000
-Step size: 0.001000
+// Defining step:
+// parameter/variable/discrete
+// Then, unless it is discrete, provide its name and define it like an attribute
+// If it is discrete, add nothing after
+Step type: parameter h Fixed 0.01 0.1 0.01 100 0.0 0.0
 // Compute on CUDAynamics launch: yes/no
 Execute on launch: yes
 // Ranging types:
@@ -24,7 +28,6 @@ param r Fixed 0.01 0.1 0.01 0 0.0 0.0
 param s Fixed 4.0 5.0 0.01 0 0.0 0.0
 param e Fixed 1.56 2.0 0.01 0 0.0 0.0
 param Iext Linear 2.0 4.4 0.01 150 0.0 0.0
-param stepsize Fixed 0.1 0.01 0.001 100 0.0 0.0
 param symmetry Fixed 0.0 1.0 0.01 100 0.0 0.0
 // Defining enumerated parameters (useful for methods):
 // enum <name> <ranging type> <minimum value> <maximum value> <step> <step count> <normal mean> <normal deviation> <enum names, no spaces>

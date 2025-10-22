@@ -1,7 +1,11 @@
 Name: Izhikevich neuron model
 Steps: 10000
 Transient: 0
-Step size: 0.01
+// Defining step:
+// parameter/variable/discrete
+// Then, unless it is discrete, provide its name and define it like an attribute
+// If it is discrete, add nothing after
+Step type: parameter h Fixed 0.01 0.1 0.01 100 0.0 0.0
 // Compute on CUDAynamics launch: yes/no
 Execute on launch: yes
 // Ranging types:
@@ -27,7 +31,6 @@ param p2 Fixed 140.0 200.0 1.0 250 0.0 0.0
 param p3 Fixed 30.0 50.0 0.1 250 0.0 0.0
 param Imax Linear 1.0 10.0 0.1 100 0.0 0.0
 param Iduty Fixed 200.0 1000.0 0.1 0 0.0 0.0
-param stepsize Fixed 0.01 0.1 0.01 100 0.0 0.0
 // Defining enumerated parameters (useful for methods):
 // enum <name> <ranging type> <minimum value> <maximum value> <step> <step count> <normal mean> <normal deviation> <enum names, no spaces>
 enum method 1ExplicitEuler

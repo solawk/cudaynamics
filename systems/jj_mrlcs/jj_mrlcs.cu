@@ -4,7 +4,7 @@
 namespace attributes
 {
     enum variables { theta, sin_theta, v, iL };
-    enum parameters { betaL, betaC, betaM, i, epsilon, delta, stepsize, symmetry, method };
+    enum parameters { betaL, betaC, betaM, i, epsilon, delta, symmetry, method };
     enum methods { ExplicitEuler, SemiExplicitEuler, ExplicitMidpoint, ExplicitRungeKutta4, VariableSymmetryCD };
     enum maps { LLE, MAX, MeanInterval, MeanPeak, Period };
 }
@@ -47,7 +47,8 @@ __global__ void kernelProgram_jj_mrlcs(Computation* data)
 
     if (M(Period).toCompute || M(MeanInterval).toCompute || M(MeanPeak).toCompute)
     {
-        DBscan_Settings dbscan_settings(MS(Period, 0), MS(MeanInterval, 0), MS(Period, 1), MS(Period, 2), MS(MeanInterval, 1), MS(MeanInterval, 2), MS(MeanInterval, 3), MS(MeanInterval, 4), P(stepsize));
+        DBscan_Settings dbscan_settings(MS(Period, 0), MS(MeanInterval, 0), MS(Period, 1), MS(Period, 2), MS(MeanInterval, 1), MS(MeanInterval, 2), MS(MeanInterval, 3), MS(MeanInterval, 4),
+            H_BRANCH(parameters[CUDA_kernel.PARAM_COUNT - 1], variables[CUDA_kernel.VAR_COUNT - 1]));
         Period(data, dbscan_settings, variation, &finiteDifferenceScheme_jj_mrlcs, MO(Period), MO(MeanPeak), MO(MeanInterval));
     }
 }
@@ -56,30 +57,30 @@ __device__ __forceinline__  void finiteDifferenceScheme_jj_mrlcs(numb* currentV,
 {
     ifMETHOD(P(method), ExplicitEuler)
     {
-        Vnext(theta) = fmodf(V(theta) + P(stepsize) * V(v), 2.0f * 3.141592f);
+        Vnext(theta) = fmodf(V(theta) + H * V(v), 2.0f * 3.141592f);
         Vnext(sin_theta) = sinf(Vnext(theta));
-        Vnext(iL) = V(iL) + P(stepsize) * ((1.0f / P(betaL)) * (V(v) - V(iL)));
-        Vnext(v) = V(v) + P(stepsize) * ((1.0f / P(betaC)) * (P(i) - P(betaM) * (1 + P(epsilon) * cosf(V(theta))) * V(v) - sinf(V(theta)) - P(delta) * V(iL)));
+        Vnext(iL) = V(iL) + H * ((1.0f / P(betaL)) * (V(v) - V(iL)));
+        Vnext(v) = V(v) + H * ((1.0f / P(betaC)) * (P(i) - P(betaM) * (1 + P(epsilon) * cosf(V(theta))) * V(v) - sinf(V(theta)) - P(delta) * V(iL)));
     }
 
     ifMETHOD(P(method), SemiExplicitEuler)
     {
-        Vnext(theta) = fmodf(V(theta) + P(stepsize) * V(v), 2.0f * 3.141592f);
+        Vnext(theta) = fmodf(V(theta) + H * V(v), 2.0f * 3.141592f);
         Vnext(sin_theta) = sinf(Vnext(theta));
-        Vnext(iL) = V(iL) + P(stepsize) * ((1.0f / P(betaL)) * (V(v) - V(iL)));
-        Vnext(v) = V(v) + P(stepsize) * ((1.0f / P(betaC)) * (P(i) - P(betaM) * (1 + P(epsilon) * cosf(Vnext(theta))) * V(v) - sinf(Vnext(theta)) - P(delta) * Vnext(iL)));
+        Vnext(iL) = V(iL) + H * ((1.0f / P(betaL)) * (V(v) - V(iL)));
+        Vnext(v) = V(v) + H * ((1.0f / P(betaC)) * (P(i) - P(betaM) * (1 + P(epsilon) * cosf(Vnext(theta))) * V(v) - sinf(Vnext(theta)) - P(delta) * Vnext(iL)));
     }
 
     ifMETHOD(P(method), ExplicitMidpoint)
     {
-        numb thetamp = fmodf(V(theta) + P(stepsize) * 0.5 * V(v), 2.0f * 3.141592f);
-        numb iLmp = V(iL) + P(stepsize) * 0.5 * ((1.0f / P(betaL)) * (V(v) - V(iL)));
-        numb vmp = V(v) + P(stepsize) * 0.5 * ((1.0f / P(betaC)) * (P(i) - P(betaM) * (1 + P(epsilon) * cosf(V(theta))) * V(v) - sinf(V(theta)) - P(delta) * V(iL)));
+        numb thetamp = fmodf(V(theta) + H * 0.5 * V(v), 2.0f * 3.141592f);
+        numb iLmp = V(iL) + H * 0.5 * ((1.0f / P(betaL)) * (V(v) - V(iL)));
+        numb vmp = V(v) + H * 0.5 * ((1.0f / P(betaC)) * (P(i) - P(betaM) * (1 + P(epsilon) * cosf(V(theta))) * V(v) - sinf(V(theta)) - P(delta) * V(iL)));
 
-        Vnext(theta) = fmodf(V(theta) + P(stepsize) * vmp, 2.0f * 3.141592f);
+        Vnext(theta) = fmodf(V(theta) + H * vmp, 2.0f * 3.141592f);
         Vnext(sin_theta) = sinf(Vnext(theta));
-        Vnext(iL) = V(iL) + P(stepsize) * ((1.0f / P(betaL)) * (vmp - iLmp));
-        Vnext(v) = V(v) + P(stepsize) * ((1.0f / P(betaC)) * (P(i) - P(betaM) * (1 + P(epsilon) * cosf(thetamp)) * vmp - sinf(thetamp) - P(delta) * iLmp));
+        Vnext(iL) = V(iL) + H * ((1.0f / P(betaL)) * (vmp - iLmp));
+        Vnext(v) = V(v) + H * ((1.0f / P(betaC)) * (P(i) - P(betaM) * (1 + P(epsilon) * cosf(thetamp)) * vmp - sinf(thetamp) - P(delta) * iLmp));
     }
 
     ifMETHOD(P(method), ExplicitRungeKutta4)
@@ -88,40 +89,40 @@ __device__ __forceinline__  void finiteDifferenceScheme_jj_mrlcs(numb* currentV,
         numb kiL1 = ((1.0f / P(betaL)) * (V(v) - V(iL)));
         numb kv1 = ((1.0f / P(betaC)) * (P(i) - P(betaM) * (1 + P(epsilon) * cosf(V(theta))) * V(v) - sinf(V(theta)) - P(delta) * V(iL)));
 
-        numb thetamp = fmodf(V(theta) + P(stepsize) * 0.5 * ktheta1, 2.0f * 3.141592f);
-        numb iLmp = V(iL) + P(stepsize) * 0.5 * kiL1;
-        numb vmp = V(v) + P(stepsize) * 0.5 * kv1;
+        numb thetamp = fmodf(V(theta) + H * 0.5 * ktheta1, 2.0f * 3.141592f);
+        numb iLmp = V(iL) + H * 0.5 * kiL1;
+        numb vmp = V(v) + H * 0.5 * kv1;
 
         numb ktheta2 = vmp;
         numb kiL2 = ((1.0f / P(betaL)) * (vmp - iLmp));
         numb kv2 = ((1.0f / P(betaC)) * (P(i) - P(betaM) * (1 + P(epsilon) * cosf(thetamp)) * vmp - sinf(thetamp) - P(delta) * iLmp));
 
-        thetamp = fmodf(V(theta) + P(stepsize) * 0.5 * ktheta2, 2.0f * 3.141592f);
-        iLmp = V(iL) + P(stepsize) * 0.5 * kiL2;
-        vmp = V(v) + P(stepsize) * 0.5 * kv2;
+        thetamp = fmodf(V(theta) + H * 0.5 * ktheta2, 2.0f * 3.141592f);
+        iLmp = V(iL) + H * 0.5 * kiL2;
+        vmp = V(v) + H * 0.5 * kv2;
 
         numb ktheta3 = vmp;
         numb kiL3 = ((1.0f / P(betaL)) * (vmp - iLmp));
         numb kv3 = ((1.0f / P(betaC)) * (P(i) - P(betaM) * (1 + P(epsilon) * cosf(thetamp)) * vmp - sinf(thetamp) - P(delta) * iLmp));
 
-        thetamp = fmodf(V(theta) + P(stepsize) * ktheta3, 2.0f * 3.141592f);
-        iLmp = V(iL) + P(stepsize) * kiL3;
-        vmp = V(v) + P(stepsize) * kv3;
+        thetamp = fmodf(V(theta) + H * ktheta3, 2.0f * 3.141592f);
+        iLmp = V(iL) + H * kiL3;
+        vmp = V(v) + H * kv3;
 
         numb ktheta4 = vmp;
         numb kiL4 = ((1.0f / P(betaL)) * (vmp - iLmp));
         numb kv4 = ((1.0f / P(betaC)) * (P(i) - P(betaM) * (1 + P(epsilon) * cosf(thetamp)) * vmp - sinf(thetamp) - P(delta) * iLmp));
 
-        Vnext(theta) = fmodf(V(theta) + P(stepsize) * (ktheta1 + 2 * ktheta2 + 2 * ktheta3 + ktheta4) / 6, 2.0f * 3.141592f);
+        Vnext(theta) = fmodf(V(theta) + H * (ktheta1 + 2 * ktheta2 + 2 * ktheta3 + ktheta4) / 6, 2.0f * 3.141592f);
         Vnext(sin_theta) = sinf(Vnext(theta));
-        Vnext(iL) = V(iL) + P(stepsize) * (kiL1 + 2 * kiL2 + 2 * kiL3 + kiL4) / 6;
-        Vnext(v) = V(v) + P(stepsize) * (kv1 + 2 * kv2 + 2 * kv3 + kv4) / 6;
+        Vnext(iL) = V(iL) + H * (kiL1 + 2 * kiL2 + 2 * kiL3 + kiL4) / 6;
+        Vnext(v) = V(v) + H * (kv1 + 2 * kv2 + 2 * kv3 + kv4) / 6;
     }
 
     ifMETHOD(P(method), VariableSymmetryCD)
     {
-        numb h1 = 0.5 * P(stepsize) - P(symmetry);
-        numb h2 = 0.5 * P(stepsize) + P(symmetry);
+        numb h1 = 0.5 * H - P(symmetry);
+        numb h2 = 0.5 * H + P(symmetry);
 
         numb thetamp = fmodf(V(theta) + h1 * V(v), 2.0f * 3.141592f);
         numb iLmp = V(iL) + h1 * ((1.0f / P(betaL)) * (V(v) - V(iL)));

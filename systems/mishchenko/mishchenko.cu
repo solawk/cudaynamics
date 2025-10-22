@@ -4,7 +4,7 @@
 namespace attributes
 {
     enum variables { x, cosx, y, z };
-    enum parameters { gamma, eps1, eps2, stepsize };
+    enum parameters { gamma, eps1, eps2};
     enum maps { LLE, MAX, MeanInterval, MeanPeak, Period };
 }
 
@@ -46,19 +46,20 @@ __global__ void kernelProgram_mishchenko(Computation* data)
 
     if (M(Period).toCompute || M(MeanInterval).toCompute || M(MeanPeak).toCompute)
     {
-        DBscan_Settings dbscan_settings(MS(Period, 0), MS(MeanInterval, 0), MS(Period, 1), MS(Period, 2), MS(MeanInterval, 1), MS(MeanInterval, 2), MS(MeanInterval, 3), MS(MeanInterval, 4), P(stepsize));
+        DBscan_Settings dbscan_settings(MS(Period, 0), MS(MeanInterval, 0), MS(Period, 1), MS(Period, 2), MS(MeanInterval, 1), MS(MeanInterval, 2), MS(MeanInterval, 3), MS(MeanInterval, 4),
+            H_BRANCH(parameters[CUDA_kernel.PARAM_COUNT - 1], variables[CUDA_kernel.VAR_COUNT - 1]));
         Period(data, dbscan_settings, variation, &finiteDifferenceScheme_mishchenko, MO(Period), MO(MeanPeak), MO(MeanInterval));
     }
 }
 
 __device__ __forceinline__ void finiteDifferenceScheme_mishchenko(numb* currentV, numb* nextV, numb* parameters, Computation* data)
 {
-    numb xmp = fmodf(V(x) + P(stepsize) * 0.5 * V(y), 2.0f * 3.141592f);
-    numb ymp = V(y) + P(stepsize) * 0.5 * V(z);
-    numb zmp = V(z) + P(stepsize) * 0.5 * ((1 / (P(eps1) * P(eps2))) * (P(gamma) - (P(eps1) + P(eps2)) * V(z) - (1 - (P(eps1) * cosf(V(x)))) * V(y)));
+    numb xmp = fmodf(V(x) + H * 0.5 * V(y), 2.0f * 3.141592f);
+    numb ymp = V(y) + H * 0.5 * V(z);
+    numb zmp = V(z) + H * 0.5 * ((1 / (P(eps1) * P(eps2))) * (P(gamma) - (P(eps1) + P(eps2)) * V(z) - (1 - (P(eps1) * cosf(V(x)))) * V(y)));
 
-    Vnext(x) = fmodf(V(x) + P(stepsize) * ymp, 2.0f * 3.141592f);
+    Vnext(x) = fmodf(V(x) + H * ymp, 2.0f * 3.141592f);
     Vnext(cosx) = cosf(Vnext(x));
-    Vnext(y) = V(y) + P(stepsize) * zmp;
-    Vnext(z) = V(z) + P(stepsize) * 0.5 * ((1 / (P(eps1) * P(eps2))) * (P(gamma) - (P(eps1) + P(eps2)) * zmp - (1 - (P(eps1) * cosf(xmp))) * ymp));
+    Vnext(y) = V(y) + H * zmp;
+    Vnext(z) = V(z) + H * 0.5 * ((1 / (P(eps1) * P(eps2))) * (P(gamma) - (P(eps1) + P(eps2)) * zmp - (1 - (P(eps1) * cosf(xmp))) * ymp));
 }

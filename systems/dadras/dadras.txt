@@ -1,7 +1,11 @@
 Name: Dadras system
 Steps: 1000
 Transient: 0
-Step size: 0.01
+// Defining step:
+// parameter/variable/discrete
+// Then, unless it is discrete, provide its name and define it like an attribute
+// If it is discrete, add nothing after
+Step type: parameter h Fixed 0.01 0.1 0.01 100 0.0 0.0
 // Compute on CUDAynamics launch: yes/no
 Execute on launch: yes
 // Ranging types:
@@ -21,7 +25,6 @@ param b Fixed 2.7 50.0 0.1 250 0.0 0.0
 param c Fixed 1.7 29.0 0.1 0 0.0 0.0
 param d Fixed 2.0 29.0 0.1 0 0.0 0.0
 param e Fixed 9.0 29.0 0.1 0 0.0 0.0
-param stepsize Fixed 0.01 0.1 0.01 10 0.0 0.0
 param symmetry Fixed 0 0.5 0.01 0 0.0 0.0
 // Defining enumerated parameters (useful for methods):
 // enum <name> <ranging type> <minimum value> <maximum value> <step> <step count> <normal mean> <normal deviation> <enum names, no spaces>
