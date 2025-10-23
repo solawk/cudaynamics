@@ -24,6 +24,18 @@ void plotWindowMenu(PlotWindow* window)
 		if (window->type == Phase || window->type == Phase2D) plotWindowMenu_PhasePlot(window);
 		if (window->type == Heatmap || window->type == MCHeatmap) plotWindowMenu_HeatmapPlot(window);
 		if (window->type == Heatmap) plotWindowMenu_HeatmapColors(window);
+		if (window->type == Heatmap)
+		{
+			ImGui::Text("   ");
+			ImGui::SameLine();
+
+			bool isHires = window == hiresHeatmapWindow;
+			if (ImGui::Checkbox(("Hi-Res Mode##" + window->name + "_hirescheckbox").c_str(), &isHires))
+			{
+				if (window == hiresHeatmapWindow) hiresHeatmapWindow = nullptr;
+				else hiresHeatmapWindow = window;
+			}
+		}
 		if (window->type == Orbit) plotWindowMenu_OrbitPlot(window);
 		if (window->type == Metric) plotWindowMenu_MetricPlot(window);
 
@@ -177,7 +189,7 @@ void plotWindowMenu_HeatmapPlot(PlotWindow* window)
 			ImGui::EndCombo();
 		}
 
-		bool tempHiresMode = window == hiresHeatmapWindow; if (ImGui::Checkbox(("##" + windowName + "isHiresMode").c_str(), &tempHiresMode))
+		/*bool tempHiresMode = window == hiresHeatmapWindow; if (ImGui::Checkbox(("##" + windowName + "isHiresMode").c_str(), &tempHiresMode))
 		{
 			if (window != hiresHeatmapWindow)
 			{
@@ -188,7 +200,7 @@ void plotWindowMenu_HeatmapPlot(PlotWindow* window)
 				hiresHeatmapWindow = nullptr;
 			}
 		}
-		ImGui::SameLine(); ImGui::Text("Hi-Res mode");
+		ImGui::SameLine(); ImGui::Text("Hi-Res mode");*/
 
 		bool tempHeatmapAutoCompute = heatmap->isHeatmapAutoComputeOn; if (ImGui::Checkbox(("##" + windowName + "heatmapAutoCompute").c_str(), &tempHeatmapAutoCompute)) heatmap->isHeatmapAutoComputeOn = !heatmap->isHeatmapAutoComputeOn;
 		ImGui::SameLine(); ImGui::Text("Auto-compute on Shift+RMB");

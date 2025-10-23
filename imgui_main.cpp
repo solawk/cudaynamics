@@ -52,7 +52,11 @@ int particleStep = 0; // Current step of the computations to show
 bool continuousComputingEnabled = true; // Continuously compute next batch of steps via double buffering
 float dragChangeSpeed = 1.0f;
 int bufferNo = 0;
-float lastHiresTime = -1.0f;
+
+bool lastHiresHasInfo = false;
+bool lastHiresStopped = true;
+std::chrono::steady_clock::time_point lastHiresStart;
+std::chrono::steady_clock::time_point lastHiresEnd;
 
 PlotWindow* colorsLUTfrom = nullptr;
 int paintLUTsize = 32;
@@ -209,10 +213,12 @@ int hiresAsyncComputation()
     for (int i = 0; i < computationHires.marshal.kernel.MAP_COUNT; i++)
         computationHires.marshal.kernel.mapDatas[i].toCompute = computationHires.mapIndex == i;
 
-    std::chrono::steady_clock::time_point before = std::chrono::steady_clock::now();
+    lastHiresStart = std::chrono::steady_clock::now();
+    lastHiresHasInfo = true;
+    lastHiresStopped = false;
     int computationResult = compute(&computationHires);
-    std::chrono::steady_clock::time_point after = std::chrono::steady_clock::now();
-    lastHiresTime = (float)(std::chrono::duration_cast<std::chrono::milliseconds>(after - before).count()) / 1000.0f;
+    lastHiresEnd = std::chrono::steady_clock::now();
+    lastHiresStopped = true;
 
     autofitAfterComputing = true;
     //resetTempBuffers(&computationHires);
@@ -449,7 +455,7 @@ int imgui_main(int, char**)
     computations[1].index = 1;
     computations[0].otherMarshal = &(computations[1].marshal);
     computations[1].otherMarshal = &(computations[0].marshal);
-    computationHires.variationsPerParallelization = 10000;
+    computationHires.variationsPerParallelization = 1000000;
     
     initializeKernel(false);
 
@@ -899,9 +905,10 @@ int imgui_main(int, char**)
             ImGui::Text((std::to_string(computationHires.variationsFinished) + "/" + std::to_string(computationHires.marshal.totalVariations) + " computed (" +
                 std::to_string(progressPercentage) + "%%)").c_str());
         }
-        if (HIRES_ON && lastHiresTime >= 0.0f)
+        if (HIRES_ON && lastHiresHasInfo)
         {
-            ImGui::Text("Last Hi-Res time: %f s", lastHiresTime);
+            ImGui::Text("Hi-Res time: %f s", (float)(std::chrono::duration_cast<std::chrono::milliseconds>
+                ((lastHiresStopped ? lastHiresEnd : std::chrono::steady_clock::now()) - lastHiresStart).count()) / 1000.0f);
         }
 
         // COMMON
