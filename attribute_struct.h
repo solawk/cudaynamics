@@ -83,37 +83,17 @@ public:
 			break;
 		case RT_Step:
 		case RT_Linear:
-			if (!preserveValues || oldValues == nullptr)
+			for (int i = 0; i < trueStepCount; i++)
 			{
-				for (int i = 0; i < trueStepCount; i++)
-				{
-					values[i] = min + step * i;
-					if (values[i] > max) values[i] = max;
-				}
-			}
-			else // i.e. if (preserveValues && oldValues != nullptr)
-			{
-				for (int i = 0; i < trueStepCount; i++)
-				{
-					values[i] = oldValues[i]; // Heisenbug occurs here
-				}
+				values[i] = min + step * i;
+				if (values[i] > max) values[i] = max;
 			}
 			break;
 		case RT_Enum:
-			if (!preserveValues || oldValues == nullptr)
+			int i = 0;
+			for (int e = 0; e < enumCount; e++)
 			{
-				int i = 0;
-				for (int e = 0; e < enumCount; e++)
-				{
-					if (enumEnabled[e]) values[i++] = (numb)e;
-				}
-			}
-			else
-			{
-				for (int i = 0; i < trueStepCount; i++)
-				{
-					values[i] = oldValues[i];
-				}
+				if (enumEnabled[e]) values[i++] = (numb)e;
 			}
 			break;
 		}
