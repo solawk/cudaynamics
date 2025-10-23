@@ -71,7 +71,7 @@ public:
 
 	void Generate(bool preserveValues)
 	{
-		numb* oldValues = values; // if the attribute has been copied, "values" points to the source array of values
+		//numb* oldValues = values; // if the attribute has been copied, "values" points to the source array of values
 
 		int trueStepCount = TrueStepCount();
 		values = new numb[trueStepCount];
