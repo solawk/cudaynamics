@@ -47,7 +47,7 @@ __device__  void Period(Computation* data, DBscan_Settings settings, int variati
     numb sumPeak = 0, sumInterval = 0; // the sums of counted peaks and intervals for meanPeak and meanInterval analysis
     
     //  Peak finder
-    for (int i = 1; i < (variationSize / varCount) - 1 && peakCount < MAX_PEAKS; i++)
+    for (int i = 1; i < (variationSize / varCount) - 1 /* && peakCount < MAX_PEAKS*/; i++)
     {
         NORMAL_STEP_IN_ANALYSIS_IF_HIRES;
 
@@ -142,8 +142,9 @@ __device__  void Period(Computation* data, DBscan_Settings settings, int variati
     if (peakCount == 0)returnZero = true;
     //
     numb mapValue;
-
-    if (data->marshal.kernel.mapDatas[offset_meanPeak].toCompute) {
+    
+    //if (data->marshal.kernel.mapDatas[offset_meanPeak/data->marshal.totalVariations].toCompute) {
+    if (data->marshal.kernel.mapDatas[3].toCompute) {
         mapValue = sumPeak / peakCount;
         if (CUDA_kernel.mapWeight == 0.0f)
         {
@@ -152,14 +153,16 @@ __device__  void Period(Computation* data, DBscan_Settings settings, int variati
         }
         else if (CUDA_kernel.mapWeight == 1.0f)
         {
-            CUDA_marshal.maps[variation + offset_meanPeak] = mapValue;
+            //CUDA_marshal.maps[(variation + offset_meanPeak) + ( 0 *CUDA_marshal.totalVariations)] = mapValue;
+            CUDA_marshal.maps[(variation + offset_meanPeak) + (data->isHires ? 3 : 0 * CUDA_marshal.totalVariations)] = mapValue;
         }
         else
         {
             CUDA_marshal.maps[variation + offset_meanPeak] = CUDA_marshal.maps[variation + offset_meanPeak] * (1.0f - CUDA_kernel.mapWeight) + mapValue * CUDA_kernel.mapWeight;
         }
     }
-    if (data->marshal.kernel.mapDatas[offset_meanInterval].toCompute) {
+    //if (data->marshal.kernel.mapDatas[offset_meanInterval/data->marshal.totalVariations].toCompute) {
+    if (data->marshal.kernel.mapDatas[2].toCompute) {
         mapValue = sumInterval / peakCount;
         if (CUDA_kernel.mapWeight == 0.0f)
         {
@@ -168,17 +171,20 @@ __device__  void Period(Computation* data, DBscan_Settings settings, int variati
         }
         else if (CUDA_kernel.mapWeight == 1.0f)
         {
-            CUDA_marshal.maps[variation + offset_meanInterval] = mapValue;
+            //CUDA_marshal.maps[(variation + offset_meanInterval) + ( 0 *CUDA_marshal.totalVariations)] = mapValue;
+            CUDA_marshal.maps[(variation + offset_meanInterval) + (data->isHires ? 2 : 0 *CUDA_marshal.totalVariations)] = mapValue;
         }
         else
         {
             CUDA_marshal.maps[variation + offset_meanInterval] = CUDA_marshal.maps[variation + offset_meanInterval] * (1.0f - CUDA_kernel.mapWeight) + mapValue * CUDA_kernel.mapWeight;
         }
     }
+    
+    
+    
+    //if (data->marshal.kernel.mapDatas[offset_meanPeak/data->marshal.totalVariations].toCompute) {
+    if (data->marshal.kernel.mapDatas[4].toCompute) {
 
-
-    if (data->marshal.kernel.mapDatas[offset_period].toCompute) {
-        
         if (returnZero) { mapValue = 0; }   // result if FXP system
         else if (returnNan) { mapValue = NAN; } // result if dispersive system
         else {
@@ -241,13 +247,15 @@ __device__  void Period(Computation* data, DBscan_Settings settings, int variati
         }
         else if (CUDA_kernel.mapWeight == 1.0f)
         {
-            CUDA_marshal.maps[variation + offset_period] = mapValue;
+            //CUDA_marshal.maps[(variation + offset_period) + ( 0 * CUDA_marshal.totalVariations)] = mapValue;
+            CUDA_marshal.maps[(variation + offset_period) + (data->isHires ? 4 : 0 * CUDA_marshal.totalVariations)] = mapValue;
         }
         else
         {
             CUDA_marshal.maps[variation + offset_period] = CUDA_marshal.maps[variation + offset_period] * (1.0f - CUDA_kernel.mapWeight) + mapValue * CUDA_kernel.mapWeight;
         }
     }
+    else  CUDA_marshal.maps[(variation + offset_period) + (0 * CUDA_marshal.totalVariations)] = data->marshal.totalVariations;
 }
 
 
