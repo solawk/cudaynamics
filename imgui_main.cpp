@@ -2064,10 +2064,10 @@ int imgui_main(int, char**)
                                 plot = ImPlot::GetPlot(("##Metric_Plot" + plotName).c_str()); plot->is3d = false;
                                 ImPlot::SetNextLineStyle(window->markerColor, window->markerWidth);
                                 ImPlot::PlotLine("##Metric_Line_Plot", Xaxis, Yaxis, axis->stepCount);
-                                if (ImGui::IsMouseDown(0) && ImGui::IsKeyPressed(ImGuiMod_Shift) && ImGui::IsMouseHoveringRect(plot->PlotRect.Min, plot->PlotRect.Max)) {
+                                if (ImGui::IsMouseDown(0) && ImGui::IsKeyPressed(ImGuiMod_Shift) && ImGui::IsMouseHoveringRect(plot->PlotRect.Min, plot->PlotRect.Max) && plot->ContextLocked || plot->shiftClicked) {
                                     numb MousePosX = (numb)ImPlot::GetPlotMousePos().x;
                                     if (axis->min > MousePosX)window->typeX == MDT_Variable ? attributeValueIndices[window->indexX] = 0: attributeValueIndices[window->indexX +krnl->VAR_COUNT] = 0;
-                                    else if (axis->max < MousePosX)window->typeX == MDT_Variable ? attributeValueIndices[window->indexX] = axis->stepCount-1 : attributeValueIndices[window->indexX + krnl->VAR_COUNT] = axis->stepCount;
+                                    else if (axis->max < MousePosX)window->typeX == MDT_Variable ? attributeValueIndices[window->indexX] = axis->stepCount-1 : attributeValueIndices[window->indexX + krnl->VAR_COUNT] = axis->stepCount-1;
                                     else {
                                         numb NotRoundedIndex = (MousePosX - axis->min) / (axis->max - axis->min) * axis->stepCount;
                                         int index = static_cast<int>(std::round(NotRoundedIndex)); if (index > axis->stepCount - 1)index = axis->stepCount - 1;
