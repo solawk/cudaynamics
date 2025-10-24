@@ -52,7 +52,7 @@
     <SourcePath>$(VC_SourcePath)</SourcePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <IncludePath>$(ProjectDir);$(WindowsSDK_IncludePath);$(VC_IncludePath);$(IncludePath)</IncludePath>
+    <IncludePath>implot;dbscan;$(ProjectDir);$(WindowsSDK_IncludePath);$(VC_IncludePath);$(IncludePath)</IncludePath>
     <ReferencePath>$(VC_ReferencesPath_x64);$(WindowsSDK_IncludePath);</ReferencePath>
     <LibraryPath>$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);$(WindowsSDK_IncludePath);</LibraryPath>
     <LibraryWPath>$(WindowsSDK_MetadataPath);$(WindowsSDK_IncludePath);</LibraryWPath>
@@ -95,6 +95,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;WIN64;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -105,6 +106,10 @@
     </Link>
     <CudaCompile>
       <TargetMachinePlatform>64</TargetMachinePlatform>
+      <Include>imgui;imgui/backends;.;backends;systems;implot;dbscan</Include>
+      <FastMath>true</FastMath>
+      <MaxRegCount>32</MaxRegCount>
+      <GenerateRelocatableDeviceCode>true</GenerateRelocatableDeviceCode>
     </CudaCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
