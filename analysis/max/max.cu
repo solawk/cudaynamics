@@ -1,6 +1,6 @@
 #include "max.h"
 
-__device__ void MAX(Computation* data, MAX_Settings settings, int variation, void(* finiteDifferenceScheme)(numb*, numb*, numb*, Computation*), int offset)
+__device__ void MAX(Computation* data, MAX_Settings settings, int variation, void(* finiteDifferenceScheme)(numb*, numb*, numb*), int offset)
 {
     int stepStart, variationStart = variation * CUDA_marshal.variationSize;
     LOCAL_BUFFERS;

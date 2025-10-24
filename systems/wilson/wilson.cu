@@ -4,7 +4,7 @@
 namespace attributes
 {
     enum variables { v, r, i, t };
-    enum parameters { C, tau, p0, p1, p2, p3, p4, p5, p6, p7, Idc, Iamp, Ifreq, Idel, Idf, signal, method };
+    enum parameters { C, tau, p0, p1, p2, p3, p4, p5, p6, p7, Idc, Iamp, Ifreq, Idel, Idf, signal, method, COUNT };
     enum waveforms { square, sine, triangle };
     enum methods { ExplicitEuler, ExplicitMidpoint };
     enum maps { LLE, MAX, MeanInterval, MeanPeak, Period };
@@ -49,12 +49,12 @@ __global__ void kernelProgram_wilson(Computation* data)
     if (M(Period).toCompute || M(MeanInterval).toCompute || M(MeanPeak).toCompute)
     {
         DBscan_Settings dbscan_settings(MS(Period, 0), MS(MeanInterval, 0), MS(Period, 1), MS(Period, 2), MS(MeanInterval, 1), MS(MeanInterval, 2), MS(MeanInterval, 3), MS(MeanInterval, 4),
-            H_BRANCH(parameters[CUDA_kernel.PARAM_COUNT - 1], variables[CUDA_kernel.VAR_COUNT - 1]));
+            H);
         Period(data, dbscan_settings, variation, &finiteDifferenceScheme_wilson, MO(Period), MO(MeanPeak), MO(MeanInterval));
     }
 }
 
-__device__ __forceinline__ void finiteDifferenceScheme_wilson(numb* currentV, numb* nextV, numb* parameters, Computation* data)
+__device__ __forceinline__ void finiteDifferenceScheme_wilson(numb* currentV, numb* nextV, numb* parameters)
 {
     ifSIGNAL(P(signal), square)
     {

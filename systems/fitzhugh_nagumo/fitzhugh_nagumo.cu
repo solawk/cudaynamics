@@ -4,7 +4,7 @@
 namespace attributes
 {
     enum variables { v, w };
-    enum parameters { a, b, tau, R, Iext,method };
+    enum parameters { a, b, tau, R, Iext, method, COUNT };
     enum methods { ExplicitEuler, ExplicitMidpoint };
     enum maps { LLE, MAX, MeanInterval, MeanPeak, Period };
 }
@@ -48,12 +48,12 @@ __global__ void kernelProgram_fitzhugh_nagumo(Computation* data)
     if (M(Period).toCompute || M(MeanInterval).toCompute || M(MeanPeak).toCompute)
     {
         DBscan_Settings dbscan_settings(MS(Period, 0), MS(MeanInterval, 0), MS(Period, 1), MS(Period, 2), MS(MeanInterval, 1), MS(MeanInterval, 2), MS(MeanInterval, 3), MS(MeanInterval, 4),
-            H_BRANCH(parameters[CUDA_kernel.PARAM_COUNT - 1], variables[CUDA_kernel.VAR_COUNT - 1]));
+            H);
         Period(data, dbscan_settings, variation, &finiteDifferenceScheme_fitzhugh_nagumo, MO(Period), MO(MeanPeak), MO(MeanInterval));
     }
 }
 
-__device__ __forceinline__  void finiteDifferenceScheme_fitzhugh_nagumo(numb* currentV, numb* nextV, numb* parameters, Computation* data)
+__device__ __forceinline__  void finiteDifferenceScheme_fitzhugh_nagumo(numb* currentV, numb* nextV, numb* parameters)
 {
     ifMETHOD(P(method), ExplicitEuler)
     {

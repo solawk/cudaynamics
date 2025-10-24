@@ -5,4 +5,4 @@ const int THREADS_PER_BLOCK_lorenz = 64;
 
 __global__ void kernelProgram_lorenz(Computation* data);
 
-__device__ __forceinline__ void finiteDifferenceScheme_lorenz(numb* currentV, numb* nextV, numb* parameters, Computation* data);
+__device__ __forceinline__ void finiteDifferenceScheme_lorenz(numb* currentV, numb* nextV, numb* parameters);

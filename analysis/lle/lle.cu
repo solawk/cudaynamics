@@ -2,7 +2,7 @@
 #pragma warning(push)
 #pragma warning(disable:6385)
 
-__device__ void LLE(Computation* data, LLE_Settings settings, int variation, void(* finiteDifferenceScheme)(numb*, numb*, numb*, Computation*), int offset)
+__device__ void LLE(Computation* data, LLE_Settings settings, int variation, void(* finiteDifferenceScheme)(numb*, numb*, numb*), int offset)
 {
     int stepStart, variationStart = variation * CUDA_marshal.variationSize;
     LOCAL_BUFFERS;
@@ -20,6 +20,7 @@ __device__ void LLE(Computation* data, LLE_Settings settings, int variation, voi
     numb r = settings.r;
     int L = settings.L;
     LLE_array[settings.variableToDeflect] += r;
+    int stepParamIndex = CUDA_kernel.PARAM_COUNT - 1;
 
     for (int s = 0; s < CUDA_kernel.steps; s++)
     {
@@ -29,7 +30,7 @@ __device__ void LLE(Computation* data, LLE_Settings settings, int variation, voi
         NORMAL_STEP_IN_ANALYSIS_IF_HIRES;
 
         // Deflected step
-        finiteDifferenceScheme(LLE_array, LLE_array_next, &(parameters[0]), data);
+        finiteDifferenceScheme(LLE_array, LLE_array_next, &(parameters[0]));
 
         for (int i = 0; i < CUDA_kernel.VAR_COUNT; i++)
             LLE_array[i] = LLE_array_next[i];
@@ -52,7 +53,7 @@ __device__ void LLE(Computation* data, LLE_Settings settings, int variation, voi
             numb growth = norm / r; // How many times the deflection has grown
             if (growth > 0.0f)
                 LLE_value += log(growth) / H_BRANCH(
-                    parameters[CUDA_kernel.PARAM_COUNT - 1], 
+                    parameters[stepParamIndex],
                     !data->isHires ? CUDA_marshal.trajectory[stepStart + CUDA_kernel.VAR_COUNT - 1] : variables[CUDA_kernel.VAR_COUNT - 1]
                 );
 

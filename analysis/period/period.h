@@ -41,6 +41,6 @@ struct DBscan_Settings
 };
 
 
-__device__ void Period(Computation* data, DBscan_Settings settings, int variation, void(*finiteDifferenceScheme)(numb*, numb*, numb*, Computation*), int offset_period, int offset_meanPeak, int offset_meanInterval);
+__device__ void Period(Computation* data, DBscan_Settings settings, int variation, void(*finiteDifferenceScheme)(numb*, numb*, numb*), int offset_period, int offset_meanPeak, int offset_meanInterval);
 
 #endif // DBSCAN_H
