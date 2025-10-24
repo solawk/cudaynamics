@@ -1,6 +1,6 @@
 #include "period.h"
 
-__device__  void Period(Computation* data, DBscan_Settings settings, int variation, void(*finiteDifferenceScheme)(numb*, numb*, numb*), int offset_period, int offset_meanPeak, int offset_meanInterval) {
+__device__  void Period(Computation* data, DBSCAN_Settings settings, int variation, void(*finiteDifferenceScheme)(numb*, numb*, numb*), int offset_period, int offset_meanPeak, int offset_meanInterval) {
     int variationStart = variation * CUDA_marshal.variationSize;
     int varCount = CUDA_kernel.VAR_COUNT;
     int variationSize = CUDA_marshal.variationSize;

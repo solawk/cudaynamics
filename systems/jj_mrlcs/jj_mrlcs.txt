@@ -24,8 +24,8 @@ var iL Fixed 0.76 29.0 0.1 0 0.0 0.0
 param betaL Fixed 50.0 50.0 0.1 250 0.0 0.0
 param betaC Fixed 0.5 50.0 0.1 250 0.0 0.0
 param betaM Fixed 1.0 29.0 0.1 0 0.0 0.0
-param i Linear 0.9 1.5 0.01 200 0.0 0.0
-param epsilon Linear -2.0 0.0 0.01 200 0.0 0.0
+param i Linear 0.9 1.5 0.01 50 0.0 0.0
+param epsilon Linear -2.0 0.0 0.01 50 0.0 0.0
 param delta Fixed 1.0 29.0 0.1 0 0.0 0.0
 param symmetry Fixed 0.0 29.0 0.1 0 0.0 0.0
 // Defining enumerated parameters (useful for methods):
