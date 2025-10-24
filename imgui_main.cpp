@@ -408,7 +408,7 @@ int imgui_main(int, char**)
     io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;         // Enable Docking
     io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;       // Enable Multi-Viewport / Platform Windows
     io.ConfigViewportsNoAutoMerge = true;
-    io.ConfigViewportsNoTaskBarIcon = true;
+    io.ConfigViewportsNoTaskBarIcon = true; // TODO: Adapt to having it 'false' and creating a taskbar icon per every window for better traversing
 
     ImGui::StyleColorsDark();
     ImGuiStyle& style = ImGui::GetStyle();
