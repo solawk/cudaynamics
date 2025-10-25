@@ -408,7 +408,7 @@ int imgui_main(int, char**)
     io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;         // Enable Docking
     io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;       // Enable Multi-Viewport / Platform Windows
     io.ConfigViewportsNoAutoMerge = true;
-    io.ConfigViewportsNoTaskBarIcon = false; // TODO: Adapt to having it 'false' and creating a taskbar icon per every window for better traversing
+    io.ConfigViewportsNoTaskBarIcon = true; // TODO: Adapt to having it 'false' and creating a taskbar icon per every window for better traversing
 
     ImGui::StyleColorsDark();
     ImGuiStyle& style = ImGui::GetStyle();
@@ -828,6 +828,8 @@ int imgui_main(int, char**)
                     ImGui::PopItemWidth();
                     attributeValueIndices[i] = index;
 
+                    //printf("%i - %i\n", i, index);
+
                     if (!isEnum)
                     {
                         ImGui::SameLine();
@@ -836,7 +838,21 @@ int imgui_main(int, char**)
                     else
                     {
                         ImGui::SameLine();
-                        ImGui::Text(attr->enumNames[index].c_str());
+
+                        int selEnum = index;
+                        for (int e = 0; e < MAX_ENUMS; e++)
+                        {
+                            if (attr->enumEnabled[e])
+                            {
+                                if (selEnum == 0)
+                                {
+                                    ImGui::Text(attr->enumNames[e].c_str());
+                                    break;
+                                }
+                                else
+                                    selEnum--;
+                            }
+                        }
                     }
 
                     ImGui::SameLine();
