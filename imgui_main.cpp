@@ -2144,7 +2144,7 @@ int imgui_main(int, char**)
                         ImGui::TableSetupColumn(nullptr);
                         if (heatmap->showLegend)
                         {
-                            ImGui::TableSetupColumn(nullptr, ImGuiTableColumnFlags_WidthFixed, 170.0f * 3);
+                            ImGui::TableSetupColumn(nullptr, ImGuiTableColumnFlags_WidthFixed, 170.0f * (isMC ? 3 : 1));
                         }
                         ImGui::TableNextRow();
 
