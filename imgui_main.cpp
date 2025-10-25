@@ -2118,41 +2118,6 @@ int imgui_main(int, char**)
                     Kernel* krnl =                  isHires ? &kernelHiresComputed : &(KERNEL);
                     Computation* cmp =              isHires ? &computationHires : &(computations[playedBufferIndex]);
 
-                    if (isMC)
-                    {
-                        int channels[3]{ window->variables[0], window->variables[1], window->variables[2] };
-                        std::string channelNames[3]{ "R  ", "G  ", "B  " };
-
-                        for (int ch = 0; ch < 3; ch++)
-                        {
-                            ImGui::Text(channelNames[ch].c_str());
-                            ImGui::SameLine();
-
-                            ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.65f);
-                            mapSelectionCombo("##" + window->name + "_channel" + std::to_string(ch), window->variables[ch], true);
-                            ImGui::PopItemWidth();
-
-                            if (channels[ch] == -1) continue;
-                            
-                            int prevValueIndex = heatmap->channel[ch].mapValueIndex;
-                            ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.15f);
-                            mapValueSelectionCombo(window->variables[ch], ch, window->name, heatmap);
-                            ImGui::PopItemWidth();
-                            if (prevValueIndex != heatmap->channel[ch].mapValueIndex)
-                            {
-                                heatmap->areValuesDirty = true;
-                                heatmap->values.areHeatmapLimitsDefined = false;
-                                for (int ch = 0; ch < 3; ch++) heatmap->channel[ch].areHeatmapLimitsDefined = false;
-                            }
-                        }
-
-                        for (int ch = 0; ch < 3; ch++)
-                        {
-                            if (window->variables[ch] != channels[ch]) heatmap->areValuesDirty = true;
-                            channelMapIndex[ch] = window->variables[ch];
-                        }
-                    }
-
                     if (!isMC)
                     {
                         if (!krnl->mapDatas[mapIndex].userEnabled) { ImGui::Text(("Map " + krnl->mapDatas[mapIndex].name + " has been disabled").c_str()); break; }
@@ -2172,19 +2137,14 @@ int imgui_main(int, char**)
                         break;
                     }
 
-                    if (ImGui::BeginTable((plotName + "_table").c_str(), heatmap->showLegend ? (isMC ? 4 : 2) : 1, ImGuiTableFlags_Reorderable, ImVec2(-1, 0)))
+                    if (ImGui::BeginTable((plotName + "_table").c_str(), heatmap->showLegend ? 2 : 1, ImGuiTableFlags_Reorderable, ImVec2(-1, 0)))
                     {
                         axisFlags = 0;
 
                         ImGui::TableSetupColumn(nullptr);
                         if (heatmap->showLegend)
                         {
-                            ImGui::TableSetupColumn(nullptr, ImGuiTableColumnFlags_WidthFixed, 160.0f);
-                            if (isMC)
-                            {
-                                ImGui::TableSetupColumn(nullptr, ImGuiTableColumnFlags_WidthFixed, 160.0f);
-                                ImGui::TableSetupColumn(nullptr, ImGuiTableColumnFlags_WidthFixed, 160.0f);
-                            }
+                            ImGui::TableSetupColumn(nullptr, ImGuiTableColumnFlags_WidthFixed, 170.0f * 3);
                         }
                         ImGui::TableNextRow();
 
@@ -2539,28 +2499,116 @@ int imgui_main(int, char**)
 
                         ImPlot::PopColormap();
 
-                        for (int ch = 0; ch < (isMC ? 3 : 1); ch++)
+                        ImGui::TableSetColumnIndex(1);
+                        if (heatmap->showLegend)
                         {
-                            HeatmapValues* values = !isMC ? &(heatmap->values) : &(heatmap->channel[ch]);
-                            numb minBefore = values->heatmapMin, maxBefore = values->heatmapMax;
-                            if (heatmap->showLegend)
+                            if (isMC)
                             {
-                                ImGui::TableSetColumnIndex(ch + 1);
+                                if (ImGui::BeginTable((plotName + "_rgbColormapsTable").c_str(), 3, ImGuiTableFlags_Reorderable, ImVec2(-1, 0)))
+                                {
+                                    // Column settings
+                                    for (int ch = 0; ch < 3; ch++)
+                                    {
+                                        ImGui::TableSetupColumn(nullptr, ImGuiTableColumnFlags_WidthFixed, 160.0f);
+                                    }
+
+                                    // Map choice
+                                    ImGui::TableNextRow();
+                                    for (int ch = 0; ch < 3; ch++)
+                                    {
+                                        ImGui::TableSetColumnIndex(ch);
+                                        int prevChannel = window->variables[ch];
+
+                                        ImGui::PushItemWidth(160.0f);
+                                        mapSelectionCombo("##" + window->name + "_channel" + std::to_string(ch), window->variables[ch], true);
+                                        ImGui::PopItemWidth();
+
+                                        if (window->variables[ch] != prevChannel)
+                                        {
+                                            heatmap->areValuesDirty = true;
+                                            heatmap->channel[ch].areHeatmapLimitsDefined = false;
+                                        }
+                                    }
+
+                                    // Map value choice
+                                    bool needMapValueRow = false;
+                                    for (int ch = 0; ch < 3; ch++)
+                                    {
+                                        if (window->variables[ch] == -1) continue;
+                                        if (KERNEL.mapDatas[window->variables[ch]].valueCount > 1)
+                                        {
+                                            needMapValueRow = true;
+                                            break;
+                                        }
+                                    }
+                                    if (needMapValueRow)
+                                    {
+                                        ImGui::TableNextRow();
+                                        for (int ch = 0; ch < 3; ch++)
+                                        {
+                                            ImGui::TableSetColumnIndex(ch);
+                                            int prevValueIndex = heatmap->channel[ch].mapValueIndex;
+
+                                            ImGui::PushItemWidth(160.0f);
+                                            mapValueSelectionCombo(window->variables[ch], ch, window->name, heatmap);
+                                            ImGui::PopItemWidth();
+
+                                            if (prevValueIndex != heatmap->channel[ch].mapValueIndex)
+                                            {
+                                                heatmap->areValuesDirty = true;
+                                                heatmap->channel[ch].areHeatmapLimitsDefined = false;
+                                            }
+                                        }
+                                    }
+
+                                    // Colormaps and minmaxes
+                                    ImGui::TableNextRow();
+                                    for (int ch = 0; ch < 3; ch++)
+                                    {
+                                        ImGui::TableSetColumnIndex(ch);
+
+                                        HeatmapValues* values = &(heatmap->channel[ch]);
+                                        numb minBefore = values->heatmapMin, maxBefore = values->heatmapMax;
+                                        
+                                        float heatMinFloat = values->heatmapMin, heatMaxFloat = values->heatmapMax;
+                                        std::string maxName = "Max##Max" + std::to_string(ch);
+                                        std::string minName = "Min##Min" + std::to_string(ch);
+                                        std::string colormapName = "##HeatScale_" + std::to_string(ch);
+
+                                        ImGui::SetNextItemWidth(120);
+                                        ImGui::DragFloat(maxName.c_str(), &heatMaxFloat, 0.01f);
+                                        ImPlot::ColormapScale(colormapName.c_str(), values->heatmapMin, values->heatmapMax, ImVec2(120, plotSize.y - 30.0f), "%g", 0, multichannelHeatmapColormaps[ch]);
+                                        ImGui::SetNextItemWidth(120);
+                                        ImGui::DragFloat(minName.c_str(), &heatMinFloat, 0.01f);
+
+                                        values->heatmapMin = (numb)heatMinFloat; values->heatmapMax = (numb)heatMaxFloat;
+
+                                        if (minBefore != values->heatmapMin || maxBefore != values->heatmapMax) heatmap->isHeatmapDirty = true;
+                                    }
+
+                                    ImGui::EndTable();
+                                }
+                            }
+                            else
+                            {
+                                HeatmapValues* values = &(heatmap->values);
+                                numb minBefore = values->heatmapMin, maxBefore = values->heatmapMax;
+
                                 float heatMinFloat = values->heatmapMin, heatMaxFloat = values->heatmapMax;
-                                std::string maxName = "Max##Max" + std::to_string(ch);
-                                std::string minName = "Min##Min" + std::to_string(ch);
-                                std::string colormapName = "##HeatScale_" + std::to_string(ch);
+                                std::string maxName = "Max##Max";
+                                std::string minName = "Min##Min";
+                                std::string colormapName = "##HeatScale";
 
                                 ImGui::SetNextItemWidth(120);
                                 ImGui::DragFloat(maxName.c_str(), &heatMaxFloat, 0.01f);
-                                ImPlot::ColormapScale(colormapName.c_str(), values->heatmapMin, values->heatmapMax, ImVec2(120, plotSize.y - 30.0f), "%g", 0,
-                                    !isMC ? heatmap->colormap : multichannelHeatmapColormaps[ch]);
+                                ImPlot::ColormapScale(colormapName.c_str(), values->heatmapMin, values->heatmapMax, ImVec2(120, plotSize.y - 30.0f), "%g", 0, heatmap->colormap);
                                 ImGui::SetNextItemWidth(120);
                                 ImGui::DragFloat(minName.c_str(), &heatMinFloat, 0.01f);
 
                                 values->heatmapMin = (numb)heatMinFloat; values->heatmapMax = (numb)heatMaxFloat;
+
+                                if (minBefore != values->heatmapMin || maxBefore != values->heatmapMax) heatmap->isHeatmapDirty = true;
                             }
-                            if (minBefore != values->heatmapMin || maxBefore != values->heatmapMax) heatmap->isHeatmapDirty = true;
                         }
 
                         if (window->whiteBg) ImPlot::PopStyleColor(2);

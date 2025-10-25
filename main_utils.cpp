@@ -166,6 +166,7 @@ Kernel readKernelText(std::string name)
 
 			tempMapData.typeX = tempMapData.typeY = MDT_Variable;
 			tempMapData.indexX = tempMapData.indexY = 0;
+			tempMapData.userEnabled = true;
 
 			kernel.mapDatas.push_back(tempMapData);
 		}

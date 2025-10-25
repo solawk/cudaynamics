@@ -287,8 +287,7 @@ void mapValueSelectionCombo(int index, int channelIndex, std::string windowName,
     bool isSingleValue = mapData->valueCount == 1;
     if (!isSingleValue)
     {
-        ImGui::SameLine();
-        ImGui::DragInt(("##" + windowName + "_index" + std::to_string(index) + "value").c_str(),
+        ImGui::DragInt(("##" + windowName + "_index" + std::to_string(index) + "valueInChannel" + std::to_string(channelIndex)).c_str(),
             channelIndex == -1 ? &(heatmap->values.mapValueIndex) : &(heatmap->channel[channelIndex].mapValueIndex), 1.0f, 0, mapData->valueCount - 1, "%d", 0);
     }
 }
