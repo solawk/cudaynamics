@@ -15,6 +15,7 @@ extern bool autofitHeatmap;
 extern PlotWindow* colorsLUTfrom;
 extern int paintLUTsize;
 extern PlotWindow* hiresHeatmapWindow;
+extern Kernel kernelNew, kernelHiresNew;
 
 void plotWindowMenu(PlotWindow* window)
 {
@@ -32,8 +33,15 @@ void plotWindowMenu(PlotWindow* window)
 			bool isHires = window == hiresHeatmapWindow;
 			if (ImGui::Checkbox(("Hi-Res Mode##" + window->name + "_hirescheckbox").c_str(), &isHires))
 			{
-				if (window == hiresHeatmapWindow) hiresHeatmapWindow = nullptr;
-				else hiresHeatmapWindow = window;
+				if (window == hiresHeatmapWindow)
+				{
+					hiresHeatmapWindow = nullptr;
+				}
+				else
+				{
+					hiresHeatmapWindow = window;
+					kernelHiresNew.CopyFrom(&kernelNew);
+				}
 			}
 		}
 		if (window->type == Orbit) plotWindowMenu_OrbitPlot(window);

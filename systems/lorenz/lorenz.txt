@@ -23,8 +23,8 @@ Execute on launch: yes
 var x Fixed 10.0 50.0 1.0 100 0.0 0.0
 var y Fixed 10.0 50.0 0.1 50 0.0 0.0
 var z Fixed 10.0 29.0 0.1 0 0.0 0.0
-param sigma Linear 10.0 50.0 0.1 500 0.0 0.0
-param rho Linear 28.0 50.0 0.1 500 0.0 0.0
+param sigma Linear 10.0 50.0 0.1 200 0.0 0.0
+param rho Linear 28.0 50.0 0.1 200 0.0 0.0
 param beta Fixed 2.666667 29.0 0.1 0 0.0 0.0
 param symmetry Fixed 0.0 1.0 0.01 100 0.0 0.0
 // "symmetry" parameter will only be displayed if method equals VariableSymmetryCD
