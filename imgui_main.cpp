@@ -22,6 +22,7 @@ Computation computationHires;
 int playedBufferIndex = 0; // Buffer currently shown
 int bufferToFillIndex = 0; // Buffer to send computations to
 std::vector<int> attributeValueIndices; // Currently selected indices of ranging attributes
+std::vector<int> attributeValueIndicesHires; // Currently selected indices of ranging attributes
 
 bool autoLoadNewParams = false;
 PlotWindow* hiresHeatmapWindow = nullptr;
@@ -74,6 +75,8 @@ ImGuiCustomStyle appStyle = ImGuiCustomStyle::Dark;
 // Temporary variables
 int variation = 0;
 int prevVariation = 0;
+int variationHires = 0;
+int prevVariationHires = 0;
 int stride = 1;
 float frameTime; // In seconds
 float timeElapsed = 0.0f; // Total time elapsed, in seconds
@@ -135,11 +138,16 @@ void resetTempBuffers(Computation* data)
 // Initialize the Attribute Value Indeces vector for ranging
 void initAVI(bool hires)
 {
-    attributeValueIndices.clear();
     if (!hires)
+    {
+        attributeValueIndices.clear();
         for (int i = 0; i < kernelNew.VAR_COUNT + kernelNew.PARAM_COUNT; i++) attributeValueIndices.push_back(0);
+    }
     else
-        for (int i = 0; i < kernelHiresNew.VAR_COUNT + kernelHiresNew.PARAM_COUNT; i++) attributeValueIndices.push_back(0);
+    {
+        attributeValueIndicesHires.clear();
+        for (int i = 0; i < kernelHiresNew.VAR_COUNT + kernelHiresNew.PARAM_COUNT; i++) attributeValueIndicesHires.push_back(0);
+    }
 }
 
 numb getStepSize(Kernel& kernel)
@@ -353,6 +361,7 @@ void prepareAndCompute(bool hires)
     {
         kernelHiresComputed.CopyFrom(&kernelHiresNew);
         kernelHiresComputed.PrepareAttributes();
+        kernelHiresComputed.AssessMapAttributes(&attributeValueIndicesHires);
 
         hiresComputing();
     }
@@ -811,77 +820,82 @@ int imgui_main(int, char**)
 
             ImGui::NewLine();
 
-            // RANGING, ORBIT MODE
-            if (computations[playedBufferIndex].ready)
-            {
-                for (int i = 0; i < KERNEL.VAR_COUNT + KERNEL.PARAM_COUNT; i++)
-                {
-                    bool isVar = i < KERNEL.VAR_COUNT;
-                    Attribute* attr = isVar ? &(computations[playedBufferIndex].marshal.kernel.variables[i]) : &(computations[playedBufferIndex].marshal.kernel.parameters[i - KERNEL.VAR_COUNT]);
-                    Attribute* kernelNewAttr = isVar ? &(kernelNew.variables[i]) : &(kernelNew.parameters[i - KERNEL.VAR_COUNT]);
-                    bool isEnum = attr->rangingType == RT_Enum;
-
-                    if (attr->TrueStepCount() == 1) continue;
-
-                    ImGui::Text(padString(attr->name, maxNameLength).c_str()); ImGui::SameLine();
-                    int index = attributeValueIndices[i];
-                    ImGui::PushItemWidth(150.0f);
-                    ImGui::SliderInt(("##RangingNo_" + std::to_string(i)).c_str(), &index, 0, attr->stepCount - 1, "Step: %d");
-                    ImGui::PopItemWidth();
-                    attributeValueIndices[i] = index;
-
-                    //printf("%i - %i\n", i, index);
-
-                    if (!isEnum)
-                    {
-                        ImGui::SameLine();
-                        ImGui::Text(("Value: " + std::to_string(calculateValue(attr->min, attr->step, index))).c_str());
-                    }
-                    else
-                    {
-                        ImGui::SameLine();
-
-                        int selEnum = index;
-                        for (int e = 0; e < MAX_ENUMS; e++)
-                        {
-                            if (attr->enumEnabled[e])
-                            {
-                                if (selEnum == 0)
-                                {
-                                    ImGui::Text(attr->enumNames[e].c_str());
-                                    break;
-                                }
-                                else
-                                    selEnum--;
-                            }
-                        }
-                    }
-
-                    ImGui::SameLine();
-                    if (ImGui::Button(("Fix##FixRanging" + std::to_string(i)).c_str()))
-                    {
-                        if (!isEnum)
-                        {
-                            kernelNewAttr->rangingType = RT_None;
-                            kernelNewAttr->min = calculateValue(attr->min, attr->step, index);
-                        }
-                        else
-                        {
-                            for (int i = 0; i < attr->enumCount; i++) kernelNewAttr->enumEnabled[i] = false;
-                            kernelNewAttr->enumEnabled[index] = true;
-                        }
-
-                        playingParticles = false;
-                    }
-                }
-
-                steps2Variation(&variation, &(attributeValueIndices.data()[0]), &KERNEL);
-            }
-
             if (ImGui::Button("Next buffer"))
             {
                 switchPlayedBuffer(); OrbitRedraw = true;
             }
+        }
+
+        // Ranging
+
+        Kernel* rangingKernel = !HIRES_ON ? &(KERNEL) : &kernelHiresComputed;
+        Kernel* rangingKernelNew = !HIRES_ON ? &kernelNew : &kernelHiresNew;
+        Computation* rangingCmp = !HIRES_ON ? &(computations[playedBufferIndex]) : &computationHires;
+        std::vector<int>* rangingAVI = !HIRES_ON ? &attributeValueIndices : &attributeValueIndicesHires;
+        if (rangingCmp->ready)
+        {
+            for (int i = 0; i < KERNEL.VAR_COUNT + KERNEL.PARAM_COUNT; i++)
+            {
+                bool isVar = i < KERNEL.VAR_COUNT;
+                Attribute* attr = isVar ? &(rangingCmp->marshal.kernel.variables[i]) : &(rangingCmp->marshal.kernel.parameters[i - rangingKernel->VAR_COUNT]);
+                Attribute* kernelNewAttr = isVar ? &(rangingKernelNew->variables[i]) : &(rangingKernelNew->parameters[i - rangingKernel->VAR_COUNT]);
+                bool isEnum = attr->rangingType == RT_Enum;
+
+                if (attr->TrueStepCount() == 1) continue;
+
+                ImGui::Text(padString(attr->name, maxNameLength).c_str()); ImGui::SameLine();
+                int index = (*rangingAVI)[i];
+                ImGui::PushItemWidth(150.0f);
+                ImGui::SliderInt(("##RangingNo_" + std::to_string(i)).c_str(), &index, 0, attr->stepCount - 1, "Step: %d");
+                ImGui::PopItemWidth();
+                (*rangingAVI)[i] = index;
+
+                //printf("%i - %i\n", i, index);
+
+                if (!isEnum)
+                {
+                    ImGui::SameLine();
+                    ImGui::Text(("Value: " + std::to_string(calculateValue(attr->min, attr->step, index))).c_str());
+                }
+                else
+                {
+                    ImGui::SameLine();
+
+                    int selEnum = index;
+                    for (int e = 0; e < MAX_ENUMS; e++)
+                    {
+                        if (attr->enumEnabled[e])
+                        {
+                            if (selEnum == 0)
+                            {
+                                ImGui::Text(attr->enumNames[e].c_str());
+                                break;
+                            }
+                            else
+                                selEnum--;
+                        }
+                    }
+                }
+
+                ImGui::SameLine();
+                if (ImGui::Button(("Fix##FixRanging" + std::to_string(i)).c_str()))
+                {
+                    if (!isEnum)
+                    {
+                        kernelNewAttr->rangingType = RT_None;
+                        kernelNewAttr->min = calculateValue(attr->min, attr->step, index);
+                    }
+                    else
+                    {
+                        for (int i = 0; i < attr->enumCount; i++) kernelNewAttr->enumEnabled[i] = false;
+                        kernelNewAttr->enumEnabled[index] = true;
+                    }
+
+                    playingParticles = false;
+                }
+            }
+
+            steps2Variation(!HIRES_ON ? &variation : &variationHires, &(rangingAVI->data()[0]), rangingKernel);
         }
 
         // COMMON
@@ -2119,6 +2133,9 @@ int imgui_main(int, char**)
                     HeatmapProperties* heatmap =    isHires ? &window->hireshmp : &window->hmp;
                     Kernel* krnl =                  isHires ? &kernelHiresComputed : &(KERNEL);
                     Computation* cmp =              isHires ? &computationHires : &(computations[playedBufferIndex]);
+                    std::vector<int>* avi =         isHires ? &attributeValueIndicesHires : &attributeValueIndices;
+                    int* var =                      isHires ? &variationHires : &variation;
+                    int* prevVar =                  isHires ? &prevVariationHires : &prevVariation;
 
                     if (!isMC)
                     {
@@ -2176,21 +2193,21 @@ int imgui_main(int, char**)
                                     heatmap->initClickedLocation = false;
                                 }
 
-                                if (!isHires)
+                                if (1)
                                 {
                                     if (heatmap->showActualDiapasons)
                                     {
                                         // Values
                                         heatmap->lastClickedLocation.x = (float)valueFromStep(sizing.minX, sizing.stepX,
-                                            attributeValueIndices[sizing.hmp->indexX + (sizing.hmp->typeX == MDT_Variable ? 0 : krnl->VAR_COUNT)]);
+                                            (*avi)[sizing.hmp->indexX + (sizing.hmp->typeX == MDT_Variable ? 0 : krnl->VAR_COUNT)]);
                                         heatmap->lastClickedLocation.y = (float)valueFromStep(sizing.minY, sizing.stepY,
-                                            attributeValueIndices[sizing.hmp->indexY + (sizing.hmp->typeY == MDT_Variable ? 0 : krnl->VAR_COUNT)]);
+                                            (*avi)[sizing.hmp->indexY + (sizing.hmp->typeY == MDT_Variable ? 0 : krnl->VAR_COUNT)]);
                                     }
                                     else
                                     {
                                         // Steps
-                                        heatmap->lastClickedLocation.x = (float)attributeValueIndices[sizing.hmp->indexX + (sizing.hmp->typeX == MDT_Variable ? 0 : krnl->VAR_COUNT)];
-                                        heatmap->lastClickedLocation.y = (float)attributeValueIndices[sizing.hmp->indexY + (sizing.hmp->typeY == MDT_Variable ? 0 : krnl->VAR_COUNT)];
+                                        heatmap->lastClickedLocation.x = (float)(*avi)[sizing.hmp->indexX + (sizing.hmp->typeX == MDT_Variable ? 0 : krnl->VAR_COUNT)];
+                                        heatmap->lastClickedLocation.y = (float)(*avi)[sizing.hmp->indexY + (sizing.hmp->typeY == MDT_Variable ? 0 : krnl->VAR_COUNT)];
                                     }
 
                                     // Choosing configuration
@@ -2219,12 +2236,12 @@ int imgui_main(int, char**)
                                         {
                                         case MDT_Variable:
                                             IGNOREOUTOFREACH;
-                                            attributeValueIndices[sizing.hmp->indexX] = stepX;
+                                            (*avi)[sizing.hmp->indexX] = stepX;
                                             heatmap->lastClickedLocation.x = plot->shiftClickLocation.x;
                                             break;
                                         case MDT_Parameter:
                                             IGNOREOUTOFREACH;
-                                            attributeValueIndices[krnl->VAR_COUNT + sizing.hmp->indexX] = stepX;
+                                            (*avi)[krnl->VAR_COUNT + sizing.hmp->indexX] = stepX;
                                             heatmap->lastClickedLocation.x = plot->shiftClickLocation.x;
                                             break;
                                         }
@@ -2233,23 +2250,48 @@ int imgui_main(int, char**)
                                         {
                                         case MDT_Variable:
                                             IGNOREOUTOFREACH;
-                                            attributeValueIndices[sizing.hmp->indexY] = stepY;
+                                            (*avi)[sizing.hmp->indexY] = stepY;
                                             heatmap->lastClickedLocation.y = plot->shiftClickLocation.y;
                                             break;
                                         case MDT_Parameter:
                                             IGNOREOUTOFREACH;
-                                            attributeValueIndices[krnl->VAR_COUNT + sizing.hmp->indexY] = stepY;
+                                            (*avi)[krnl->VAR_COUNT + sizing.hmp->indexY] = stepY;
                                             heatmap->lastClickedLocation.y = plot->shiftClickLocation.y;
                                             break;
                                         }
                                     }
 
+                                    if (isHires)
+                                    {
+                                        if (plot->shiftClicked && plot->shiftClickLocation.x != 0.0)
+                                        {
+                                            numb valueX = 0.0; numb valueY = 0.0;
+
+                                            if (heatmap->showActualDiapasons)
+                                            {
+                                                // Values
+                                                valueX = plot->shiftClickLocation.x;
+                                                valueY = plot->shiftClickLocation.y;
+                                                window->dragLineHiresPos = ImVec2((float)valueX, (float)valueY);
+                                            }
+                                            else
+                                            {
+                                                // Steps
+                                                valueX = valueFromStep(sizing.minX, sizing.stepX, (int)floor(plot->shiftClickLocation.x));
+                                                valueY = valueFromStep(sizing.minY, sizing.stepY, (int)floor(plot->shiftClickLocation.y));
+                                                window->dragLineHiresPos = ImVec2(floor(plot->shiftClickLocation.x), floor(plot->shiftClickLocation.y));
+                                            }
+
+                                            hiresShiftClickCompute(window, &sizing, valueX, valueY);
+                                        }
+                                    }
+
                                     if (plot->shiftSelected)
                                     {
-                                        heatmapRangingSelection(window, plot, &sizing, false);
+                                        heatmapRangingSelection(window, plot, &sizing, isHires);
                                     }
                                 }
-                                else
+                                /*else
                                 {
                                     if (plot->shiftClicked && plot->shiftClickLocation.x != 0.0)
                                     {
@@ -2277,7 +2319,7 @@ int imgui_main(int, char**)
                                     {
                                         heatmapRangingSelection(window, plot, &sizing, true);
                                     }
-                                }
+                                }*/
 
                                 sizing.initCutoff((float)plot->Axes[plot->CurrentX].Range.Min, (float)plot->Axes[plot->CurrentY].Range.Min,
                                     (float)plot->Axes[plot->CurrentX].Range.Max, (float)plot->Axes[plot->CurrentY].Range.Max, heatmap->showActualDiapasons);
@@ -2335,14 +2377,14 @@ int imgui_main(int, char**)
                                     heatmap->areValuesDirty = true;
                                 }
 
-                                if (variation != prevVariation) heatmap->areValuesDirty = true;
+                                if (*var != *prevVar) heatmap->areValuesDirty = true;
 
                                 if (heatmap->areValuesDirty)
                                 {
                                     if (!isMC)
                                     {
                                         extractMap(cmp->marshal.maps + (cmp->marshal.kernel.mapDatas[mapIndex].offset + heatmap->values.mapValueIndex) * cmp->marshal.totalVariations,
-                                            heatmap->values.valueBuffer, heatmap->indexBuffer, &(attributeValueIndices.data()[0]),
+                                            heatmap->values.valueBuffer, heatmap->indexBuffer, &(avi->data()[0]),
                                             sizing.hmp->typeX == MDT_Parameter ? sizing.hmp->indexX + krnl->VAR_COUNT : sizing.hmp->indexX,
                                             sizing.hmp->typeY == MDT_Parameter ? sizing.hmp->indexY + krnl->VAR_COUNT : sizing.hmp->indexY,
                                             krnl);
@@ -2355,7 +2397,7 @@ int imgui_main(int, char**)
                                             if (!cmp->marshal.kernel.mapDatas[channelMapIndex[c]].toCompute) continue;
 
                                             extractMap(cmp->marshal.maps + (cmp->marshal.kernel.mapDatas[channelMapIndex[c]].offset + heatmap->channel[c].mapValueIndex) * cmp->marshal.totalVariations,
-                                                heatmap->channel[c].valueBuffer, heatmap->indexBuffer, &(attributeValueIndices.data()[0]),
+                                                heatmap->channel[c].valueBuffer, heatmap->indexBuffer, &(avi->data()[0]),
                                                 sizing.hmp->typeX == MDT_Parameter ? sizing.hmp->indexX + krnl->VAR_COUNT : sizing.hmp->indexX,
                                                 sizing.hmp->typeY == MDT_Parameter ? sizing.hmp->indexY + krnl->VAR_COUNT : sizing.hmp->indexY,
                                                 krnl);
@@ -2388,7 +2430,7 @@ int imgui_main(int, char**)
                                 }
 
                                 // Do not reload values when variating map axes (map values don't change anyway)
-                                if (variation != prevVariation) heatmap->isHeatmapDirty = true;
+                                if (*var != *prevVar) heatmap->isHeatmapDirty = true;
 
                                 // Image init
                                 if (heatmap->isHeatmapDirty)
@@ -2478,16 +2520,16 @@ int imgui_main(int, char**)
                                 {
                                     double valueX, valueY;
 
-                                    if (!isHires)
+                                    if (1)
                                     {
                                         valueX = (double)heatmap->lastClickedLocation.x + (heatmap->showActualDiapasons ? sizing.stepX * 0.5 : 0.5);
                                         valueY = (double)heatmap->lastClickedLocation.y + (heatmap->showActualDiapasons ? sizing.stepY * 0.5 : 0.5);
                                     }
-                                    else
+                                    /*else
                                     {
                                         valueX = (double)window->dragLineHiresPos.x;
                                         valueY = (double)window->dragLineHiresPos.y;
-                                    }
+                                    }*/
 
                                     ImPlot::DragLineX(0, &valueX, window->markerColor,window->markerWidth, ImPlotDragToolFlags_NoInputs);
                                     ImPlot::DragLineY(1, &valueY, window->markerColor, window->markerWidth, ImPlotDragToolFlags_NoInputs);
@@ -2628,6 +2670,7 @@ int imgui_main(int, char**)
         IMGUI_WORK_END;
 
         prevVariation = variation;
+        prevVariationHires = variationHires;
     }
 
     saveWindows();
@@ -2833,7 +2876,23 @@ void heatmapRangingSelection(PlotWindow* window, ImPlotPlot* plot, HeatmapSizing
 
 void hiresShiftClickCompute(PlotWindow* window, HeatmapSizing* sizing, numb valueX, numb valueY)
 {
-    kernelNew.CopyFrom(&kernelHiresNew);
+    kernelNew.CopyFrom(&kernelHiresComputed);
+
+    for (int v = 0; v < kernelNew.VAR_COUNT; v++)
+    {
+        kernelNew.variables[v].rangingType = RT_None;
+        kernelNew.variables[v].min = valueFromStep(kernelNew.variables[v].min, kernelNew.variables[v].step, attributeValueIndicesHires[v]);
+    }
+
+    for (int p = 0; p < kernelNew.PARAM_COUNT; p++)
+    {
+        if (kernelNew.parameters[p].rangingType != RT_Enum) kernelNew.parameters[p].rangingType = RT_None;
+        kernelNew.parameters[p].min = valueFromStep(kernelNew.parameters[p].min, kernelNew.parameters[p].step, attributeValueIndicesHires[kernelNew.VAR_COUNT + p]);
+    }
+
+    /*
+    for (int i = 0; i < kernelNew.VAR_COUNT; i++) kernelNew.variables[i].rangingType = RT_None;
+    for (int i = 0; i < kernelNew.PARAM_COUNT; i++) if (kernelNew.parameters[i].rangingType != RT_Enum) kernelNew.parameters[i].rangingType = RT_None;
 
     if (sizing->hmp->typeX == MDT_Variable)
     {
@@ -2855,7 +2914,7 @@ void hiresShiftClickCompute(PlotWindow* window, HeatmapSizing* sizing, numb valu
     {
         kernelNew.parameters[sizing->hmp->indexY].min = valueY;
         kernelNew.parameters[sizing->hmp->indexY].rangingType = RT_None;
-    }
+    }*/
 
     autoLoadNewParams = false; // Otherwise the map immediately starts drawing the cut region
     computeAfterShiftSelect = true;
