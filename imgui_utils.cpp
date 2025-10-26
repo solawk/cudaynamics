@@ -441,12 +441,16 @@ void setVaryingAttributesToHeatmaps(std::vector<PlotWindow>& windows, Kernel& k)
 		{
 			windows[i].hmp.indexX = a1;
 			windows[i].hmp.typeX = isVar1 ? MDT_Variable : MDT_Parameter;
+			windows[i].hireshmp.indexX = a1;
+			windows[i].hireshmp.typeX = isVar1 ? MDT_Variable : MDT_Parameter;
 		}
 
 		if (acq2)
 		{
 			windows[i].hmp.indexY = a2;
 			windows[i].hmp.typeY = isVar2 ? MDT_Variable : MDT_Parameter;
+			windows[i].hireshmp.indexY = a2;
+			windows[i].hireshmp.typeY = isVar2 ? MDT_Variable : MDT_Parameter;
 		}
 	}
 }
