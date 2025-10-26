@@ -8,6 +8,7 @@
 #include <vector>
 #include <implot_internal.h>
 #include "attribute_struct.h"
+#include "kernel_struct.h"
 
 const float DEG2RAD = 3.141592f / 180.0f;
 
@@ -42,3 +43,6 @@ int getVariationGroup(colorLUT* lut, int variation);
 
 int findParameterByName(std::string name);
 bool isEnumEnabledByString(Attribute& enumAttribute, std::string str);
+
+void setVaryingAttributesToHeatmaps(std::vector<PlotWindow>& windows, Kernel& k);
+void getVaryingAttributes(Kernel& k, bool& acq1, bool& acq2, int& a1, int& a2, bool& isVar1, bool& isVar2);

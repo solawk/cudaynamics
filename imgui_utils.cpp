@@ -426,3 +426,74 @@ bool isEnumEnabledByString(Attribute& enumAttribute, std::string str)
 	printf("Enum does not have an option by name %s\n", str.c_str());
 	return true;
 }
+
+void setVaryingAttributesToHeatmaps(std::vector<PlotWindow>& windows, Kernel& k)
+{
+	bool acq1, acq2;
+	int a1, a2;
+	bool isVar1, isVar2;
+
+	getVaryingAttributes(k, acq1, acq2, a1, a2, isVar1, isVar2);
+
+	for (int i = 0; i < windows.size(); i++)
+	{
+		if (acq1)
+		{
+			windows[i].hmp.indexX = a1;
+			windows[i].hmp.typeX = isVar1 ? MDT_Variable : MDT_Parameter;
+		}
+
+		if (acq2)
+		{
+			windows[i].hmp.indexY = a2;
+			windows[i].hmp.typeY = isVar2 ? MDT_Variable : MDT_Parameter;
+		}
+	}
+}
+
+void getVaryingAttributes(Kernel& k, bool& acq1, bool& acq2, int& a1, int& a2, bool& isVar1, bool& isVar2)
+{
+	acq1 = false;
+	acq2 = false;
+
+	for (int i = 0; i < k.VAR_COUNT; i++)
+	{
+		if (k.variables[i].TrueStepCount() > 1)
+		{
+			if (!acq1)
+			{
+				acq1 = true;
+				a1 = i;
+				isVar1 = true;
+				acq1 = true;
+			}
+			else if (!acq2)
+			{
+				a2 = i;
+				isVar2 = true;
+				acq2 = true;
+				return;
+			}
+		}
+	}
+
+	for (int i = 0; i < k.PARAM_COUNT; i++)
+	{
+		if (k.parameters[i].TrueStepCount() > 1)
+		{
+			if (!acq1)
+			{
+				a1 = i;
+				isVar1 = false;
+				acq1 = true;
+			}
+			else if (!acq2)
+			{
+				a2 = i;
+				isVar2 = false;
+				acq2 = true;
+				return;
+			}
+		}
+	}
+}

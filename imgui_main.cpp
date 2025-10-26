@@ -461,6 +461,7 @@ int imgui_main(int, char**)
 
     try { loadWindows(); }
     catch (std::exception e) { printf(e.what()); }
+    setVaryingAttributesToHeatmaps(plotWindows, KERNEL);
 
     fullscreenSize = ImVec2((float)GetSystemMetrics(SM_CXSCREEN), (float)GetSystemMetrics(SM_CYSCREEN));
 
@@ -508,6 +509,7 @@ int imgui_main(int, char**)
                     playingParticles = false;
 
                     loadWindows();
+                    setVaryingAttributesToHeatmaps(plotWindows, KERNEL);
                 }
             }
 

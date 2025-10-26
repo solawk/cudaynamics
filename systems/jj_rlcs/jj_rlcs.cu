@@ -48,7 +48,7 @@ __global__ void kernelProgram_jj_rlcs(Computation* data)
     {
         DBSCAN_Settings dbscan_settings(MS(Period, 0), MS(MeanInterval, 0), MS(Period, 1), MS(Period, 2), MS(MeanInterval, 1), MS(MeanInterval, 2), MS(MeanInterval, 3), MS(MeanInterval, 4),
             H);
-        Period(data, dbscan_settings, variation, &finiteDifferenceScheme_jj_mrlcs, MO(Period), MO(MeanPeak), MO(MeanInterval));
+        Period(data, dbscan_settings, variation, &finiteDifferenceScheme_jj_rlcs, MO(Period), MO(MeanPeak), MO(MeanInterval));
     }
 }
 
