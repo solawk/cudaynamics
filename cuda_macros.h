@@ -86,7 +86,7 @@
                                 }  \
                             }*/
 
-#define TRANSIENT_SKIP_NEW(FDS)      if (data->isFirst)  \
+#define TRANSIENT_SKIP_NEW(FDS)      if (CUDA_kernel.transientSteps > 0 && data->isFirst)  \
                             {  \
                                 numb transientBuffer[MAX_ATTRIBUTES];  \
                                 for (int ts = 0; ts < CUDA_kernel.transientSteps; ts++)  \
