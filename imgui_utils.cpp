@@ -427,6 +427,31 @@ bool isEnumEnabledByString(Attribute& enumAttribute, std::string str)
 	return true;
 }
 
+void setVaryingAttributesToOneWindow(PlotWindow& window, Kernel& k)
+{
+	bool acq1, acq2;
+	int a1, a2;
+	bool isVar1, isVar2;
+
+	getVaryingAttributes(k, acq1, acq2, a1, a2, isVar1, isVar2);
+
+	if (acq1)
+	{
+		window.hmp.indexX = a1;
+		window.hmp.typeX = isVar1 ? MDT_Variable : MDT_Parameter;
+		window.hireshmp.indexX = a1;
+		window.hireshmp.typeX = isVar1 ? MDT_Variable : MDT_Parameter;
+	}
+
+	if (acq2)
+	{
+		window.hmp.indexY = a2;
+		window.hmp.typeY = isVar2 ? MDT_Variable : MDT_Parameter;
+		window.hireshmp.indexY = a2;
+		window.hireshmp.typeY = isVar2 ? MDT_Variable : MDT_Parameter;
+	}
+}
+
 void setVaryingAttributesToHeatmaps(std::vector<PlotWindow>& windows, Kernel& k)
 {
 	bool acq1, acq2;
@@ -437,21 +462,7 @@ void setVaryingAttributesToHeatmaps(std::vector<PlotWindow>& windows, Kernel& k)
 
 	for (int i = 0; i < windows.size(); i++)
 	{
-		if (acq1)
-		{
-			windows[i].hmp.indexX = a1;
-			windows[i].hmp.typeX = isVar1 ? MDT_Variable : MDT_Parameter;
-			windows[i].hireshmp.indexX = a1;
-			windows[i].hireshmp.typeX = isVar1 ? MDT_Variable : MDT_Parameter;
-		}
-
-		if (acq2)
-		{
-			windows[i].hmp.indexY = a2;
-			windows[i].hmp.typeY = isVar2 ? MDT_Variable : MDT_Parameter;
-			windows[i].hireshmp.indexY = a2;
-			windows[i].hireshmp.typeY = isVar2 ? MDT_Variable : MDT_Parameter;
-		}
+		setVaryingAttributesToOneWindow(windows[i], k);
 	}
 }
 

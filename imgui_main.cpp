@@ -1168,6 +1168,7 @@ int imgui_main(int, char**)
                     }
                 }
 
+                setVaryingAttributesToOneWindow(plotWindow, KERNEL);
                 plotWindows.push_back(plotWindow);
 
                 if (indexOfColorsLutFrom != -1) colorsLUTfrom = &(plotWindows[indexOfColorsLutFrom]);

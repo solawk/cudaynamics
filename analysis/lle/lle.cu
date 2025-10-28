@@ -36,7 +36,7 @@ __device__ void LLE(Computation* data, LLE_Settings settings, int variation, voi
             LLE_array[i] = LLE_array_next[i];
 
         // LLE calculations
-        if (s % L == 0)
+        if (s > 0 && s % L == 0)
         {
             numb norm = 0.0;
             for (int i = 0; i < MAX_LLE_NORM_VARIABLES; i++)

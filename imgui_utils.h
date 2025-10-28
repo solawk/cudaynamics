@@ -44,5 +44,6 @@ int getVariationGroup(colorLUT* lut, int variation);
 int findParameterByName(std::string name);
 bool isEnumEnabledByString(Attribute& enumAttribute, std::string str);
 
+void setVaryingAttributesToOneWindow(PlotWindow& window, Kernel& k);
 void setVaryingAttributesToHeatmaps(std::vector<PlotWindow>& windows, Kernel& k);
 void getVaryingAttributes(Kernel& k, bool& acq1, bool& acq2, int& a1, int& a2, bool& isVar1, bool& isVar2);
