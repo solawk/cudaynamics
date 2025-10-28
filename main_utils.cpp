@@ -130,7 +130,8 @@ Kernel readKernelText(std::string name)
 			tempAttribute.CalcStepCount();
 
 			tempAttribute.enumCount = (int)str.size() - 2;
-			for (int i = 0; i < tempAttribute.enumCount && i < MAX_ENUMS; i++)
+			if (tempAttribute.enumCount > MAX_ENUMS) tempAttribute.enumCount = MAX_ENUMS;
+			for (int i = 0; i < tempAttribute.enumCount; i++)
 			{
 				tempAttribute.enumEnabled[i] = str[2 + i][0] == '1';
 				str[2 + i] = str[2 + i].substr(1);

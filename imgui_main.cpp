@@ -2888,6 +2888,11 @@ void hiresShiftClickCompute(PlotWindow* window, HeatmapSizing* sizing, numb valu
     for (int p = 0; p < kernelNew.PARAM_COUNT; p++)
     {
         if (kernelNew.parameters[p].rangingType != RT_Enum) kernelNew.parameters[p].rangingType = RT_None;
+        else
+        {
+            for (int i = 0; i < MAX_ENUMS; i++) kernelNew.parameters[p].enumEnabled[i] = false;
+            kernelNew.parameters[p].enumEnabled[attributeValueIndicesHires[kernelNew.VAR_COUNT + p]] = true;
+        }
         kernelNew.parameters[p].min = valueFromStep(kernelNew.parameters[p].min, kernelNew.parameters[p].step, attributeValueIndicesHires[kernelNew.VAR_COUNT + p]);
     }
 
