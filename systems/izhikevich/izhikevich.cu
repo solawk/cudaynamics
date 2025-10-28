@@ -3,9 +3,10 @@
 
 namespace attributes
 {
-    enum variables { v, u, I, t };
-    enum parameters { a, b, c, d, p0, p1, p2, p3, Imax, Idc, method, COUNT };
-    enum methods { ExplicitEuler };
+    enum variables { v, u, i, t };
+    enum parameters { a, b, c, d, p0, p1, p2, p3, Idc, Iamp, Ifreq, Idel, Idf, symmetry, signal, method, COUNT };
+	enum waveforms { square };
+    enum methods { ExplicitEuler, SemiExplicitEuler};
     enum maps { LLE, MAX, MeanInterval, MeanPeak, Period };
 }
 
@@ -54,18 +55,33 @@ __global__ void kernelProgram_izhikevich(Computation* data)
 }
 
 __device__ __forceinline__  void finiteDifferenceScheme_izhikevich(numb* currentV, numb* nextV, numb* parameters)
-{
-    ifMETHOD(P(method), ExplicitEuler)
-    {
-        Vnext(I) = fmodf(V(t), P(Idc)) < (0.5f * P(Idc)) ? P(Imax) : 0.0f;
-        Vnext(t) = V(t) + H;
-        Vnext(v) = V(v) + H * (P(p0) * V(v) * V(v) + P(p1) * V(v) + P(p2) - V(u) + Vnext(I));
-        Vnext(u) = V(u) + H * (P(a) * (P(b) * V(v) - V(u)));
+{	ifSIGNAL(P(signal), square)
+	{
+		ifMETHOD(P(method), ExplicitEuler)
+		{
+			Vnext(i) = P(Idc) + (fmodf((V(t) - P(Idel)) > 0 ? (V(t) - P(Idel)) : (P(Idf) / P(Ifreq) + P(Idel) - V(t)), 1 / P(Ifreq)) < P(Idf) / P(Ifreq) ? P(Iamp) : 0.0f);
+			Vnext(t) = V(t) + H;
+			Vnext(v) = V(v) + H * (P(p0) * V(v) * V(v) + P(p1) * V(v) + P(p2) - V(u) + Vnext(i));
+			Vnext(u) = V(u) + H * (P(a) * (P(b) * V(v) - V(u)));
 
-        if (Vnext(v) >= P(p3))
-        {
-            Vnext(v) = P(c);
-            Vnext(u) = Vnext(u) + P(d);
-        }
-    }
+			if (Vnext(v) >= P(p3))
+			{
+				Vnext(v) = P(c);
+				Vnext(u) = Vnext(u) + P(d);
+			}
+		}
+		ifMETHOD(P(method), SemiExplicitEuler)
+		{
+			Vnext(t) = V(t) + H;
+			Vnext(i) = P(Idc) + (fmodf((V(t) - P(Idel)) > 0 ? (V(t) - P(Idel)) : (P(Idf) / P(Ifreq) + P(Idel) - V(t)), 1 / P(Ifreq)) < P(Idf) / P(Ifreq) ? P(Iamp) : 0.0f);
+			Vnext(v) = V(v) + H * (P(p0) * V(v) * V(v) + P(p1) * V(v) + P(p2) - V(u) + Vnext(i));
+			Vnext(u) = V(u) + H * (P(a) * (P(b) * Vnext(v) - V(u)));
+			
+            if (Vnext(v) >= P(p3))
+			{
+				Vnext(v) = P(c);
+				Vnext(u) = Vnext(u) + P(d);
+			}
+		}
+	}
 }
