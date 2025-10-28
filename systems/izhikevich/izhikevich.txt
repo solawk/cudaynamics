@@ -36,7 +36,7 @@ param Idel Fixed 0.0 0.5 0.01 50 0.0 0.0
 param Idf Linear 0.3 0.9 0.1 50 0.0 0.0
 constraint signal square
 param symmetry Fixed 0.0 1.0 0.01 100 0.0 0.0
-constraint method VariableSymmetryCD
+//constraint method VariableSymmetryCD
 // Defining enumerated parameters (useful for methods):
 // enum <name> <ranging type> <minimum value> <maximum value> <step> <step count> <normal mean> <normal deviation> <enum names, no spaces>
 enum signal 1square 0sine 0triangle
