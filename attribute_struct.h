@@ -1,7 +1,7 @@
 #pragma once
 #include "objects.h"
 
-#define MAX_ENUMS 8
+#define MAX_ENUMS 16
 
 struct Attribute
 {
