@@ -2096,6 +2096,7 @@ int imgui_main(int, char**)
                             if (ImPlot::BeginPlot(("##Metric_Plot" + plotName).c_str(), ImVec2(-1,-1),ImPlotFlags_NoTitle)) {
                                 plot = ImPlot::GetPlot(("##Metric_Plot" + plotName).c_str()); plot->is3d = false;
                                 ImPlot::SetNextLineStyle(window->markerColor, window->markerWidth);
+                                ImPlot::SetupAxes(window->typeX == MDT_Variable ? krnl->variables[window->indexX].name.c_str() : krnl->parameters[window->indexX].name.c_str(), "Indicator");
                                 ImPlot::PlotLine("##Metric_Line_Plot", Xaxis, Yaxis, axis->stepCount);
                                 if (ImGui::IsMouseDown(0) && ImGui::IsKeyPressed(ImGuiMod_Shift) && ImGui::IsMouseHoveringRect(plot->PlotRect.Min, plot->PlotRect.Max) && plot->ContextLocked || plot->shiftClicked) {
                                     numb MousePosX = (numb)ImPlot::GetPlotMousePos().x;
