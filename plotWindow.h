@@ -70,6 +70,7 @@ public:
 	std::vector<int> lastAttributeValueIndices;
 	int BifDotAmount;
 	int prevTotalVariation;
+	bool isOrbitAutoComputeOn;
 
 	int indexX;
 	MapDimensionType typeX;
@@ -123,6 +124,7 @@ public:
 		bifAmps = NULL;
 		bifParamIndices = NULL;
 		bifIntervals = NULL;
+		isOrbitAutoComputeOn = false;
 
 		indexX = 0;
 		typeX = MDT_Variable;

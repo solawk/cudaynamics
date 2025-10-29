@@ -444,6 +444,7 @@ int imgui_main(int, char**)
     int selectedPlotVars[3]; selectedPlotVars[0] = 0; for (int i = 1; i < 3; i++) selectedPlotVars[i] = -1;
     int selectedPlotVarsOrbitVer[3]; selectedPlotVars[0] = 0; for (int i = 1; i < 3; i++) selectedPlotVars[i] = -1;
     std::set<int> selectedPlotVarsSet;
+    std::set<int> selectedPlotMapsSet;
     int selectedPlotMap = 0;
     int selectedPlotMCMaps[3]{ 0 };
     int selectedPlotMapMetric = 0;
@@ -1122,26 +1123,39 @@ int imgui_main(int, char**)
             case Metric:
                 if (KERNEL.MAP_COUNT > 0)
                 {
-                    if (selectedPlotMapMetric >= KERNEL.MAP_COUNT) selectedPlotMapMetric = 0;
+                   
 
-                    ImGui::PushItemWidth(150.0f);
 
-                    ImGui::Text("Index");
+                    ImGui::Text("Add map");
                     ImGui::SameLine();
-                    if (ImGui::BeginCombo("##Plot builder map index selection", KERNEL.mapDatas[selectedPlotMapMetric].name.c_str()))
+                    if (ImGui::BeginCombo("##Add map combo", " ", ImGuiComboFlags_NoPreview))
                     {
                         for (int m = 0; m < KERNEL.MAP_COUNT; m++)
                         {
-                            bool isSelected = selectedPlotMapMetric == m;
+                            bool isSelected = selectedPlotMapsSet.find(m) != selectedPlotMapsSet.end();
                             ImGuiSelectableFlags selectableFlags = 0;
 
-                            if (selectedPlotMapMetric == m) selectableFlags = ImGuiSelectableFlags_Disabled;
-                            if (ImGui::Selectable(KERNEL.mapDatas[m].name.c_str(), isSelected, selectableFlags)) selectedPlotMapMetric = m;
+                            if (isSelected) selectableFlags = ImGuiSelectableFlags_Disabled;
+                            if (ImGui::Selectable(KERNEL.mapDatas[m].name.c_str())) selectedPlotMapsSet.insert(m);
                         }
+
                         ImGui::EndCombo();
                     }
 
-                    ImGui::PopItemWidth();
+                    // Variable list
+
+                    for (const int m : selectedPlotMapsSet)
+                    {
+                        if (ImGui::Button(("x##" + std::to_string(m)).c_str()))
+                        {
+                            selectedPlotMapsSet.erase(m);
+                            break;
+                        }
+                        ImGui::SameLine();
+                        ImGui::Text(("- " + KERNEL.mapDatas[m].name).c_str());
+                    }
+
+                    break;
                 }
                 break;
             }
@@ -1157,7 +1171,7 @@ int imgui_main(int, char**)
                 if (plotType == Heatmap) plotWindow.AssignVariables(selectedPlotMap);
                 if (plotType == MCHeatmap) plotWindow.AssignVariables(selectedPlotMCMaps);
                 if (plotType == Orbit) plotWindow.AssignVariables(selectedPlotVarsOrbitVer);
-                if (plotType == Metric) plotWindow.AssignVariables(selectedPlotMapMetric);
+                if (plotType == Metric) plotWindow.AssignVariables(selectedPlotMapsSet);
 
                 int indexOfColorsLutFrom = -1;
                 if (colorsLUTfrom != nullptr)
@@ -1881,24 +1895,6 @@ int imgui_main(int, char**)
                                                 ;
                                                 ImPlot::EndPlot();
                                             }
-
-                                            /*float a = 1, b = 1;
-                                            if (maxX - minX > maxY - minY) a = (maxY - minY) / (maxX - minX);
-                                            else b = (maxX-minX) / (maxY-minY);
-                                            vector<Point> PointsVector;
-                                            for (int i = 0; i < peakCount; i++) {
-                                                peakIntervals[i] *= a; peakAmplitudes[i] *= b;
-                                                Point TempPoint;
-                                                TempPoint.x = peakIntervals[i]; TempPoint.y = peakAmplitudes[i]; TempPoint.clusterID = UNCLASSIFIED;
-                                                PointsVector.push_back(TempPoint);
-
-                                            }
-                                            DBSCAN *clusters = new DBSCAN(3, 0.0005, PointsVector);
-                                            clusters->run();
-                                            
-                                            ImGui::Text("Cluster count: "); ImGui::SameLine(); ImGui::Text(std::to_string(clusters->clusterCount).c_str());*/
-
-
                                     }
                                     else {
                                         if (OrbitRedraw) { window->areOrbitValuesDirty = OrbitRedraw; }
@@ -1984,7 +1980,11 @@ int imgui_main(int, char**)
                                                         attributeValueIndices[window->OrbitXIndex + varCount] = index;
                                                     }
                                                 }
-                                                
+                                                if (plot->shiftSelected && window->isOrbitAutoComputeOn) {
+                                                    kernelNew.parameters[window->OrbitXIndex].min = plot->shiftSelect1Location.x;
+                                                    kernelNew.parameters[window->OrbitXIndex].max = plot->shiftSelect2Location.x;
+                                                    computeAfterShiftSelect = true;
+                                                }
                                                 if (window->ShowOrbitParLines) {
                                                     double value = attributeValueIndices[varCount + window->OrbitXIndex] * paramStep + paramMin;
                                                     if (!window->OrbitInvertedAxes)ImPlot::DragLineX(0, &value, window->OrbitMarkerColor, window->OrbitMarkerWidth, ImPlotDragToolFlags_NoInputs);
@@ -2024,6 +2024,11 @@ int imgui_main(int, char**)
                                                     }
                                                 }
 
+                                                if (plot->shiftSelected && window->isOrbitAutoComputeOn) {
+                                                    kernelNew.parameters[window->OrbitXIndex].min = plot->shiftSelect1Location.x;
+                                                    kernelNew.parameters[window->OrbitXIndex].max = plot->shiftSelect2Location.x;
+                                                    computeAfterShiftSelect = true;
+                                                }
                                                 if (window->ShowOrbitParLines) {
                                                     double value = attributeValueIndices[varCount + window->OrbitXIndex] * paramStep + paramMin;
                                                     if(!window->OrbitInvertedAxes)ImPlot::DragLineX(0, &value, window->OrbitMarkerColor, window->OrbitMarkerWidth, ImPlotDragToolFlags_NoInputs);
@@ -2070,7 +2075,7 @@ int imgui_main(int, char**)
                     {
                     if (window->whiteBg)
                         ImPlot::PushStyleColor(ImPlotCol_PlotBg, ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
-                        mapIndex = window->variables[0];
+                        
                         Kernel* krnl =  &(KERNEL);
                         Computation* cmp =  &(computations[playedBufferIndex]);
                         Attribute* axis = window->typeX == MDT_Variable ? &(krnl->variables[window->indexX]) : &(krnl->parameters[window->indexX]);
@@ -2080,43 +2085,46 @@ int imgui_main(int, char**)
                             //int xSize;
                             HeatmapProperties* hmp = nullptr;
                             int variation=0;
-                            
-                            
-                            numb* MapSlice = cmp->marshal.maps + cmp->marshal.kernel.mapDatas[mapIndex].offset * cmp->marshal.totalVariations ;
-                            numb* Xaxis = new numb[axis->stepCount];
-                            numb* Yaxis = new numb[axis->stepCount];
-                            std::vector<int> tempattributeValueIndices = attributeValueIndices;
-                            for (int i = 0; i < axis->stepCount; i++) {
-                                if(window->typeX== MDT_Variable)tempattributeValueIndices[window->indexX] = i;
-                                else tempattributeValueIndices[window->indexX + krnl->VAR_COUNT] = i;
-                                steps2Variation(&variation, &(tempattributeValueIndices.data()[0]), &KERNEL);
-                                Xaxis[i] = axis->min + axis->step * i;
-                                Yaxis[i] = MapSlice[variation];
-                            }
-                            if (ImPlot::BeginPlot(("##Metric_Plot" + plotName).c_str(), ImVec2(-1,-1),ImPlotFlags_NoTitle)) {
-                                plot = ImPlot::GetPlot(("##Metric_Plot" + plotName).c_str()); plot->is3d = false;
+                            if (ImPlot::BeginPlot(("##Metric_Plot" + plotName).c_str(), ImVec2(-1, -1), ImPlotFlags_NoTitle)) {
+                                plot = ImPlot::GetPlot(("##Metric_Plot" + plotName).c_str());
+                                plot->is3d = false;
                                 ImPlot::SetNextLineStyle(window->markerColor, window->markerWidth);
                                 ImPlot::SetupAxes(window->typeX == MDT_Variable ? krnl->variables[window->indexX].name.c_str() : krnl->parameters[window->indexX].name.c_str(), "Indicator");
-                                ImPlot::PlotLine("##Metric_Line_Plot", Xaxis, Yaxis, axis->stepCount);
+                                for (int j = 0; j < window->variableCount; j++) {
+                                    mapIndex = window->variables[j];
+                                    numb* MapSlice = cmp->marshal.maps + cmp->marshal.kernel.mapDatas[mapIndex].offset * cmp->marshal.totalVariations;
+                                    numb* Xaxis = new numb[axis->stepCount];
+                                    numb* Yaxis = new numb[axis->stepCount];
+                                    std::vector<int> tempattributeValueIndices = attributeValueIndices;
+                                    for (int i = 0; i < axis->stepCount; i++) {
+                                        if (window->typeX == MDT_Variable)tempattributeValueIndices[window->indexX] = i;
+                                        else tempattributeValueIndices[window->indexX + krnl->VAR_COUNT] = i;
+                                        steps2Variation(&variation, &(tempattributeValueIndices.data()[0]), &KERNEL);
+                                        Xaxis[i] = axis->min + axis->step * i;
+                                        Yaxis[i] = MapSlice[variation];
+                                    }
+                                    ImPlot::PlotLine(krnl->mapDatas[window->variables[j]].name.c_str(), Xaxis, Yaxis, axis->stepCount);
+                                    delete[] Xaxis;
+                                    delete[] Yaxis;
+                                }
                                 if (ImGui::IsMouseDown(0) && ImGui::IsKeyPressed(ImGuiMod_Shift) && ImGui::IsMouseHoveringRect(plot->PlotRect.Min, plot->PlotRect.Max) && plot->ContextLocked || plot->shiftClicked) {
                                     numb MousePosX = (numb)ImPlot::GetPlotMousePos().x;
-                                    if (axis->min > MousePosX)window->typeX == MDT_Variable ? attributeValueIndices[window->indexX] = 0: attributeValueIndices[window->indexX +krnl->VAR_COUNT] = 0;
-                                    else if (axis->max < MousePosX)window->typeX == MDT_Variable ? attributeValueIndices[window->indexX] = axis->stepCount-1 : attributeValueIndices[window->indexX + krnl->VAR_COUNT] = axis->stepCount-1;
+                                    if (axis->min > MousePosX)window->typeX == MDT_Variable ? attributeValueIndices[window->indexX] = 0 : attributeValueIndices[window->indexX + krnl->VAR_COUNT] = 0;
+                                    else if (axis->max < MousePosX)window->typeX == MDT_Variable ? attributeValueIndices[window->indexX] = axis->stepCount - 1 : attributeValueIndices[window->indexX + krnl->VAR_COUNT] = axis->stepCount - 1;
                                     else {
                                         numb NotRoundedIndex = (MousePosX - axis->min) / (axis->max - axis->min) * axis->stepCount;
                                         int index = static_cast<int>(std::round(NotRoundedIndex)); if (index > axis->stepCount - 1)index = axis->stepCount - 1;
                                         window->typeX == MDT_Variable ? attributeValueIndices[window->indexX] = index : attributeValueIndices[window->indexX + krnl->VAR_COUNT] = index;
                                     }
                                 }
-
                                 if (window->ShowOrbitParLines) {
-                                    double value = axis->min + axis->step * attributeValueIndices[window->typeX== MDT_Variable ?  window->indexX : window->indexX+krnl->VAR_COUNT];
+                                    double value = axis->min + axis->step * attributeValueIndices[window->typeX == MDT_Variable ? window->indexX : window->indexX + krnl->VAR_COUNT];
                                     ImPlot::DragLineX(0, &value, window->OrbitMarkerColor, window->OrbitMarkerWidth, ImPlotDragToolFlags_NoInputs);
                                 }
                                 ImPlot::EndPlot();
                             }
-                            delete[] Xaxis;
-                            delete[] Yaxis;
+                            
+                            
                         }
                         else {
                             ImGui::Text(("Axis " + axis->name + " is fixed").c_str());
