@@ -161,6 +161,9 @@ void plotWindowMenu_OrbitPlot(PlotWindow* window) {
 		ImGui::DragFloat("Marker width", &window->OrbitMarkerWidth, 0.1f, 0.5f, 4.0f, "%.1f");
 
 		ImGui::Checkbox("Invert axes", &window->OrbitInvertedAxes);
+
+		ImGui::Checkbox("Auto - compute on Shift + RMB", &window->isOrbitAutoComputeOn);
+
 		ImGui::EndMenu();
 	}
 }
