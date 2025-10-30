@@ -2900,7 +2900,20 @@ void hiresShiftClickCompute(PlotWindow* window, HeatmapSizing* sizing, numb valu
         else
         {
             for (int i = 0; i < MAX_ENUMS; i++) kernelNew.parameters[p].enumEnabled[i] = false;
-            kernelNew.parameters[p].enumEnabled[attributeValueIndicesHires[kernelNew.VAR_COUNT + p]] = true;
+            int enumChosenInRanging = attributeValueIndicesHires[kernelNew.VAR_COUNT + p];
+            for (int i = 0; i < MAX_ENUMS; i++)
+            {
+                if (kernelHiresComputed.parameters[p].enumEnabled[i])
+                {
+                    if (enumChosenInRanging == 0)
+                    {
+                        kernelNew.parameters[p].enumEnabled[i] = true;
+                        break;
+                    }
+                    else
+                        enumChosenInRanging--;
+                }
+            }
         }
         kernelNew.parameters[p].min = valueFromStep(kernelNew.parameters[p].min, kernelNew.parameters[p].step, attributeValueIndicesHires[kernelNew.VAR_COUNT + p]);
     }
