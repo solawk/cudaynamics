@@ -71,6 +71,77 @@ void plotWindowMenu_File(PlotWindow* window)
 				break;
 			}
 		}
+		
+		if (ImGui::MenuItem("Export to .csv", nullptr, false,
+			(window->type == Heatmap) || (window->type == Series)))
+		{
+			std::string savedPath;
+			bool attempted = false; 
+
+			switch (window->type)
+			{
+				// === HEATMAP (LLE / MAX / ...) ===
+			case Heatmap:
+			{
+				const bool isHires = (hiresHeatmapWindow == window);
+				const HeatmapProperties* heatmap = isHires ? &window->hireshmp : &window->hmp;
+
+				const int valuesCount = isHires ? window->hireshmp.lastBufferSize
+					: window->hmp.lastBufferSize;
+				if (!heatmap->values.valueBuffer) {
+					MessageBoxA(NULL, "Export failed: Heatmap buffer is null.", "Export", MB_OK | MB_ICONERROR);
+					break;
+				}
+				if (valuesCount <= 0) {
+					MessageBoxA(NULL, "Export failed: Heatmap buffer is empty.", "Export", MB_OK | MB_ICONERROR);
+					break;
+				}
+				if (window->variables.empty()) {
+					MessageBoxA(NULL, "Export failed: no map selected (window->variables is empty).", "Export", MB_OK | MB_ICONERROR);
+					break;
+				}
+				const int mapIdx = window->variables[0];
+				if (mapIdx < 0 || mapIdx >= KERNEL.MAP_COUNT) {
+					MessageBoxA(NULL, "Export failed: map index out of range.", "Export", MB_OK | MB_ICONERROR);
+					break;
+				}
+
+				HeatmapSizing sizing;
+				sizing.loadPointers(&KERNEL, const_cast<HeatmapProperties*>(heatmap));
+				sizing.initValues();
+
+				const std::string mapName = KERNEL.mapDatas[mapIdx].name;
+				savedPath = exportHeatmapCSV(mapName, sizing, heatmap);
+				attempted = true;
+				break;
+			}
+
+			// === TIME SERIES ===
+			case Series:
+			{
+				savedPath = exportTimeSeriesCSV(window);
+				attempted = true;
+				break;
+			}
+
+			default:
+			{
+				MessageBoxA(NULL, "Export not supported for this plot type.", "Export", MB_OK | MB_ICONWARNING);
+				break;
+			}
+			}
+
+			// ≈диный блок уведомлени¤ о результате 
+			if (attempted) {
+				if (!savedPath.empty()) {
+					std::string msg = "CSV saved to:\n" + savedPath;
+					MessageBoxA(NULL, msg.c_str(), "Export", MB_OK | MB_ICONINFORMATION);
+				}
+				else {
+					MessageBoxA(NULL, "Export failed (empty data or I/O error).", "Export", MB_OK | MB_ICONERROR);
+				}
+			}
+		}
 
 		ImGui::EndMenu();
 	}
