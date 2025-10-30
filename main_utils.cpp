@@ -126,9 +126,6 @@ Kernel readKernelText(std::string name)
 			tempAttribute.values = nullptr;
 			tempAttribute.rangingType = RT_Enum;
 
-			tempAttribute.CalcStep();
-			tempAttribute.CalcStepCount();
-
 			tempAttribute.enumCount = (int)str.size() - 2;
 			if (tempAttribute.enumCount > MAX_ENUMS) tempAttribute.enumCount = MAX_ENUMS;
 			for (int i = 0; i < tempAttribute.enumCount; i++)
@@ -137,6 +134,9 @@ Kernel readKernelText(std::string name)
 				str[2 + i] = str[2 + i].substr(1);
 				tempAttribute.enumNames[i] = str[2 + i];
 			}
+
+			tempAttribute.CalcStep();
+			tempAttribute.CalcStepCount();
 
 			if (tempAttribute.stepCount < 2) tempAttribute.stepCount = 2;
 
