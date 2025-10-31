@@ -46,6 +46,7 @@ void hiresShiftClickCompute(PlotWindow* window, HeatmapSizing* sizing, numb valu
 // Kernel-related macros
 #define HIRES_ON (hiresHeatmapWindow != nullptr)
 #define KERNELNEWCURRENT (HIRES_ON ? kernelHiresNew : kernelNew)
+#define KERNELSAVEDCURRENT (HIRES_ON ? kernelHiresComputed : KERNEL)
 #define KERNELINTERNALCURRENT (HIRES_ON ? kernelHiresNew : KERNEL)
 
 // UI drawing-related macros

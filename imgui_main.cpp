@@ -152,7 +152,7 @@ void initAVI(bool hires)
 
 numb getStepSize(Kernel& kernel)
 {
-    for (int i = 0; i < kernel.PARAM_COUNT; i++) if (kernel.parameters[i].name == "stepsize") return kernel.parameters[i].min;
+    if (kernel.stepType == ST_Parameter) return kernel.parameters[kernel.PARAM_COUNT - 1].min;
     return 1.0f;
 }
 
@@ -345,6 +345,8 @@ void prepareAndCompute(bool hires)
     particleStep = 0;
     deleteBuffers(hires);
     removeHeatmapLimits();
+
+    // Time to steps
 
     if (!hires)
     {
@@ -636,14 +638,15 @@ int imgui_main(int, char**)
             PUSH_DISABLED_FRAME;
         }
         popStyle = false;
-        if (kernelNew.steps != KERNEL.steps)
+
+        float stepSize = getStepSize(KERNELNEWCURRENT);
+
+        if ((!KERNELNEWCURRENT.usingTime && KERNELNEWCURRENT.steps != KERNELSAVEDCURRENT.steps) || (KERNELNEWCURRENT.usingTime && KERNELNEWCURRENT.time != KERNELSAVEDCURRENT.time))
         {
             anyChanged = true;
             PUSH_UNSAVED_FRAME;
             popStyle = true;
         }
-
-        float stepSize = getStepSize(KERNELNEWCURRENT);
         if (!KERNELNEWCURRENT.usingTime)
         {
             ImGui::InputInt("##Steps", &(KERNELNEWCURRENT.steps), 1, 1000, playingParticles ? ImGuiInputTextFlags_ReadOnly : 0);
@@ -653,7 +656,7 @@ int imgui_main(int, char**)
         else
         {
             ImGui::InputFloat("##Time(s)", &(KERNELNEWCURRENT.time), 1.0f, 10.0f, "%.3f", playingParticles ? ImGuiInputTextFlags_ReadOnly : 0);
-            TOOLTIP("Modelling time");
+            TOOLTIP("Simulation time");
             KERNELNEWCURRENT.steps = (int)(KERNELNEWCURRENT.time / stepSize);
         }
         ImGui::SameLine();
@@ -685,13 +688,13 @@ int imgui_main(int, char**)
             PUSH_DISABLED_FRAME;
         }
         popStyle = false;
-        if (kernelNew.transientSteps != KERNEL.transientSteps)
+
+        if ((!KERNELNEWCURRENT.usingTime && KERNELNEWCURRENT.transientSteps != KERNELSAVEDCURRENT.transientSteps) || (KERNELNEWCURRENT.usingTime && KERNELNEWCURRENT.transientTime != KERNELSAVEDCURRENT.transientTime))
         {
             anyChanged = true;
             PUSH_UNSAVED_FRAME;
             popStyle = true;
         }
-
         if (!KERNELNEWCURRENT.usingTime)
         {
             ImGui::InputInt("Transient steps##Transient steps", &(KERNELNEWCURRENT.transientSteps), 1, 1000, playingParticles ? ImGuiInputTextFlags_ReadOnly : 0);
