@@ -137,6 +137,8 @@ void resetTempBuffers(Computation* data)
 
     if (particleBuffer) delete[] particleBuffer;
     particleBuffer = new numb[CUDA_marshal.totalVariations * KERNEL.VAR_COUNT];
+
+    if (colorsLUTfrom != nullptr) colorsLUTfrom->hmp.paintLUT.Clear();
 }
 
 // Initialize the Attribute Value Indeces vector for ranging
@@ -170,8 +172,8 @@ int asyncComputation()
 
     bool isFirstBatch = computations[1 - bufferToFillIndex].marshal.trajectory == nullptr; // Is another buffer null, only true when computing for the first time
     computations[bufferToFillIndex].isFirst = isFirstBatch;
-
     computations[bufferToFillIndex].marshal.kernel.CopyFrom(&KERNEL);
+
     int computationResult = compute(&(computations[bufferToFillIndex]));
 
     computedSteps = KERNEL.steps;
@@ -1681,6 +1683,10 @@ int imgui_main(int, char**)
                     }
 
                     // Drawing
+
+                    bool usePainting = colorsLUTfrom != nullptr && colorsLUTfrom->hmp.paintLUT.lut != nullptr;
+                    colorLUT* lut = usePainting ? &(colorsLUTfrom->hmp.paintLUT) : nullptr;
+
                     if (computations[playedBufferIndex].ready)
                     {
                         if (!enabledParticles) // Trajectory - one variation, all steps
@@ -1701,11 +1707,10 @@ int imgui_main(int, char**)
                                 case Phase2D:
                                     getMinMax2D(subtype == Phase3D ? dataBuffer : computedVariation, computedSteps + 1, &(plot->dataMin), &(plot->dataMax), KERNEL.VAR_COUNT);
 
-                                    if (colorsLUTfrom == nullptr)
+                                    if (!usePainting)
                                         ImPlot::SetNextLineStyle(window->plotColor);
                                     else
                                     {
-                                        colorLUT* lut = &(colorsLUTfrom->hmp.paintLUT);
                                         int variationGroup = getVariationGroup(lut, !window->drawAllTrajectories ? variation : drawnVariation);
                                         ImVec4 clr = ImPlot::SampleColormap((float)variationGroup / (lut->lutGroups - 1), colorsLUTfrom->hmp.colormap);
                                         clr.w = window->plotColor.w;
@@ -1719,11 +1724,10 @@ int imgui_main(int, char**)
                                 case PhaseImplot3D:
                                     ImPlot3D::SetupAxes(KERNEL.variables[window->variables[0]].name.c_str(), KERNEL.variables[window->variables[1]].name.c_str(), KERNEL.variables[window->variables[2]].name.c_str());
 
-                                    if (colorsLUTfrom == nullptr)
+                                    if (!usePainting)
                                         ImPlot3D::SetNextLineStyle(window->plotColor);
                                     else
                                     {
-                                        colorLUT* lut = &(colorsLUTfrom->hmp.paintLUT);
                                         int variationGroup = getVariationGroup(lut, variation);
                                         ImVec4 clr = ImPlot3D::SampleColormap((float)variationGroup / (lut->lutGroups - 1), colorsLUTfrom->hmp.colormap);
                                         clr.w = window->plotColor.w;
@@ -1736,7 +1740,7 @@ int imgui_main(int, char**)
                                 }
                             }
                         }
-                        else // Particles - all variations, one certain step
+                        else if (particleBuffer != nullptr) // Particles - all variations, one certain step
                         {
                             if (particleStep > KERNEL.steps) particleStep = KERNEL.steps;
                             int totalVariations = computations[playedBufferIndex].marshal.totalVariations;
@@ -1756,7 +1760,7 @@ int imgui_main(int, char**)
                             case Phase2D:
                                 getMinMax2D(particleBuffer, computations[playedBufferIndex].marshal.totalVariations, &(plot->dataMin), &(plot->dataMax), KERNEL.VAR_COUNT);
 
-                                if (colorsLUTfrom == nullptr)
+                                if (!usePainting)
                                 {
                                     ImPlot::SetNextLineStyle(window->markerColor);
                                     ImPlot::PushStyleVar(ImPlotStyleVar_MarkerWeight, window->markerOutlineWidth);
@@ -1768,18 +1772,14 @@ int imgui_main(int, char**)
                                 }
                                 else if (!colorsLUTfrom->hmp.isHeatmapDirty)
                                 {
-                                    colorLUT* lut = &(colorsLUTfrom->hmp.paintLUT);
-
                                     for (int g = 0; g < lut->lutGroups; g++)
                                     {
                                         int lutsize = lut->lutSizes[g];
 
                                         // TODO: Look into making this step a single time, not doing it before
                                         for (int v = 0; v < lutsize; v++)
-                                        {
                                             for (int var = 0; var < varCount; var++)
                                                 particleBuffer[v * varCount + var] = trajectory[(variationSize * lut->lut[g][v]) + (varCount * particleStep) + var];
-                                        }
 
                                         if (subtype == Phase3D)
                                             rotateOffsetBuffer(particleBuffer, lutsize, KERNEL.VAR_COUNT, window->variables[0], window->variables[1], window->variables[2],
@@ -1801,7 +1801,7 @@ int imgui_main(int, char**)
                                 ImPlot3D::PushStyleVar(ImPlotStyleVar_MarkerWeight, window->markerOutlineWidth);
                                 ImPlot3D::SetNextMarkerStyle(window->markerShape, window->markerWidth);
 
-                                if (colorsLUTfrom == nullptr)
+                                if (!usePainting)
                                 {
                                     ImPlot3D::SetNextLineStyle(window->markerColor);
                                     ImPlot3D::PlotScatter(plotName.c_str(), &((particleBuffer)[window->variables[0]]), &((particleBuffer)[window->variables[1]]), &((particleBuffer)[window->variables[2]]),
@@ -1809,16 +1809,12 @@ int imgui_main(int, char**)
                                 }
                                 else if (!colorsLUTfrom->hmp.isHeatmapDirty)
                                 {
-                                    colorLUT* lut = &(colorsLUTfrom->hmp.paintLUT);
-
                                     for (int g = 0; g < lut->lutGroups; g++)
                                     {
                                         int lutsize = lut->lutSizes[g];
                                         for (int v = 0; v < lutsize; v++)
-                                        {
                                             for (int var = 0; var < varCount; var++)
                                                 particleBuffer[v * varCount + var] = trajectory[(variationSize * lut->lut[g][v]) + (varCount * particleStep) + var];
-                                        }
 
                                         ImPlot3D::PushStyleVar(ImPlotStyleVar_MarkerWeight, window->markerOutlineWidth);
                                         ImPlot3D::SetNextMarkerStyle(window->markerShape, window->markerWidth);

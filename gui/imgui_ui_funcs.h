@@ -6,7 +6,7 @@ void listAttrRanging(Attribute* attr, bool isChanged);
 
 void listAttrNumb(Attribute* attr, numb* field, std::string name, std::string inner, bool isChanged);
 
-void listAttrInt(Attribute* attr, int* field, std::string name, std::string inner, bool isChanged);
+void listAttrInt(Attribute* attr, int* field, std::string name, std::string inner, bool isChanged, int minimum);
 
 void listVariable(int i);
 
