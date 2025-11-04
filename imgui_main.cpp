@@ -1306,69 +1306,97 @@ int imgui_main(int, char**)
                 int prevTypeY = heatmap->typeY;
                 int prevValueIndex = heatmap->values.mapValueIndex;
 
-                ImGui::PushItemWidth(ImGui::GetWindowWidth() * (isSingleValue ? 0.485f : 0.31f));
-                if (ImGui::BeginCombo(("##" + windowName + "_axisX").c_str(),
-                    heatmap->typeX == MDT_Variable ? krnl->variables[heatmap->indexX].name.c_str() : krnl->parameters[heatmap->indexX].name.c_str(), 0))
+
+                bool showMapValueInput = window->type == Heatmap && !isSingleValue;
+                int columns = showMapValueInput ? 4 : 3;
+
+                if (ImGui::BeginTable((plotName + "_axisTable").c_str(), columns))
                 {
-                    for (int v = 0; v < krnl->VAR_COUNT; v++)
+                    ImGui::TableSetupColumn(nullptr);
+                    ImGui::TableSetupColumn(nullptr);
+                    ImGui::TableSetupColumn(nullptr, ImGuiTableColumnFlags_WidthFixed, 55.0f);
+                    if (columns == 4) ImGui::TableSetupColumn(nullptr);
+                    ImGui::TableNextRow();
+
+                    ImGui::TableSetColumnIndex(0);
+                    ImGui::SetNextItemWidth(-1);
+                    if (ImGui::BeginCombo(("##" + windowName + "_axisX").c_str(),
+                        heatmap->typeX == MDT_Variable ? krnl->variables[heatmap->indexX].name.c_str() : krnl->parameters[heatmap->indexX].name.c_str()))
                     {
-                        if (ImGui::Selectable(krnl->variables[v].name.c_str()))
+                        for (int v = 0; v < krnl->VAR_COUNT; v++)
                         {
-                            heatmap->indexX = v;
-                            heatmap->typeX = MDT_Variable;
+                            if (ImGui::Selectable(krnl->variables[v].name.c_str()))
+                            {
+                                heatmap->indexX = v;
+                                heatmap->typeX = MDT_Variable;
+                            }
                         }
+
+                        for (int p = 0; p < krnl->PARAM_COUNT; p++)
+                        {
+                            if (ImGui::Selectable(krnl->parameters[p].name.c_str()))
+                            {
+                                heatmap->indexX = p;
+                                heatmap->typeX = MDT_Parameter;
+                            }
+                        }
+
+                        ImGui::EndCombo();
                     }
 
-                    for (int p = 0; p < krnl->PARAM_COUNT; p++)
+                    ImGui::TableSetColumnIndex(1);
+                    ImGui::SetNextItemWidth(-1);
+                    if (ImGui::BeginCombo(("##" + windowName + "_axisY").c_str(),
+                        heatmap->typeY == MDT_Variable ? krnl->variables[heatmap->indexY].name.c_str() : krnl->parameters[heatmap->indexY].name.c_str()))
                     {
-                        if (ImGui::Selectable(krnl->parameters[p].name.c_str()))
+                        for (int v = 0; v < krnl->VAR_COUNT; v++)
                         {
-                            heatmap->indexX = p;
-                            heatmap->typeX = MDT_Parameter;
+                            if (ImGui::Selectable(krnl->variables[v].name.c_str()))
+                            {
+                                heatmap->indexY = v;
+                                heatmap->typeY = MDT_Variable;
+                            }
                         }
+
+                        for (int p = 0; p < krnl->PARAM_COUNT; p++)
+                        {
+                            if (ImGui::Selectable(krnl->parameters[p].name.c_str()))
+                            {
+                                heatmap->indexY = p;
+                                heatmap->typeY = MDT_Parameter;
+                            }
+                        }
+
+                        ImGui::EndCombo();
                     }
 
-                    ImGui::EndCombo();
+                    ImGui::TableSetColumnIndex(2);
+                    if (ImGui::Button(("Flip##" + windowName + "_flipAxesButton").c_str()))
+                    {
+                        int tempIndex = heatmap->indexX;
+                        MapDimensionType tempMDT = heatmap->typeX;
+                        heatmap->indexX = heatmap->indexY;
+                        heatmap->typeX = heatmap->typeY;
+                        heatmap->indexY = tempIndex;
+                        heatmap->typeY = tempMDT;
+                    }
+
+                    if (showMapValueInput)
+                    {
+                        ImGui::TableSetColumnIndex(3);
+                        ImGui::SetNextItemWidth(-1);
+                        mapValueSelectionCombo(mapIndex, -1, windowName, heatmap);
+                    }
+
+                    ImGui::EndTable();
                 }
-
-                ImGui::SameLine();
-
-                if (ImGui::BeginCombo(("##" + windowName + "_axisY").c_str(),
-                    heatmap->typeY == MDT_Variable ? krnl->variables[heatmap->indexY].name.c_str() : krnl->parameters[heatmap->indexY].name.c_str(), 0))
-                {
-                    for (int v = 0; v < krnl->VAR_COUNT; v++)
-                    {
-                        if (ImGui::Selectable(krnl->variables[v].name.c_str()))
-                        {
-                            heatmap->indexY = v;
-                            heatmap->typeY = MDT_Variable;
-                        }
-                    }
-
-                    for (int p = 0; p < krnl->PARAM_COUNT; p++)
-                    {
-                        if (ImGui::Selectable(krnl->parameters[p].name.c_str()))
-                        {
-                            heatmap->indexY = p;
-                            heatmap->typeY = MDT_Parameter;
-                        }
-                    }
-
-                    ImGui::EndCombo();
-                }
-
-                if (window->type == Heatmap && !isSingleValue)
-                {
-                    mapValueSelectionCombo(mapIndex, -1, windowName, heatmap);
-                }
-
-                ImGui::PopItemWidth();
 
                 if (prevIndexX != heatmap->indexX || prevIndexY != heatmap->indexY || prevTypeX != heatmap->typeX || prevTypeY != heatmap->typeY || prevValueIndex != heatmap->values.mapValueIndex)
                 {
                     heatmap->areValuesDirty = true;
                     heatmap->values.areHeatmapLimitsDefined = false;
                     for (int ch = 0; ch < 3; ch++) heatmap->channel[ch].areHeatmapLimitsDefined = false;
+                    autofitHeatmap = true;
                 }
             }
 
