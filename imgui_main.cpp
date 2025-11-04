@@ -1200,10 +1200,20 @@ int imgui_main(int, char**)
                     }
                 }
 
+                int indexOfHires = -1;
+                if (hiresHeatmapWindow != nullptr)
+                {
+                    for (int i = 0; i < plotWindows.size() && indexOfHires == -1; i++)
+                    {
+                        if (&(plotWindows[i]) == hiresHeatmapWindow) indexOfHires = i;
+                    }
+                }
+
                 setVaryingAttributesToOneWindow(plotWindow, KERNEL);
                 plotWindows.push_back(plotWindow);
 
                 if (indexOfColorsLutFrom != -1) colorsLUTfrom = &(plotWindows[indexOfColorsLutFrom]);
+                if (indexOfHires != -1) hiresHeatmapWindow = &(plotWindows[indexOfHires]);
 
                 saveWindows();
             }
