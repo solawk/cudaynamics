@@ -55,7 +55,7 @@ void plotWindowMenu_File(PlotWindow* window)
 {
 	if (ImGui::BeginMenu("File"))
 	{
-		if (ImGui::MenuItem("Export"))
+		/*if (ImGui::MenuItem("Export"))
 		{
 			switch (window->type)
 			{
@@ -70,7 +70,7 @@ void plotWindowMenu_File(PlotWindow* window)
 
 				break;
 			}
-		}
+		}*/
 		
 		if (ImGui::MenuItem("Export to .csv", nullptr, false,
 			(window->type == Heatmap) || (window->type == Series)))
