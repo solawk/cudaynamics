@@ -17,6 +17,10 @@ static ID3D11RenderTargetView* g_mainRenderTargetView = nullptr;
 std::vector<PlotWindow> plotWindows;
 int uniqueIds = 0; // Unique window IDs
 
+bool spoilerVars = true;
+bool spoilerStep = true;
+bool spoilerParams = true;
+
 Computation computations[2];
 Computation computationHires;
 int playedBufferIndex = 0; // Buffer currently shown
@@ -538,26 +542,32 @@ int imgui_main(int, char**)
         thisChanged = false;
         popStyle = false;
 
-        ImGui::SetNextItemOpen(true);
+        if (spoilerVars) ImGui::SetNextItemOpen(true);
         if (ImGui::TreeNode("Variables##VariablesList"))
         {
             for (int i = 0; i < KERNEL.VAR_COUNT - (KERNEL.stepType == ST_Variable ? 1 : 0); i++) listVariable(i);
             ImGui::TreePop();
+            spoilerVars = true;
         }
+        else
+            spoilerVars = false;
         
         if (KERNEL.stepType != ST_Discrete)
         {
-            ImGui::SetNextItemOpen(true);
+            if (spoilerStep) ImGui::SetNextItemOpen(true);
             if (ImGui::TreeNode("Step##StepList"))
             {
                 if (KERNEL.stepType == ST_Variable) listVariable(KERNEL.VAR_COUNT - 1);
                 if (KERNEL.stepType == ST_Parameter) listParameter(KERNEL.PARAM_COUNT - 1);
                 ImGui::TreePop();
+                spoilerStep = true;
             }
+            else
+                spoilerStep = false;
         }
 
         bool applicationProhibited = false;
-        ImGui::SetNextItemOpen(true);
+        if (spoilerParams) ImGui::SetNextItemOpen(true);
         if (ImGui::TreeNode("Parameters##ParametersList"))
         {
             for (int i = 0; i < KERNEL.PARAM_COUNT - (KERNEL.stepType == ST_Parameter ? 1 : 0); i++)
@@ -603,7 +613,10 @@ int imgui_main(int, char**)
                 }
             }
             ImGui::TreePop();
+            spoilerParams = true;
         }
+        else
+            spoilerParams = false;
 
         // Simulation
 
