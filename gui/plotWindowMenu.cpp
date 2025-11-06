@@ -15,7 +15,7 @@ extern bool autofitHeatmap;
 extern PlotWindow* colorsLUTfrom;
 extern int paintLUTsize;
 extern PlotWindow* hiresHeatmapWindow;
-extern Kernel kernelNew, kernelHiresNew;
+extern Kernel kernelNew, kernelHiresNew, kernelHiresComputed;
 
 void plotWindowMenu(PlotWindow* window)
 {
@@ -85,6 +85,7 @@ void plotWindowMenu_File(PlotWindow* window)
 			{
 				const bool isHires = (hiresHeatmapWindow == window);
 				const HeatmapProperties* heatmap = isHires ? &window->hireshmp : &window->hmp;
+				Kernel* krnl = isHires ? &kernelHiresComputed : &(KERNEL);
 
 				const int valuesCount = isHires ? window->hireshmp.lastBufferSize
 					: window->hmp.lastBufferSize;
@@ -101,16 +102,16 @@ void plotWindowMenu_File(PlotWindow* window)
 					break;
 				}
 				const int mapIdx = window->variables[0];
-				if (mapIdx < 0 || mapIdx >= KERNEL.MAP_COUNT) {
+				if (mapIdx < 0 || mapIdx >= krnl->MAP_COUNT) {
 					MessageBoxA(NULL, "Export failed: map index out of range.", "Export", MB_OK | MB_ICONERROR);
 					break;
 				}
 
 				HeatmapSizing sizing;
-				sizing.loadPointers(&KERNEL, const_cast<HeatmapProperties*>(heatmap));
+				sizing.loadPointers(krnl, const_cast<HeatmapProperties*>(heatmap));
 				sizing.initValues();
 
-				const std::string mapName = KERNEL.mapDatas[mapIdx].name;
+				const std::string mapName = krnl->mapDatas[mapIdx].name;
 				savedPath = exportHeatmapCSV(mapName, sizing, heatmap);
 				attempted = true;
 				break;
