@@ -1182,6 +1182,7 @@ int imgui_main(int, char**)
             {
                 PlotWindow plotWindow = PlotWindow(uniqueIds++, plotNameBuffer, true);
                 plotWindow.type = plotType;
+                plotWindow.newWindow = true;
 
                 if (plotType == Series) plotWindow.AssignVariables(selectedPlotVarsSet);
                 if (plotType == Phase) plotWindow.AssignVariables(selectedPlotVars);
@@ -1287,6 +1288,31 @@ int imgui_main(int, char**)
             style.WindowMenuButtonPosition = ImGuiDir_None;
             std::string windowName = window->name + std::to_string(window->id);
             std::string plotName = windowName + "_plot";
+
+            if (window->newWindow)
+            {
+                HWND g_hwnd = nullptr;
+                HMONITOR hMonitor = MonitorFromWindow(g_hwnd, MONITOR_DEFAULTTONEAREST);
+                MONITORINFO monitorInfo = { sizeof(MONITORINFO) };
+                GetMonitorInfo(hMonitor, &monitorInfo);
+
+                float monitorWidth = (float)(monitorInfo.rcMonitor.right - monitorInfo.rcMonitor.left);
+                float monitorHeight = (float)(monitorInfo.rcMonitor.bottom - monitorInfo.rcMonitor.top);
+                ImVec2 monitorCenter = ImVec2(
+                    (monitorInfo.rcMonitor.left + monitorInfo.rcMonitor.right) * 0.5f,
+                    (monitorInfo.rcMonitor.top + monitorInfo.rcMonitor.bottom) * 0.5f
+                );
+
+                ImVec2 baseWindowSize = ImVec2(monitorWidth * 0.4f, monitorHeight * 0.5f);
+                int offsetStep = window->id % 5;
+                ImVec2 offset = ImVec2(30.0f * offsetStep, 30.0f * offsetStep);
+                ImVec2 finalPos = ImVec2(monitorCenter.x + offset.x, monitorCenter.y + offset.y);
+
+                ImGui::SetNextWindowPos(finalPos, 0, ImVec2(0.5f, 0.5f));
+                ImGui::SetNextWindowSize(baseWindowSize, 0);
+
+                window->newWindow = false;
+            }
 
             FullscreenActLogic(window, &fullscreenSize);
             ImGui::Begin(windowName.c_str(), &(window->active), ImGuiWindowFlags_MenuBar);

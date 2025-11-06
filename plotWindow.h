@@ -13,6 +13,7 @@ struct PlotWindow
 public:
 	bool active; // Deactivated window is removed
 	int id; // Unique id
+	bool newWindow;
 	std::string name; // Name of the window
 	PlotType type;
 	int variableCount;
@@ -79,6 +80,7 @@ public:
 	{
 		active = true;
 		id = _id;
+		newWindow = false;
 		name = _name;
 
 		quatRot = ImVec4(1.0f, 0.0f, 0.0f, 0.0f);
