@@ -1,4 +1,4 @@
-#include "imgui_main.hpp"
+﻿#include "imgui_main.hpp"
 
 #include "gui/plotWindowMenu.h"
 #include "gui/img_loading.h"
@@ -1325,8 +1325,8 @@ int imgui_main(int, char**)
                 if (ImGui::BeginTable((plotName + "_axisTable").c_str(), columns))
                 {
                     ImGui::TableSetupColumn(nullptr);
+                    ImGui::TableSetupColumn(nullptr, ImGuiTableColumnFlags_WidthFixed, 40.0f);
                     ImGui::TableSetupColumn(nullptr);
-                    ImGui::TableSetupColumn(nullptr, ImGuiTableColumnFlags_WidthFixed, 55.0f);
                     if (columns == 4) ImGui::TableSetupColumn(nullptr);
                     ImGui::TableNextRow();
 
@@ -1357,6 +1357,17 @@ int imgui_main(int, char**)
                     }
 
                     ImGui::TableSetColumnIndex(1);
+                    if (ImGui::Button(("<=>##" + windowName + "_flipAxesButton").c_str()))
+                    {
+                        int tempIndex = heatmap->indexX;
+                        MapDimensionType tempMDT = heatmap->typeX;
+                        heatmap->indexX = heatmap->indexY;
+                        heatmap->typeX = heatmap->typeY;
+                        heatmap->indexY = tempIndex;
+                        heatmap->typeY = tempMDT;
+                    }
+
+                    ImGui::TableSetColumnIndex(2);
                     ImGui::SetNextItemWidth(-1);
                     if (ImGui::BeginCombo(("##" + windowName + "_axisY").c_str(),
                         heatmap->typeY == MDT_Variable ? krnl->variables[heatmap->indexY].name.c_str() : krnl->parameters[heatmap->indexY].name.c_str()))
@@ -1380,17 +1391,6 @@ int imgui_main(int, char**)
                         }
 
                         ImGui::EndCombo();
-                    }
-
-                    ImGui::TableSetColumnIndex(2);
-                    if (ImGui::Button(("Flip##" + windowName + "_flipAxesButton").c_str()))
-                    {
-                        int tempIndex = heatmap->indexX;
-                        MapDimensionType tempMDT = heatmap->typeX;
-                        heatmap->indexX = heatmap->indexY;
-                        heatmap->typeX = heatmap->typeY;
-                        heatmap->indexY = tempIndex;
-                        heatmap->typeY = tempMDT;
                     }
 
                     if (showMapValueInput)
