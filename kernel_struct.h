@@ -3,6 +3,7 @@
 #include "attribute_struct.h"
 #include "mapData_struct.h"
 #include "constraint.h"
+#include "analysesSettings_struct.h"
 
 #define MAX_MAP_SETTINGS 256
 
@@ -49,6 +50,8 @@ public:
 	std::vector<Attribute> variables;
 	std::vector<Attribute> parameters;
 	std::vector<Constraint> constraints;
+
+	AnalysesSettings analyses;
 	
 	std::vector<MapData> mapDatas;
 
@@ -102,6 +105,8 @@ public:
 		VAR_COUNT = kernel->VAR_COUNT;
 		PARAM_COUNT = kernel->PARAM_COUNT;
 		MAP_COUNT = kernel->MAP_COUNT;
+		
+		analyses = kernel->analyses;
 
 		for (int i = 0; i < MAX_MAP_SETTINGS; i++) mapSettings[i] = kernel->mapSettings[i];
 	}
@@ -173,6 +178,8 @@ public:
 	int PARAM_COUNT;
 	int MAP_COUNT;
 
+	AnalysesSettings analyses;
+
 	numb mapSettings[MAX_MAP_SETTINGS];
 
 	void CopyFrom(Kernel* kernel)
@@ -197,6 +204,8 @@ public:
 		VAR_COUNT = kernel->VAR_COUNT;
 		PARAM_COUNT = kernel->PARAM_COUNT;
 		MAP_COUNT = kernel->MAP_COUNT;
+
+		analyses = kernel->analyses;
 
 		memcpy(mapSettings, kernel->mapSettings, MAX_MAP_SETTINGS * sizeof(numb));
 	}
@@ -224,5 +233,7 @@ public:
 		kernel->VAR_COUNT = VAR_COUNT;
 		kernel->PARAM_COUNT = PARAM_COUNT;
 		kernel->MAP_COUNT = MAP_COUNT;
+
+		kernel->analyses = analyses;
 	}
 };

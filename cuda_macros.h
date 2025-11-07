@@ -46,8 +46,8 @@
 #define CUDA_kernel		CUDA_marshal.kernel
 #define CUDA_ATTR_COUNT (CUDA_kernel.VAR_COUNT + CUDA_kernel.PARAM_COUNT)
 
-#define STEP_INDICES_X(m) CUDA_marshal.stepIndices[indicesStart + (CUDA_kernel.mapDatas[attributes::maps::m].typeX == PARAMETER ? CUDA_kernel.VAR_COUNT : 0) + CUDA_kernel.mapDatas[attributes::maps::m].indexX]
-#define STEP_INDICES_Y(m) CUDA_marshal.stepIndices[indicesStart + (CUDA_kernel.mapDatas[attributes::maps::m].typeY == PARAMETER ? CUDA_kernel.VAR_COUNT : 0) + CUDA_kernel.mapDatas[attributes::maps::m].indexY]
+//#define STEP_INDICES_X(m) CUDA_marshal.stepIndices[indicesStart + (CUDA_kernel.mapDatas[attributes::maps::m].typeX == PARAMETER ? CUDA_kernel.VAR_COUNT : 0) + CUDA_kernel.mapDatas[attributes::maps::m].indexX]
+//#define STEP_INDICES_Y(m) CUDA_marshal.stepIndices[indicesStart + (CUDA_kernel.mapDatas[attributes::maps::m].typeY == PARAMETER ? CUDA_kernel.VAR_COUNT : 0) + CUDA_kernel.mapDatas[attributes::maps::m].indexY]
 
 // Preparation macros
 

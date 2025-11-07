@@ -14,8 +14,11 @@ std::map<std::string, void(*)(Computation*)> kernelPrograms;
 //std::map<std::string, void(*)(numb*, numb*, numb*)> kernelFDSs;
 std::string selectedKernel;
 
+std::map<std::string, Index> indices;
+
 void common_main()
 {
+    // Kernels
     addKernel(lorenz);
     addKernel(lorenz83);
     addKernel(lorenzVar);
@@ -43,6 +46,10 @@ void common_main()
 
     //selectKernel(kernels.begin()->first);
     selectKernel(lorenz);
+
+    // Indices
+    addIndex("MAX", "Maximum variable value", MINMAX);
+    addIndex("MIN", "Minimum variable value", MINMAX);
 
     imgui_main(0, 0);
 }

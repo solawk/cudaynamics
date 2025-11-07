@@ -42,6 +42,8 @@ extern std::map<std::string, void(*)(Computation*)> kernelPrograms;
 //extern std::map<std::string, void(*)(numb*, numb*, numb*)> kernelFDSs;
 extern std::string selectedKernel;
 
+extern std::map<std::string, Index> indices;
+
 #define addKernel(name)         kernels[#name] = readKernelText(#name); \
                                 kernelTPBs[#name] = THREADS_PER_BLOCK_##name; \
                                 kernelPrograms[#name] = kernelProgram_##name;// \
@@ -51,6 +53,7 @@ extern std::string selectedKernel;
 #define KERNEL_TPB  kernelTPBs[selectedKernel]
 #define KERNEL_PROG kernelPrograms[selectedKernel]
 //#define KERNEL_FDS  kernelFDSs[selectedKernel]
+#define addIndex(name, fullname, function)  indices[name] = Index(fullname, AF_##function);
 
 int compute(Computation*);
 

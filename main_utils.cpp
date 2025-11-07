@@ -165,8 +165,6 @@ Kernel readKernelText(std::string name)
 				kernel.mapSettings[currentSettingsCount++] = (numb)atof(str[4 + i * 2 + 1].c_str());
 			}
 
-			tempMapData.typeX = tempMapData.typeY = MDT_Variable;
-			tempMapData.indexX = tempMapData.indexY = 0;
 			tempMapData.userEnabled = true;
 
 			kernel.mapDatas.push_back(tempMapData);

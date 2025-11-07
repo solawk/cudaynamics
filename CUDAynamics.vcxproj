@@ -142,6 +142,7 @@
     <ClCompile Include="variationSteps.cu" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="analysesSettings_struct.h" />
     <ClInclude Include="analysis.h" />
     <ClInclude Include="analysis\lle\lle.h" />
     <ClInclude Include="analysis\max\max.h" />

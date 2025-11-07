@@ -1232,7 +1232,7 @@ int imgui_main(int, char**)
 
             Kernel* krn = HIRES_ON ? &kernelHiresNew : &kernelNew; // Workaround for Win11
 
-            for (int m = 0; m < krn->MAP_COUNT; m++)
+            /*for (int m = 0; m < krn->MAP_COUNT; m++)
             {
                 bool mapUserEnabled = krn->mapDatas[m].userEnabled;
                 ImGui::Checkbox(("##MapEnabled" + krn->mapDatas[m].name).c_str(), &mapUserEnabled);
@@ -1260,6 +1260,39 @@ int imgui_main(int, char**)
                         }
                         ImGui::PopItemWidth();
                     }
+
+                    ImGui::TreePop();
+                }
+            }*/
+
+            for (auto& indexPair : indices)
+            {
+                bool indexUserEnabled = indexPair.second.enabled;
+                ImGui::Checkbox(("##MapEnabled" + indexPair.second.name).c_str(), &indexUserEnabled);
+                indexPair.second.enabled = indexUserEnabled;
+                ImGui::SameLine();
+
+                if (ImGui::TreeNode(std::string(indexPair.first + "##MapSettings_" + indexPair.first).c_str()))
+                {
+                    /*for (int s = 0; s < krn->mapDatas[m].settingsCount; s++)
+                    {
+                        ImGui::Text(krn->mapDatas[m].settingName[s].c_str());
+                        ImGui::SameLine();
+                        ImGui::PushItemWidth(150.0f);
+                        if (krn->mapDatas[m].isSettingNumb[s])
+                        {
+                            double setting = (double)krn->mapSettings[krn->mapDatas[m].settingsOffset + s];
+                            ImGui::InputDouble(("##Setting" + krn->mapDatas[m].settingName[s] + "_" + krn->mapDatas[m].name).c_str(), &setting);
+                            krn->mapSettings[krn->mapDatas[m].settingsOffset + s] = (numb)setting;
+                        }
+                        else
+                        {
+                            int setting = (int)krn->mapSettings[krn->mapDatas[m].settingsOffset + s];
+                            ImGui::InputInt(("##Setting" + krn->mapDatas[m].settingName[s] + "_" + krn->mapDatas[m].name).c_str(), &setting);
+                            krn->mapSettings[krn->mapDatas[m].settingsOffset + s] = (numb)setting;
+                        }
+                        ImGui::PopItemWidth();
+                    }*/
 
                     ImGui::TreePop();
                 }

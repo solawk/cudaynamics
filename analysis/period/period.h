@@ -6,7 +6,6 @@
 
 #include "../analysis.h"
 #include "../computation_struct.h"
-#include "../mapData_struct.h"
 
 using namespace std;
 

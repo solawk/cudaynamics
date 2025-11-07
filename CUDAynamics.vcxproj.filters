@@ -203,6 +203,7 @@
     <ClInclude Include="constraint.h">
       <Filter>gui</Filter>
     </ClInclude>
+    <ClInclude Include="analysesSettings_struct.h" />
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="main.cu" />

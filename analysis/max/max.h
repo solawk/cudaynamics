@@ -1,7 +1,6 @@
 #pragma once
 #include "../analysis.h"
 #include "../computation_struct.h"
-#include "../mapData_struct.h"
 
 struct MAX_Settings
 {

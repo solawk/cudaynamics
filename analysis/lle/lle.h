@@ -1,7 +1,6 @@
 #pragma once
 #include "../analysis.h"
 #include "../computation_struct.h"
-#include "../mapData_struct.h"
 
 #define MAX_LLE_NORM_VARIABLES	4
 

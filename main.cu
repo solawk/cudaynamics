@@ -28,7 +28,7 @@ cudaError_t execute(Computation* data)
     //std::chrono::steady_clock::time_point before = std::chrono::steady_clock::now();
     //std::chrono::steady_clock::time_point precompute, incompute;
     //std::chrono::steady_clock::time_point postcompute;
-    std::chrono::steady_clock::time_point tp[8];
+    //std::chrono::steady_clock::time_point tp[8];
 
     cudaError_t cudaStatus;
 
@@ -44,11 +44,11 @@ cudaError_t execute(Computation* data)
     int* cuda_stepIndices = nullptr;
     numb* cuda_maps = nullptr;
 
-    tp[0] = std::chrono::steady_clock::now();
+    //tp[0] = std::chrono::steady_clock::now();
 
     CUDA_SET_DEVICE;
 
-    tp[1] = std::chrono::steady_clock::now();
+    //tp[1] = std::chrono::steady_clock::now();
 
     // Allocation memory on the device for the Computation struct and the buffers
     CUDA_MALLOC(&cuda_computation, sizeof(Computation), "cudaMalloc computation failed!");
@@ -58,7 +58,7 @@ cudaError_t execute(Computation* data)
     CUDA_MALLOC(&cuda_stepIndices, variations * CUDA_ATTR_COUNT * sizeof(int), "cudaMalloc indices failed!");
     if (totalMapValues > 0 && variations > 1) CUDA_MALLOC(&cuda_maps, variations * totalMapValues * sizeof(numb), "cudaMalloc maps failed!");
 
-    tp[2] = std::chrono::steady_clock::now();
+    //tp[2] = std::chrono::steady_clock::now();
 
     // Copying the Computation struct to the device
     CUDA_MEMCPY(cuda_computation, data, cudaMemcpyHostToDevice, sizeof(Computation), "cudaMemcpy computation failed!");
@@ -69,7 +69,7 @@ cudaError_t execute(Computation* data)
     CUDA_MEMCPY(&(cuda_computation->marshal.stepIndices), &cuda_stepIndices, cudaMemcpyHostToDevice, sizeof(int*), "cudaMemcpy indices address failed!");
     if (totalMapValues > 0 && variations > 1) CUDA_MEMCPY(&(cuda_computation->marshal.maps), &cuda_maps, cudaMemcpyHostToDevice, sizeof(numb*), "cudaMemcpy maps address failed!");
 
-    tp[3] = std::chrono::steady_clock::now();
+    //tp[3] = std::chrono::steady_clock::now();
 
     // Copying the values in the buffers themselves to the device
     //CUDA_MEMCPY(cuda_trajectory, CUDA_marshal.trajectory, cudaMemcpyHostToDevice, size * sizeof(numb), "cudaMemcpy data failed!");
@@ -80,7 +80,7 @@ cudaError_t execute(Computation* data)
     if (variations > 1) CUDA_MEMCPY(cuda_maps, CUDA_marshal.maps + (!data->isHires ? 0 : data->startVariationInCurrentExecute),
         cudaMemcpyHostToDevice, variations * totalMapValues * sizeof(numb), "cudaMemcpy maps failed!");
 
-    tp[4] = std::chrono::steady_clock::now();
+    //tp[4] = std::chrono::steady_clock::now();
 
     // Kernel execution
     //precompute = std::chrono::steady_clock::now();
@@ -89,7 +89,7 @@ cudaError_t execute(Computation* data)
     CUDA_SYNCHRONIZE;
     //incompute = std::chrono::steady_clock::now();
 
-    tp[5] = std::chrono::steady_clock::now();
+    //tp[5] = std::chrono::steady_clock::now();
 
     // Copying the trajectories and the maps back to the host
     if (!data->isHires)
@@ -105,7 +105,7 @@ cudaError_t execute(Computation* data)
     if (variations > 1) CUDA_MEMCPY(CUDA_marshal.maps + (!data->isHires ? 0 : data->startVariationInCurrentExecute), cuda_maps,
         cudaMemcpyDeviceToHost, variations * totalMapValues * sizeof(numb), "cudaMemcpy maps back failed!");
 
-    tp[6] = std::chrono::steady_clock::now();
+    //tp[6] = std::chrono::steady_clock::now();
 
 Error:
     if (cuda_trajectory != nullptr) cudaFree(cuda_trajectory);
@@ -116,7 +116,7 @@ Error:
 
     CUDA_RESET;
 
-    tp[7] = std::chrono::steady_clock::now();
+    //tp[7] = std::chrono::steady_clock::now();
 
     for (int i = 0; i < 7; i++)
     {
