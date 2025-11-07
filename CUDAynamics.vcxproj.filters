@@ -204,6 +204,19 @@
       <Filter>gui</Filter>
     </ClInclude>
     <ClInclude Include="analysesSettings_struct.h" />
+    <ClInclude Include="analysisHeaders.h" />
+    <ClInclude Include="numb.h" />
+    <ClInclude Include="analysisSettingsHeaders.h" />
+    <ClInclude Include="analysis\max\max_settings.h">
+      <Filter>analysis\max</Filter>
+    </ClInclude>
+    <ClInclude Include="analysis\lle\lle_settings.h">
+      <Filter>analysis\lle</Filter>
+    </ClInclude>
+    <ClInclude Include="analysis\period\period_settings.h">
+      <Filter>analysis\period</Filter>
+    </ClInclude>
+    <ClInclude Include="port.h" />
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="main.cu" />

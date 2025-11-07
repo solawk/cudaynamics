@@ -1,6 +1,5 @@
 #pragma once
 
-#define numb float
 #define MAX_ATTRIBUTES 128
 #define MAX_MAPS 16
 
@@ -13,6 +12,7 @@
 #include "implot/implot.h"
 #include "quaternion.h"
 #include "plotWindow.h"
+#include "numb.h"
 
 #define calculateStepCount(_min, _max, _step) (_step != 0 ? (int)((_max - _min) / _step) + 1 : 0)
 #define stepFromStepCount(_min, _max, _stepCount) ((_max - _min) / (numb)(_stepCount - 1))
@@ -33,14 +33,6 @@ enum RangingType { RT_None, RT_Step, RT_Linear, RT_UniformRandom, RT_NormalRando
 // Variable step - can change throughout the simulation and be plotted like a variable
 // Discrete step - equals 1
 enum StepType { ST_Parameter, ST_Variable, ST_Discrete };
-
-// Ports to connect Indices to analysis functions
-struct Port
-{
-	bool used;
-	unsigned int offset;
-	unsigned int size;
-};
 
 struct Index
 {

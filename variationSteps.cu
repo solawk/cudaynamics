@@ -1,6 +1,6 @@
 #include "variationSteps.h"
 
-__device__ void variation2Steps(int* variation, int* steps, Kernel* kernel)
+/*__device__ void variation2Steps(int* variation, int* steps, Kernel* kernel)
 {
     int totalAttributes = kernel->VAR_COUNT + kernel->PARAM_COUNT; for (int i = 0; i < kernel->VAR_COUNT + kernel->PARAM_COUNT; i++) steps[i] = 0;
     int localVariation = *variation;
@@ -19,7 +19,7 @@ __device__ void variation2Steps(int* variation, int* steps, Kernel* kernel)
             steps[j] = 0;
         }
     }
-}
+}*/
 
 void steps2Variation(int* variation, int* steps, Kernel* kernel)
 {

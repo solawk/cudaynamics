@@ -1,6 +1,12 @@
 #pragma once
+
+#include "imgui/backends/imgui_impl_win32.h"
+#include "imgui/backends/imgui_impl_dx11.h"
+#include "implot.h"
+
 #include "mapData_struct.h"
 #include "colorLUT_struct.h"
+#include "numb.h"
 
 struct HeatmapValues
 {

@@ -1,0 +1,9 @@
+#pragma once
+
+// Ports to connect Indices to analysis functions
+struct Port
+{
+	bool used;
+	unsigned int offset;
+	unsigned int size;
+};

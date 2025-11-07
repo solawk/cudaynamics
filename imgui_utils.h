@@ -1,5 +1,6 @@
 #pragma once
-#include "imgui_main.hpp"
+//#include "imgui_main.hpp"
+#include "main.h"
 #include "implot/implot.h"
 #include <tchar.h>
 #include <stdio.h>

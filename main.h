@@ -5,7 +5,7 @@
 #include "imgui_main.hpp"
 #include "main_utils.h"
 #include <objects.h>
-#include "analysis.h"
+//#include "analysis.h"
 #include "kernel_struct.h"
 #include "computation_struct.h"
 #include "mapData_struct.h"
