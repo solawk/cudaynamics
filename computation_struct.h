@@ -1,6 +1,5 @@
 #pragma once
 #include <future>
-#include "objects.h"
 #include "marshal_struct.h"
 
 // Computation stores the marshal and metainformation about a CUDA launch

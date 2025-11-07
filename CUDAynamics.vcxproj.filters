@@ -217,6 +217,7 @@
       <Filter>analysis\period</Filter>
     </ClInclude>
     <ClInclude Include="port.h" />
+    <ClInclude Include="systemsHeaders.h" />
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="main.cu" />
