@@ -4,7 +4,6 @@
 #include "../mapData_struct.h"
 
 #define MAX_LLE_NORM_VARIABLES	4
-#define LLE_SETTINGS_COUNT		(3 + MAX_LLE_NORM_VARIABLES)
 
 struct LLE_Settings
 {
