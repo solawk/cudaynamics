@@ -32,4 +32,9 @@ enum RangingType { RT_None, RT_Step, RT_Linear, RT_UniformRandom, RT_NormalRando
 // Discrete step - equals 1
 enum StepType { ST_Parameter, ST_Variable, ST_Discrete };
 
-
+// Ports to connect Indices to analysis functions
+struct Port
+{
+	unsigned int offset;
+	unsigned int size;
+};
