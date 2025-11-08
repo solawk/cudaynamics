@@ -287,6 +287,9 @@
     <CudaCompile Include="analysis\period\period.cu">
       <Filter>analysis\period</Filter>
     </CudaCompile>
+    <CudaCompile Include="systems\mixed\mixed.cu">
+      <Filter>systems</Filter>
+    </CudaCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="CUDAynamics.rc" />

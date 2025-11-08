@@ -213,6 +213,7 @@
       <FastMath Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</FastMath>
     </CudaCompile>
     <CudaCompile Include="systems\mishchenko\mishchenko.cu" />
+    <CudaCompile Include="systems\mixed\mixed.cu" />
     <CudaCompile Include="systems\rabinovich_fabrikant\rabinovich_fabrikant.cu" />
     <CudaCompile Include="systems\rossler\rossler.cu" />
     <CudaCompile Include="systems\sang\sang.cu" />

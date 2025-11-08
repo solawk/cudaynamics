@@ -35,6 +35,7 @@
 #include "systems/mishchenko/mishchenko.h"
 #include "systems/vnm/vnm.h"
 #include "systems/fitzhugh_nagumo/fitzhugh_nagumo.h"
+#include "systems/mixed/mixed.h"
 
 extern std::map<std::string, Kernel> kernels;
 extern std::map<std::string, int> kernelTPBs;
