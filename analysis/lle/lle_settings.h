@@ -2,10 +2,11 @@
 #include "cuda_runtime.h"
 #include "../port.h"
 #include "../numb.h"
+#include "abstractSettings_struct.h"
 
-#define MAX_LLE_NORM_VARIABLES	4
+constexpr int MAX_LLE_NORM_VARIABLES = 4;
 
-struct LLE_Settings
+struct LLE_Settings : AbstractAnalysisSettingsStruct
 {
 	numb r;			// Initial deflection
 	int L;			// Deflection observation duration (steps)
@@ -13,10 +14,7 @@ struct LLE_Settings
 	int variableToDeflect;	// Variable to initially deflect
 	int normVariables[MAX_LLE_NORM_VARIABLES];	// Variables to count the norm with (-1 if not counting)
 
-	LLE_Settings()
-	{
-
-	}
+	LLE_Settings() {}
 
 	__device__ LLE_Settings(numb _r, int _L, int _varToDeflect)
 	{

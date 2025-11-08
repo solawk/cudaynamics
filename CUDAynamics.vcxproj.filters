@@ -218,6 +218,7 @@
     </ClInclude>
     <ClInclude Include="port.h" />
     <ClInclude Include="systemsHeaders.h" />
+    <ClInclude Include="abstractSettings_struct.h" />
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="main.cu" />

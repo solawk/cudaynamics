@@ -5,8 +5,5 @@ struct AnalysesSettings
 {
 	MAX_Settings MAX;
 
-	AnalysesSettings()
-	{
-
-	}
+	AnalysesSettings() {}
 };
