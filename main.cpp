@@ -48,8 +48,12 @@ void common_main()
     selectKernel(lorenz);
 
     // Indices
-    addIndex("MAX", "Maximum variable value", MINMAX);
-    addIndex("MIN", "Minimum variable value", MINMAX);
+    addIndex(MAX, "Maximum variable value", MINMAX);
+    addIndex(MIN, "Minimum variable value", MINMAX);
+    addIndex(LLE, "Largest Lyapunov exponent", LLE);
+    addIndex(PERIOD, "Periodicity", PERIOD);
+    addIndex(MNPEAK, "Mean Peak", PERIOD);
+    addIndex(MNINT, "Mean Interval", PERIOD);
 
     imgui_main(0, 0);
 }

@@ -1,6 +1,6 @@
 #include "period.h"
 
-__device__  void Period(Computation* data, DBSCAN_Settings settings, int variation, void(*finiteDifferenceScheme)(numb*, numb*, numb*), int offset_period, int offset_meanPeak, int offset_meanInterval) {
+__device__  void Period(Computation* data, int variation, void(*finiteDifferenceScheme)(numb*, numb*, numb*), int offset_period, int offset_meanPeak, int offset_meanInterval) {
     int variationStart = variation * CUDA_marshal.variationSize;
     int varCount = CUDA_kernel.VAR_COUNT;
     int variationSize = CUDA_marshal.variationSize;
@@ -18,6 +18,7 @@ __device__  void Period(Computation* data, DBSCAN_Settings settings, int variati
     for (int v = 0; v < varCount; v++) variablesCurr[v] = variables[v];
 
     // Map Settings for peak finder and DBSCAN analysis
+    DBSCAN_Settings settings = CUDA_kernel.analyses.PERIOD;
     numb epsDBSCAN = settings.eps;  //eps value for dbscan
     int analysedVariable = settings.analysedVariable; //variable of which peak finder analyses trajectory
     numb coefPeaks = settings.CoefPeaks;    //coefficient for peaks found in peakfinder

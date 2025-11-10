@@ -10,6 +10,7 @@
 #include "mapData_struct.h"
 #include "variationSteps.h"
 #include "systemsHeaders.h"
+#include "abstractSettings_struct.h"
 
 extern std::map<std::string, Kernel> kernels;
 extern std::map<std::string, int> kernelTPBs;
@@ -28,7 +29,8 @@ extern std::map<std::string, Index> indices;
 #define KERNEL_TPB  kernelTPBs[selectedKernel]
 #define KERNEL_PROG kernelPrograms[selectedKernel]
 //#define KERNEL_FDS  kernelFDSs[selectedKernel]
-#define addIndex(name, fullname, function)  indices[name] = Index(fullname, AF_##function);
+
+#define addIndex(name, fullname, function)  indices[#name] = Index(fullname, ANF_##function);
 
 int compute(Computation*);
 

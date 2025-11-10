@@ -106,7 +106,7 @@ __device__ void LLE_cpu(Computation* data, LLE_Settings settings, int variation,
         if (s % L == 0)
         {
             numb norm = 0.0;
-            for (int i = 0; i < MAX_LLE_NORM_VARIABLES; i++)
+            for (int i = 0; i < 4; i++)
             {
                 if (settings.normVariables[i] == -1) break;
 

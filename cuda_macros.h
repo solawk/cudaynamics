@@ -33,7 +33,7 @@
 #define ifSIGNAL(p, n)  if ((int)p == attributes::waveforms::n)
 
 // Map settings
-#define MS(map, offset) CUDA_kernel.mapSettings[data->marshal.kernel.mapDatas[attributes::maps::map].settingsOffset + offset]
+#define MS(map, offset) 0.0
 
 #define MO(map)         (CUDA_kernel.mapDatas[attributes::maps::map].offset * CUDA_marshal.totalVariations)
 

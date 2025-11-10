@@ -3,7 +3,9 @@
 
 struct AnalysesSettings
 {
-	MAX_Settings MAX;
+	MINMAX_Settings MINMAX;
+	LLE_Settings LLE;
+	DBSCAN_Settings PERIOD;
 
 	AnalysesSettings() {}
 };

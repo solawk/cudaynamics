@@ -1,13 +1,13 @@
 #include "max.h"
 
-__device__ void MAX(Computation* data, MAX_Settings settings, int variation, void(* finiteDifferenceScheme)(numb*, numb*, numb*), int offset)
+__device__ void MAX(Computation* data, int variation, void(* finiteDifferenceScheme)(numb*, numb*, numb*), int offset)
 {
     int stepStart, variationStart = variation * CUDA_marshal.variationSize;
     LOCAL_BUFFERS;
     LOAD_ATTRIBUTES(true);
     if (data->isHires) TRANSIENT_SKIP_NEW(finiteDifferenceScheme);
 
-    int var = settings.maxVariableIndex;
+    int var = CUDA_kernel.analyses.MINMAX.maxVariableIndex;
     numb maxValue = 0.0;
 
     for (int s = 0; s < CUDA_kernel.steps; s++)

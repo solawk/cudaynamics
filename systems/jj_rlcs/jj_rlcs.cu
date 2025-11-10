@@ -36,19 +36,19 @@ __global__ void kernelProgram_jj_rlcs(Computation* data)
     {
         LLE_Settings lle_settings(MS(LLE, 0), MS(LLE, 1), MS(LLE, 2));
         lle_settings.Use3DNorm();
-        LLE(data, lle_settings, variation, &finiteDifferenceScheme_jj_rlcs, MO(LLE));
+        LLE(data, variation, &finiteDifferenceScheme_jj_rlcs, MO(LLE));
     }
 
     if (M(MAX).toCompute)
     {
-        MAX_Settings max_settings(MS(MAX, 0));
-        MAX(data, max_settings, variation, &finiteDifferenceScheme_jj_rlcs, MO(MAX));
+        MINMAX_Settings max_settings(MS(MAX, 0));
+        MAX(data, variation, &finiteDifferenceScheme_jj_rlcs, MO(MAX));
     }
     if (M(Period).toCompute || M(MeanInterval).toCompute || M(MeanPeak).toCompute)
     {
         DBSCAN_Settings dbscan_settings(MS(Period, 0), MS(MeanInterval, 0), MS(Period, 1), MS(Period, 2), MS(MeanInterval, 1), MS(MeanInterval, 2), MS(MeanInterval, 3), MS(MeanInterval, 4),
             H);
-        Period(data, dbscan_settings, variation, &finiteDifferenceScheme_jj_rlcs, MO(Period), MO(MeanPeak), MO(MeanInterval));
+        Period(data, variation, &finiteDifferenceScheme_jj_rlcs, MO(Period), MO(MeanPeak), MO(MeanInterval));
     }
 }
 

@@ -1268,31 +1268,24 @@ int imgui_main(int, char**)
             for (auto& indexPair : indices)
             {
                 bool indexUserEnabled = indexPair.second.enabled;
-                ImGui::Checkbox(("##MapEnabled" + indexPair.second.name).c_str(), &indexUserEnabled);
+                ImGui::Checkbox(("##IndexEnabled" + indexPair.first).c_str(), &indexUserEnabled);
                 indexPair.second.enabled = indexUserEnabled;
                 ImGui::SameLine();
 
-                if (ImGui::TreeNode(std::string(indexPair.first + "##MapSettings_" + indexPair.first).c_str()))
+                if (ImGui::TreeNode(std::string(indexPair.second.name + "##AnFuncSettings_" + indexPair.first).c_str()))
                 {
-                    /*for (int s = 0; s < krn->mapDatas[m].settingsCount; s++)
+                    switch (indexPair.second.function)
                     {
-                        ImGui::Text(krn->mapDatas[m].settingName[s].c_str());
-                        ImGui::SameLine();
-                        ImGui::PushItemWidth(150.0f);
-                        if (krn->mapDatas[m].isSettingNumb[s])
-                        {
-                            double setting = (double)krn->mapSettings[krn->mapDatas[m].settingsOffset + s];
-                            ImGui::InputDouble(("##Setting" + krn->mapDatas[m].settingName[s] + "_" + krn->mapDatas[m].name).c_str(), &setting);
-                            krn->mapSettings[krn->mapDatas[m].settingsOffset + s] = (numb)setting;
-                        }
-                        else
-                        {
-                            int setting = (int)krn->mapSettings[krn->mapDatas[m].settingsOffset + s];
-                            ImGui::InputInt(("##Setting" + krn->mapDatas[m].settingName[s] + "_" + krn->mapDatas[m].name).c_str(), &setting);
-                            krn->mapSettings[krn->mapDatas[m].settingsOffset + s] = (numb)setting;
-                        }
-                        ImGui::PopItemWidth();
-                    }*/
+                    case AnalysisFunction::ANF_MINMAX:
+                        krn->analyses.MINMAX.DisplaySettings();
+                        break;
+                    case AnalysisFunction::ANF_LLE:
+                        krn->analyses.LLE.DisplaySettings();
+                        break;
+                    case AnalysisFunction::ANF_PERIOD:
+                        krn->analyses.PERIOD.DisplaySettings();
+                        break;
+                    }
 
                     ImGui::TreePop();
                 }

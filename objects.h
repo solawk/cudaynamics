@@ -21,7 +21,8 @@
 #define stepFromValue(_min, _step, _value) (int)((_value - _min) / _step)
 #define valueFromStep(_min, _step, _index) (_min + _step * _index)
 
-enum AnalysisFunction { AF_MINMAX };
+// This enum lists all present analysis functions in the project
+enum AnalysisFunction { ANF_MINMAX, ANF_LLE, ANF_PERIOD };
 
 // None - no ranging, only the min value
 // Linear - fixed step values from min (inclusive) to max (not necessarily inclusive)
@@ -44,7 +45,7 @@ struct Index
 	{
 		enabled = false;
 		name = "ERROR";
-		function = AF_MINMAX;
+		function = ANF_MINMAX;
 	}
 
 	Index(std::string _name, AnalysisFunction _function)
