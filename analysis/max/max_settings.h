@@ -16,11 +16,7 @@ struct MINMAX_Settings : AbstractAnalysisSettingsStruct
 	MINMAX_Settings() 
 	{
 		maxVariableIndex = minVariableIndex = 0;
-	}
-
-	__device__ MINMAX_Settings(int _var)
-	{
-		maxVariableIndex = _var;
+		maximum = minimum = Port();
 	}
 
 	void DisplaySettings()

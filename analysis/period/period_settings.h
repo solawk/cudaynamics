@@ -19,6 +19,8 @@ struct DBSCAN_Settings : AbstractAnalysisSettingsStruct
     numb peakThreshold;
     numb stepSize;
 
+    Port periodicity, meanPeak, meanInterval;
+
     DBSCAN_Settings()
     {
         eps = (numb)1.0;
@@ -30,19 +32,8 @@ struct DBSCAN_Settings : AbstractAnalysisSettingsStruct
         timeFractionFXP = (numb)0.05;
         peakThreshold = (numb)-INFINITY;
         stepSize = (numb)0.01;
-    }
 
-    __device__ DBSCAN_Settings(numb _eps, int _analysedVariable, numb _CoefIntervals, numb _CoefPeaks, numb _maxAllowedValue, numb _epsFXP, numb _timeFractionFXP, numb _peakThreshold, numb _stepSize)
-    {
-        CoefIntervals = _CoefIntervals;
-        CoefPeaks = _CoefPeaks;
-        eps = _eps;
-        analysedVariable = _analysedVariable;
-        maxAllowedValue = _maxAllowedValue;
-        epsFXP = _epsFXP;
-        timeFractionFXP = _timeFractionFXP;
-        peakThreshold = _peakThreshold;
-        stepSize = _stepSize;
+        periodicity = meanPeak = meanInterval = Port();
     }
 
     void DisplaySettings()
@@ -57,5 +48,4 @@ struct DBSCAN_Settings : AbstractAnalysisSettingsStruct
         DisplayNumbSetting("peakThreshold", peakThreshold);
         DisplayNumbSetting("stepSize", stepSize);
     }
-
 };

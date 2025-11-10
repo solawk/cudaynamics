@@ -361,7 +361,7 @@ void prepareAndCompute(bool hires)
 
         KERNEL.CopyFrom(&kernelNew);
         KERNEL.PrepareAttributes();
-        KERNEL.AssessMapAttributes(&attributeValueIndices);
+        KERNEL.AssessMapAttributes();
 
         computing();
     }
@@ -369,7 +369,7 @@ void prepareAndCompute(bool hires)
     {
         kernelHiresComputed.CopyFrom(&kernelHiresNew);
         kernelHiresComputed.PrepareAttributes();
-        kernelHiresComputed.AssessMapAttributes(&attributeValueIndicesHires);
+        kernelHiresComputed.AssessMapAttributes();
 
         hiresComputing();
     }
@@ -1268,11 +1268,11 @@ int imgui_main(int, char**)
             for (auto& indexPair : indices)
             {
                 bool indexUserEnabled = indexPair.second.enabled;
-                ImGui::Checkbox(("##IndexEnabled" + indexPair.first).c_str(), &indexUserEnabled);
+                ImGui::Checkbox(("##IndexEnabled" + indexPair.second.name).c_str(), &indexUserEnabled);
                 indexPair.second.enabled = indexUserEnabled;
                 ImGui::SameLine();
 
-                if (ImGui::TreeNode(std::string(indexPair.second.name + "##AnFuncSettings_" + indexPair.first).c_str()))
+                if (ImGui::TreeNode(std::string(indexPair.second.name + "##AnFuncSettings_" + indexPair.second.name).c_str()))
                 {
                     switch (indexPair.second.function)
                     {

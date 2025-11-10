@@ -65,6 +65,9 @@
     <ClCompile Include="benchmarking\cpu_bm.cpp">
       <Filter>benchmarking</Filter>
     </ClCompile>
+    <ClCompile Include="kernel_map.cpp" />
+    <ClCompile Include="indices_map.cpp" />
+    <ClCompile Include="index2port.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="imgui">
@@ -219,6 +222,11 @@
     <ClInclude Include="port.h" />
     <ClInclude Include="systemsHeaders.h" />
     <ClInclude Include="abstractSettings_struct.h" />
+    <ClInclude Include="index.h" />
+    <ClInclude Include="anfuncs.h" />
+    <ClInclude Include="index2port.h" />
+    <ClInclude Include="indices_map.h" />
+    <ClInclude Include="kernel_map.h" />
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="main.cu" />

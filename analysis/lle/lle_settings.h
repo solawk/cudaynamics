@@ -12,6 +12,8 @@ struct LLE_Settings : AbstractAnalysisSettingsStruct
 	int variableToDeflect;	// Variable to initially deflect
 	int normVariables[4];	// Variables to count the norm with (-1 if not counting)
 
+	Port LLE;
+
 	LLE_Settings() 
 	{
 		r = (numb)0.01;
@@ -21,22 +23,8 @@ struct LLE_Settings : AbstractAnalysisSettingsStruct
 		normVariables[1] = 1;
 		normVariables[2] = 2;
 		normVariables[3] = -1;
-	}
 
-	__device__ LLE_Settings(numb _r, int _L, int _varToDeflect)
-	{
-		r = _r;
-		L = _L;
-		variableToDeflect = _varToDeflect;
-		normVariables[0] = -1;
-	}
-
-	__device__ void Use3DNorm()
-	{
-		normVariables[0] = 0;
-		normVariables[1] = 1;
-		normVariables[2] = 2;
-		normVariables[3] = -1;
+		LLE = Port();
 	}
 
 	void DisplaySettings()

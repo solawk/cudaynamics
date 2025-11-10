@@ -5,5 +5,5 @@ struct Port
 {
 	bool used;
 	unsigned int offset;
-	unsigned int size;
+	unsigned int size; // previously valueCount
 };

@@ -136,6 +136,9 @@
     <ClCompile Include="implot3d\implot3d_meshes.cpp" />
     <ClCompile Include="implot\implot.cpp" />
     <ClCompile Include="implot\implot_items.cpp" />
+    <ClCompile Include="index2port.cpp" />
+    <ClCompile Include="indices_map.cpp" />
+    <ClCompile Include="kernel_map.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="main_utils.cpp" />
     <ClCompile Include="map_utils.cpp" />
@@ -153,6 +156,7 @@
     <ClInclude Include="analysis\max\max_settings.h" />
     <ClInclude Include="analysis\period\period.h" />
     <ClInclude Include="analysis\period\period_settings.h" />
+    <ClInclude Include="anfuncs.h" />
     <ClInclude Include="attribute_struct.h" />
     <ClInclude Include="benchmarking\cpu_bm.h" />
     <ClInclude Include="colorLUT_struct.h" />
@@ -185,7 +189,11 @@
     <ClInclude Include="implot3d\implot3d_internal.h" />
     <ClInclude Include="implot\implot.h" />
     <ClInclude Include="implot\implot_internal.h" />
+    <ClInclude Include="index.h" />
+    <ClInclude Include="index2port.h" />
+    <ClInclude Include="indices_map.h" />
     <ClInclude Include="kernels_common.h" />
+    <ClInclude Include="kernel_map.h" />
     <ClInclude Include="kernel_struct.h" />
     <ClInclude Include="main.h" />
     <ClInclude Include="main_utils.h" />

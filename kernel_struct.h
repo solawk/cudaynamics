@@ -5,8 +5,6 @@
 #include "constraint.h"
 #include "analysesSettings_struct.h"
 
-#define MAX_MAP_SETTINGS 256
-
 // TODOs:
 // We need to add a proper "none/fixed/variable" step
 // We need to add decimation
@@ -60,7 +58,7 @@ public:
 	int MAP_COUNT;
 
 	// An array of map setting values
-	numb mapSettings[MAX_MAP_SETTINGS];
+	//numb mapSettings[MAX_MAP_SETTINGS];
 
 	void calcAttributeCounts()
 	{
@@ -108,7 +106,7 @@ public:
 		
 		analyses = kernel->analyses;
 
-		for (int i = 0; i < MAX_MAP_SETTINGS; i++) mapSettings[i] = kernel->mapSettings[i];
+		//for (int i = 0; i < MAX_MAP_SETTINGS; i++) mapSettings[i] = kernel->mapSettings[i];
 	}
 
 	void CopyParameterValuesFrom(Kernel* kernel)
@@ -147,12 +145,12 @@ public:
 		}
 	}
 
-	void AssessMapAttributes(std::vector<int>* avi)
+	void AssessMapAttributes()
 	{
-		for (int i = 0; i < MAP_COUNT; i++)
+		/*for (int i = 0; i < MAP_COUNT; i++)
 		{
 			mapDatas[i].toCompute = mapDatas[i].userEnabled;
-		}
+		}*/
 	}
 };
 
@@ -180,7 +178,7 @@ public:
 
 	AnalysesSettings analyses;
 
-	numb mapSettings[MAX_MAP_SETTINGS];
+	//numb mapSettings[MAX_MAP_SETTINGS];
 
 	void CopyFrom(Kernel* kernel)
 	{
@@ -207,7 +205,7 @@ public:
 
 		analyses = kernel->analyses;
 
-		memcpy(mapSettings, kernel->mapSettings, MAX_MAP_SETTINGS * sizeof(numb));
+		//memcpy(mapSettings, kernel->mapSettings, MAX_MAP_SETTINGS * sizeof(numb));
 	}
 
 	void CopyTo(Kernel* kernel)

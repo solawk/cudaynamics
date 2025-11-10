@@ -15,7 +15,7 @@
 
 #include "imgui/backends/imgui_impl_win32.h"
 #include "imgui/backends/imgui_impl_dx11.h"
-#include "main.h"
+#include "kernel_map.h"
 
 #include "implot/implot.h"
 #include <tchar.h>
@@ -28,6 +28,9 @@
 #include "heatmapSizing_struct.h"
 #include "map_utils.hpp"
 #include "gui/imgui_ui_funcs.h"
+#include "index.h"
+#include "indices_map.h"
+#include "index2port.h"
 
 bool CreateDeviceD3D(HWND hWnd);
 void CleanupDeviceD3D();

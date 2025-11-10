@@ -8,6 +8,8 @@
 #include "cuda_macros.h"
 #include <objects.h>
 #include "benchmarking/cpu_bm.h"
+#include "indices_map.h"
+#include "index2port.h"
 
 #define PRINT_TIME 0
 
@@ -172,7 +174,8 @@ int compute(Computation* data)
     // Vector of attribute steps (indices of values) is now outside the filling function, this way we can use it in several iterations, essential for hi-res computations
     int* attributeStepIndices = new int[CUDA_ATTR_COUNT];
     for (int i = 0; i < CUDA_ATTR_COUNT; i++) attributeStepIndices[i] = 0;
-    setMapValues(data);
+    //setMapValues(data);
+    setupAnFuncs(data);
 
     bool hasFailed = false;
     cudaError_t cudaStatus;
@@ -310,6 +313,44 @@ void fillAttributeBuffers(Computation* data, int* attributeStepIndices, unsigned
                 attributeStepIndices[j] = 0;
             }
         }
+    }
+}
+
+void setupAnFuncs(Computation* data)
+{
+    for (auto& indexPair : indices)
+        index2port(CUDA_kernel.analyses, indexPair.first)->used = indexPair.second.enabled;
+
+    if (CUDA_marshal.totalVariations == 1)
+        for (auto& indexPair : indices)
+            index2port(CUDA_kernel.analyses, indexPair.first)->used = false;
+
+    int offset = 0;
+    for (auto& indexPair : indices)
+    {
+        Port* port = index2port(CUDA_kernel.analyses, indexPair.first);
+        if (port->used)
+        {
+            port->offset = offset;
+            offset += port->size;
+        }
+    }
+    CUDA_marshal.totalMapValuesPerVariation = offset;
+
+    // Initialize buffer
+    if (CUDA_marshal.totalVariations > 1 && CUDA_marshal.maps == nullptr)
+    {
+        CUDA_marshal.maps = new numb[CUDA_marshal.totalVariations * CUDA_marshal.totalMapValuesPerVariation];
+    }
+
+    // Copy previous map values if present
+    if (data->isFirst || CUDA_kernel.mapWeight == 1.0f)
+    {
+        memset(CUDA_marshal.maps, 0, sizeof(numb) * CUDA_marshal.totalVariations * CUDA_marshal.totalMapValuesPerVariation);
+    }
+    else
+    {
+        memcpy(CUDA_marshal.maps, data->otherMarshal->maps, sizeof(numb) * CUDA_marshal.totalVariations * CUDA_marshal.totalMapValuesPerVariation);
     }
 }
 

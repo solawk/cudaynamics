@@ -11,31 +11,27 @@
 #include "variationSteps.h"
 #include "systemsHeaders.h"
 #include "abstractSettings_struct.h"
+#include "kernel_map.h"
+#include "indices_map.h"
 
-extern std::map<std::string, Kernel> kernels;
-extern std::map<std::string, int> kernelTPBs;
-extern std::map<std::string, void(*)(Computation*)> kernelPrograms;
-//extern std::map<std::string, void(*)(numb*, numb*, numb*)> kernelFDSs;
-extern std::string selectedKernel;
-
-extern std::map<std::string, Index> indices;
+//extern std::map<AnalysisIndex, Index> indices;
 
 #define addKernel(name)         kernels[#name] = readKernelText(#name); \
                                 kernelTPBs[#name] = THREADS_PER_BLOCK_##name; \
-                                kernelPrograms[#name] = kernelProgram_##name;// \
-                                //kernelFDSs[#name] = finiteDifferenceScheme_##name;
+                                kernelPrograms[#name] = kernelProgram_##name;
 #define selectKernel(name)      selectedKernel = #name;
 #define KERNEL      kernels[selectedKernel]
 #define KERNEL_TPB  kernelTPBs[selectedKernel]
 #define KERNEL_PROG kernelPrograms[selectedKernel]
-//#define KERNEL_FDS  kernelFDSs[selectedKernel]
 
-#define addIndex(name, fullname, function)  indices[#name] = Index(fullname, ANF_##function);
+#define addIndex(name, fullname, function, size)  indices[name] = Index(fullname, ANF_##function, size);
 
 int compute(Computation*);
 
 // Fill trajectory and parameter buffers with initial values
 void fillAttributeBuffers(Computation* data, int* attributeStepIndices, unsigned long long startVariation, unsigned long long endVariation, bool onlyTrajectory);
+
+void setupAnFuncs(Computation*);
 
 // Set and copy map buffers for continuous map computation
 void setMapValues(Computation*);
