@@ -34,17 +34,17 @@ __global__ void kernelProgram_fourwing(Computation* data)
 
     if (M(LLE).toCompute)
     {
-        LLE(data, variation, &finiteDifferenceScheme_fourwing, MO(LLE));
+        LLE(data, variation, &finiteDifferenceScheme_fourwing);
     }
 
     if (M(MAX).toCompute)
     {
-        MAX(data, variation, &finiteDifferenceScheme_fourwing, MO(MAX));
+        MAX(data, variation, &finiteDifferenceScheme_fourwing);
     }
 
     if (M(Period).toCompute || M(MeanInterval).toCompute || M(MeanPeak).toCompute)
     {
-        Period(data, variation, &finiteDifferenceScheme_fourwing, MO(Period), MO(MeanPeak), MO(MeanInterval));
+        Period(data, variation, &finiteDifferenceScheme_fourwing);
     }
 }
 

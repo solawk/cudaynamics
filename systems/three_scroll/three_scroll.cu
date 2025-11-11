@@ -34,17 +34,17 @@ __global__ void kernelProgram_three_scroll(Computation* data)
 
     if (M(LLE).toCompute)
     {
-        LLE(data, variation, &finiteDifferenceScheme_three_scroll, MO(LLE));
+        LLE(data, variation, &finiteDifferenceScheme_three_scroll);
     }
 
     if (M(MAX).toCompute)
     {
-        MAX(data, variation, &finiteDifferenceScheme_three_scroll, MO(MAX));
+        MAX(data, variation, &finiteDifferenceScheme_three_scroll);
     }
 
     if (M(Period).toCompute || M(MeanInterval).toCompute || M(MeanPeak).toCompute)
     {
-        Period(data, variation, &finiteDifferenceScheme_three_scroll, MO(Period), MO(MeanPeak), MO(MeanInterval));
+        Period(data, variation, &finiteDifferenceScheme_three_scroll);
     }
 }
 

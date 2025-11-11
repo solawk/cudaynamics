@@ -101,8 +101,8 @@ void plotWindowMenu_File(PlotWindow* window)
 					MessageBoxA(NULL, "Export failed: no map selected (window->variables is empty).", "Export", MB_OK | MB_ICONERROR);
 					break;
 				}
-				const int mapIdx = window->variables[0];
-				if (mapIdx < 0 || mapIdx >= krnl->MAP_COUNT) {
+				const AnalysisIndex mapIdx = (AnalysisIndex)window->variables[0];
+				if (mapIdx < 0 || mapIdx >= indices.size()) {
 					MessageBoxA(NULL, "Export failed: map index out of range.", "Export", MB_OK | MB_ICONERROR);
 					break;
 				}
@@ -111,7 +111,7 @@ void plotWindowMenu_File(PlotWindow* window)
 				sizing.loadPointers(krnl, const_cast<HeatmapProperties*>(heatmap));
 				sizing.initValues();
 
-				const std::string mapName = krnl->mapDatas[mapIdx].name;
+				const std::string mapName = indices[mapIdx].name;
 				savedPath = exportHeatmapCSV(mapName, sizing, heatmap);
 				attempted = true;
 				break;

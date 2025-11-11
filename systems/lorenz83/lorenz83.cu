@@ -34,16 +34,16 @@ __global__ void kernelProgram_lorenz83(Computation* data)
 
     if (M(LLE).toCompute)
     {
-        LLE(data, variation, &finiteDifferenceScheme_lorenz83, MO(LLE));
+        LLE(data, variation, &finiteDifferenceScheme_lorenz83);
     }
 
     if (M(MAX).toCompute)
     {
-        MAX(data, variation, &finiteDifferenceScheme_lorenz83, MO(MAX));
+        MAX(data, variation, &finiteDifferenceScheme_lorenz83);
     }
     if (M(Period).toCompute || M(MeanInterval).toCompute || M(MeanPeak).toCompute)
     {
-        Period(data, variation, &finiteDifferenceScheme_lorenz83, MO(Period), MO(MeanPeak), MO(MeanInterval));
+        Period(data, variation, &finiteDifferenceScheme_lorenz83);
     }
 }
 

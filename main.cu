@@ -325,6 +325,8 @@ void setupAnFuncs(Computation* data)
         for (auto& indexPair : indices)
             index2port(CUDA_kernel.analyses, indexPair.first)->used = false;
 
+    CUDA_kernel.analyses.Used2ToCompute();
+
     int offset = 0;
     for (auto& indexPair : indices)
     {
@@ -354,7 +356,7 @@ void setupAnFuncs(Computation* data)
     }
 }
 
-void setMapValues(Computation* data)
+/*void setMapValues(Computation* data)
 {
     if (CUDA_marshal.totalVariations == 1)
         for (int m = 0; m < CUDA_kernel.MAP_COUNT; m++)
@@ -389,4 +391,4 @@ void setMapValues(Computation* data)
     {
         memcpy(CUDA_marshal.maps, data->otherMarshal->maps, sizeof(numb) * CUDA_marshal.totalVariations * CUDA_marshal.totalMapValuesPerVariation);
     }
-}
+}*/

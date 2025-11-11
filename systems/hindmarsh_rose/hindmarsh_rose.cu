@@ -34,17 +34,17 @@ __global__ void kernelProgram_hindmarsh_rose(Computation* data)
 
     if (M(LLE).toCompute)
     {
-        LLE(data, variation, &finiteDifferenceScheme_hindmarsh_rose, MO(LLE));
+        LLE(data, variation, &finiteDifferenceScheme_hindmarsh_rose);
     }
 
     if (M(MAX).toCompute)
     {
-        MAX(data, variation, &finiteDifferenceScheme_hindmarsh_rose, MO(MAX));
+        MAX(data, variation, &finiteDifferenceScheme_hindmarsh_rose);
     }
 
     if (M(Period).toCompute || M(MeanInterval).toCompute || M(MeanPeak).toCompute)
     {
-        Period(data, variation, &finiteDifferenceScheme_hindmarsh_rose, MO(Period), MO(MeanPeak), MO(MeanInterval));
+        Period(data, variation, &finiteDifferenceScheme_hindmarsh_rose);
     }
 }
 

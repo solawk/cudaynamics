@@ -33,17 +33,17 @@ __global__ void kernelProgram_bolshakov(Computation* data)
 
     if (M(LLE).toCompute)
     {
-        LLE(data, variation, &finiteDifferenceScheme_bolshakov, MO(LLE));
+        LLE(data, variation, &finiteDifferenceScheme_bolshakov);
     }
 
     if (M(MAX).toCompute)
     {
-        MAX(data, variation, &finiteDifferenceScheme_bolshakov, MO(MAX));
+        MAX(data, variation, &finiteDifferenceScheme_bolshakov);
     }
 
     if (M(Period).toCompute || M(MeanInterval).toCompute || M(MeanPeak).toCompute)
     {
-        Period(data, variation, &finiteDifferenceScheme_bolshakov, MO(Period), MO(MeanPeak), MO(MeanInterval));
+        Period(data, variation, &finiteDifferenceScheme_bolshakov);
     }
 }
 

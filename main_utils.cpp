@@ -151,7 +151,7 @@ Kernel readKernelText(std::string name)
 			tempMapData.valueCount = atoi(str[2].c_str());
 			tempMapData.userEnabled = true;
 
-			kernel.mapDatas.push_back(tempMapData);
+			//kernel.mapDatas.push_back(tempMapData);
 		}
 	}
 

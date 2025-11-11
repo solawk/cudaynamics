@@ -34,17 +34,17 @@ __global__ void kernelProgram_halvorsen(Computation* data)
 
     if (M(LLE).toCompute)
     {
-        LLE(data, variation, &finiteDifferenceScheme_halvorsen, MO(LLE));
+        LLE(data, variation, &finiteDifferenceScheme_halvorsen);
     }
 
     if (M(MAX).toCompute)
     {
-        MAX(data, variation, &finiteDifferenceScheme_halvorsen, MO(MAX));
+        MAX(data, variation, &finiteDifferenceScheme_halvorsen);
     }
 
     if (M(Period).toCompute || M(MeanInterval).toCompute || M(MeanPeak).toCompute)
     {
-        Period(data, variation, &finiteDifferenceScheme_halvorsen, MO(Period), MO(MeanPeak), MO(MeanInterval));
+        Period(data, variation, &finiteDifferenceScheme_halvorsen);
     }
 }
 

@@ -34,17 +34,17 @@ __global__ void kernelProgram_jj_mrlcs(Computation* data)
 
     if (M(LLE).toCompute)
     {
-        LLE(data, variation, &finiteDifferenceScheme_jj_mrlcs, MO(LLE));
+        LLE(data, variation, &finiteDifferenceScheme_jj_mrlcs);
     }
 
     if (M(MAX).toCompute)
     {
-        MAX(data, variation, &finiteDifferenceScheme_jj_mrlcs, MO(MAX));
+        MAX(data, variation, &finiteDifferenceScheme_jj_mrlcs);
     }
 
     if (M(Period).toCompute || M(MeanInterval).toCompute || M(MeanPeak).toCompute)
     {
-        Period(data, variation, &finiteDifferenceScheme_jj_mrlcs, MO(Period), MO(MeanPeak), MO(MeanInterval));
+        Period(data, variation, &finiteDifferenceScheme_jj_mrlcs);
     }
 }
 

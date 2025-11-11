@@ -34,17 +34,17 @@ __global__ void kernelProgram_vnm(Computation* data)
 
     if (M(LLE).toCompute)
     {
-        LLE(data, variation, &finiteDifferenceScheme_vnm, MO(LLE));
+        LLE(data, variation, &finiteDifferenceScheme_vnm);
     }
 
     if (M(MAX).toCompute)
     {
-        MAX(data, variation, &finiteDifferenceScheme_vnm, MO(MAX));
+        MAX(data, variation, &finiteDifferenceScheme_vnm);
     }
 
     if (M(Period).toCompute || M(MeanInterval).toCompute || M(MeanPeak).toCompute)
     {
-        Period(data, variation, &finiteDifferenceScheme_vnm, MO(Period), MO(MeanPeak), MO(MeanInterval));
+        Period(data, variation, &finiteDifferenceScheme_vnm);
     }
 }
 

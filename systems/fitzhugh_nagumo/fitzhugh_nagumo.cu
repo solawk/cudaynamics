@@ -34,17 +34,17 @@ __global__ void kernelProgram_fitzhugh_nagumo(Computation* data)
 
     if (M(LLE).toCompute)
     {
-        LLE(data, variation, &finiteDifferenceScheme_fitzhugh_nagumo, MO(LLE));
+        LLE(data, variation, &finiteDifferenceScheme_fitzhugh_nagumo);
     }
 
     if (M(MAX).toCompute)
     {
-        MAX(data, variation, &finiteDifferenceScheme_fitzhugh_nagumo, MO(MAX));
+        MAX(data, variation, &finiteDifferenceScheme_fitzhugh_nagumo);
     }
 
     if (M(Period).toCompute || M(MeanInterval).toCompute || M(MeanPeak).toCompute)
     {
-        Period(data, variation, &finiteDifferenceScheme_fitzhugh_nagumo, MO(Period), MO(MeanPeak), MO(MeanInterval));
+        Period(data, variation, &finiteDifferenceScheme_fitzhugh_nagumo);
     }
 }
 

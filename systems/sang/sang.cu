@@ -34,17 +34,17 @@ __global__ void kernelProgram_sang(Computation* data)
 
     if (M(LLE).toCompute)
     {
-        LLE(data, variation, &finiteDifferenceScheme_sang, MO(LLE));
+        LLE(data, variation, &finiteDifferenceScheme_sang);
     }
 
     if (M(MAX).toCompute)
     {
-        MAX(data, variation, &finiteDifferenceScheme_sang, MO(MAX));
+        MAX(data, variation, &finiteDifferenceScheme_sang);
     }
 
     if (M(Period).toCompute || M(MeanInterval).toCompute || M(MeanPeak).toCompute)
     {
-        Period(data, variation, &finiteDifferenceScheme_sang, MO(Period), MO(MeanPeak), MO(MeanInterval));
+        Period(data, variation, &finiteDifferenceScheme_sang);
     }
 }
 __device__ __forceinline__ void finiteDifferenceScheme_sang(numb* currentV, numb* nextV, numb* parameters)

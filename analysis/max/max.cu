@@ -1,14 +1,15 @@
 #include "max.h"
 
-__device__ void MAX(Computation* data, int variation, void(* finiteDifferenceScheme)(numb*, numb*, numb*), int offset)
+__device__ void MAX(Computation* data, int variation, void(* finiteDifferenceScheme)(numb*, numb*, numb*))
 {
     int stepStart, variationStart = variation * CUDA_marshal.variationSize;
     LOCAL_BUFFERS;
     LOAD_ATTRIBUTES(true);
     if (data->isHires) TRANSIENT_SKIP_NEW(finiteDifferenceScheme);
 
-    int var = CUDA_kernel.analyses.MINMAX.maxVariableIndex;
-    numb maxValue = 0.0;
+    MINMAX_Settings settings = CUDA_kernel.analyses.MINMAX;
+    int var = settings.maxVariableIndex;
+    numb minValue = 0.0, maxValue = 0.0;
 
     for (int s = 0; s < CUDA_kernel.steps; s++)
     {
@@ -18,16 +19,19 @@ __device__ void MAX(Computation* data, int variation, void(* finiteDifferenceSch
 
         numb value = !data->isHires ? CUDA_marshal.trajectory[stepStart + var] : variables[var];
         if (s == 0 || maxValue < value) maxValue = value;
+        if (s == 0 || minValue > value) minValue = value;
     }
-
-    numb mapValue = maxValue;
 
     if (CUDA_kernel.mapWeight == 1.0f)
     {
-        CUDA_marshal.maps[mapPosition] = mapValue;
+        CUDA_marshal.maps[indexPosition(settings.maximum.offset, 0)] = maxValue;
+        CUDA_marshal.maps[indexPosition(settings.minimum.offset, 0)] = minValue;
     }
     else
     {
-        CUDA_marshal.maps[mapPosition] = mapValue > CUDA_marshal.maps[mapPosition] ? mapValue : CUDA_marshal.maps[mapPosition];
+        numb prevMax = CUDA_marshal.maps[indexPosition(settings.maximum.offset, 0)];
+        numb prevMin = CUDA_marshal.maps[indexPosition(settings.minimum.offset, 0)];
+        CUDA_marshal.maps[indexPosition(settings.maximum.offset, 0)] = maxValue > prevMax ? maxValue : prevMax;
+        CUDA_marshal.maps[indexPosition(settings.minimum.offset, 0)] = minValue > prevMin ? minValue : prevMin;
     }
 }

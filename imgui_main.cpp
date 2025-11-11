@@ -224,8 +224,8 @@ int hiresAsyncComputation()
 
     computationHires.marshal.kernel.CopyFrom(&kernelHiresComputed);
     computationHires.marshal.kernel.mapWeight = 0.0f;
-    for (int i = 0; i < computationHires.marshal.kernel.MAP_COUNT; i++)
-        computationHires.marshal.kernel.mapDatas[i].toCompute = computationHires.mapIndex == i;
+    for (auto& indexPair : indices)
+        indexPair.second.enabled = (AnalysisIndex)computationHires.mapIndex == indexPair.first;
 
     lastHiresStart = std::chrono::steady_clock::now();
     lastHiresHasInfo = true;
@@ -1122,24 +1122,21 @@ int imgui_main(int, char**)
                 break;
 
             case Heatmap:
-                if (KERNEL.MAP_COUNT > 0)
-                {
-                    if (selectedPlotMap >= KERNEL.MAP_COUNT) selectedPlotMap = 0;
+                if (selectedPlotMap >= indices.size()) selectedPlotMap = 0;
 
-                    ImGui::PushItemWidth(150.0f);
+                ImGui::PushItemWidth(150.0f);
 
-                    ImGui::Text("Index");
-                    ImGui::SameLine();
-                    mapSelectionCombo("##Plot builder map index selection", selectedPlotMap, false);
+                ImGui::Text("Index");
+                ImGui::SameLine();
+                mapSelectionCombo("##Plot builder map index selection", selectedPlotMap, false);
 
-                    ImGui::PopItemWidth();
-                }
+                ImGui::PopItemWidth();
                 break;
             case MCHeatmap:
                 break;
 
             case Metric:
-                if (KERNEL.MAP_COUNT > 0)
+                /*if (KERNEL.MAP_COUNT > 0)
                 {
                    
 
@@ -1174,7 +1171,7 @@ int imgui_main(int, char**)
                     }
 
                     break;
-                }
+                }*/
                 break;
             }
 
@@ -1352,16 +1349,18 @@ int imgui_main(int, char**)
             // Heatmap axes
             if (window->type == Heatmap || window->type == MCHeatmap)
             {
-                int mapIndex = window->variables[0];
+                AnalysisIndex mapIndex = (AnalysisIndex)window->variables[0];
                 bool isHires = window == hiresHeatmapWindow;
                 HeatmapProperties* heatmap = isHires ? &window->hireshmp : &window->hmp;
                 Kernel* krnl = isHires ? &kernelHiresComputed : &(KERNEL);
-                MapData* mapData = nullptr;
+                //MapData* mapData = nullptr;
+                Port* port;
                 bool isSingleValue = true;
                 if (window->type == Heatmap)
                 {
-                    mapData = &(krnl->mapDatas[mapIndex]);
-                    isSingleValue = mapData->valueCount == 1;
+                    //mapData = &(krnl->mapDatas[mapIndex]);
+                    //isSingleValue = mapData->valueCount == 1;
+                    port = index2port(krnl->analyses, mapIndex);
                 }
 
                 int prevIndexX = heatmap->indexX;
@@ -1449,7 +1448,7 @@ int imgui_main(int, char**)
                     {
                         ImGui::TableSetColumnIndex(3);
                         ImGui::SetNextItemWidth(-1);
-                        mapValueSelectionCombo(mapIndex, -1, windowName, heatmap);
+                        mapValueSelectionCombo((AnalysisIndex)mapIndex, -1, windowName, heatmap);
                     }
 
                     ImGui::EndTable();
@@ -1522,8 +1521,8 @@ int imgui_main(int, char**)
             ImPlotAxisFlags axisFlags = (toAutofit ? ImPlotAxisFlags_AutoFit : 0);
             ImPlotPlot* plot;
             ImPlot3DPlot* plot3d;
-            int mapIndex;
-            int channelMapIndex[3];
+            AnalysisIndex mapIndex;
+            AnalysisIndex channelMapIndex[3];
             ImPlotColormap heatmapColorMap =  ImPlotColormap_Jet;
             ImVec4 rotationEuler;
             ImVec4 rotationEulerEditable, rotationEulerBeforeEdit;
@@ -2193,8 +2192,8 @@ int imgui_main(int, char**)
                                 ImPlot::SetNextLineStyle(window->markerColor, window->markerWidth);
                                 ImPlot::SetupAxes(window->typeX == MDT_Variable ? krnl->variables[window->indexX].name.c_str() : krnl->parameters[window->indexX].name.c_str(), "Indicator");
                                 for (int j = 0; j < window->variableCount; j++) {
-                                    mapIndex = window->variables[j];
-                                    numb* MapSlice = cmp->marshal.maps + cmp->marshal.kernel.mapDatas[mapIndex].offset * cmp->marshal.totalVariations;
+                                    mapIndex = (AnalysisIndex)window->variables[j];
+                                    numb* MapSlice = cmp->marshal.maps + index2port(cmp->marshal.kernel.analyses, mapIndex)->offset * cmp->marshal.totalVariations;
                                     numb* Xaxis = new numb[axis->stepCount];
                                     numb* Yaxis = new numb[axis->stepCount];
                                     std::vector<int> tempattributeValueIndices = attributeValueIndices;
@@ -2205,7 +2204,7 @@ int imgui_main(int, char**)
                                         Xaxis[i] = axis->min + axis->step * i;
                                         Yaxis[i] = MapSlice[variation];
                                     }
-                                    ImPlot::PlotLine(krnl->mapDatas[window->variables[j]].name.c_str(), Xaxis, Yaxis, axis->stepCount);
+                                    ImPlot::PlotLine(indices[mapIndex].name.c_str(), Xaxis, Yaxis, axis->stepCount);
                                     delete[] Xaxis;
                                     delete[] Yaxis;
                                 }
@@ -2239,8 +2238,8 @@ int imgui_main(int, char**)
                 case Heatmap:
                 case MCHeatmap:
                     bool isMC = window->type == MCHeatmap;
-                    mapIndex = window->variables[0];
-                    if (isMC) for (int ch = 0; ch < 3; ch++) channelMapIndex[ch] = window->variables[ch];
+                    mapIndex = (AnalysisIndex)window->variables[0];
+                    if (isMC) for (int ch = 0; ch < 3; ch++) channelMapIndex[ch] = (AnalysisIndex)window->variables[ch];
                     bool isHires = window == hiresHeatmapWindow;
                     HeatmapProperties* heatmap =    isHires ? &window->hireshmp : &window->hmp;
                     Kernel* krnl =                  isHires ? &kernelHiresComputed : &(KERNEL);
@@ -2251,8 +2250,8 @@ int imgui_main(int, char**)
 
                     if (!isMC)
                     {
-                        if (!krnl->mapDatas[mapIndex].userEnabled) { ImGui::Text(("Map " + krnl->mapDatas[mapIndex].name + " has been disabled").c_str()); break; }
-                        if (!cmp->marshal.kernel.mapDatas[mapIndex].toCompute) { ImGui::Text(("Map " + krnl->mapDatas[mapIndex].name + " has not been computed").c_str()); break; }
+                        if (!indices[mapIndex].enabled) { ImGui::Text(("Index " + indices[mapIndex].name + " has been disabled").c_str()); break; }
+                        if (!index2port(cmp->marshal.kernel.analyses, mapIndex)->used) { ImGui::Text(("Index " + indices[mapIndex].name + " has not been computed").c_str()); break; }
                     }
 
                     Attribute* axisX = heatmap->typeX == MDT_Variable ? &(krnl->variables[heatmap->indexX]) : &(krnl->parameters[heatmap->indexX]);
@@ -2495,7 +2494,7 @@ int imgui_main(int, char**)
                                 {
                                     if (!isMC)
                                     {
-                                        extractMap(cmp->marshal.maps + (cmp->marshal.kernel.mapDatas[mapIndex].offset + heatmap->values.mapValueIndex) * cmp->marshal.totalVariations,
+                                        extractMap(cmp->marshal.maps + (index2port(cmp->marshal.kernel.analyses, mapIndex)->offset + heatmap->values.mapValueIndex) * cmp->marshal.totalVariations,
                                             heatmap->values.valueBuffer, heatmap->indexBuffer, &(avi->data()[0]),
                                             sizing.hmp->typeX == MDT_Parameter ? sizing.hmp->indexX + krnl->VAR_COUNT : sizing.hmp->indexX,
                                             sizing.hmp->typeY == MDT_Parameter ? sizing.hmp->indexY + krnl->VAR_COUNT : sizing.hmp->indexY,
@@ -2506,9 +2505,9 @@ int imgui_main(int, char**)
                                         for (int c = 0; c < 3; c++)
                                         {
                                             if (channelMapIndex[c] == -1) continue;
-                                            if (!cmp->marshal.kernel.mapDatas[channelMapIndex[c]].toCompute) continue;
+                                            if (!index2port(cmp->marshal.kernel.analyses, channelMapIndex[c])->used) continue;
 
-                                            extractMap(cmp->marshal.maps + (cmp->marshal.kernel.mapDatas[channelMapIndex[c]].offset + heatmap->channel[c].mapValueIndex) * cmp->marshal.totalVariations,
+                                            extractMap(cmp->marshal.maps + (index2port(cmp->marshal.kernel.analyses, channelMapIndex[c])->offset + heatmap->channel[c].mapValueIndex) * cmp->marshal.totalVariations,
                                                 heatmap->channel[c].valueBuffer, heatmap->indexBuffer, &(avi->data()[0]),
                                                 sizing.hmp->typeX == MDT_Parameter ? sizing.hmp->indexX + krnl->VAR_COUNT : sizing.hmp->indexX,
                                                 sizing.hmp->typeY == MDT_Parameter ? sizing.hmp->indexY + krnl->VAR_COUNT : sizing.hmp->indexY,
@@ -2564,7 +2563,7 @@ int imgui_main(int, char**)
                                         for (int i = 0; i < paintLUTsize; i++) heatmap->paintLUT.lut[i] = new int[cmp->marshal.totalVariations];
                                         heatmap->paintLUT.lutSizes = new int[paintLUTsize];
 
-                                        setupLUT(cmp->marshal.maps + (cmp->marshal.kernel.mapDatas[mapIndex].offset + heatmap->values.mapValueIndex) * cmp->marshal.totalVariations, cmp->marshal.totalVariations, heatmap->paintLUT.lut, heatmap->paintLUT.lutSizes, paintLUTsize, heatmap->values.heatmapMin, heatmap->values.heatmapMax);
+                                        setupLUT(cmp->marshal.maps + (index2port(cmp->marshal.kernel.analyses, mapIndex)->offset + heatmap->values.mapValueIndex) * cmp->marshal.totalVariations, cmp->marshal.totalVariations, heatmap->paintLUT.lut, heatmap->paintLUT.lutSizes, paintLUTsize, heatmap->values.heatmapMin, heatmap->values.heatmapMax);
                                     }
 
                                     releaseHeatmap(window, isHires);
@@ -2611,7 +2610,7 @@ int imgui_main(int, char**)
                                             {
                                                 if (window->variables[ch] == -1) continue;
 
-                                                std::string mapName = krnl->mapDatas[window->variables[ch]].name;
+                                                std::string mapName = indices[(AnalysisIndex)window->variables[ch]].name;
 
                                                 cutoffHeatmap = new numb[rows * cols];
                                                 cutoff2D(heatmap->channel[ch].valueBuffer, (numb*)cutoffHeatmap,
@@ -2691,7 +2690,7 @@ int imgui_main(int, char**)
                                     for (int ch = 0; ch < 3; ch++)
                                     {
                                         if (window->variables[ch] == -1) continue;
-                                        if (KERNEL.mapDatas[window->variables[ch]].valueCount > 1)
+                                        if (index2port(KERNEL.analyses, (AnalysisIndex)window->variables[ch])->size > 1)
                                         {
                                             needMapValueRow = true;
                                             break;
@@ -2706,7 +2705,7 @@ int imgui_main(int, char**)
                                             int prevValueIndex = heatmap->channel[ch].mapValueIndex;
 
                                             ImGui::PushItemWidth(160.0f);
-                                            mapValueSelectionCombo(window->variables[ch], ch, window->name, heatmap);
+                                            mapValueSelectionCombo((AnalysisIndex)window->variables[ch], ch, window->name, heatmap);
                                             ImGui::PopItemWidth();
 
                                             if (prevValueIndex != heatmap->channel[ch].mapValueIndex)

@@ -34,17 +34,17 @@ __global__ void kernelProgram_langford(Computation* data)
 
     if (M(LLE).toCompute)
     {
-        LLE(data, variation, &finiteDifferenceScheme_langford, MO(LLE));
+        LLE(data, variation, &finiteDifferenceScheme_langford);
     }
 
     if (M(MAX).toCompute)
     {
-        MAX(data, variation, &finiteDifferenceScheme_langford, MO(MAX));
+        MAX(data, variation, &finiteDifferenceScheme_langford);
     }
 
     if (M(Period).toCompute || M(MeanInterval).toCompute || M(MeanPeak).toCompute)
     {
-        Period(data, variation, &finiteDifferenceScheme_langford, MO(Period), MO(MeanPeak), MO(MeanInterval));
+        Period(data, variation, &finiteDifferenceScheme_langford);
     }
 }
 

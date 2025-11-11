@@ -33,17 +33,17 @@ __global__ void kernelProgram_mishchenko(Computation* data)
 
     if (M(LLE).toCompute)
     {
-        LLE(data, variation, &finiteDifferenceScheme_mishchenko, MO(LLE));
+        LLE(data, variation, &finiteDifferenceScheme_mishchenko);
     }
 
     if (M(MAX).toCompute)
     {
-        MAX(data, variation, &finiteDifferenceScheme_mishchenko, MO(MAX));
+        MAX(data, variation, &finiteDifferenceScheme_mishchenko);
     }
 
     if (M(Period).toCompute || M(MeanInterval).toCompute || M(MeanPeak).toCompute)
     {
-        Period(data, variation, &finiteDifferenceScheme_mishchenko, MO(Period), MO(MeanPeak), MO(MeanInterval));
+        Period(data, variation, &finiteDifferenceScheme_mishchenko);
     }
 }
 

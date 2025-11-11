@@ -39,6 +39,7 @@
 
 #define mapPosition     (variation + offset)
 #define mapValueAt(index) (variation + offset) + (index * CUDA_marshal.totalVariations)
+#define indexPosition(offset, value)  ((offset + value) * CUDA_marshal.totalVariations + variation)
 
 // Computation access macros
 

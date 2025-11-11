@@ -34,17 +34,17 @@ __global__ void kernelProgram_rossler(Computation* data)
 
     if (M(LLE).toCompute)
     {
-        LLE(data, variation, &finiteDifferenceScheme_rossler, MO(LLE));
+        LLE(data, variation, &finiteDifferenceScheme_rossler);
     }
 
     if (M(MAX).toCompute)
     {
-        MAX(data, variation, &finiteDifferenceScheme_rossler, MO(MAX));
+        MAX(data, variation, &finiteDifferenceScheme_rossler);
     }
 
     if (M(Period).toCompute || M(MeanInterval).toCompute || M(MeanPeak).toCompute)
     {
-        Period(data, variation, &finiteDifferenceScheme_rossler,  MO(Period), MO(MeanPeak), MO(MeanInterval));
+        Period(data, variation, &finiteDifferenceScheme_rossler);
     }
 }
 

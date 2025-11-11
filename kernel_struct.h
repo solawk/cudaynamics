@@ -51,11 +51,11 @@ public:
 
 	AnalysesSettings analyses;
 	
-	std::vector<MapData> mapDatas;
+	//std::vector<MapData> mapDatas;
 
 	int VAR_COUNT;
 	int PARAM_COUNT;
-	int MAP_COUNT;
+	//int MAP_COUNT;
 
 	// An array of map setting values
 	//numb mapSettings[MAX_MAP_SETTINGS];
@@ -64,7 +64,7 @@ public:
 	{
 		VAR_COUNT = (int)variables.size();
 		PARAM_COUNT = (int)parameters.size();
-		MAP_COUNT = (int)mapDatas.size();
+		//MAP_COUNT = (int)mapDatas.size();
 	}
 
 	void CopyFrom(Kernel* kernel)
@@ -83,7 +83,6 @@ public:
 		for (Attribute& v : variables)	v.ClearValues(); variables.clear();
 		for (Attribute& p : parameters)	p.ClearValues(); parameters.clear();
 		constraints.clear();
-		mapDatas.clear();
 
 		for (int i = 0; i < kernel->VAR_COUNT; i++)
 		{
@@ -97,12 +96,9 @@ public:
 		}
 		for (int i = 0; i < kernel->constraints.size(); i++)
 			constraints.push_back(kernel->constraints[i]);
-		for (int i = 0; i < kernel->MAP_COUNT; i++)
-			mapDatas.push_back(kernel->mapDatas[i]);
 
 		VAR_COUNT = kernel->VAR_COUNT;
 		PARAM_COUNT = kernel->PARAM_COUNT;
-		MAP_COUNT = kernel->MAP_COUNT;
 		
 		analyses = kernel->analyses;
 
@@ -170,7 +166,7 @@ public:
 
 	Attribute variables[MAX_ATTRIBUTES];
 	Attribute parameters[MAX_ATTRIBUTES];
-	MapData mapDatas[MAX_MAPS];
+	MapData mapDatas[MAX_MAPS]; // TODO: remove and remove from systems
 
 	int VAR_COUNT;
 	int PARAM_COUNT;
@@ -196,12 +192,9 @@ public:
 			variables[i] = kernel->variables[i];
 		for (int i = 0; i < kernel->PARAM_COUNT; i++)
 			parameters[i] = kernel->parameters[i];
-		for (int i = 0; i < kernel->MAP_COUNT; i++)
-			mapDatas[i] = kernel->mapDatas[i];
 
 		VAR_COUNT = kernel->VAR_COUNT;
 		PARAM_COUNT = kernel->PARAM_COUNT;
-		MAP_COUNT = kernel->MAP_COUNT;
 
 		analyses = kernel->analyses;
 
@@ -219,18 +212,14 @@ public:
 
 		for (Attribute& v : kernel->variables)	v.ClearValues(); kernel->variables.clear();
 		for (Attribute& p : kernel->parameters)	p.ClearValues(); kernel->parameters.clear();
-		kernel->mapDatas.clear();
 
 		for (int i = 0; i < kernel->VAR_COUNT; i++)
 			kernel->variables.push_back(variables[i]);
 		for (int i = 0; i < kernel->PARAM_COUNT; i++)
 			kernel->parameters.push_back(parameters[i]);
-		for (int i = 0; i < kernel->MAP_COUNT; i++)
-			kernel->mapDatas.push_back(mapDatas[i]);
 
 		kernel->VAR_COUNT = VAR_COUNT;
 		kernel->PARAM_COUNT = PARAM_COUNT;
-		kernel->MAP_COUNT = MAP_COUNT;
 
 		kernel->analyses = analyses;
 	}

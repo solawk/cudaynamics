@@ -34,17 +34,17 @@ __global__ void kernelProgram_sprott14(Computation* data)
 
     if (M(LLE).toCompute)
     {
-        LLE(data, variation, &finiteDifferenceScheme_sprott14, MO(LLE));
+        LLE(data, variation, &finiteDifferenceScheme_sprott14);
     }
 
     if (M(MAX).toCompute)
     {
-        MAX(data, variation, &finiteDifferenceScheme_sprott14, MO(MAX));
+        MAX(data, variation, &finiteDifferenceScheme_sprott14);
     }
 
     if (M(Period).toCompute || M(MeanInterval).toCompute || M(MeanPeak).toCompute)
     {
-        Period(data, variation, &finiteDifferenceScheme_sprott14, MO(Period), MO(MeanPeak), MO(MeanInterval));
+        Period(data, variation, &finiteDifferenceScheme_sprott14);
     }
 }
 

@@ -30,19 +30,19 @@ __global__ void kernelProgram_lorenz(Computation* data)
 
     // Analysis
 
-    if (M(LLE).toCompute)
+    if (CUDA_kernel.analyses.LLE.toCompute)
     {
-        LLE(data, variation, &finiteDifferenceScheme_lorenz, MO(LLE));
+        LLE(data, variation, &finiteDifferenceScheme_lorenz);
     }
 
-    if (M(MAX).toCompute)
+    if (CUDA_kernel.analyses.MINMAX.toCompute)
     {
-        MAX(data, variation, &finiteDifferenceScheme_lorenz, MO(MAX));
+        MAX(data, variation, &finiteDifferenceScheme_lorenz);
     }
 
-    if (M(Period).toCompute || M(MeanInterval).toCompute || M(MeanPeak).toCompute)
+    if (CUDA_kernel.analyses.PERIOD.toCompute)
     {
-        Period(data, variation, &finiteDifferenceScheme_lorenz, MO(Period), MO(MeanPeak), MO(MeanInterval));
+        Period(data, variation, &finiteDifferenceScheme_lorenz);
     }
 }
 

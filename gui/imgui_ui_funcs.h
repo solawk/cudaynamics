@@ -38,6 +38,6 @@ void listEnum(int i);
 
 void mapSelectionCombo(std::string name, int& selectedIndex, bool addEmpty);
 
-void mapValueSelectionCombo(int index, int channelIndex, std::string windowName, HeatmapProperties* heatmap);
+void mapValueSelectionCombo(AnalysisIndex index, int channelIndex, std::string windowName, HeatmapProperties * heatmap);
 
 bool isParameterUnconstrainted(int index);

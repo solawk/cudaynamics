@@ -34,17 +34,17 @@ __global__ void kernelProgram_thomas(Computation* data)
 
     if (M(LLE).toCompute)
     {
-        LLE(data, variation, &finiteDifferenceScheme_thomas, MO(LLE));
+        LLE(data, variation, &finiteDifferenceScheme_thomas);
     }
 
     if (M(MAX).toCompute)
     {
-        MAX(data, variation, &finiteDifferenceScheme_thomas, MO(MAX));
+        MAX(data, variation, &finiteDifferenceScheme_thomas);
     }
 
     if (M(Period).toCompute || M(MeanInterval).toCompute || M(MeanPeak).toCompute)
     {
-        Period(data, variation, &finiteDifferenceScheme_thomas, MO(Period), MO(MeanPeak), MO(MeanInterval));
+        Period(data, variation, &finiteDifferenceScheme_thomas);
     }
 }
 

@@ -302,15 +302,15 @@ void mapSelectionCombo(std::string name, int& selectedIndex, bool addEmpty)
     }
 }
 
-void mapValueSelectionCombo(int index, int channelIndex, std::string windowName, HeatmapProperties* heatmap)
+void mapValueSelectionCombo(AnalysisIndex index, int channelIndex, std::string windowName, HeatmapProperties* heatmap)
 {
     if (index == -1) return;
-    MapData* mapData = &(KERNEL.mapDatas[index]);
-    bool isSingleValue = mapData->valueCount == 1;
+    Port* port = index2port(KERNEL.analyses, index);
+    bool isSingleValue = port->size == 1;
     if (!isSingleValue)
     {
         ImGui::DragInt(("##" + windowName + "_index" + std::to_string(index) + "valueInChannel" + std::to_string(channelIndex)).c_str(),
-            channelIndex == -1 ? &(heatmap->values.mapValueIndex) : &(heatmap->channel[channelIndex].mapValueIndex), 1.0f, 0, mapData->valueCount - 1, "%d", 0);
+            channelIndex == -1 ? &(heatmap->values.mapValueIndex) : &(heatmap->channel[channelIndex].mapValueIndex), 1.0f, 0, port->size - 1, "%d", 0);
     }
 }
 

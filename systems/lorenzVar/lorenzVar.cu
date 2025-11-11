@@ -34,17 +34,17 @@ __global__ void kernelProgram_lorenzVar(Computation* data)
 
     if (M(LLE).toCompute)
     {
-        LLE(data, variation, &finiteDifferenceScheme_lorenzVar, MO(LLE));
+        LLE(data, variation, &finiteDifferenceScheme_lorenzVar);
     }
 
     if (M(MAX).toCompute)
     {
-        MAX(data, variation, &finiteDifferenceScheme_lorenzVar, MO(MAX));
+        MAX(data, variation, &finiteDifferenceScheme_lorenzVar);
     }
 
     if (M(Period).toCompute || M(MeanInterval).toCompute || M(MeanPeak).toCompute)
     {
-        Period(data, variation, &finiteDifferenceScheme_lorenzVar, MO(Period), MO(MeanPeak), MO(MeanInterval));
+        Period(data, variation, &finiteDifferenceScheme_lorenzVar);
     }
 }
 
