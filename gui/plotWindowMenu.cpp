@@ -9,6 +9,7 @@ void plotWindowMenu_HeatmapPlot(PlotWindow* window);
 void plotWindowMenu_HeatmapColors(PlotWindow* window);
 void plotWindowMenu_OrbitPlot(PlotWindow* window);
 void plotWindowMenu_MetricPlot(PlotWindow* window);
+void plotWindowMenu_SeriesPlot(PlotWindow* window);
 
 extern bool enabledParticles;
 extern bool autofitHeatmap;
@@ -46,7 +47,7 @@ void plotWindowMenu(PlotWindow* window)
 		}
 		if (window->type == Orbit) plotWindowMenu_OrbitPlot(window);
 		if (window->type == Metric) plotWindowMenu_MetricPlot(window);
-
+		if (window->type == Series)plotWindowMenu_SeriesPlot(window);
 		ImGui::EndMenuBar();
 	}
 }
@@ -347,15 +348,64 @@ void plotWindowMenu_MetricPlot(PlotWindow*window) {
 		std::string windowName = window->name + std::to_string(window->id);
 		plotWindowMenu_CommonPlot(window, windowName);
 
+		if (window->variableCount==1) {
+			ImGui::ColorEdit4(("##" + windowName + "_lineColor").c_str(), (float*)(&(window->markerColor)));		ImGui::SameLine(); ImGui::Text("Line color");
+		}
+		else {
+			std::string colormapStrings[] = {"Deep", "Dark", "Pastel", "Paired", "Viridis", "Plasma", "Hot", "Cool", "Pink", "Jet", "Twilight", "RdBu", "BrBG", "PiYG", "Spectral", "Greys"};
+			ImGui::PushItemFlag(ImGuiItemFlags_AutoClosePopups, false);
+			if (ImGui::BeginCombo(("##" + windowName + "colormap").c_str(), (colormapStrings[window->colormap]).c_str()))
+			{
+				for (int i = 0; i < 16; i++)
+					if (ImGui::Selectable(colormapStrings[i].c_str(), window->colormap == i))
+					{
+						window->colormap = i;
+					}
 
-		ImGui::ColorEdit4(("##" + windowName + "_lineColor").c_str(), (float*)(&(window->markerColor)));		ImGui::SameLine(); ImGui::Text("Line color");
+				ImGui::EndCombo();
+			}
+			ImGui::PopItemFlag();
+			
+		}
 		ImGui::DragFloat("Line width", &window->markerWidth, 0.1f, 0.5f, 4.0f, "%.1f");
 
 		ImGui::Checkbox("Show parameter marker", &window->ShowOrbitParLines);
 		ImGui::ColorEdit4(("##" + windowName + "_markerColor").c_str(), (float*)(&(window->OrbitMarkerColor)));		ImGui::SameLine(); ImGui::Text("Marker color");
 		ImGui::DragFloat("Marker width", &window->OrbitMarkerWidth, 0.1f, 0.5f, 4.0f, "%.1f");
 
+		ImGui::Checkbox("Show multiple axes", &window->ShowMultAxes);
 
+		ImGui::EndMenu();
+	}
+}
+
+void plotWindowMenu_SeriesPlot(PlotWindow* window) {
+	if (ImGui::BeginMenu("Plot")) {
+		std::string windowName = window->name + std::to_string(window->id);
+		plotWindowMenu_CommonPlot(window, windowName);
+
+		if (window->variableCount == 1) {
+			ImGui::ColorEdit4(("##" + windowName + "_lineColor").c_str(), (float*)(&(window->markerColor)));		ImGui::SameLine(); ImGui::Text("Line color");
+		}
+		else {
+			std::string colormapStrings[] = { "Deep", "Dark", "Pastel", "Paired", "Viridis", "Plasma", "Hot", "Cool", "Pink", "Jet", "Twilight", "RdBu", "BrBG", "PiYG", "Spectral", "Greys" };
+			ImGui::PushItemFlag(ImGuiItemFlags_AutoClosePopups, false);
+			if (ImGui::BeginCombo(("##" + windowName + "colormap").c_str(), (colormapStrings[window->colormap]).c_str()))
+			{
+				for (int i = 0; i < 16; i++)
+					if (ImGui::Selectable(colormapStrings[i].c_str(), window->colormap == i))
+					{
+						window->colormap = i;
+					}
+
+				ImGui::EndCombo();
+			}
+			ImGui::PopItemFlag();
+
+		}
+		ImGui::DragFloat("Line width", &window->markerWidth, 0.1f, 0.5f, 4.0f, "%.1f");
+
+		ImGui::Checkbox("Show multiple axes", &window->ShowMultAxes);
 
 		ImGui::EndMenu();
 	}

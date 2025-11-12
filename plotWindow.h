@@ -73,6 +73,10 @@ public:
 	int prevTotalVariation;
 	bool isOrbitAutoComputeOn;
 
+	bool ShowMultAxes;
+	bool LineColorMaps;
+	ImPlotColormap colormap;
+
 	int indexX;
 	MapDimensionType typeX;
 
@@ -127,6 +131,9 @@ public:
 		bifParamIndices = NULL;
 		bifIntervals = NULL;
 		isOrbitAutoComputeOn = false;
+
+		ShowMultAxes = false;
+		colormap = ImPlotColormap_Deep;
 
 		indexX = 0;
 		typeX = MDT_Variable;

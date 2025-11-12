@@ -124,6 +124,19 @@ enum ImAxis_ {
     ImAxis_Y1,     // enabled by default
     ImAxis_Y2,     // disabled by default
     ImAxis_Y3,     // disabled by default
+    ImAxis_Y4,     // disabled by default
+    ImAxis_Y5,     // disabled by default
+    ImAxis_Y6,     // disabled by default
+    ImAxis_Y7,     // disabled by default
+    ImAxis_Y8,     // disabled by default
+    ImAxis_Y9,     // disabled by default
+    ImAxis_Y10,     // disabled by default
+    ImAxis_Y11,     // disabled by default
+    ImAxis_Y12,     // disabled by default
+    ImAxis_Y13,     // disabled by default
+    ImAxis_Y14,     // disabled by default
+    ImAxis_Y15,     // disabled by default
+    ImAxis_Y16,     // disabled by default
     // bookeeping
     ImAxis_COUNT
 };
