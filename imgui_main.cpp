@@ -1543,9 +1543,25 @@ int imgui_main(int, char**)
                         float scale = !isTime ? 1.0f : stepSize;
 
                         ImPlot::SetupAxes(KERNEL.usingTime ? "Time" : "Steps", "Variable");
+                        if (!window->ShowMultAxes) ImPlot::SetupAxes(KERNEL.usingTime ? "Time" : "Steps", "Variable");
+                        else
+                        {
+                            ImPlot::SetupAxis(ImAxis_X1, KERNEL.usingTime ? "Time" : "Steps", 0);
+                            for (int i = 0; i < window->variableCount; i++) {
+                                ImPlot::SetupAxis(3 + i, computations[playedBufferIndex].marshal.kernel.variables[i].name.c_str(), 0);
+                            }
+                        }
 
                         for (int v = 0; v < window->variableCount; v++)
                         {
+                            if (window->ShowMultAxes) {
+                                ImPlot::SetAxes(ImAxis_X1, 3 + v);
+                            }
+                            ImVec4 color;
+                            if (window->variableCount > 1) {
+                                color = ImPlot::GetColormapColor(v, window->colormap);
+                            }
+                            ImPlot::SetNextLineStyle(window->variableCount > 1 ? color : window->markerColor, window->markerWidth);
                             ImPlot::PlotLine((KERNEL.variables[window->variables[v]].name + "##" + plotName + std::to_string(v)).c_str(),
                                 &((dataBuffer)[window->variables[v]]), computedSteps + 1, scale, start, ImPlotLineFlags_None, 0, sizeof(numb) * KERNEL.VAR_COUNT);
                         }
@@ -2056,10 +2072,10 @@ int imgui_main(int, char**)
                                                         attributeValueIndices[window->OrbitXIndex + varCount] = index;
                                                     }
                                                 }
-                                                if (plot->shiftSelected && window->isOrbitAutoComputeOn) {
+                                                if (plot->shiftSelected) {
                                                     kernelNew.parameters[window->OrbitXIndex].min = plot->shiftSelect1Location.x;
                                                     kernelNew.parameters[window->OrbitXIndex].max = plot->shiftSelect2Location.x;
-                                                    computeAfterShiftSelect = true;
+                                                    if (window->isOrbitAutoComputeOn) computeAfterShiftSelect = true;
                                                 }
                                                 if (window->ShowOrbitParLines) {
                                                     double value = attributeValueIndices[varCount + window->OrbitXIndex] * paramStep + paramMin;
@@ -2100,10 +2116,10 @@ int imgui_main(int, char**)
                                                     }
                                                 }
 
-                                                if (plot->shiftSelected && window->isOrbitAutoComputeOn) {
+                                                if (plot->shiftSelected) {
                                                     kernelNew.parameters[window->OrbitXIndex].min = plot->shiftSelect1Location.x;
                                                     kernelNew.parameters[window->OrbitXIndex].max = plot->shiftSelect2Location.x;
-                                                    computeAfterShiftSelect = true;
+                                                    if(window->isOrbitAutoComputeOn) computeAfterShiftSelect = true;
                                                 }
                                                 if (window->ShowOrbitParLines) {
                                                     double value = attributeValueIndices[varCount + window->OrbitXIndex] * paramStep + paramMin;
@@ -2159,13 +2175,23 @@ int imgui_main(int, char**)
                         if (axisIsRanging) {
                             //numb minX, stepX, maxX;
                             //int xSize;
+                            
                             HeatmapProperties* hmp = nullptr;
                             int variation=0;
                             if (ImPlot::BeginPlot(("##Metric_Plot" + plotName).c_str(), ImVec2(-1, -1), ImPlotFlags_NoTitle)) {
+                                
                                 plot = ImPlot::GetPlot(("##Metric_Plot" + plotName).c_str());
                                 plot->is3d = false;
-                                ImPlot::SetNextLineStyle(window->markerColor, window->markerWidth);
-                                ImPlot::SetupAxes(window->typeX == MDT_Variable ? krnl->variables[window->indexX].name.c_str() : krnl->parameters[window->indexX].name.c_str(), "Indicator");
+                                //ImPlot::SetNextLineStyle(window->markerColor, window->markerWidth);
+                                
+                                if (!window->ShowMultAxes) ImPlot::SetupAxes(window->typeX == MDT_Variable ? krnl->variables[window->indexX].name.c_str() : krnl->parameters[window->indexX].name.c_str(), "Indices"); 
+                                else
+                                {
+                                    ImPlot::SetupAxis(ImAxis_X1, window->typeX == MDT_Variable ? krnl->variables[window->indexX].name.c_str() : krnl->parameters[window->indexX].name.c_str(), 0);
+                                    for (int i = 0; i < window->variableCount; i++) {
+                                        ImPlot::SetupAxis(3+i, cmp->marshal.kernel.mapDatas[window->variables[i]].name.c_str(), 0);
+                                    }
+                                }
                                 for (int j = 0; j < window->variableCount; j++) {
                                     mapIndex = window->variables[j];
                                     numb* MapSlice = cmp->marshal.maps + cmp->marshal.kernel.mapDatas[mapIndex].offset * cmp->marshal.totalVariations;
@@ -2179,9 +2205,18 @@ int imgui_main(int, char**)
                                         Xaxis[i] = axis->min + axis->step * i;
                                         Yaxis[i] = MapSlice[variation];
                                     }
+                                    if (window->ShowMultAxes) {
+                                        ImPlot::SetAxes(ImAxis_X1, 3+j);
+                                    }
+                                    ImVec4 color;
+                                    if (window->variableCount > 1) {
+                                        color = ImPlot::GetColormapColor(j, window->colormap);
+                                    }
+                                    ImPlot::SetNextLineStyle(window->variableCount>1 ? color : window->markerColor,window->markerWidth);
                                     ImPlot::PlotLine(krnl->mapDatas[window->variables[j]].name.c_str(), Xaxis, Yaxis, axis->stepCount);
                                     delete[] Xaxis;
                                     delete[] Yaxis;
+                                    
                                 }
                                 if (ImGui::IsMouseDown(0) && ImGui::IsKeyPressed(ImGuiMod_Shift) && ImGui::IsMouseHoveringRect(plot->PlotRect.Min, plot->PlotRect.Max) && plot->ContextLocked || plot->shiftClicked) {
                                     numb MousePosX = (numb)ImPlot::GetPlotMousePos().x;
