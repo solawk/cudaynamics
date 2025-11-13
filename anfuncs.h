@@ -5,5 +5,7 @@ enum AnalysisFunction
 { 
 	ANF_MINMAX, 
 	ANF_LLE, 
-	ANF_PERIOD
+	ANF_PERIOD,
+
+	COUNT
 };

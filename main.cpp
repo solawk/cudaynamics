@@ -43,9 +43,9 @@ void common_main()
     addIndex(IND_MAX, "Maximum variable value", MINMAX, 1);
     addIndex(IND_MIN, "Minimum variable value", MINMAX, 1);
     addIndex(IND_LLE, "Largest Lyapunov exponent", LLE, 1);
-    addIndex(IND_PERIOD, "Periodicity", PERIOD, 1);
-    addIndex(IND_MNPEAK, "Mean Peak", PERIOD, 1);
-    addIndex(IND_MNINT, "Mean Interval", PERIOD, 1);
+    addIndex(IND_PERIOD, "Period", PERIOD, 1);
+    addIndex(IND_MNPEAK, "Mean peak", PERIOD, 1);
+    addIndex(IND_MNINT, "Mean interval", PERIOD, 1);
 
     imgui_main(0, 0);
 }

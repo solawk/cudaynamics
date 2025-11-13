@@ -1124,13 +1124,9 @@ int imgui_main(int, char**)
             case Heatmap:
                 if (selectedPlotMap >= indices.size()) selectedPlotMap = 0;
 
-                ImGui::PushItemWidth(150.0f);
-
                 ImGui::Text("Index");
                 ImGui::SameLine();
                 mapSelectionCombo("##Plot builder map index selection", selectedPlotMap, false);
-
-                ImGui::PopItemWidth();
                 break;
             case MCHeatmap:
                 break;
@@ -1224,54 +1220,16 @@ int imgui_main(int, char**)
         if (1)
         {
             FullscreenActLogic(&mapSettingsWindow, &fullscreenSize);
-            ImGui::Begin("Map Settings", nullptr);
+            ImGui::Begin("Analysis Settings", nullptr);
             FullscreenButtonPressLogic(&mapSettingsWindow, ImGui::GetCurrentWindow());
 
             Kernel* krn = HIRES_ON ? &kernelHiresNew : &kernelNew; // Workaround for Win11
 
-            /*for (int m = 0; m < krn->MAP_COUNT; m++)
+            for (int anfunc = 0; anfunc < (int)AnalysisFunction::COUNT; anfunc++)
             {
-                bool mapUserEnabled = krn->mapDatas[m].userEnabled;
-                ImGui::Checkbox(("##MapEnabled" + krn->mapDatas[m].name).c_str(), &mapUserEnabled);
-                krn->mapDatas[m].userEnabled = mapUserEnabled;
-                ImGui::SameLine();
-
-                if (ImGui::TreeNode(std::string(krn->mapDatas[m].name + "##MapSettings_" + krn->mapDatas[m].name).c_str()))
+                if (ImGui::TreeNode(std::string(AnFuncNames[anfunc] + std::string("##AnFunc") + std::to_string(anfunc)).c_str()))
                 {
-                    for (int s = 0; s < krn->mapDatas[m].settingsCount; s++)
-                    {
-                        ImGui::Text(krn->mapDatas[m].settingName[s].c_str());
-                        ImGui::SameLine();
-                        ImGui::PushItemWidth(150.0f);
-                        if (krn->mapDatas[m].isSettingNumb[s])
-                        {
-                            double setting = (double)krn->mapSettings[krn->mapDatas[m].settingsOffset + s];
-                            ImGui::InputDouble(("##Setting" + krn->mapDatas[m].settingName[s] + "_" + krn->mapDatas[m].name).c_str(), &setting);
-                            krn->mapSettings[krn->mapDatas[m].settingsOffset + s] = (numb)setting;
-                        }
-                        else
-                        {
-                            int setting = (int)krn->mapSettings[krn->mapDatas[m].settingsOffset + s];
-                            ImGui::InputInt(("##Setting" + krn->mapDatas[m].settingName[s] + "_" + krn->mapDatas[m].name).c_str(), &setting);
-                            krn->mapSettings[krn->mapDatas[m].settingsOffset + s] = (numb)setting;
-                        }
-                        ImGui::PopItemWidth();
-                    }
-
-                    ImGui::TreePop();
-                }
-            }*/
-
-            for (auto& indexPair : indices)
-            {
-                bool indexUserEnabled = indexPair.second.enabled;
-                ImGui::Checkbox(("##IndexEnabled" + indexPair.second.name).c_str(), &indexUserEnabled);
-                indexPair.second.enabled = indexUserEnabled;
-                ImGui::SameLine();
-
-                if (ImGui::TreeNode(std::string(indexPair.second.name + "##AnFuncSettings_" + indexPair.second.name).c_str()))
-                {
-                    switch (indexPair.second.function)
+                    switch ((AnalysisFunction)anfunc)
                     {
                     case AnalysisFunction::ANF_MINMAX:
                         krn->analyses.MINMAX.DisplaySettings();
@@ -1282,6 +1240,15 @@ int imgui_main(int, char**)
                     case AnalysisFunction::ANF_PERIOD:
                         krn->analyses.PERIOD.DisplaySettings();
                         break;
+                    }
+
+                    std::vector<AnalysisIndex> anfuncIndices = anfunc2indices((AnalysisFunction)anfunc);
+                    ImGui::Text("Calculate indices:");
+                    for (AnalysisIndex index : anfuncIndices)
+                    {
+                        bool indexUserEnabled = indices[index].enabled;
+                        ImGui::Checkbox((indices[index].name + "##IndexEnabled" + indices[index].name).c_str(), &indexUserEnabled);
+                        indices[index].enabled = indexUserEnabled;
                     }
 
                     ImGui::TreePop();

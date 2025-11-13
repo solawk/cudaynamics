@@ -68,6 +68,8 @@
     <ClCompile Include="kernel_map.cpp" />
     <ClCompile Include="indices_map.cpp" />
     <ClCompile Include="index2port.cpp" />
+    <ClCompile Include="anfunc2indices.cpp" />
+    <ClCompile Include="anfunc_names.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="imgui">
@@ -227,6 +229,8 @@
     <ClInclude Include="index2port.h" />
     <ClInclude Include="indices_map.h" />
     <ClInclude Include="kernel_map.h" />
+    <ClInclude Include="anfunc2indices.h" />
+    <ClInclude Include="anfunc_names.h" />
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="main.cu" />

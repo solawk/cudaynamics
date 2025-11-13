@@ -114,6 +114,8 @@
     </CudaCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="anfunc2indices.cpp" />
+    <ClCompile Include="anfunc_names.cpp" />
     <ClCompile Include="benchmarking\cpu_bm.cpp" />
     <ClCompile Include="file_export.cpp" />
     <ClCompile Include="gui\fullscreen_funcs.cpp" />
@@ -156,7 +158,9 @@
     <ClInclude Include="analysis\max\max_settings.h" />
     <ClInclude Include="analysis\period\period.h" />
     <ClInclude Include="analysis\period\period_settings.h" />
+    <ClInclude Include="anfunc2indices.h" />
     <ClInclude Include="anfuncs.h" />
+    <ClInclude Include="anfunc_names.h" />
     <ClInclude Include="attribute_struct.h" />
     <ClInclude Include="benchmarking\cpu_bm.h" />
     <ClInclude Include="colorLUT_struct.h" />

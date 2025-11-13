@@ -31,6 +31,8 @@
 #include "index.h"
 #include "indices_map.h"
 #include "index2port.h"
+#include "anfunc2indices.h"
+#include "anfunc_names.h"
 
 bool CreateDeviceD3D(HWND hWnd);
 void CleanupDeviceD3D();
