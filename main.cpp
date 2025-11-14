@@ -35,6 +35,7 @@ void common_main()
     addKernel(fitzhugh_nagumo);
     addKernel(bolshakov);
     addKernel(mishchenko);
+    addKernel(mixed);
 
     //selectKernel(kernels.begin()->first);
     selectKernel(lorenz);
