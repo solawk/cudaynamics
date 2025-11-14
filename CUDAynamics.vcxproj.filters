@@ -70,6 +70,7 @@
     <ClCompile Include="index2port.cpp" />
     <ClCompile Include="anfunc2indices.cpp" />
     <ClCompile Include="anfunc_names.cpp" />
+    <ClCompile Include="splitString.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="imgui">
@@ -231,6 +232,8 @@
     <ClInclude Include="kernel_map.h" />
     <ClInclude Include="anfunc2indices.h" />
     <ClInclude Include="anfunc_names.h" />
+    <ClInclude Include="splitString.h" />
+    <ClInclude Include="analysisLobby.cuh" />
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="main.cu" />
@@ -315,6 +318,7 @@
     <CudaCompile Include="analysis\period\period.cu">
       <Filter>analysis\period</Filter>
     </CudaCompile>
+    <CudaCompile Include="analysisLobby.cu" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="CUDAynamics.rc" />

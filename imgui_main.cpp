@@ -224,8 +224,8 @@ int hiresAsyncComputation()
 
     computationHires.marshal.kernel.CopyFrom(&kernelHiresComputed);
     computationHires.marshal.kernel.mapWeight = 0.0f;
-    for (auto& indexPair : indices)
-        indexPair.second.enabled = (AnalysisIndex)computationHires.mapIndex == indexPair.first;
+    //for (auto& indexPair : indices)
+    //    indexPair.second.enabled = (AnalysisIndex)computationHires.mapIndex == indexPair.first;
 
     lastHiresStart = std::chrono::steady_clock::now();
     lastHiresHasInfo = true;
@@ -1232,13 +1232,13 @@ int imgui_main(int, char**)
                     switch ((AnalysisFunction)anfunc)
                     {
                     case AnalysisFunction::ANF_MINMAX:
-                        krn->analyses.MINMAX.DisplaySettings();
+                        krn->analyses.MINMAX.DisplaySettings(krn->variables);
                         break;
                     case AnalysisFunction::ANF_LLE:
-                        krn->analyses.LLE.DisplaySettings();
+                        krn->analyses.LLE.DisplaySettings(krn->variables);
                         break;
                     case AnalysisFunction::ANF_PERIOD:
-                        krn->analyses.PERIOD.DisplaySettings();
+                        krn->analyses.PERIOD.DisplaySettings(krn->variables);
                         break;
                     }
 
@@ -2530,7 +2530,9 @@ int imgui_main(int, char**)
                                         for (int i = 0; i < paintLUTsize; i++) heatmap->paintLUT.lut[i] = new int[cmp->marshal.totalVariations];
                                         heatmap->paintLUT.lutSizes = new int[paintLUTsize];
 
-                                        setupLUT(cmp->marshal.maps + (index2port(cmp->marshal.kernel.analyses, mapIndex)->offset + heatmap->values.mapValueIndex) * cmp->marshal.totalVariations, cmp->marshal.totalVariations, heatmap->paintLUT.lut, heatmap->paintLUT.lutSizes, paintLUTsize, heatmap->values.heatmapMin, heatmap->values.heatmapMax);
+                                        setupLUT(cmp->marshal.maps + (index2port(cmp->marshal.kernel.analyses, mapIndex)->offset + heatmap->values.mapValueIndex) * cmp->marshal.totalVariations,
+                                            cmp->marshal.totalVariations, heatmap->paintLUT.lut, heatmap->paintLUT.lutSizes, paintLUTsize,
+                                            heatmap->values.heatmapMin, heatmap->values.heatmapMax);
                                     }
 
                                     releaseHeatmap(window, isHires);

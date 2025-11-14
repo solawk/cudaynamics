@@ -262,7 +262,7 @@ void mapSelectionCombo(std::string name, int& selectedIndex, bool addEmpty)
 {
     if (ImGui::BeginCombo(name.c_str(), (selectedIndex == -1 ? "-" : indices[(AnalysisIndex)selectedIndex].name.c_str())))
     {
-        int indicesSize = indices.size(); // For some reason it only works when localized in a variable
+        int indicesSize = (int)indices.size(); // For some reason it only works when localized in a variable
         for (int i = (addEmpty ? -1 : 0); i < indicesSize; i++)
         {
             bool isSelected = selectedIndex == i;

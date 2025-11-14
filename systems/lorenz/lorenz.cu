@@ -30,20 +30,7 @@ __global__ void kernelProgram_lorenz(Computation* data)
 
     // Analysis
 
-    if (CUDA_kernel.analyses.LLE.toCompute)
-    {
-        LLE(data, variation, &finiteDifferenceScheme_lorenz);
-    }
-
-    if (CUDA_kernel.analyses.MINMAX.toCompute)
-    {
-        MAX(data, variation, &finiteDifferenceScheme_lorenz);
-    }
-
-    if (CUDA_kernel.analyses.PERIOD.toCompute)
-    {
-        Period(data, variation, &finiteDifferenceScheme_lorenz);
-    }
+    AnalysisLobby(data, &finiteDifferenceScheme_lorenz, variation);
 }
 
 __device__ __forceinline__ void finiteDifferenceScheme_lorenz(numb* currentV, numb* nextV, numb* parameters)

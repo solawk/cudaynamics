@@ -1,6 +1,7 @@
 #pragma once
-
 #include <string>
+#include <vector>
+#include <set>
 #include "heatmapProperties.hpp"
 
 // Maximum amount of variables and parameters in the plot

@@ -1,6 +1,5 @@
 #pragma once
 #include "cuda_runtime.h"
-
 #include "../port.h"
 #include "../numb.h"
 #include "abstractSettings_struct.h"
@@ -27,11 +26,26 @@ struct LLE_Settings : AbstractAnalysisSettingsStruct
 		LLE = Port();
 	}
 
-	void DisplaySettings()
+	void DisplaySettings(std::vector<Attribute>& variables)
 	{
 		DisplayNumbSetting("Initial deflection", r);
 		DisplayIntSetting("Observation steps", L);
-		DisplayVarSetting("Deflected variable", variableToDeflect);
-		for (int i = 0; i < 4; i++) DisplayVarSetting("Norm variable " + std::to_string(i + 1), normVariables[i]);
+		DisplayVarSetting("Deflected variable", variableToDeflect, variables);
+		for (int i = 0; i < 4; i++) DisplayVarSetting("Norm variable " + std::to_string(i + 1), normVariables[i], variables, true);
+	}
+
+	bool setup(std::vector<std::string> s)
+	{
+		if (!isMapSetupOfCorrectLength(s, 7)) return false;
+
+		r = s2n(s[0]);
+		L = s2i(s[1]);
+		variableToDeflect = s2i(s[2]);
+		normVariables[0] = s2i(s[3]);
+		normVariables[1] = s2i(s[4]);
+		normVariables[2] = s2i(s[5]);
+		normVariables[3] = s2i(s[6]);
+
+		return true;
 	}
 };

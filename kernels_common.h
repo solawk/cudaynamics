@@ -6,6 +6,6 @@
 #include <fstream>
 #include <chrono>
 #include <wtypes.h>
-
 #include "analysisHeaders.h"
 #include "analysisSettingsHeaders.h"
+#include "analysisLobby.cuh"

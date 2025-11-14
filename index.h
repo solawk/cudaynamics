@@ -11,7 +11,7 @@ enum AnalysisIndex
 
 struct Index
 {
-	bool enabled;
+	bool enabled; // userEnabled
 	std::string name;
 	AnalysisFunction function;
 	unsigned int size; // previously valueCount

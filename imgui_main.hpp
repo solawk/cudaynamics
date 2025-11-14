@@ -33,6 +33,7 @@
 #include "index2port.h"
 #include "anfunc2indices.h"
 #include "anfunc_names.h"
+#include "plotWindow.h"
 
 bool CreateDeviceD3D(HWND hWnd);
 void CleanupDeviceD3D();

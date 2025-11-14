@@ -144,6 +144,7 @@
     <ClCompile Include="main.cpp" />
     <ClCompile Include="main_utils.cpp" />
     <ClCompile Include="map_utils.cpp" />
+    <ClCompile Include="splitString.cpp" />
     <ClCompile Include="variationSteps.cu" />
   </ItemGroup>
   <ItemGroup>
@@ -151,6 +152,7 @@
     <ClInclude Include="analysesSettings_struct.h" />
     <ClInclude Include="analysis.h" />
     <ClInclude Include="analysisHeaders.h" />
+    <ClInclude Include="analysisLobby.cuh" />
     <ClInclude Include="analysisSettingsHeaders.h" />
     <ClInclude Include="analysis\lle\lle.h" />
     <ClInclude Include="analysis\lle\lle_settings.h" />
@@ -210,11 +212,13 @@
     <ClInclude Include="port.h" />
     <ClInclude Include="quaternion.h" />
     <ClInclude Include="resource.h" />
+    <ClInclude Include="splitString.h" />
     <ClInclude Include="styles.h" />
     <ClInclude Include="systemsHeaders.h" />
     <ClInclude Include="variationSteps.h" />
   </ItemGroup>
   <ItemGroup>
+    <CudaCompile Include="analysisLobby.cu" />
     <CudaCompile Include="analysis\lle\lle.cu" />
     <CudaCompile Include="analysis\max\max.cu" />
     <CudaCompile Include="analysis\period\period.cu" />

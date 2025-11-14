@@ -1,18 +1,8 @@
 #pragma once
+#include "numb.h"
 
 #define MAX_ATTRIBUTES 128
 #define MAX_MAPS 16
-
-#include <string>
-#include <vector>
-#include <set>
-
-#include "imgui/backends/imgui_impl_win32.h"
-#include "imgui/backends/imgui_impl_dx11.h"
-#include "implot/implot.h"
-#include "quaternion.h"
-#include "plotWindow.h"
-#include "numb.h"
 
 #define calculateStepCount(_min, _max, _step) (_step != 0 ? (int)((_max - _min) / _step) + 1 : 0)
 #define stepFromStepCount(_min, _max, _stepCount) ((_max - _min) / (numb)(_stepCount - 1))

@@ -65,19 +65,21 @@ __device__ void LLE(Computation* data, int variation, void(* finiteDifferenceSch
         }
     }
 
-    numb mapValue = LLE_value / (CUDA_kernel.steps + 1);
-
-    if (CUDA_kernel.mapWeight == 0.0f)
+    if (CUDA_kernel.analyses.LLE.LLE.used)
     {
-        CUDA_marshal.maps[indexPosition(settings.LLE.offset, 0)] = (CUDA_marshal.maps[indexPosition(settings.LLE.offset, 0)] * data->bufferNo + mapValue) / (data->bufferNo + 1);
-    }
-    else if (CUDA_kernel.mapWeight == 1.0f)
-    {
-        CUDA_marshal.maps[indexPosition(settings.LLE.offset, 0)] = mapValue;
-    }
-    else
-    {
-        CUDA_marshal.maps[indexPosition(settings.LLE.offset, 0)] = CUDA_marshal.maps[indexPosition(settings.LLE.offset, 0)] * (1.0f - CUDA_kernel.mapWeight) + mapValue * CUDA_kernel.mapWeight;
+        numb mapValue = LLE_value / (CUDA_kernel.steps + 1);
+        if (CUDA_kernel.mapWeight == 0.0f)
+        {
+            CUDA_marshal.maps[indexPosition(settings.LLE.offset, 0)] = (CUDA_marshal.maps[indexPosition(settings.LLE.offset, 0)] * data->bufferNo + mapValue) / (data->bufferNo + 1);
+        }
+        else if (CUDA_kernel.mapWeight == 1.0f)
+        {
+            CUDA_marshal.maps[indexPosition(settings.LLE.offset, 0)] = mapValue;
+        }
+        else
+        {
+            CUDA_marshal.maps[indexPosition(settings.LLE.offset, 0)] = CUDA_marshal.maps[indexPosition(settings.LLE.offset, 0)] * (1.0f - CUDA_kernel.mapWeight) + mapValue * CUDA_kernel.mapWeight;
+        }
     }
 }
 

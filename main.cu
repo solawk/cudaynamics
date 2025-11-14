@@ -318,8 +318,18 @@ void fillAttributeBuffers(Computation* data, int* attributeStepIndices, unsigned
 
 void setupAnFuncs(Computation* data)
 {
-    for (auto& indexPair : indices)
-        index2port(CUDA_kernel.analyses, indexPair.first)->used = indexPair.second.enabled;
+    if (!data->isHires)
+    {
+        for (auto& indexPair : indices)
+            index2port(CUDA_kernel.analyses, indexPair.first)->used = indexPair.second.enabled;
+    }
+    else
+    {
+        for (auto& indexPair : indices)
+            index2port(CUDA_kernel.analyses, indexPair.first)->used = false;
+
+        index2port(CUDA_kernel.analyses, (AnalysisIndex)data->mapIndex)->used = true;
+    }
 
     if (CUDA_marshal.totalVariations == 1)
         for (auto& indexPair : indices)

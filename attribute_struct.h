@@ -1,5 +1,6 @@
 #pragma once
 #include "objects.h"
+#include <string>
 
 #define MAX_ENUMS 16
 
