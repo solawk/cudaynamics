@@ -86,7 +86,6 @@ __device__  void Period(Computation* data, int variation, void(*finiteDifference
         { 
             fixedPointCount = 0;  
         }
-
         
         if (abs(curr) > maxAllowedValue) { //check if value is too big to be a dispesive system
             returnNan = true;
@@ -94,7 +93,6 @@ __device__  void Period(Computation* data, int variation, void(*finiteDifference
         else if(curr>peakThreshold) { 
             if (curr > prev && curr > next)     //peak found
             {
-
                 tempPeakFound = false;
                 if (firstpeakreached == false)
                 {
@@ -145,8 +143,8 @@ __device__  void Period(Computation* data, int variation, void(*finiteDifference
     //
     numb mapValue;
     
-    //if (data->marshal.kernel.mapDatas[offset_meanPeak/data->marshal.totalVariations].toCompute) {
-    /*if (data->marshal.kernel.mapDatas[3].toCompute) {
+    if (CUDA_kernel.analyses.PERIOD.meanPeak.used)
+    {
         mapValue = sumPeak / peakCount;
         if (CUDA_kernel.mapWeight == 0.0f)
         {
@@ -155,16 +153,17 @@ __device__  void Period(Computation* data, int variation, void(*finiteDifference
         }
         else if (CUDA_kernel.mapWeight == 1.0f)
         {
-            //CUDA_marshal.maps[(variation + offset_meanPeak) + ( 0 *CUDA_marshal.totalVariations)] = mapValue;
-            CUDA_marshal.maps[(variation + settings.meanPeak.offset) + (data->isHires ? 3 : 0 * CUDA_marshal.totalVariations)] = mapValue; // ???
+            CUDA_marshal.maps[indexPosition(settings.meanPeak.offset, 0)] = mapValue;
         }
         else
         {
-            CUDA_marshal.maps[indexPosition(settings.meanPeak.offset, 0)] = CUDA_marshal.maps[indexPosition(settings.meanPeak.offset, 0)] * (1.0f - CUDA_kernel.mapWeight) + mapValue * CUDA_kernel.mapWeight;
+            CUDA_marshal.maps[indexPosition(settings.meanPeak.offset, 0)] 
+                = CUDA_marshal.maps[indexPosition(settings.meanPeak.offset, 0)] * (1.0f - CUDA_kernel.mapWeight) + mapValue * CUDA_kernel.mapWeight;
         }
-    }*/
-    //if (data->marshal.kernel.mapDatas[offset_meanInterval/data->marshal.totalVariations].toCompute) {
-    /*if (data->marshal.kernel.mapDatas[2].toCompute) {
+    }
+
+    if (CUDA_kernel.analyses.PERIOD.meanInterval.used)
+    {
         mapValue = sumInterval / peakCount;
         if (CUDA_kernel.mapWeight == 0.0f)
         {
@@ -173,20 +172,17 @@ __device__  void Period(Computation* data, int variation, void(*finiteDifference
         }
         else if (CUDA_kernel.mapWeight == 1.0f)
         {
-            //CUDA_marshal.maps[(variation + offset_meanInterval) + ( 0 *CUDA_marshal.totalVariations)] = mapValue;
-            CUDA_marshal.maps[(variation + settings.meanInterval.offset) + (data->isHires ? 2 : 0 *CUDA_marshal.totalVariations)] = mapValue; // ???
+            CUDA_marshal.maps[indexPosition(settings.meanInterval.offset, 0)] = mapValue;
         }
         else
         {
-            CUDA_marshal.maps[indexPosition(settings.meanInterval.offset, 0)] = CUDA_marshal.maps[indexPosition(settings.meanInterval.offset, 0)] * (1.0f - CUDA_kernel.mapWeight) + mapValue * CUDA_kernel.mapWeight;
+            CUDA_marshal.maps[indexPosition(settings.meanInterval.offset, 0)] 
+                = CUDA_marshal.maps[indexPosition(settings.meanInterval.offset, 0)] * (1.0f - CUDA_kernel.mapWeight) + mapValue * CUDA_kernel.mapWeight;
         }
-    }*/
+    }
     
-    
-    
-    //if (data->marshal.kernel.mapDatas[offset_meanPeak/data->marshal.totalVariations].toCompute) {
-    /*if (data->marshal.kernel.mapDatas[4].toCompute) {
-
+    if (CUDA_kernel.analyses.PERIOD.periodicity.used)
+    {
         if (returnZero) { mapValue = 0; }   // result if FXP system
         else if (returnNan) { mapValue = NAN; } // result if dispersive system
         else {
@@ -249,17 +245,12 @@ __device__  void Period(Computation* data, int variation, void(*finiteDifference
         }
         else if (CUDA_kernel.mapWeight == 1.0f)
         {
-            //CUDA_marshal.maps[(variation + offset_period) + ( 0 * CUDA_marshal.totalVariations)] = mapValue;
-            CUDA_marshal.maps[indexPosition(settings.periodicity.offset, 0) + (data->isHires ? 4 : 0 * CUDA_marshal.totalVariations)] = mapValue; // ???
+            CUDA_marshal.maps[indexPosition(settings.periodicity.offset, 0)] = mapValue;
         }
         else
         {
-            CUDA_marshal.maps[indexPosition(settings.periodicity.offset, 0)] = CUDA_marshal.maps[indexPosition(settings.periodicity.offset, 0)] * (1.0f - CUDA_kernel.mapWeight) + mapValue * CUDA_kernel.mapWeight;
+            CUDA_marshal.maps[indexPosition(settings.periodicity.offset, 0)] 
+                = CUDA_marshal.maps[indexPosition(settings.periodicity.offset, 0)] * (1.0f - CUDA_kernel.mapWeight) + mapValue * CUDA_kernel.mapWeight;
         }
     }
-    else  CUDA_marshal.maps[indexPosition(settings.periodicity.offset, 0) + (0 * CUDA_marshal.totalVariations)] = data->marshal.totalVariations; // ???*/
 }
-
-
-
-
