@@ -1,8 +1,12 @@
 #pragma once
 #include <kernels_common.h>
 
-const int THREADS_PER_BLOCK_lorenz83 = 64;
+#define name lorenz83
 
-__global__ void kernelProgram_lorenz83(Computation* data);
+const int THREADS_PER_BLOCK_(name) = 64;
 
-__device__ __forceinline__ void finiteDifferenceScheme_lorenz83(numb* currentV, numb* nextV, numb* parameters);
+__global__ void kernelProgram_(name)(Computation* data);
+
+__device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* currentV, numb* nextV, numb* parameters);
+
+#undef name

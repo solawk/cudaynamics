@@ -1,54 +1,39 @@
 ﻿#include "main.h"
 #include "rabinovich_fabrikant.h"
 
+#define name rabinovich_fabrikant
+
 namespace attributes
 {
     enum variables { x, y, z };
     enum parameters { alpha, betta, gamma, delta, epsilon, symmetry, method, COUNT };
     enum methods { ExplicitEuler, ExplicitMidpoint, ExplicitRungeKutta4, VariableSymmetryCD};
-    enum maps { LLE, MAX, MeanInterval, MeanPeak, Period };
 }
 
-__global__ void kernelProgram_rabinovich_fabrikant(Computation* data)
+__global__ void kernelProgram_(name)(Computation* data)
 {
     int variation = (blockIdx.x * blockDim.x) + threadIdx.x;            // Variation (parameter combination) index
     if (variation >= CUDA_marshal.totalVariations) return;      // Shutdown thread if there isn't a variation to compute
     int stepStart, variationStart = variation * CUDA_marshal.variationSize;         // Start index to store the modelling data for the variation
-    numb variables[MAX_ATTRIBUTES];
-    numb variablesNext[MAX_ATTRIBUTES];
-    numb parameters[MAX_ATTRIBUTES];
+    LOCAL_BUFFERS;
     LOAD_ATTRIBUTES(false);
 
     // Custom area (usually) starts here
 
-    TRANSIENT_SKIP_NEW(finiteDifferenceScheme_rabinovich_fabrikant);
+    TRANSIENT_SKIP_NEW(finiteDifferenceScheme_(name));
 
     for (int s = 0; s < CUDA_kernel.steps && !data->isHires; s++)
     {
         stepStart = variationStart + s * CUDA_kernel.VAR_COUNT;
-        finiteDifferenceScheme_rabinovich_fabrikant(FDS_ARGUMENTS);
+        finiteDifferenceScheme_(name)(FDS_ARGUMENTS);
         RECORD_STEP;
     }
 
     // Analysis
-
-    if (M(LLE).toCompute)
-    {
-        LLE(data, variation, &finiteDifferenceScheme_rabinovich_fabrikant);
-    }
-
-    if (M(MAX).toCompute)
-    {
-        MAX(data, variation, &finiteDifferenceScheme_rabinovich_fabrikant);
-    }
-
-    if (M(Period).toCompute || M(MeanInterval).toCompute || M(MeanPeak).toCompute)
-    {
-        Period(data, variation, &finiteDifferenceScheme_rabinovich_fabrikant);
-    }
+    AnalysisLobby(data, &finiteDifferenceScheme_(name), variation);
 }
 
-__device__ __forceinline__ void finiteDifferenceScheme_rabinovich_fabrikant(numb* currentV, numb* nextV, numb* parameters)
+__device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* currentV, numb* nextV, numb* parameters)
 {
     ifMETHOD(P(method), ExplicitEuler)
     {
@@ -124,3 +109,5 @@ __device__ __forceinline__ void finiteDifferenceScheme_rabinovich_fabrikant(numb
         Vnext(x) = xmp + h2 * (Vnext(y) * (Vnext(z) - P(betta) + pow(Vnext(x), 2)) + P(gamma) * Vnext(x));
     }
 }
+
+#undef name

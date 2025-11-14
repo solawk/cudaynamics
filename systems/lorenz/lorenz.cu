@@ -1,15 +1,16 @@
 ﻿#include "main.h"
 #include "lorenz.h"
 
+#define name lorenz
+
 namespace attributes
 {
     enum variables { x, y, z };
     enum parameters { sigma, rho, beta, symmetry, method, COUNT };
     enum methods { ExplicitEuler, ExplicitMidpoint, ExplicitRungeKutta4, VariableSymmetryCD };
-    enum maps { LLE, MAX, MeanInterval, MeanPeak, Period };
 }
 
-__global__ void kernelProgram_lorenz(Computation* data)
+__global__ void kernelProgram_(name)(Computation* data)
 {
     int variation = (blockIdx.x * blockDim.x) + threadIdx.x;            // Variation (parameter combination) index
     if (variation >= CUDA_marshal.totalVariations) return;      // Shutdown thread if there isn't a variation to compute
@@ -19,21 +20,20 @@ __global__ void kernelProgram_lorenz(Computation* data)
 
     // Custom area (usually) starts here
 
-    TRANSIENT_SKIP_NEW(finiteDifferenceScheme_lorenz);
+    TRANSIENT_SKIP_NEW(finiteDifferenceScheme_(name));
 
     for (int s = 0; s < CUDA_kernel.steps && !data->isHires; s++)
     {
         stepStart = variationStart + s * CUDA_kernel.VAR_COUNT;
-        finiteDifferenceScheme_lorenz(FDS_ARGUMENTS);
+        finiteDifferenceScheme_(name)(FDS_ARGUMENTS);
         RECORD_STEP;
     }
 
     // Analysis
-
-    AnalysisLobby(data, &finiteDifferenceScheme_lorenz, variation);
+    AnalysisLobby(data, &finiteDifferenceScheme_(name), variation);
 }
 
-__device__ __forceinline__ void finiteDifferenceScheme_lorenz(numb* currentV, numb* nextV, numb* parameters)
+__device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* currentV, numb* nextV, numb* parameters)
 {
     ifMETHOD(P(method), ExplicitEuler)
     {
@@ -102,3 +102,5 @@ __device__ __forceinline__ void finiteDifferenceScheme_lorenz(numb* currentV, nu
         Vnext(x) = (xmp + P(sigma) * Vnext(y) * h2) / (1.0f + P(sigma) * h2);
     }
 }
+
+#undef name

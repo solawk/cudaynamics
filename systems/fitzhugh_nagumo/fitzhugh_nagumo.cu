@@ -1,54 +1,39 @@
 ﻿#include "main.h"
 #include "fitzhugh_nagumo.h"
 
+#define name fitzhugh_nagumo
+
 namespace attributes
 {
     enum variables { v, w };
     enum parameters { a, b, tau, R, Iext, method, COUNT };
     enum methods { ExplicitEuler, ExplicitMidpoint };
-    enum maps { LLE, MAX, MeanInterval, MeanPeak, Period };
 }
 
-__global__ void kernelProgram_fitzhugh_nagumo(Computation* data)
+__global__ void kernelProgram_(name)(Computation* data)
 {
     int variation = (blockIdx.x * blockDim.x) + threadIdx.x;            // Variation (parameter combination) index
     if (variation >= CUDA_marshal.totalVariations) return;      // Shutdown thread if there isn't a variation to compute
     int stepStart, variationStart = variation * CUDA_marshal.variationSize;         // Start index to store the modelling data for the variation
-    numb variables[MAX_ATTRIBUTES];
-    numb variablesNext[MAX_ATTRIBUTES];
-    numb parameters[MAX_ATTRIBUTES];
+    LOCAL_BUFFERS;
     LOAD_ATTRIBUTES(false);
 
     // Custom area (usually) starts here
 
-    TRANSIENT_SKIP_NEW(finiteDifferenceScheme_fitzhugh_nagumo);
+    TRANSIENT_SKIP_NEW(finiteDifferenceScheme_(name));
 
     for (int s = 0; s < CUDA_kernel.steps && !data->isHires; s++)
     {
         stepStart = variationStart + s * CUDA_kernel.VAR_COUNT;
-        finiteDifferenceScheme_fitzhugh_nagumo(FDS_ARGUMENTS);
+        finiteDifferenceScheme_(name)(FDS_ARGUMENTS);
         RECORD_STEP;
     }
 
     // Analysis
-
-    if (M(LLE).toCompute)
-    {
-        LLE(data, variation, &finiteDifferenceScheme_fitzhugh_nagumo);
-    }
-
-    if (M(MAX).toCompute)
-    {
-        MAX(data, variation, &finiteDifferenceScheme_fitzhugh_nagumo);
-    }
-
-    if (M(Period).toCompute || M(MeanInterval).toCompute || M(MeanPeak).toCompute)
-    {
-        Period(data, variation, &finiteDifferenceScheme_fitzhugh_nagumo);
-    }
+    AnalysisLobby(data, &finiteDifferenceScheme_(name), variation);
 }
 
-__device__ __forceinline__  void finiteDifferenceScheme_fitzhugh_nagumo(numb* currentV, numb* nextV, numb* parameters)
+__device__ __forceinline__  void finiteDifferenceScheme_(name)(numb* currentV, numb* nextV, numb* parameters)
 {
     ifMETHOD(P(method), ExplicitEuler)
     {
@@ -65,3 +50,5 @@ __device__ __forceinline__  void finiteDifferenceScheme_fitzhugh_nagumo(numb* cu
         Vnext(w) = V(w) + H * ((vmp + P(a) - P(b) * wmp) / P(tau));
     }
 }
+
+#undef name

@@ -1,53 +1,39 @@
 ﻿#include "main.h"
 #include "jj_rlcs.h"
 
+#define name jj_rlcs
+
 namespace attributes
 {
     enum variables { x1, sin_x1, x2, x3 };
     enum parameters { betaL, betaC, i, gThreshold, Rn, Rsg, symmetry, method, COUNT };
     enum methods { ExplicitEuler, SemiExplicitEuler, ExplicitMidpoint, ExplicitRungeKutta4, VariableSymmetryCD };
-    enum maps { LLE, MAX, MeanInterval, MeanPeak, Period };
 }
 
-__global__ void kernelProgram_jj_rlcs(Computation* data)
+__global__ void kernelProgram_(name)(Computation* data)
 {
     int variation = (blockIdx.x * blockDim.x) + threadIdx.x;            // Variation (parameter combination) index
     if (variation >= CUDA_marshal.totalVariations) return;      // Shutdown thread if there isn't a variation to compute
     int stepStart, variationStart = variation * CUDA_marshal.variationSize;         // Start index to store the modelling data for the variation
-    numb variables[MAX_ATTRIBUTES];
-    numb variablesNext[MAX_ATTRIBUTES];
-    numb parameters[MAX_ATTRIBUTES];
+    LOCAL_BUFFERS;
     LOAD_ATTRIBUTES(false);
 
     // Custom area (usually) starts here
 
-    TRANSIENT_SKIP_NEW(finiteDifferenceScheme_jj_rlcs);
+    TRANSIENT_SKIP_NEW(finiteDifferenceScheme_(name));
 
     for (int s = 0; s < CUDA_kernel.steps && !data->isHires; s++)
     {
         stepStart = variationStart + s * CUDA_kernel.VAR_COUNT;
-        finiteDifferenceScheme_jj_rlcs(FDS_ARGUMENTS);
+        finiteDifferenceScheme_(name)(FDS_ARGUMENTS);
         RECORD_STEP;
     }
 
     // Analysis
-
-    if (M(LLE).toCompute)
-    {
-        LLE(data, variation, &finiteDifferenceScheme_jj_rlcs);
-    }
-
-    if (M(MAX).toCompute)
-    {
-        MAX(data, variation, &finiteDifferenceScheme_jj_rlcs);
-    }
-    if (M(Period).toCompute || M(MeanInterval).toCompute || M(MeanPeak).toCompute)
-    {
-        Period(data, variation, &finiteDifferenceScheme_jj_rlcs);
-    }
+    AnalysisLobby(data, &finiteDifferenceScheme_(name), variation);
 }
 
-__device__ __forceinline__ void finiteDifferenceScheme_jj_rlcs(numb* currentV, numb* nextV, numb* parameters)
+__device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* currentV, numb* nextV, numb* parameters)
 {
     ifMETHOD(P(method), ExplicitEuler)
     {
@@ -129,3 +115,5 @@ __device__ __forceinline__ void finiteDifferenceScheme_jj_rlcs(numb* currentV, n
         Vnext(sin_x1) = sinf(Vnext(x1));
     }
 }
+
+#undef name

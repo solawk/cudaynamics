@@ -1,54 +1,39 @@
 ﻿#include "main.h"
 #include "three_scroll.h"
 
+#define name three_scroll
+
 namespace attributes
 {
     enum variables { x, y, z };
     enum parameters { a, b, c, d, e, f, symmetry, method, COUNT };
     enum methods { ExplicitEuler, ExplicitMidpoint, ExplicitRungeKutta4, VariableSymmetryCD };
-    enum maps { LLE, MAX, MeanInterval, MeanPeak, Period };
 }
 
-__global__ void kernelProgram_three_scroll(Computation* data)
+__global__ void kernelProgram_(name)(Computation* data)
 {
     int variation = (blockIdx.x * blockDim.x) + threadIdx.x;            // Variation (parameter combination) index
     if (variation >= CUDA_marshal.totalVariations) return;      // Shutdown thread if there isn't a variation to compute
     int stepStart, variationStart = variation * CUDA_marshal.variationSize;         // Start index to store the modelling data for the variation
-    numb variables[MAX_ATTRIBUTES];
-    numb variablesNext[MAX_ATTRIBUTES];
-    numb parameters[MAX_ATTRIBUTES];
+    LOCAL_BUFFERS;
     LOAD_ATTRIBUTES(false);
 
     // Custom area (usually) starts here
 
-    TRANSIENT_SKIP_NEW(finiteDifferenceScheme_three_scroll);
+    TRANSIENT_SKIP_NEW(finiteDifferenceScheme_(name));
 
     for (int s = 0; s < CUDA_kernel.steps && !data->isHires; s++)
     {
         stepStart = variationStart + s * CUDA_kernel.VAR_COUNT;
-        finiteDifferenceScheme_three_scroll(FDS_ARGUMENTS);
+        finiteDifferenceScheme_(name)(FDS_ARGUMENTS);
         RECORD_STEP;
     }
 
     // Analysis
-
-    if (M(LLE).toCompute)
-    {
-        LLE(data, variation, &finiteDifferenceScheme_three_scroll);
-    }
-
-    if (M(MAX).toCompute)
-    {
-        MAX(data, variation, &finiteDifferenceScheme_three_scroll);
-    }
-
-    if (M(Period).toCompute || M(MeanInterval).toCompute || M(MeanPeak).toCompute)
-    {
-        Period(data, variation, &finiteDifferenceScheme_three_scroll);
-    }
+    AnalysisLobby(data, &finiteDifferenceScheme_(name), variation);
 }
 
-__device__ __forceinline__  void finiteDifferenceScheme_three_scroll(numb* currentV, numb* nextV, numb* parameters)
+__device__ __forceinline__  void finiteDifferenceScheme_(name)(numb* currentV, numb* nextV, numb* parameters)
 {
     ifMETHOD(P(method), ExplicitEuler)
     {
@@ -120,3 +105,5 @@ __device__ __forceinline__  void finiteDifferenceScheme_three_scroll(numb* curre
         Vnext(x) = (xmp + h2 * P(a) * Vnext(y)) / (1 + h2 * (P(a) - P(d) * Vnext(z)));
     }
 }
+
+#undef name

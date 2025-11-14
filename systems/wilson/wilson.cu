@@ -1,55 +1,40 @@
 ﻿#include "main.h"
 #include "wilson.h"
 
+#define name wilson
+
 namespace attributes
 {
     enum variables { v, r, i, t };
     enum parameters { C, tau, p0, p1, p2, p3, p4, p5, p6, p7, Idc, Iamp, Ifreq, Idel, Idf, symmetry, signal, method, COUNT };
     enum waveforms { square, sine, triangle };
     enum methods { ExplicitEuler, SemiExplicitEuler, ImplicitEuler, ExplicitMidpoint, ImplicitMidpoint, ExplicitRungeKutta4, VariableSymmetryCD};
-    enum maps { LLE, MAX, MeanInterval, MeanPeak, Period };
 }
 
-__global__ void kernelProgram_wilson(Computation* data)
+__global__ void kernelProgram_(name)(Computation* data)
 {
-    int variation = (blockIdx.x * blockDim.x) + threadIdx.x;            // Variation (parameter combination) index
-    if (variation >= CUDA_marshal.totalVariations) return;      // Shutdown thread if there isn't a variation to compute
-    int stepStart, variationStart = variation * CUDA_marshal.variationSize;         // Start index to store the modelling data for the variation
-    numb variables[MAX_ATTRIBUTES];
-    numb variablesNext[MAX_ATTRIBUTES];
-    numb parameters[MAX_ATTRIBUTES];
-    LOAD_ATTRIBUTES(false);
+	int variation = (blockIdx.x * blockDim.x) + threadIdx.x;            // Variation (parameter combination) index
+	if (variation >= CUDA_marshal.totalVariations) return;      // Shutdown thread if there isn't a variation to compute
+	int stepStart, variationStart = variation * CUDA_marshal.variationSize;         // Start index to store the modelling data for the variation
+	LOCAL_BUFFERS;
+	LOAD_ATTRIBUTES(false);
 
-    // Custom area (usually) starts here
+	// Custom area (usually) starts here
 
-    TRANSIENT_SKIP_NEW(finiteDifferenceScheme_wilson);
+	TRANSIENT_SKIP_NEW(finiteDifferenceScheme_(name));
 
-    for (int s = 0; s < CUDA_kernel.steps && !data->isHires; s++)
-    {
-        stepStart = variationStart + s * CUDA_kernel.VAR_COUNT;
-        finiteDifferenceScheme_wilson(FDS_ARGUMENTS);
-        RECORD_STEP;
-    }
+	for (int s = 0; s < CUDA_kernel.steps && !data->isHires; s++)
+	{
+		stepStart = variationStart + s * CUDA_kernel.VAR_COUNT;
+		finiteDifferenceScheme_(name)(FDS_ARGUMENTS);
+		RECORD_STEP;
+	}
 
-    // Analysis
-
-    if (M(LLE).toCompute)
-    {
-        LLE(data, variation, &finiteDifferenceScheme_wilson);
-    }
-
-    if (M(MAX).toCompute)
-    {
-        MAX(data, variation, &finiteDifferenceScheme_wilson);
-    }
-
-    if (M(Period).toCompute || M(MeanInterval).toCompute || M(MeanPeak).toCompute)
-    {
-        Period(data, variation, &finiteDifferenceScheme_wilson);
-    }
+	// Analysis
+	AnalysisLobby(data, &finiteDifferenceScheme_(name), variation);
 }
 
-__device__ __forceinline__ void finiteDifferenceScheme_wilson(numb* currentV, numb* nextV, numb* parameters)
+__device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* currentV, numb* nextV, numb* parameters)
 {
     ifSIGNAL(P(signal), square)
     {
@@ -450,3 +435,5 @@ __device__ __forceinline__ void finiteDifferenceScheme_wilson(numb* currentV, nu
 		}
     }
 }
+
+#undef name
