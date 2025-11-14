@@ -127,13 +127,44 @@ Kernel readKernelText(std::string name)
 			constraintExpected = true;
 		}
 
-		if (str[0] == "map")
+		if (str[0] == "analysis")
 		{
-			tempMapData.name = str[1];
-			tempMapData.valueCount = atoi(str[2].c_str());
-			tempMapData.userEnabled = true;
+			bool correct = false;
+			int nameEnd = 0, settingsStart = 0;
+			for (int i = 2; i < str.size(); i++)
+			{
+				if (str[i] == "settings")
+				{
+					nameEnd = i - 1;
+					settingsStart = i + 1;
+					correct = true;
+					break;
+				}
+			}
 
-			//kernel.mapDatas.push_back(tempMapData);
+			if (correct)
+			{
+				std::vector<std::string> settingsVector = std::vector<std::string>(str.begin() + settingsStart, str.end());
+				std::string anSetName = "";
+				for (int i = 1; i <= nameEnd; i++) anSetName += str[i] + (i != nameEnd ? " " : "");
+
+				for (int anfunc = 0; anfunc < (int)AnalysisFunction::COUNT; anfunc++)
+					if (anSetName == AnFuncNames[anfunc])
+					{
+						switch ((AnalysisFunction)anfunc)
+						{
+						case ANF_MINMAX:
+							if (!kernel.analyses.MINMAX.setup(settingsVector)) printf("Wrong settings count for MINMAX in %s\n", kernel.name.c_str());
+							break;
+						case ANF_LLE:
+							if (!kernel.analyses.LLE.setup(settingsVector)) printf("Wrong settings count for LLE in %s\n", kernel.name.c_str());
+							break;
+						case ANF_PERIOD:
+							if (!kernel.analyses.PERIOD.setup(settingsVector)) printf("Wrong settings count for PERIOD in %s\n", kernel.name.c_str());
+							break;
+						}
+					}
+			}
 		}
 	}
 

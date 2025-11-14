@@ -9,4 +9,4 @@ __global__ void kernelProgram_(name)(Computation* data);
 
 __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* currentV, numb* nextV, numb* parameters);
 
-#undef name finiteDifferenceScheme_wilson(numb* currentV, numb* nextV, numb* parameters);
+#undef name
