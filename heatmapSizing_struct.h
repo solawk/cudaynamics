@@ -2,6 +2,7 @@
 #include "kernel_struct.h"
 #include "objects.h"
 #include "mapData_struct.h"
+#include "heatmapProperties.hpp"
 
 struct HeatmapSizing
 {

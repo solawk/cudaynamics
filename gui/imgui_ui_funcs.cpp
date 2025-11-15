@@ -260,36 +260,38 @@ void listEnum(int i)
 
 void mapSelectionCombo(std::string name, int& selectedIndex, bool addEmpty)
 {
-    if (ImGui::BeginCombo(name.c_str(), (selectedIndex == -1 ? "-" : KERNEL.mapDatas[selectedIndex].name.c_str())))
+    if (ImGui::BeginCombo(name.c_str(), (selectedIndex == -1 ? "-" : indices[(AnalysisIndex)selectedIndex].name.c_str())))
     {
-        for (int m = (addEmpty ? -1 : 0); m < KERNEL.MAP_COUNT; m++)
+        int indicesSize = (int)indices.size(); // For some reason it only works when localized in a variable
+        for (int i = (addEmpty ? -1 : 0); i < indicesSize; i++)
         {
-            bool isSelected = selectedIndex == m;
+            bool isSelected = selectedIndex == i;
             ImGuiSelectableFlags selectableFlags = 0;
 
-            if (selectedIndex == m) selectableFlags = ImGuiSelectableFlags_Disabled;
-            if (m == -1)
+            if (selectedIndex == i) selectableFlags = ImGuiSelectableFlags_Disabled;
+            if (i == -1)
             {
-                if (ImGui::Selectable(("-##-_" + name).c_str(), isSelected, selectableFlags)) selectedIndex = m;
+                if (ImGui::Selectable(("-##-_" + name).c_str(), isSelected, selectableFlags)) selectedIndex = i;
             }
             else
             {
-                if (ImGui::Selectable((KERNEL.mapDatas[m].name + "##" + KERNEL.mapDatas[m].name + "_" + name).c_str(), isSelected, selectableFlags)) selectedIndex = m;
+                if (ImGui::Selectable((indices[(AnalysisIndex)i].name + 
+                    "##" + indices[(AnalysisIndex)i].name + "_" + name).c_str(), isSelected, selectableFlags)) selectedIndex = i;
             }
         }
         ImGui::EndCombo();
     }
 }
 
-void mapValueSelectionCombo(int index, int channelIndex, std::string windowName, HeatmapProperties* heatmap)
+void mapValueSelectionCombo(AnalysisIndex index, int channelIndex, std::string windowName, HeatmapProperties* heatmap)
 {
     if (index == -1) return;
-    MapData* mapData = &(KERNEL.mapDatas[index]);
-    bool isSingleValue = mapData->valueCount == 1;
+    Port* port = index2port(KERNEL.analyses, index);
+    bool isSingleValue = port->size == 1;
     if (!isSingleValue)
     {
         ImGui::DragInt(("##" + windowName + "_index" + std::to_string(index) + "valueInChannel" + std::to_string(channelIndex)).c_str(),
-            channelIndex == -1 ? &(heatmap->values.mapValueIndex) : &(heatmap->channel[channelIndex].mapValueIndex), 1.0f, 0, mapData->valueCount - 1, "%d", 0);
+            channelIndex == -1 ? &(heatmap->values.mapValueIndex) : &(heatmap->channel[channelIndex].mapValueIndex), 1.0f, 0, port->size - 1, "%d", 0);
     }
 }
 

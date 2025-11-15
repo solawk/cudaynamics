@@ -8,6 +8,8 @@
 #include "cuda_macros.h"
 #include <objects.h>
 #include "benchmarking/cpu_bm.h"
+#include "indices_map.h"
+#include "index2port.h"
 
 #define PRINT_TIME 0
 
@@ -28,7 +30,7 @@ cudaError_t execute(Computation* data)
     //std::chrono::steady_clock::time_point before = std::chrono::steady_clock::now();
     //std::chrono::steady_clock::time_point precompute, incompute;
     //std::chrono::steady_clock::time_point postcompute;
-    std::chrono::steady_clock::time_point tp[8];
+    //std::chrono::steady_clock::time_point tp[8];
 
     cudaError_t cudaStatus;
 
@@ -44,11 +46,11 @@ cudaError_t execute(Computation* data)
     int* cuda_stepIndices = nullptr;
     numb* cuda_maps = nullptr;
 
-    tp[0] = std::chrono::steady_clock::now();
+    //tp[0] = std::chrono::steady_clock::now();
 
     CUDA_SET_DEVICE;
 
-    tp[1] = std::chrono::steady_clock::now();
+    //tp[1] = std::chrono::steady_clock::now();
 
     // Allocation memory on the device for the Computation struct and the buffers
     CUDA_MALLOC(&cuda_computation, sizeof(Computation), "cudaMalloc computation failed!");
@@ -58,7 +60,7 @@ cudaError_t execute(Computation* data)
     CUDA_MALLOC(&cuda_stepIndices, variations * CUDA_ATTR_COUNT * sizeof(int), "cudaMalloc indices failed!");
     if (totalMapValues > 0 && variations > 1) CUDA_MALLOC(&cuda_maps, variations * totalMapValues * sizeof(numb), "cudaMalloc maps failed!");
 
-    tp[2] = std::chrono::steady_clock::now();
+    //tp[2] = std::chrono::steady_clock::now();
 
     // Copying the Computation struct to the device
     CUDA_MEMCPY(cuda_computation, data, cudaMemcpyHostToDevice, sizeof(Computation), "cudaMemcpy computation failed!");
@@ -69,7 +71,7 @@ cudaError_t execute(Computation* data)
     CUDA_MEMCPY(&(cuda_computation->marshal.stepIndices), &cuda_stepIndices, cudaMemcpyHostToDevice, sizeof(int*), "cudaMemcpy indices address failed!");
     if (totalMapValues > 0 && variations > 1) CUDA_MEMCPY(&(cuda_computation->marshal.maps), &cuda_maps, cudaMemcpyHostToDevice, sizeof(numb*), "cudaMemcpy maps address failed!");
 
-    tp[3] = std::chrono::steady_clock::now();
+    //tp[3] = std::chrono::steady_clock::now();
 
     // Copying the values in the buffers themselves to the device
     //CUDA_MEMCPY(cuda_trajectory, CUDA_marshal.trajectory, cudaMemcpyHostToDevice, size * sizeof(numb), "cudaMemcpy data failed!");
@@ -80,7 +82,7 @@ cudaError_t execute(Computation* data)
     if (variations > 1) CUDA_MEMCPY(cuda_maps, CUDA_marshal.maps + (!data->isHires ? 0 : data->startVariationInCurrentExecute),
         cudaMemcpyHostToDevice, variations * totalMapValues * sizeof(numb), "cudaMemcpy maps failed!");
 
-    tp[4] = std::chrono::steady_clock::now();
+    //tp[4] = std::chrono::steady_clock::now();
 
     // Kernel execution
     //precompute = std::chrono::steady_clock::now();
@@ -89,7 +91,7 @@ cudaError_t execute(Computation* data)
     CUDA_SYNCHRONIZE;
     //incompute = std::chrono::steady_clock::now();
 
-    tp[5] = std::chrono::steady_clock::now();
+    //tp[5] = std::chrono::steady_clock::now();
 
     // Copying the trajectories and the maps back to the host
     if (!data->isHires)
@@ -105,7 +107,7 @@ cudaError_t execute(Computation* data)
     if (variations > 1) CUDA_MEMCPY(CUDA_marshal.maps + (!data->isHires ? 0 : data->startVariationInCurrentExecute), cuda_maps,
         cudaMemcpyDeviceToHost, variations * totalMapValues * sizeof(numb), "cudaMemcpy maps back failed!");
 
-    tp[6] = std::chrono::steady_clock::now();
+    //tp[6] = std::chrono::steady_clock::now();
 
 Error:
     if (cuda_trajectory != nullptr) cudaFree(cuda_trajectory);
@@ -116,7 +118,7 @@ Error:
 
     CUDA_RESET;
 
-    tp[7] = std::chrono::steady_clock::now();
+    //tp[7] = std::chrono::steady_clock::now();
 
     for (int i = 0; i < 7; i++)
     {
@@ -172,7 +174,8 @@ int compute(Computation* data)
     // Vector of attribute steps (indices of values) is now outside the filling function, this way we can use it in several iterations, essential for hi-res computations
     int* attributeStepIndices = new int[CUDA_ATTR_COUNT];
     for (int i = 0; i < CUDA_ATTR_COUNT; i++) attributeStepIndices[i] = 0;
-    setMapValues(data);
+    //setMapValues(data);
+    setupAnFuncs(data);
 
     bool hasFailed = false;
     cudaError_t cudaStatus;
@@ -313,7 +316,57 @@ void fillAttributeBuffers(Computation* data, int* attributeStepIndices, unsigned
     }
 }
 
-void setMapValues(Computation* data)
+void setupAnFuncs(Computation* data)
+{
+    if (!data->isHires)
+    {
+        for (auto& indexPair : indices)
+            index2port(CUDA_kernel.analyses, indexPair.first)->used = indexPair.second.enabled;
+    }
+    else
+    {
+        for (auto& indexPair : indices)
+            index2port(CUDA_kernel.analyses, indexPair.first)->used = false;
+
+        index2port(CUDA_kernel.analyses, (AnalysisIndex)data->mapIndex)->used = true;
+    }
+
+    if (CUDA_marshal.totalVariations == 1)
+        for (auto& indexPair : indices)
+            index2port(CUDA_kernel.analyses, indexPair.first)->used = false;
+
+    CUDA_kernel.analyses.Used2ToCompute();
+
+    int offset = 0;
+    for (auto& indexPair : indices)
+    {
+        Port* port = index2port(CUDA_kernel.analyses, indexPair.first);
+        if (port->used)
+        {
+            port->offset = offset;
+            offset += port->size;
+        }
+    }
+    CUDA_marshal.totalMapValuesPerVariation = offset;
+
+    // Initialize buffer
+    if (CUDA_marshal.totalVariations > 1 && CUDA_marshal.maps == nullptr)
+    {
+        CUDA_marshal.maps = new numb[CUDA_marshal.totalVariations * CUDA_marshal.totalMapValuesPerVariation];
+    }
+
+    // Copy previous map values if present
+    if (data->isFirst || CUDA_kernel.mapWeight == 1.0f)
+    {
+        memset(CUDA_marshal.maps, 0, sizeof(numb) * CUDA_marshal.totalVariations * CUDA_marshal.totalMapValuesPerVariation);
+    }
+    else
+    {
+        memcpy(CUDA_marshal.maps, data->otherMarshal->maps, sizeof(numb) * CUDA_marshal.totalVariations * CUDA_marshal.totalMapValuesPerVariation);
+    }
+}
+
+/*void setMapValues(Computation* data)
 {
     if (CUDA_marshal.totalVariations == 1)
         for (int m = 0; m < CUDA_kernel.MAP_COUNT; m++)
@@ -348,4 +401,4 @@ void setMapValues(Computation* data)
     {
         memcpy(CUDA_marshal.maps, data->otherMarshal->maps, sizeof(numb) * CUDA_marshal.totalVariations * CUDA_marshal.totalMapValuesPerVariation);
     }
-}
+}*/

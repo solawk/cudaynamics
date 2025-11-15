@@ -33,12 +33,13 @@
 #define ifSIGNAL(p, n)  if ((int)p == attributes::waveforms::n)
 
 // Map settings
-#define MS(map, offset) CUDA_kernel.mapSettings[data->marshal.kernel.mapDatas[attributes::maps::map].settingsOffset + offset]
+#define MS(map, offset) 0.0
 
 #define MO(map)         (CUDA_kernel.mapDatas[attributes::maps::map].offset * CUDA_marshal.totalVariations)
 
 #define mapPosition     (variation + offset)
 #define mapValueAt(index) (variation + offset) + (index * CUDA_marshal.totalVariations)
+#define indexPosition(offset, value)  ((offset + value) * CUDA_marshal.totalVariations + variation)
 
 // Computation access macros
 
@@ -46,8 +47,8 @@
 #define CUDA_kernel		CUDA_marshal.kernel
 #define CUDA_ATTR_COUNT (CUDA_kernel.VAR_COUNT + CUDA_kernel.PARAM_COUNT)
 
-#define STEP_INDICES_X(m) CUDA_marshal.stepIndices[indicesStart + (CUDA_kernel.mapDatas[attributes::maps::m].typeX == PARAMETER ? CUDA_kernel.VAR_COUNT : 0) + CUDA_kernel.mapDatas[attributes::maps::m].indexX]
-#define STEP_INDICES_Y(m) CUDA_marshal.stepIndices[indicesStart + (CUDA_kernel.mapDatas[attributes::maps::m].typeY == PARAMETER ? CUDA_kernel.VAR_COUNT : 0) + CUDA_kernel.mapDatas[attributes::maps::m].indexY]
+//#define STEP_INDICES_X(m) CUDA_marshal.stepIndices[indicesStart + (CUDA_kernel.mapDatas[attributes::maps::m].typeX == PARAMETER ? CUDA_kernel.VAR_COUNT : 0) + CUDA_kernel.mapDatas[attributes::maps::m].indexX]
+//#define STEP_INDICES_Y(m) CUDA_marshal.stepIndices[indicesStart + (CUDA_kernel.mapDatas[attributes::maps::m].typeY == PARAMETER ? CUDA_kernel.VAR_COUNT : 0) + CUDA_kernel.mapDatas[attributes::maps::m].indexY]
 
 // Preparation macros
 

@@ -1,6 +1,7 @@
 #pragma once
-
 #include <string>
+#include <vector>
+#include <set>
 #include "heatmapProperties.hpp"
 
 // Maximum amount of variables and parameters in the plot
@@ -8,6 +9,7 @@
 
 enum PlotType { Series, Phase, Phase2D, Orbit, Heatmap, MCHeatmap, Metric, PlotType_COUNT };
 enum OrbitPlotType {  Peak_Bifurcation, Interval_Bifurcation, Bifurcation_3D, Selected_Var_Section, OrbitPlotType_COUNT};
+
 struct PlotWindow
 {
 public:

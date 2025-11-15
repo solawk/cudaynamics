@@ -8,14 +8,9 @@
 #pragma comment( linker, "/subsystem:windows" )
 #endif
 
-std::map<std::string, Kernel> kernels;
-std::map<std::string, int> kernelTPBs;
-std::map<std::string, void(*)(Computation*)> kernelPrograms;
-//std::map<std::string, void(*)(numb*, numb*, numb*)> kernelFDSs;
-std::string selectedKernel;
-
 void common_main()
 {
+    // Kernels
     addKernel(lorenz);
     addKernel(lorenz83);
     addKernel(lorenzVar);
@@ -44,6 +39,14 @@ void common_main()
 
     //selectKernel(kernels.begin()->first);
     selectKernel(lorenz);
+
+    // Indices
+    addIndex(IND_MAX, "Maximum variable value", MINMAX, 1);
+    addIndex(IND_MIN, "Minimum variable value", MINMAX, 1);
+    addIndex(IND_LLE, "Largest Lyapunov exponent", LLE, 1);
+    addIndex(IND_PERIOD, "Period", PERIOD, 1);
+    addIndex(IND_MNPEAK, "Mean peak", PERIOD, 1);
+    addIndex(IND_MNINT, "Mean interval", PERIOD, 1);
 
     imgui_main(0, 0);
 }

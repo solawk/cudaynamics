@@ -78,7 +78,7 @@ void finiteDifferenceScheme_lorenz_cpu(numb* currentV, numb* nextV, numb* parame
     }
 }
 
-__device__ void LLE_cpu(Computation* data, LLE_Settings settings, int variation, void(*finiteDifferenceScheme)(numb*, numb*, numb*), int offset)
+__device__ void LLE_cpu(Computation* data, int variation, void(*finiteDifferenceScheme)(numb*, numb*, numb*), int offset)
 {
     int variationStart = variation * CUDA_marshal.variationSize;
     int stepStart = variationStart;
@@ -90,6 +90,7 @@ __device__ void LLE_cpu(Computation* data, LLE_Settings settings, int variation,
     for (int i = 0; i < CUDA_kernel.VAR_COUNT; i++)
         LLE_array[i] = CUDA_marshal.trajectory[stepStart + i];
 
+    LLE_Settings settings = CUDA_kernel.analyses.LLE;
     numb r = settings.r;
     int L = settings.L;
     LLE_array[settings.variableToDeflect] += r;
@@ -106,7 +107,7 @@ __device__ void LLE_cpu(Computation* data, LLE_Settings settings, int variation,
         if (s % L == 0)
         {
             numb norm = 0.0;
-            for (int i = 0; i < MAX_LLE_NORM_VARIABLES; i++)
+            for (int i = 0; i < 4; i++)
             {
                 if (settings.normVariables[i] == -1) break;
 
@@ -163,9 +164,7 @@ void lorenz_cpu(Computation* data, int variation)
 
     if (M(LLE).toCompute)
     {
-        LLE_Settings lle_settings(MS(LLE, 0), (int)MS(LLE, 1), (int)MS(LLE, 2));
-        lle_settings.Use3DNorm();
-        LLE_cpu(data, lle_settings, variation, &finiteDifferenceScheme_lorenz_cpu, (int)(MO(LLE) + (!data->isHires ? 0 : data->startVariationInCurrentExecute)));
+        LLE_cpu(data, variation, &finiteDifferenceScheme_lorenz_cpu, (int)(MO(LLE) + (!data->isHires ? 0 : data->startVariationInCurrentExecute)));
     }
 }
 

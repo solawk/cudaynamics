@@ -1,5 +1,6 @@
 #pragma once
-#include "imgui_main.hpp"
+//#include "imgui_main.hpp"
+#include "main.h"
 #include "implot/implot.h"
 #include <tchar.h>
 #include <stdio.h>
@@ -9,6 +10,9 @@
 #include <implot_internal.h>
 #include "attribute_struct.h"
 #include "kernel_struct.h"
+#include "quaternion.h"
+#include "plotWindow.h"
+#include "colorLUT_struct.h"
 
 const float DEG2RAD = 3.141592f / 180.0f;
 

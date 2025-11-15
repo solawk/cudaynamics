@@ -6,3 +6,11 @@
 #include <fstream>
 #include <chrono>
 #include <wtypes.h>
+#include "analysisHeaders.h"
+#include "analysisSettingsHeaders.h"
+#include "analysisLobby.cuh"
+
+#define CONCAT(a, b) a##b
+#define THREADS_PER_BLOCK_(name) CONCAT(THREADS_PER_BLOCK_, name)
+#define kernelProgram_(name) CONCAT(kernelProgram_, name)
+#define finiteDifferenceScheme_(name) CONCAT(finiteDifferenceScheme_, name)

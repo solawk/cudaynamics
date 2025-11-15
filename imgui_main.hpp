@@ -15,7 +15,7 @@
 
 #include "imgui/backends/imgui_impl_win32.h"
 #include "imgui/backends/imgui_impl_dx11.h"
-#include "main.h"
+#include "kernel_map.h"
 
 #include "implot/implot.h"
 #include <tchar.h>
@@ -28,6 +28,12 @@
 #include "heatmapSizing_struct.h"
 #include "map_utils.hpp"
 #include "gui/imgui_ui_funcs.h"
+#include "index.h"
+#include "indices_map.h"
+#include "index2port.h"
+#include "anfunc2indices.h"
+#include "anfunc_names.h"
+#include "plotWindow.h"
 
 bool CreateDeviceD3D(HWND hWnd);
 void CleanupDeviceD3D();
@@ -48,21 +54,6 @@ void hiresShiftClickCompute(PlotWindow* window, HeatmapSizing* sizing, numb valu
 #define KERNELNEWCURRENT (HIRES_ON ? kernelHiresNew : kernelNew)
 #define KERNELSAVEDCURRENT (HIRES_ON ? kernelHiresComputed : KERNEL)
 #define KERNELINTERNALCURRENT (HIRES_ON ? kernelHiresNew : KERNEL)
-
-// UI drawing-related macros
-#define CUSTOM_COLOR(c)     ImGui::GetStyle().Colors[ImGuiCol_C_##c]
-#define PUSH_DISABLED_FRAME {ImGui::PushStyleColor(ImGuiCol_FrameBg, CUSTOM_COLOR(DisabledBg)); \
-                            ImGui::PushStyleColor(ImGuiCol_FrameBgActive, CUSTOM_COLOR(DisabledBg)); \
-                            ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, CUSTOM_COLOR(DisabledBg));}
-#define PUSH_UNSAVED_FRAME  {ImGui::PushStyleColor(ImGuiCol_FrameBg, CUSTOM_COLOR(Unsaved)); \
-                            ImGui::PushStyleColor(ImGuiCol_FrameBgActive, CUSTOM_COLOR(UnsavedActive)); \
-                            ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, CUSTOM_COLOR(UnsavedHovered));}
-#define PUSH_HIRES_FRAME  {ImGui::PushStyleColor(ImGuiCol_FrameBg, CUSTOM_COLOR(Hires)); \
-                            ImGui::PushStyleColor(ImGuiCol_FrameBgActive, CUSTOM_COLOR(HiresActive)); \
-                            ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, CUSTOM_COLOR(HiresHovered));}
-#define POP_FRAME(n)        {ImGui::PopStyleColor(n);}
-#define CLAMP01(x)          if (x < 0.0f) x = 0.0f; if (x > 1.0f) x = 1.0f;
-#define TOOLTIP(text)       if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal)) ImGui::SetTooltip(text);
 
 // ImGui functions turned into macros to shorten the .cpp
 #define IMGUI_WORK_BEGIN	MSG msg;                                                                                            \

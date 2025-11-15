@@ -1,11 +1,11 @@
-Name: Mixed 2nd order system
-Steps: 1000000
-Transient: 0
+Name: Mixed 2nd-order memristor
+Steps: 10000
+Transient: 10000
 // Defining step:
 // parameter/variable/discrete
 // Then, unless it is discrete, provide its name and define it like an attribute
 // If it is discrete, add nothing after
-Step type: parameter h Fixed 0.00001 0.1 0.01 100 0.0 0.0
+Step type: parameter h Fixed 0.01 0.1 0.01 100 0.0 0.0
 // Compute on CUDAynamics launch: yes/no
 Execute on launch: yes
 // Ranging types:
@@ -18,29 +18,34 @@ Execute on launch: yes
 // Defining variables/parameters:
 // var/param <name> <ranging type> <minimum value> <maximum value> <step> <step count> <normal mean> <normal deviation>
 var v Fixed 0.0 3.0 1.0 50 0.0 0.0
-var I Fixed 0.0 3.0 1.0 50 0.0 0.0
+var i Fixed 0.0 3.0 1.0 50 0.0 0.0
 var x Fixed 0.0 2.5 0.1 50 0.0 0.0
-var N Fixed 0.0 1.5 0.1 0 0.0 0.0
+var n Fixed 0.0 1.5 0.1 0 0.0 0.0
 var t Fixed 0.0 1.5 0.1 0 0.0 0.0
-param k1 Fixed 0.04 2.0 0.1 0 0.0 0.0
+param k1 Linear 0.0 0.05 0.1 100 0.0 0.0
 param k2 Fixed 46.5 27.0 0.01 100 0.0 0.0
-param k3 Fixed 250.0 350.0 0.1 100 0.0 0.0
+param k3 Linear 0.0 2500.0 0.1 100 0.0 0.0
 param a Fixed 0.1 10.0 0.1 0 0.0 0.0
 param Nmax Fixed 10.0 0.1 0.01 0 0.0 0.0
 param Ron Fixed 1.0 5.0 0.01 0 0.0 0.0
-param Roff Fixed 10.0 2.0 0.01 0 0.0 0.0
-param A Fixed 1.5 1.0 0.01 100 0.0 0.0
-param nu Fixed 1.0 1.0 0.01 100 0.0 0.0
-param T Fixed 0.0 1.0 0.01 100 0.0 0.0
+param Roff Fixed 20.0 2.0 0.01 0 0.0 0.0
+param Vdc Fixed 0.0 1.0 0.01 100 0.0 0.0
+param Vamp Fixed 1.5 1.0 0.01 100 0.0 0.0
+param Vfreq Fixed 1.0 1.0 0.01 100 0.0 0.0
+param Vdel Fixed 0.0 1.0 0.01 100 0.0 0.0
+param Vdf Fixed 0.5 1.0 0.01 100 0.0 0.0
+constraint signal square
+param symmetry Fixed 0.0 1.0 0.01 100 0.0 0.0
+constraint method VariableSymmetryCD
 // Defining enumerated parameters (useful for methods):
 // enum <name> <ranging type> <minimum value> <maximum value> <step> <step count> <normal mean> <normal deviation> <enum names, no spaces>
-enum method 1ExplicitEuler 0ExplicitMidpoint 0ExplicitRungeKutta4 0VariableSymmetryCD
-enum signal 1Sinusoidal 0Rectangular
+enum signal 0square 1sine 0triangle
+enum method 0ExplicitEuler 1ExplicitMidpoint 0ExplicitRungeKutta4 0VariableSymmetryCD
 //
 // Defining maps:
 // map <name> <map settings count (inside its struct)> <map settings, beginning with "n" for numbs and "i" for ints>
-map LLE 1 7 r n0.01 L i1000 variableToDeflect i0 norm0 i0 norm1 i1 norm2 i2 norm3 i-1
+map LLE 1 7 r n0.01 L i1000 variableToDeflect i3 norm0 i1 norm1 i3 norm2 i-1 norm3 i-1
 map MAX 1 1 i i0
-map MeanInterval 1 5 analysedVariable i2 MaxAllowedValue n1e4 epsFXP n1e-3 timeFractionFXP n0.05 peakThreshold n-inf i1
+map MeanInterval 1 5 analysedVariable i3 MaxAllowedValue n1e4 epsFXP n1e-3 timeFractionFXP n0.05 peakThreshold n-inf i1
 map MeanPeak 1 0 i1
-map Period 1 3 epsDBSCAN n1.0 CoefIntervals n15.0 CoefPeaks n5.0 i1
+map Period 1 3 epsDBSCAN n1.0 CoefIntervals n30.0 CoefPeaks n30.0 i1

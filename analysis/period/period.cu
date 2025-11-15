@@ -1,6 +1,7 @@
 #include "period.h"
 
-__device__  void Period(Computation* data, DBSCAN_Settings settings, int variation, void(*finiteDifferenceScheme)(numb*, numb*, numb*), int offset_period, int offset_meanPeak, int offset_meanInterval) {
+__device__  void Period(Computation* data, int variation, void(*finiteDifferenceScheme)(numb*, numb*, numb*))
+{
     int variationStart = variation * CUDA_marshal.variationSize;
     int varCount = CUDA_kernel.VAR_COUNT;
     int variationSize = CUDA_marshal.variationSize;
@@ -18,6 +19,7 @@ __device__  void Period(Computation* data, DBSCAN_Settings settings, int variati
     for (int v = 0; v < varCount; v++) variablesCurr[v] = variables[v];
 
     // Map Settings for peak finder and DBSCAN analysis
+    DBSCAN_Settings settings = CUDA_kernel.analyses.PERIOD;
     numb epsDBSCAN = settings.eps;  //eps value for dbscan
     int analysedVariable = settings.analysedVariable; //variable of which peak finder analyses trajectory
     numb coefPeaks = settings.CoefPeaks;    //coefficient for peaks found in peakfinder
@@ -25,7 +27,7 @@ __device__  void Period(Computation* data, DBSCAN_Settings settings, int variati
     numb maxAllowedValue = settings.maxAllowedValue;    //the maximum value allowed before peak finder deems system dispersive
     numb epsFXP = settings.epsFXP;  //eps area used in checking if system is a fixed point
     numb peakThreshold = settings.peakThreshold;    //minimum value of peak that can be found in peak finder, -inf by default
-    numb stepSize = settings.stepSize == -1 ? 1 : settings.stepSize;    //stepsize of system
+    numb stepSize = CUDA_kernel.stepType == ST_Parameter ? parameters[CUDA_kernel.PARAM_COUNT - 1] : 1;    //stepsize of system
     numb timeFractionFXP = settings.timeFractionFXP;    //fraction of the trajectory that the system need to b e fixed point for peak finder to deem it a fixed point
     int fixedPointMaxCount = round((variationSize / varCount) * timeFractionFXP);   //amount of steps in trajectory that the system need to be fixed point for peak finder to deem it a fixed point
 
@@ -84,7 +86,6 @@ __device__  void Period(Computation* data, DBSCAN_Settings settings, int variati
         { 
             fixedPointCount = 0;  
         }
-
         
         if (abs(curr) > maxAllowedValue) { //check if value is too big to be a dispesive system
             returnNan = true;
@@ -92,7 +93,6 @@ __device__  void Period(Computation* data, DBSCAN_Settings settings, int variati
         else if(curr>peakThreshold) { 
             if (curr > prev && curr > next)     //peak found
             {
-
                 tempPeakFound = false;
                 if (firstpeakreached == false)
                 {
@@ -143,48 +143,46 @@ __device__  void Period(Computation* data, DBSCAN_Settings settings, int variati
     //
     numb mapValue;
     
-    //if (data->marshal.kernel.mapDatas[offset_meanPeak/data->marshal.totalVariations].toCompute) {
-    if (data->marshal.kernel.mapDatas[3].toCompute) {
+    if (CUDA_kernel.analyses.PERIOD.meanPeak.used)
+    {
         mapValue = sumPeak / peakCount;
         if (CUDA_kernel.mapWeight == 0.0f)
         {
-            numb existingValue = CUDA_marshal.maps[variation + offset_meanPeak] * data->bufferNo;
-            CUDA_marshal.maps[variation + offset_meanPeak] = (existingValue + mapValue) / (data->bufferNo + 1);
+            numb existingValue = CUDA_marshal.maps[indexPosition(settings.meanPeak.offset, 0)] * data->bufferNo;
+            CUDA_marshal.maps[indexPosition(settings.meanPeak.offset, 0)] = (existingValue + mapValue) / (data->bufferNo + 1);
         }
         else if (CUDA_kernel.mapWeight == 1.0f)
         {
-            //CUDA_marshal.maps[(variation + offset_meanPeak) + ( 0 *CUDA_marshal.totalVariations)] = mapValue;
-            CUDA_marshal.maps[(variation + offset_meanPeak) + (data->isHires ? 3 : 0 * CUDA_marshal.totalVariations)] = mapValue;
+            CUDA_marshal.maps[indexPosition(settings.meanPeak.offset, 0)] = mapValue;
         }
         else
         {
-            CUDA_marshal.maps[variation + offset_meanPeak] = CUDA_marshal.maps[variation + offset_meanPeak] * (1.0f - CUDA_kernel.mapWeight) + mapValue * CUDA_kernel.mapWeight;
+            CUDA_marshal.maps[indexPosition(settings.meanPeak.offset, 0)] 
+                = CUDA_marshal.maps[indexPosition(settings.meanPeak.offset, 0)] * (1.0f - CUDA_kernel.mapWeight) + mapValue * CUDA_kernel.mapWeight;
         }
     }
-    //if (data->marshal.kernel.mapDatas[offset_meanInterval/data->marshal.totalVariations].toCompute) {
-    if (data->marshal.kernel.mapDatas[2].toCompute) {
+
+    if (CUDA_kernel.analyses.PERIOD.meanInterval.used)
+    {
         mapValue = sumInterval / peakCount;
         if (CUDA_kernel.mapWeight == 0.0f)
         {
-            numb existingValue = CUDA_marshal.maps[variation + offset_meanInterval] * data->bufferNo;
-            CUDA_marshal.maps[variation + offset_meanInterval] = (existingValue + mapValue) / (data->bufferNo + 1);
+            numb existingValue = CUDA_marshal.maps[indexPosition(settings.meanInterval.offset, 0)] * data->bufferNo;
+            CUDA_marshal.maps[indexPosition(settings.meanInterval.offset, 0)] = (existingValue + mapValue) / (data->bufferNo + 1);
         }
         else if (CUDA_kernel.mapWeight == 1.0f)
         {
-            //CUDA_marshal.maps[(variation + offset_meanInterval) + ( 0 *CUDA_marshal.totalVariations)] = mapValue;
-            CUDA_marshal.maps[(variation + offset_meanInterval) + (data->isHires ? 2 : 0 *CUDA_marshal.totalVariations)] = mapValue;
+            CUDA_marshal.maps[indexPosition(settings.meanInterval.offset, 0)] = mapValue;
         }
         else
         {
-            CUDA_marshal.maps[variation + offset_meanInterval] = CUDA_marshal.maps[variation + offset_meanInterval] * (1.0f - CUDA_kernel.mapWeight) + mapValue * CUDA_kernel.mapWeight;
+            CUDA_marshal.maps[indexPosition(settings.meanInterval.offset, 0)] 
+                = CUDA_marshal.maps[indexPosition(settings.meanInterval.offset, 0)] * (1.0f - CUDA_kernel.mapWeight) + mapValue * CUDA_kernel.mapWeight;
         }
     }
     
-    
-    
-    //if (data->marshal.kernel.mapDatas[offset_meanPeak/data->marshal.totalVariations].toCompute) {
-    if (data->marshal.kernel.mapDatas[4].toCompute) {
-
+    if (CUDA_kernel.analyses.PERIOD.periodicity.used)
+    {
         if (returnZero) { mapValue = 0; }   // result if FXP system
         else if (returnNan) { mapValue = NAN; } // result if dispersive system
         else {
@@ -242,22 +240,17 @@ __device__  void Period(Computation* data, DBSCAN_Settings settings, int variati
 
         if (CUDA_kernel.mapWeight == 0.0f)
         {
-            numb existingValue = CUDA_marshal.maps[variation + offset_period] * data->bufferNo;
-            CUDA_marshal.maps[variation + offset_period] = (existingValue + mapValue) / (data->bufferNo + 1);
+            numb existingValue = CUDA_marshal.maps[indexPosition(settings.periodicity.offset, 0)] * data->bufferNo;
+            CUDA_marshal.maps[indexPosition(settings.periodicity.offset, 0)] = (existingValue + mapValue) / (data->bufferNo + 1);
         }
         else if (CUDA_kernel.mapWeight == 1.0f)
         {
-            //CUDA_marshal.maps[(variation + offset_period) + ( 0 * CUDA_marshal.totalVariations)] = mapValue;
-            CUDA_marshal.maps[(variation + offset_period) + (data->isHires ? 4 : 0 * CUDA_marshal.totalVariations)] = mapValue;
+            CUDA_marshal.maps[indexPosition(settings.periodicity.offset, 0)] = mapValue;
         }
         else
         {
-            CUDA_marshal.maps[variation + offset_period] = CUDA_marshal.maps[variation + offset_period] * (1.0f - CUDA_kernel.mapWeight) + mapValue * CUDA_kernel.mapWeight;
+            CUDA_marshal.maps[indexPosition(settings.periodicity.offset, 0)] 
+                = CUDA_marshal.maps[indexPosition(settings.periodicity.offset, 0)] * (1.0f - CUDA_kernel.mapWeight) + mapValue * CUDA_kernel.mapWeight;
         }
     }
-    else  CUDA_marshal.maps[(variation + offset_period) + (0 * CUDA_marshal.totalVariations)] = data->marshal.totalVariations;
 }
-
-
-
-

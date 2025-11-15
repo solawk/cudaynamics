@@ -65,6 +65,12 @@
     <ClCompile Include="benchmarking\cpu_bm.cpp">
       <Filter>benchmarking</Filter>
     </ClCompile>
+    <ClCompile Include="kernel_map.cpp" />
+    <ClCompile Include="indices_map.cpp" />
+    <ClCompile Include="index2port.cpp" />
+    <ClCompile Include="anfunc2indices.cpp" />
+    <ClCompile Include="anfunc_names.cpp" />
+    <ClCompile Include="splitString.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="imgui">
@@ -203,6 +209,31 @@
     <ClInclude Include="constraint.h">
       <Filter>gui</Filter>
     </ClInclude>
+    <ClInclude Include="analysesSettings_struct.h" />
+    <ClInclude Include="analysisHeaders.h" />
+    <ClInclude Include="numb.h" />
+    <ClInclude Include="analysisSettingsHeaders.h" />
+    <ClInclude Include="analysis\max\max_settings.h">
+      <Filter>analysis\max</Filter>
+    </ClInclude>
+    <ClInclude Include="analysis\lle\lle_settings.h">
+      <Filter>analysis\lle</Filter>
+    </ClInclude>
+    <ClInclude Include="analysis\period\period_settings.h">
+      <Filter>analysis\period</Filter>
+    </ClInclude>
+    <ClInclude Include="port.h" />
+    <ClInclude Include="systemsHeaders.h" />
+    <ClInclude Include="abstractSettings_struct.h" />
+    <ClInclude Include="index.h" />
+    <ClInclude Include="anfuncs.h" />
+    <ClInclude Include="index2port.h" />
+    <ClInclude Include="indices_map.h" />
+    <ClInclude Include="kernel_map.h" />
+    <ClInclude Include="anfunc2indices.h" />
+    <ClInclude Include="anfunc_names.h" />
+    <ClInclude Include="splitString.h" />
+    <ClInclude Include="analysisLobby.cuh" />
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="main.cu" />
@@ -287,6 +318,7 @@
     <CudaCompile Include="analysis\period\period.cu">
       <Filter>analysis\period</Filter>
     </CudaCompile>
+    <CudaCompile Include="analysisLobby.cu" />
     <CudaCompile Include="systems\mixed\mixed.cu">
       <Filter>systems</Filter>
     </CudaCompile>

@@ -5,8 +5,9 @@
 #include <ctime>
 #include "objects.h"
 #include "kernel_struct.h"
-
-std::vector<std::string> splitString(std::string str);
+#include "splitString.h"
+#include "anfuncs.h"
+#include "anfunc_names.h"
 
 Kernel readKernelText(std::string name);
 

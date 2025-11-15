@@ -1,61 +1,42 @@
 ﻿#include "main.h"
 #include "izhikevich.h"
 
+#define name izhikevich
+
 namespace attributes
 {
     enum variables { v, u, i, t };
     enum parameters { a, b, c, d, p0, p1, p2, p3, Idc, Iamp, Ifreq, Idel, Idf, symmetry, signal, method, COUNT };
 	enum waveforms { square };
     enum methods { ExplicitEuler, SemiExplicitEuler, ImplicitEuler, ExplicitMidpoint, ImplicitMidpoint, ExplicitRungeKutta4, VariableSymmetryCD };
-    enum maps { LLE, MAX, MeanInterval, MeanPeak, Period };
 }
 
-__global__ void kernelProgram_izhikevich(Computation* data)
+__global__ void kernelProgram_(name)(Computation* data)
 {
     int variation = (blockIdx.x * blockDim.x) + threadIdx.x;            // Variation (parameter combination) index
     if (variation >= CUDA_marshal.totalVariations) return;      // Shutdown thread if there isn't a variation to compute
     int stepStart, variationStart = variation * CUDA_marshal.variationSize;         // Start index to store the modelling data for the variation
-    numb variables[MAX_ATTRIBUTES];
-    numb variablesNext[MAX_ATTRIBUTES];
-    numb parameters[MAX_ATTRIBUTES];
+    LOCAL_BUFFERS;
     LOAD_ATTRIBUTES(false);
 
     // Custom area (usually) starts here
 
-    TRANSIENT_SKIP_NEW(finiteDifferenceScheme_izhikevich);
+    TRANSIENT_SKIP_NEW(finiteDifferenceScheme_(name));
 
     for (int s = 0; s < CUDA_kernel.steps && !data->isHires; s++)
     {
         stepStart = variationStart + s * CUDA_kernel.VAR_COUNT;
-        finiteDifferenceScheme_izhikevich(FDS_ARGUMENTS);
+        finiteDifferenceScheme_(name)(FDS_ARGUMENTS);
         RECORD_STEP;
     }
 
     // Analysis
-
-    if (M(LLE).toCompute)
-    {
-        LLE_Settings lle_settings(MS(LLE, 0), MS(LLE, 1), MS(LLE, 2));
-        lle_settings.Use3DNorm();
-        LLE(data, lle_settings, variation, &finiteDifferenceScheme_izhikevich, MO(LLE));
-    }
-
-    if (M(MAX).toCompute)
-    {
-        MAX_Settings max_settings(MS(MAX, 0));
-        MAX(data, max_settings, variation, &finiteDifferenceScheme_izhikevich, MO(MAX));
-    }
-
-    if (M(Period).toCompute || M(MeanInterval).toCompute || M(MeanPeak).toCompute)
-    {
-        DBSCAN_Settings dbscan_settings(MS(Period, 0), MS(MeanInterval, 0), MS(Period, 1), MS(Period, 2), MS(MeanInterval, 1), MS(MeanInterval, 2), MS(MeanInterval, 3), MS(MeanInterval, 4),
-            H);
-        Period(data, dbscan_settings, variation, &finiteDifferenceScheme_izhikevich, MO(Period), MO(MeanPeak), MO(MeanInterval));
-    }
+    AnalysisLobby(data, &finiteDifferenceScheme_(name), variation);
 }
 
-__device__ __forceinline__  void finiteDifferenceScheme_izhikevich(numb* currentV, numb* nextV, numb* parameters)
-{	ifSIGNAL(P(signal), square)
+__device__ __forceinline__  void finiteDifferenceScheme_(name)(numb* currentV, numb* nextV, numb* parameters)
+{	
+    ifSIGNAL(P(signal), square)
 	{
 		ifMETHOD(P(method), ExplicitEuler)
 		{
@@ -226,3 +207,5 @@ __device__ __forceinline__  void finiteDifferenceScheme_izhikevich(numb* current
         }
 	}
 }
+
+#undef name

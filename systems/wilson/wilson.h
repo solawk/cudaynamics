@@ -1,8 +1,12 @@
 #pragma once
 #include <kernels_common.h>
 
-const int THREADS_PER_BLOCK_wilson = 64;
+#define name wilson
 
-__global__ void kernelProgram_wilson(Computation* data);
+const int THREADS_PER_BLOCK_(name) = 64;
 
-__device__ __forceinline__ void finiteDifferenceScheme_wilson(numb* currentV, numb* nextV, numb* parameters);
+__global__ void kernelProgram_(name)(Computation* data);
+
+__device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* currentV, numb* nextV, numb* parameters);
+
+#undef name

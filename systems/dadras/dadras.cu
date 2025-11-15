@@ -1,59 +1,39 @@
 #include "main.h"
 #include "dadras.h"
 
+#define name dadras
+
 namespace attributes
 {
     enum variables { x, y, z };
     enum parameters { a, b, c, d, e, symmetry, method, COUNT };
     enum methods { ExplicitEuler, ExplicitMidpoint, ExplicitRungeKutta4, VariableSymmetryCD};
-    enum maps { LLE, MAX, MeanInterval, MeanPeak, Period };
 }
 
-__global__ void kernelProgram_dadras(Computation* data)
+__global__ void kernelProgram_(name)(Computation* data)
 {
     int variation = (blockIdx.x * blockDim.x) + threadIdx.x;            // Variation (parameter combination) index
     if (variation >= CUDA_marshal.totalVariations) return;      // Shutdown thread if there isn't a variation to compute
     int stepStart, variationStart = variation * CUDA_marshal.variationSize;         // Start index to store the modelling data for the variation
-    numb variables[MAX_ATTRIBUTES];
-    numb variablesNext[MAX_ATTRIBUTES];
-    numb parameters[MAX_ATTRIBUTES];
+    LOCAL_BUFFERS;
     LOAD_ATTRIBUTES(false);
 
     // Custom area (usually) starts here
 
-    TRANSIENT_SKIP_NEW(finiteDifferenceScheme_dadras);
+    TRANSIENT_SKIP_NEW(finiteDifferenceScheme_(name));
 
     for (int s = 0; s < CUDA_kernel.steps && !data->isHires; s++)
     {
         stepStart = variationStart + s * CUDA_kernel.VAR_COUNT;
-        finiteDifferenceScheme_dadras(FDS_ARGUMENTS);
+        finiteDifferenceScheme_(name)(FDS_ARGUMENTS);
         RECORD_STEP;
     }
 
     // Analysis
-
-    if (M(LLE).toCompute)
-    {
-        LLE_Settings lle_settings(MS(LLE, 0), MS(LLE, 1), MS(LLE, 2));
-        lle_settings.Use3DNorm();
-        LLE(data, lle_settings, variation, &finiteDifferenceScheme_dadras, MO(LLE));
-    }
-
-    if (M(MAX).toCompute)
-    {
-        MAX_Settings max_settings(MS(MAX, 0));
-        MAX(data, max_settings, variation, &finiteDifferenceScheme_dadras, MO(MAX));
-    }
-
-    if (M(Period).toCompute || M(MeanInterval).toCompute || M(MeanPeak).toCompute)
-    {
-        DBSCAN_Settings dbscan_settings(MS(Period, 0), MS(MeanInterval, 0), MS(Period, 1), MS(Period, 2), MS(MeanInterval, 1), MS(MeanInterval, 2), MS(MeanInterval, 3), MS(MeanInterval, 4),
-            H);
-        Period(data, dbscan_settings, variation, &finiteDifferenceScheme_dadras, MO(Period), MO(MeanPeak), MO(MeanInterval));
-    }
+    AnalysisLobby(data, &finiteDifferenceScheme_(name), variation);
 }
 
-__device__ __forceinline__ void finiteDifferenceScheme_dadras(numb* currentV, numb* nextV, numb* parameters)
+__device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* currentV, numb* nextV, numb* parameters)
 {
     ifMETHOD(P(method), ExplicitEuler)
     {
@@ -122,3 +102,5 @@ __device__ __forceinline__ void finiteDifferenceScheme_dadras(numb* currentV, nu
         Vnext(x) = (xmp + h2 * Vnext(y) + P(b) * Vnext(y) * Vnext(z) * h2) / (1 + P(a) * h2);
     }
 }
+
+#undef name
