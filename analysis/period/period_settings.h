@@ -16,7 +16,6 @@ struct DBSCAN_Settings : AbstractAnalysisSettingsStruct
     numb epsFXP;
     numb timeFractionFXP;
     numb peakThreshold;
-    numb stepSize;
 
     Port periodicity, meanPeak, meanInterval;
 
@@ -30,7 +29,6 @@ struct DBSCAN_Settings : AbstractAnalysisSettingsStruct
         epsFXP = (numb)1e-3;
         timeFractionFXP = (numb)0.05;
         peakThreshold = (numb)-INFINITY;
-        stepSize = (numb)0.01;
 
         periodicity = meanPeak = meanInterval = Port();
     }
@@ -45,12 +43,11 @@ struct DBSCAN_Settings : AbstractAnalysisSettingsStruct
         DisplayNumbSetting("epsFXP", epsFXP);
         DisplayNumbSetting("timeFractionFXP", timeFractionFXP);
         DisplayNumbSetting("peakThreshold", peakThreshold);
-        DisplayNumbSetting("stepSize", stepSize);
     }
 
     bool setup(std::vector<std::string> s)
     {
-        if (!isMapSetupOfCorrectLength(s, 9)) return false;
+        if (!isMapSetupOfCorrectLength(s, 8)) return false;
 
         eps = s2n(s[0]);
         analysedVariable = s2i(s[1]);
@@ -60,7 +57,6 @@ struct DBSCAN_Settings : AbstractAnalysisSettingsStruct
         epsFXP = s2n(s[5]);
         timeFractionFXP = s2n(s[6]);
         peakThreshold = s2n(s[7]);
-        stepSize = s2n(s[8]);
 
         return true;
     }
