@@ -2175,7 +2175,7 @@ int imgui_main(int, char**)
                                         color = ImPlot::GetColormapColor(j, window->colormap);
                                     }
                                     ImPlot::SetNextLineStyle(window->variableCount>1 ? color : window->markerColor,window->markerWidth);
-                                    ImPlot::PlotLine(indices[window->variables[j]].name.c_str(), Xaxis, Yaxis, axis->stepCount);
+                                    ImPlot::PlotLine(indices[(AnalysisIndex)window->variables[j]].name.c_str(), Xaxis, Yaxis, axis->stepCount);
                                     delete[] Xaxis;
                                     delete[] Yaxis;
                                     
