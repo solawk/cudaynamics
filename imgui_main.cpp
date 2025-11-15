@@ -90,19 +90,6 @@ bool thisChanged;
 bool popStyle;
 ImGuiSliderFlags dragFlag;
 
-/*ImVec4 unsavedBackgroundColor = ImVec4(0.427f, 0.427f, 0.137f, 1.0f);
-ImVec4 unsavedBackgroundColorHovered = ImVec4(0.427f * 1.3f, 0.427f * 1.3f, 0.137f * 1.3f, 1.0f);
-ImVec4 unsavedBackgroundColorActive = ImVec4(0.427f * 1.5f, 0.427f * 1.5f, 0.137f * 1.5f, 1.0f);
-ImVec4 disabledColor = ImVec4(0.137f * 0.5f, 0.271f * 0.5f, 0.427f * 0.5f, 1.0f);
-ImVec4 disabledTextColor = ImVec4(1.0f, 1.0f, 1.0f, 0.5f);
-ImVec4 disabledBackgroundColor = ImVec4(0.137f * 0.35f, 0.271f * 0.35f, 0.427f * 0.35f, 1.0f);
-ImVec4 hiresBackgroundColor = ImVec4(0.427f, 0.137f, 0.427f, 1.0f);
-ImVec4 hiresBackgroundColorHovered = ImVec4(0.427f * 1.3f, 0.137f * 1.3f, 0.427f * 1.3f, 1.0f);
-ImVec4 hiresBackgroundColorActive = ImVec4(0.427f * 1.5f, 0.137f * 1.5f, 0.427f * 1.5f, 1.0f);
-ImVec4 xAxisColor = ImVec4(0.75f, 0.3f, 0.3f, 1.0f);
-ImVec4 yAxisColor = ImVec4(0.33f, 0.67f, 0.4f, 1.0f);
-ImVec4 zAxisColor = ImVec4(0.3f, 0.45f, 0.7f, 1.0f);*/
-
 std::string rangingTypes[] = { "Fixed", "Step", "Linear", "Random", "Normal" };
 std::string rangingDescriptions[] =
 {
@@ -175,7 +162,6 @@ int asyncComputation()
     computations[bufferToFillIndex].marshal.kernel.CopyFrom(&KERNEL);
 
     int computationResult = compute(&(computations[bufferToFillIndex]));
-
     computedSteps = KERNEL.steps;
 
     if (isFirstBatch)
@@ -192,15 +178,9 @@ int asyncComputation()
         plotWindows[i].hmp.areValuesDirty = true;
     }
 
-    if (continuousComputingEnabled)
-    {
-        bufferToFillIndex = 1 - bufferToFillIndex;
-    }
+    if (continuousComputingEnabled) bufferToFillIndex = 1 - bufferToFillIndex;
 
-    if (continuousComputingEnabled && bufferToFillIndex != playedBufferIndex)
-    {
-        computing();
-    }
+    if (continuousComputingEnabled && bufferToFillIndex != playedBufferIndex) computing();
 
     return computationResult;
 }
@@ -224,8 +204,6 @@ int hiresAsyncComputation()
 
     computationHires.marshal.kernel.CopyFrom(&kernelHiresComputed);
     computationHires.marshal.kernel.mapWeight = 0.0f;
-    //for (auto& indexPair : indices)
-    //    indexPair.second.enabled = (AnalysisIndex)computationHires.mapIndex == indexPair.first;
 
     lastHiresStart = std::chrono::steady_clock::now();
     lastHiresHasInfo = true;
@@ -994,7 +972,7 @@ int imgui_main(int, char**)
             FullscreenButtonPressLogic(&graphBuilderWindow, ImGui::GetCurrentWindow());
 
             // Type
-            std::string plottypes[] = { "Time series", "3D Phase diagram", "2D Phase diagram", "Orbit diagram", "Heatmap", "RGB Heatmap", "Metric diagram"};
+            std::string plottypes[] = { "Time series", "3D Phase diagram", "2D Phase diagram", "Orbit diagram", "Heatmap", "RGB Heatmap", "Index diagram"};
             ImGui::Text("Plot type ");
             ImGui::SameLine();
             ImGui::PushItemWidth(250.0f);
@@ -1132,42 +1110,34 @@ int imgui_main(int, char**)
                 break;
 
             case Metric:
-                /*if (KERNEL.MAP_COUNT > 0)
+                ImGui::Text("Add indeces");
+                ImGui::SameLine();
+
+                int indicesSize = (int)indices.size();
+                if (ImGui::BeginCombo("##Add index combo", "", ImGuiComboFlags_NoPreview))
                 {
-                   
+                    for (int i = 0; i < indicesSize; i++)
+                    {
+                        bool isSelected = selectedPlotMapsSet.find(i) != selectedPlotMapsSet.end();
+                        if (ImGui::Selectable(indices[(AnalysisIndex)i].name.c_str(), isSelected, isSelected ? ImGuiSelectableFlags_Disabled : 0)) selectedPlotMapsSet.insert(i);
+                    }
 
+                    ImGui::EndCombo();
+                }
 
-                    ImGui::Text("Add map");
+                // List with removal buttons
+
+                for (const int i : selectedPlotMapsSet)
+                {
+                    if (ImGui::Button(("x##" + std::to_string(i)).c_str()))
+                    {
+                        selectedPlotMapsSet.erase(i);
+                        break;
+                    }
                     ImGui::SameLine();
-                    if (ImGui::BeginCombo("##Add map combo", " ", ImGuiComboFlags_NoPreview))
-                    {
-                        for (int m = 0; m < KERNEL.MAP_COUNT; m++)
-                        {
-                            bool isSelected = selectedPlotMapsSet.find(m) != selectedPlotMapsSet.end();
-                            ImGuiSelectableFlags selectableFlags = 0;
+                    ImGui::Text(("- " + indices[(AnalysisIndex)i].name).c_str());
+                }
 
-                            if (isSelected) selectableFlags = ImGuiSelectableFlags_Disabled;
-                            if (ImGui::Selectable(KERNEL.mapDatas[m].name.c_str())) selectedPlotMapsSet.insert(m);
-                        }
-
-                        ImGui::EndCombo();
-                    }
-
-                    // Variable list
-
-                    for (const int m : selectedPlotMapsSet)
-                    {
-                        if (ImGui::Button(("x##" + std::to_string(m)).c_str()))
-                        {
-                            selectedPlotMapsSet.erase(m);
-                            break;
-                        }
-                        ImGui::SameLine();
-                        ImGui::Text(("- " + KERNEL.mapDatas[m].name).c_str());
-                    }
-
-                    break;
-                }*/
                 break;
             }
 
