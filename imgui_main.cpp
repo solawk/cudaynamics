@@ -2146,12 +2146,14 @@ int imgui_main(int, char**)
                                 plot->is3d = false;
                                 //ImPlot::SetNextLineStyle(window->markerColor, window->markerWidth);
                                 
-                                if (!window->ShowMultAxes) ImPlot::SetupAxes(window->typeX == MDT_Variable ? krnl->variables[window->indexX].name.c_str() : krnl->parameters[window->indexX].name.c_str(), "Indices"); 
+                                if (!window->ShowMultAxes) 
+                                    ImPlot::SetupAxes(window->typeX == MDT_Variable ? krnl->variables[window->indexX].name.c_str() : krnl->parameters[window->indexX].name.c_str(), "Indices"); 
                                 else
                                 {
                                     ImPlot::SetupAxis(ImAxis_X1, window->typeX == MDT_Variable ? krnl->variables[window->indexX].name.c_str() : krnl->parameters[window->indexX].name.c_str(), 0);
-                                    for (int i = 0; i < window->variableCount; i++) {
-                                        ImPlot::SetupAxis(3+i, cmp->marshal.kernel.mapDatas[window->variables[i]].name.c_str(), 0);
+                                    for (int i = 0; i < window->variableCount; i++) 
+                                    {
+                                        ImPlot::SetupAxis(3+i, indices[(AnalysisIndex)window->variables[i]].name.c_str(), 0);
                                     }
                                 }
                                 for (int j = 0; j < window->variableCount; j++) {
