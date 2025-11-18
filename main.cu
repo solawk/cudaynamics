@@ -27,10 +27,9 @@ cudaError_t execute(Computation* data)
     //    This requires modifying all analysis functions but could greatly decrease the memory cost.
     // 2. We still need to send the end state back, but we'll do this via "variableInits" buffer, not the "trajectory"
 
-    //std::chrono::steady_clock::time_point before = std::chrono::steady_clock::now();
-    //std::chrono::steady_clock::time_point precompute, incompute;
-    //std::chrono::steady_clock::time_point postcompute;
-    //std::chrono::steady_clock::time_point tp[8];
+#if (PRINT_TIME)    
+    std::chrono::steady_clock::time_point tp[8];
+#endif
 
     cudaError_t cudaStatus;
 
@@ -46,11 +45,15 @@ cudaError_t execute(Computation* data)
     int* cuda_stepIndices = nullptr;
     numb* cuda_maps = nullptr;
 
-    //tp[0] = std::chrono::steady_clock::now();
+#if (PRINT_TIME)    
+    tp[0] = std::chrono::steady_clock::now();
+#endif
 
     CUDA_SET_DEVICE;
 
-    //tp[1] = std::chrono::steady_clock::now();
+#if (PRINT_TIME)    
+    tp[1] = std::chrono::steady_clock::now();
+#endif
 
     // Allocation memory on the device for the Computation struct and the buffers
     CUDA_MALLOC(&cuda_computation, sizeof(Computation), "cudaMalloc computation failed!");
@@ -60,7 +63,9 @@ cudaError_t execute(Computation* data)
     CUDA_MALLOC(&cuda_stepIndices, variations * CUDA_ATTR_COUNT * sizeof(int), "cudaMalloc indices failed!");
     if (totalMapValues > 0 && variations > 1) CUDA_MALLOC(&cuda_maps, variations * totalMapValues * sizeof(numb), "cudaMalloc maps failed!");
 
-    //tp[2] = std::chrono::steady_clock::now();
+#if (PRINT_TIME)    
+    tp[2] = std::chrono::steady_clock::now();
+#endif
 
     // Copying the Computation struct to the device
     CUDA_MEMCPY(cuda_computation, data, cudaMemcpyHostToDevice, sizeof(Computation), "cudaMemcpy computation failed!");
@@ -71,7 +76,9 @@ cudaError_t execute(Computation* data)
     CUDA_MEMCPY(&(cuda_computation->marshal.stepIndices), &cuda_stepIndices, cudaMemcpyHostToDevice, sizeof(int*), "cudaMemcpy indices address failed!");
     if (totalMapValues > 0 && variations > 1) CUDA_MEMCPY(&(cuda_computation->marshal.maps), &cuda_maps, cudaMemcpyHostToDevice, sizeof(numb*), "cudaMemcpy maps address failed!");
 
-    //tp[3] = std::chrono::steady_clock::now();
+#if (PRINT_TIME)    
+    tp[3] = std::chrono::steady_clock::now();
+#endif
 
     // Copying the values in the buffers themselves to the device
     //CUDA_MEMCPY(cuda_trajectory, CUDA_marshal.trajectory, cudaMemcpyHostToDevice, size * sizeof(numb), "cudaMemcpy data failed!");
@@ -82,7 +89,9 @@ cudaError_t execute(Computation* data)
     if (variations > 1) CUDA_MEMCPY(cuda_maps, CUDA_marshal.maps + (!data->isHires ? 0 : data->startVariationInCurrentExecute),
         cudaMemcpyHostToDevice, variations * totalMapValues * sizeof(numb), "cudaMemcpy maps failed!");
 
-    //tp[4] = std::chrono::steady_clock::now();
+#if (PRINT_TIME)    
+    tp[4] = std::chrono::steady_clock::now();
+#endif
 
     // Kernel execution
     //precompute = std::chrono::steady_clock::now();
@@ -91,7 +100,9 @@ cudaError_t execute(Computation* data)
     CUDA_SYNCHRONIZE;
     //incompute = std::chrono::steady_clock::now();
 
-    //tp[5] = std::chrono::steady_clock::now();
+#if (PRINT_TIME)    
+    tp[5] = std::chrono::steady_clock::now();
+#endif
 
     // Copying the trajectories and the maps back to the host
     if (!data->isHires)
@@ -107,7 +118,9 @@ cudaError_t execute(Computation* data)
     if (variations > 1) CUDA_MEMCPY(CUDA_marshal.maps + (!data->isHires ? 0 : data->startVariationInCurrentExecute), cuda_maps,
         cudaMemcpyDeviceToHost, variations * totalMapValues * sizeof(numb), "cudaMemcpy maps back failed!");
 
-    //tp[6] = std::chrono::steady_clock::now();
+#if (PRINT_TIME)    
+    tp[6] = std::chrono::steady_clock::now();
+#endif
 
 Error:
     if (cuda_trajectory != nullptr) cudaFree(cuda_trajectory);
@@ -118,7 +131,9 @@ Error:
 
     CUDA_RESET;
 
-    //tp[7] = std::chrono::steady_clock::now();
+#if (PRINT_TIME)    
+    tp[7] = std::chrono::steady_clock::now();
+#endif
 
     for (int i = 0; i < 7; i++)
     {
@@ -181,15 +196,23 @@ int compute(Computation* data)
     cudaError_t cudaStatus;
 
 #define IS_CPU_BENCHMARKING 0
-#define IS_CPU_OPENMP 0
+#define IS_CPU_NOT_OPENMP 0
 
     // Execution
     if (!data->isHires)
     {
         fillAttributeBuffers(data, attributeStepIndices, 0, variations, false);
 #if IS_CPU_BENCHMARKING
-        cpu_execute(data, IS_CPU_OPENMP);
+#if (PRINT_TIME)    
+        std::chrono::steady_clock::time_point cpuNotHiresTP[2];
+        cpuNotHiresTP[0] = std::chrono::steady_clock::now();
+#endif
+        cpu_execute(data, !IS_CPU_NOT_OPENMP);
         cudaStatus = cudaSuccess;
+#if (PRINT_TIME)    
+        cpuNotHiresTP[1] = std::chrono::steady_clock::now();
+        printf("cpu execute time: %Ii ms\n", std::chrono::duration_cast<std::chrono::milliseconds>(cpuNotHiresTP[1] - cpuNotHiresTP[0]).count());
+#endif
 #else
         cudaStatus = execute(data);
 #endif
@@ -214,7 +237,7 @@ int compute(Computation* data)
                 fillAttributeBuffers(data, attributeStepIndices, v, v + variationsCurrent, !data->isFirst);
 
 #if IS_CPU_BENCHMARKING
-                cpu_execute(data, IS_CPU_OPENMP);
+                cpu_execute(data, !IS_CPU_NOT_OPENMP);
                 cudaStatus = cudaSuccess;
 #else
                 cudaStatus = execute(data);
