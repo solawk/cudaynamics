@@ -36,9 +36,10 @@ void common_main()
     addKernel(bolshakov);
     addKernel(mishchenko);
     addKernel(mixed);
+    addKernel(ostrovskii);
 
     //selectKernel(kernels.begin()->first);
-    selectKernel(lorenz);
+    selectKernel(jj_mrlcs);
 
     // Indices
     addIndex(IND_MAX, "Maximum variable value", MINMAX, 1);

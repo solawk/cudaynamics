@@ -96,7 +96,6 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;WIN64;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <LanguageStandard>stdcpp17</LanguageStandard>
-      <OpenMPSupport>true</OpenMPSupport>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -241,6 +240,7 @@
     </CudaCompile>
     <CudaCompile Include="systems\mishchenko\mishchenko.cu" />
     <CudaCompile Include="systems\mixed\mixed.cu" />
+    <CudaCompile Include="systems\ostrovskii\ostrovskii.cu" />
     <CudaCompile Include="systems\rabinovich_fabrikant\rabinovich_fabrikant.cu" />
     <CudaCompile Include="systems\rossler\rossler.cu" />
     <CudaCompile Include="systems\sang\sang.cu" />
