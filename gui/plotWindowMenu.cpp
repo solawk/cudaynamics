@@ -235,7 +235,7 @@ void plotWindowMenu_OrbitPlot(PlotWindow* window) {
 
 		ImGui::Checkbox("Invert axes", &window->OrbitInvertedAxes);
 
-		ImGui::Checkbox("Auto - compute on Shift + RMB", &window->isOrbitAutoComputeOn);
+		ImGui::Checkbox("Auto - compute on Shift + RMB", &window->isAutoComputeOn);
 
 		ImGui::EndMenu();
 	}
@@ -375,6 +375,8 @@ void plotWindowMenu_MetricPlot(PlotWindow*window) {
 
 		ImGui::Checkbox("Show multiple axes", &window->ShowMultAxes);
 
+		ImGui::Checkbox("Auto - compute on Shift + RMB", &window->isAutoComputeOn);
+
 		ImGui::EndMenu();
 	}
 }
@@ -406,6 +408,8 @@ void plotWindowMenu_SeriesPlot(PlotWindow* window) {
 		ImGui::DragFloat("Line width", &window->markerWidth, 0.1f, 0.5f, 4.0f, "%.1f");
 
 		ImGui::Checkbox("Show multiple axes", &window->ShowMultAxes);
+
+
 
 		ImGui::EndMenu();
 	}
