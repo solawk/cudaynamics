@@ -1,12 +1,8 @@
 #pragma once
 #include <kernels_common.h>
 
-#define name jj_mrlcs
+const int THREADS_PER_BLOCK_jj_mrlcs = 64;
 
-const int THREADS_PER_BLOCK_(name) = 64;
+__global__ void kernelProgram_jj_mrlcs(Computation* data);
 
-__global__ void kernelProgram_(name)(Computation* data);
-
-__device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* currentV, numb* nextV, numb* parameters);
-
-#undef name
+__device__ __forceinline__  void finiteDifferenceScheme_jj_mrlcs(numb* currentV, numb* nextV, numb* parameters);

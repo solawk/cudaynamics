@@ -1,66 +1,85 @@
 ﻿#include "main.h"
 #include "jj_mrlcs.h"
 
-#define name jj_mrlcs
-
 namespace attributes
 {
     enum variables { theta, sin_theta, v, iL };
-    enum parameters { betaL, betaC, betaM, i, epsilon, delta, symmetry, method, COUNT };
+    enum parameters { betaL, betaC, betaM, i, epsilon, delta, stepsize, symmetry, method };
     enum methods { ExplicitEuler, SemiExplicitEuler, ExplicitMidpoint, ExplicitRungeKutta4, VariableSymmetryCD };
+    enum maps { LLE, MAX, Period};
 }
 
-__global__ void kernelProgram_(name)(Computation* data)
+__global__ void kernelProgram_jj_mrlcs(Computation* data)
 {
     int variation = (blockIdx.x * blockDim.x) + threadIdx.x;            // Variation (parameter combination) index
     if (variation >= CUDA_marshal.totalVariations) return;      // Shutdown thread if there isn't a variation to compute
     int stepStart, variationStart = variation * CUDA_marshal.variationSize;         // Start index to store the modelling data for the variation
-    LOCAL_BUFFERS;
-    LOAD_ATTRIBUTES(false);
+    numb variables[MAX_ATTRIBUTES];
+    numb variablesNext[MAX_ATTRIBUTES];
+    numb parameters[MAX_ATTRIBUTES];
+    LOAD_ATTRIBUTES;
 
     // Custom area (usually) starts here
 
-    TRANSIENT_SKIP_NEW(finiteDifferenceScheme_(name));
+    TRANSIENT_SKIP_NEW(finiteDifferenceScheme_jj_mrlcs);
 
     for (int s = 0; s < CUDA_kernel.steps && !data->isHires; s++)
     {
         stepStart = variationStart + s * CUDA_kernel.VAR_COUNT;
-        finiteDifferenceScheme_(name)(FDS_ARGUMENTS);
+        finiteDifferenceScheme_jj_mrlcs(FDS_ARGUMENTS);
         RECORD_STEP;
     }
 
     // Analysis
-    AnalysisLobby(data, &finiteDifferenceScheme_(name), variation);
+
+    if (M(LLE).toCompute)
+    {
+        LLE_Settings lle_settings(MS(LLE, 0), MS(LLE, 1), MS(LLE, 2));
+        lle_settings.Use3DNorm();
+        LLE(data, lle_settings, variation, &finiteDifferenceScheme_jj_mrlcs, MO(LLE));
+    }
+
+    if (M(MAX).toCompute)
+    {
+        MAX_Settings max_settings(MS(MAX, 0));
+        MAX(data, max_settings, variation, &finiteDifferenceScheme_jj_mrlcs, MO(MAX));
+    }
+
+    if (M(Period).toCompute)
+    {
+        DBscan_Settings dbscan_settings(MS(Period, 0), MS(Period, 1), MS(Period, 2), MS(Period, 3), MS(Period, 4), MS(Period, 5), MS(Period, 6), MS(Period, 7), attributes::parameters::stepsize);
+        Period(data, dbscan_settings, variation, &finiteDifferenceScheme_jj_mrlcs, MO(Period));
+    }
 }
 
-__device__ __forceinline__  void finiteDifferenceScheme_(name)(numb* currentV, numb* nextV, numb* parameters)
+__device__ __forceinline__  void finiteDifferenceScheme_jj_mrlcs(numb* currentV, numb* nextV, numb* parameters)
 {
     ifMETHOD(P(method), ExplicitEuler)
     {
-        Vnext(theta) = fmodf(V(theta) + H * V(v), 2.0f * 3.141592f);
+        Vnext(theta) = fmodf(V(theta) + P(stepsize) * V(v), 2.0f * 3.141592f);
         Vnext(sin_theta) = sinf(Vnext(theta));
-        Vnext(iL) = V(iL) + H * ((1.0f / P(betaL)) * (V(v) - V(iL)));
-        Vnext(v) = V(v) + H * ((1.0f / P(betaC)) * (P(i) - P(betaM) * (1 + P(epsilon) * cosf(V(theta))) * V(v) - sinf(V(theta)) - P(delta) * V(iL)));
+        Vnext(iL) = V(iL) + P(stepsize) * ((1.0f / P(betaL)) * (V(v) - V(iL)));
+        Vnext(v) = V(v) + P(stepsize) * ((1.0f / P(betaC)) * (P(i) - P(betaM) * (1 + P(epsilon) * cosf(V(theta))) * V(v) - sinf(V(theta)) - P(delta) * V(iL)));
     }
 
     ifMETHOD(P(method), SemiExplicitEuler)
     {
-        Vnext(theta) = fmodf(V(theta) + H * V(v), 2.0f * 3.141592f);
+        Vnext(theta) = fmodf(V(theta) + P(stepsize) * V(v), 2.0f * 3.141592f);
         Vnext(sin_theta) = sinf(Vnext(theta));
-        Vnext(iL) = V(iL) + H * ((1.0f / P(betaL)) * (V(v) - V(iL)));
-        Vnext(v) = V(v) + H * ((1.0f / P(betaC)) * (P(i) - P(betaM) * (1 + P(epsilon) * cosf(Vnext(theta))) * V(v) - sinf(Vnext(theta)) - P(delta) * Vnext(iL)));
+        Vnext(iL) = V(iL) + P(stepsize) * ((1.0f / P(betaL)) * (V(v) - V(iL)));
+        Vnext(v) = V(v) + P(stepsize) * ((1.0f / P(betaC)) * (P(i) - P(betaM) * (1 + P(epsilon) * cosf(Vnext(theta))) * V(v) - sinf(Vnext(theta)) - P(delta) * Vnext(iL)));
     }
 
     ifMETHOD(P(method), ExplicitMidpoint)
     {
-        numb thetamp = fmodf(V(theta) + H * 0.5 * V(v), 2.0f * 3.141592f);
-        numb iLmp = V(iL) + H * 0.5 * ((1.0f / P(betaL)) * (V(v) - V(iL)));
-        numb vmp = V(v) + H * 0.5 * ((1.0f / P(betaC)) * (P(i) - P(betaM) * (1 + P(epsilon) * cosf(V(theta))) * V(v) - sinf(V(theta)) - P(delta) * V(iL)));
+        numb thetamp = fmodf(V(theta) + P(stepsize) * 0.5 * V(v), 2.0f * 3.141592f);
+        numb iLmp = V(iL) + P(stepsize) * 0.5 * ((1.0f / P(betaL)) * (V(v) - V(iL)));
+        numb vmp = V(v) + P(stepsize) * 0.5 * ((1.0f / P(betaC)) * (P(i) - P(betaM) * (1 + P(epsilon) * cosf(V(theta))) * V(v) - sinf(V(theta)) - P(delta) * V(iL)));
 
-        Vnext(theta) = fmodf(V(theta) + H * vmp, 2.0f * 3.141592f);
+        Vnext(theta) = fmodf(V(theta) + P(stepsize) * vmp, 2.0f * 3.141592f);
         Vnext(sin_theta) = sinf(Vnext(theta));
-        Vnext(iL) = V(iL) + H * ((1.0f / P(betaL)) * (vmp - iLmp));
-        Vnext(v) = V(v) + H * ((1.0f / P(betaC)) * (P(i) - P(betaM) * (1 + P(epsilon) * cosf(thetamp)) * vmp - sinf(thetamp) - P(delta) * iLmp));
+        Vnext(iL) = V(iL) + P(stepsize) * ((1.0f / P(betaL)) * (vmp - iLmp));
+        Vnext(v) = V(v) + P(stepsize) * ((1.0f / P(betaC)) * (P(i) - P(betaM) * (1 + P(epsilon) * cosf(thetamp)) * vmp - sinf(thetamp) - P(delta) * iLmp));
     }
 
     ifMETHOD(P(method), ExplicitRungeKutta4)
@@ -69,40 +88,40 @@ __device__ __forceinline__  void finiteDifferenceScheme_(name)(numb* currentV, n
         numb kiL1 = ((1.0f / P(betaL)) * (V(v) - V(iL)));
         numb kv1 = ((1.0f / P(betaC)) * (P(i) - P(betaM) * (1 + P(epsilon) * cosf(V(theta))) * V(v) - sinf(V(theta)) - P(delta) * V(iL)));
 
-        numb thetamp = fmodf(V(theta) + H * 0.5 * ktheta1, 2.0f * 3.141592f);
-        numb iLmp = V(iL) + H * 0.5 * kiL1;
-        numb vmp = V(v) + H * 0.5 * kv1;
+        numb thetamp = fmodf(V(theta) + P(stepsize) * 0.5 * ktheta1, 2.0f * 3.141592f);
+        numb iLmp = V(iL) + P(stepsize) * 0.5 * kiL1;
+        numb vmp = V(v) + P(stepsize) * 0.5 * kv1;
 
         numb ktheta2 = vmp;
         numb kiL2 = ((1.0f / P(betaL)) * (vmp - iLmp));
         numb kv2 = ((1.0f / P(betaC)) * (P(i) - P(betaM) * (1 + P(epsilon) * cosf(thetamp)) * vmp - sinf(thetamp) - P(delta) * iLmp));
 
-        thetamp = fmodf(V(theta) + H * 0.5 * ktheta2, 2.0f * 3.141592f);
-        iLmp = V(iL) + H * 0.5 * kiL2;
-        vmp = V(v) + H * 0.5 * kv2;
+        thetamp = fmodf(V(theta) + P(stepsize) * 0.5 * ktheta2, 2.0f * 3.141592f);
+        iLmp = V(iL) + P(stepsize) * 0.5 * kiL2;
+        vmp = V(v) + P(stepsize) * 0.5 * kv2;
 
         numb ktheta3 = vmp;
         numb kiL3 = ((1.0f / P(betaL)) * (vmp - iLmp));
         numb kv3 = ((1.0f / P(betaC)) * (P(i) - P(betaM) * (1 + P(epsilon) * cosf(thetamp)) * vmp - sinf(thetamp) - P(delta) * iLmp));
 
-        thetamp = fmodf(V(theta) + H * ktheta3, 2.0f * 3.141592f);
-        iLmp = V(iL) + H * kiL3;
-        vmp = V(v) + H * kv3;
+        thetamp = fmodf(V(theta) + P(stepsize) * ktheta3, 2.0f * 3.141592f);
+        iLmp = V(iL) + P(stepsize) * kiL3;
+        vmp = V(v) + P(stepsize) * kv3;
 
         numb ktheta4 = vmp;
         numb kiL4 = ((1.0f / P(betaL)) * (vmp - iLmp));
         numb kv4 = ((1.0f / P(betaC)) * (P(i) - P(betaM) * (1 + P(epsilon) * cosf(thetamp)) * vmp - sinf(thetamp) - P(delta) * iLmp));
 
-        Vnext(theta) = fmodf(V(theta) + H * (ktheta1 + 2 * ktheta2 + 2 * ktheta3 + ktheta4) / 6, 2.0f * 3.141592f);
+        Vnext(theta) = fmodf(V(theta) + P(stepsize) * (ktheta1 + 2 * ktheta2 + 2 * ktheta3 + ktheta4) / 6, 2.0f * 3.141592f);
         Vnext(sin_theta) = sinf(Vnext(theta));
-        Vnext(iL) = V(iL) + H * (kiL1 + 2 * kiL2 + 2 * kiL3 + kiL4) / 6;
-        Vnext(v) = V(v) + H * (kv1 + 2 * kv2 + 2 * kv3 + kv4) / 6;
+        Vnext(iL) = V(iL) + P(stepsize) * (kiL1 + 2 * kiL2 + 2 * kiL3 + kiL4) / 6;
+        Vnext(v) = V(v) + P(stepsize) * (kv1 + 2 * kv2 + 2 * kv3 + kv4) / 6;
     }
 
     ifMETHOD(P(method), VariableSymmetryCD)
     {
-        numb h1 = 0.5 * H - P(symmetry);
-        numb h2 = 0.5 * H + P(symmetry);
+        numb h1 = 0.5 * P(stepsize) - P(symmetry);
+        numb h2 = 0.5 * P(stepsize) + P(symmetry);
 
         numb thetamp = fmodf(V(theta) + h1 * V(v), 2.0f * 3.141592f);
         numb iLmp = V(iL) + h1 * ((1.0f / P(betaL)) * (V(v) - V(iL)));
@@ -115,5 +134,3 @@ __device__ __forceinline__  void finiteDifferenceScheme_(name)(numb* currentV, n
         Vnext(sin_theta) = sinf(Vnext(theta));
     }
 }
-
-#undef name
