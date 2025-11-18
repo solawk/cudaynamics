@@ -73,7 +73,7 @@ public:
 	std::vector<int> lastAttributeValueIndices;
 	int BifDotAmount;
 	int prevTotalVariation;
-	bool isOrbitAutoComputeOn;
+	bool isAutoComputeOn;
 
 	bool ShowMultAxes;
 	bool LineColorMaps;
@@ -132,7 +132,7 @@ public:
 		bifAmps = NULL;
 		bifParamIndices = NULL;
 		bifIntervals = NULL;
-		isOrbitAutoComputeOn = false;
+		isAutoComputeOn = false;
 
 		ShowMultAxes = false;
 		colormap = ImPlotColormap_Deep;

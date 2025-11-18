@@ -1510,7 +1510,7 @@ int imgui_main(int, char**)
                         {
                             ImPlot::SetupAxis(ImAxis_X1, KERNEL.usingTime ? "Time" : "Steps", 0);
                             for (int i = 0; i < window->variableCount; i++) {
-                                ImPlot::SetupAxis(3 + i, computations[playedBufferIndex].marshal.kernel.variables[i].name.c_str(), 0);
+                                ImPlot::SetupAxis(3 + i, KERNEL.variables[window->variables[i]].name.c_str(), 0);
                             }
                         }
 
@@ -2037,7 +2037,7 @@ int imgui_main(int, char**)
                                                 if (plot->shiftSelected) {
                                                     kernelNew.parameters[window->OrbitXIndex].min = plot->shiftSelect1Location.x;
                                                     kernelNew.parameters[window->OrbitXIndex].max = plot->shiftSelect2Location.x;
-                                                    if (window->isOrbitAutoComputeOn) computeAfterShiftSelect = true;
+                                                    if (window->isAutoComputeOn) computeAfterShiftSelect = true;
                                                 }
                                                 if (window->ShowOrbitParLines) {
                                                     double value = attributeValueIndices[varCount + window->OrbitXIndex] * paramStep + paramMin;
@@ -2081,7 +2081,7 @@ int imgui_main(int, char**)
                                                 if (plot->shiftSelected) {
                                                     kernelNew.parameters[window->OrbitXIndex].min = plot->shiftSelect1Location.x;
                                                     kernelNew.parameters[window->OrbitXIndex].max = plot->shiftSelect2Location.x;
-                                                    if(window->isOrbitAutoComputeOn) computeAfterShiftSelect = true;
+                                                    if(window->isAutoComputeOn) computeAfterShiftSelect = true;
                                                 }
                                                 if (window->ShowOrbitParLines) {
                                                     double value = attributeValueIndices[varCount + window->OrbitXIndex] * paramStep + paramMin;
@@ -2191,6 +2191,11 @@ int imgui_main(int, char**)
                                         int index = static_cast<int>(std::round(NotRoundedIndex)); if (index > axis->stepCount - 1)index = axis->stepCount - 1;
                                         window->typeX == MDT_Variable ? attributeValueIndices[window->indexX] = index : attributeValueIndices[window->indexX + krnl->VAR_COUNT] = index;
                                     }
+                                }
+                                if (plot->shiftSelected) {
+                                    kernelNew.parameters[window->OrbitXIndex].min = plot->shiftSelect1Location.x;
+                                    kernelNew.parameters[window->OrbitXIndex].max = plot->shiftSelect2Location.x;
+                                    if (window->isAutoComputeOn) computeAfterShiftSelect = true;
                                 }
                                 if (window->ShowOrbitParLines) {
                                     double value = axis->min + axis->step * attributeValueIndices[window->typeX == MDT_Variable ? window->indexX : window->indexX + krnl->VAR_COUNT];
