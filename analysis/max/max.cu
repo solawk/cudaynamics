@@ -1,8 +1,8 @@
 #include "max.h"
 
-__device__ void MAX(Computation* data, int variation, void(* finiteDifferenceScheme)(numb*, numb*, numb*))
+__device__ void MAX(Computation* data, uint64_t variation, void(* finiteDifferenceScheme)(numb*, numb*, numb*))
 {
-    int stepStart, variationStart = variation * CUDA_marshal.variationSize;
+    uint64_t stepStart, variationStart = variation * CUDA_marshal.variationSize;
     LOCAL_BUFFERS;
     LOAD_ATTRIBUTES(true);
     if (data->isHires) TRANSIENT_SKIP_NEW(finiteDifferenceScheme);

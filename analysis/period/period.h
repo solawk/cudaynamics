@@ -6,4 +6,4 @@
 #include "../computation_struct.h"
 #include "period_settings.h"
 
-__device__ void Period(Computation* data, int variation, void(*finiteDifferenceScheme)(numb*, numb*, numb*));
+__device__ void Period(Computation* data, uint64_t variation, void(*finiteDifferenceScheme)(numb*, numb*, numb*));

@@ -5,4 +5,4 @@
 #include "analysisHeaders.h"
 #include "analysisSettingsHeaders.h"
 
-__device__ void AnalysisLobby(Computation* data, void(*finiteDifferenceScheme)(numb*, numb*, numb*), int variation);
+__device__ void AnalysisLobby(Computation* data, void(*finiteDifferenceScheme)(numb*, numb*, numb*), uint64_t variation);

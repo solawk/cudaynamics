@@ -12,9 +12,9 @@ namespace attributes
 
 __global__ void kernelProgram_(name)(Computation* data)
 {
-    int variation = (blockIdx.x * blockDim.x) + threadIdx.x;            // Variation (parameter combination) index
+    uint64_t variation = (blockIdx.x * blockDim.x) + threadIdx.x;            // Variation (parameter combination) index
     if (variation >= CUDA_marshal.totalVariations) return;      // Shutdown thread if there isn't a variation to compute
-    int stepStart, variationStart = variation * CUDA_marshal.variationSize;         // Start index to store the modelling data for the variation
+    uint64_t stepStart, variationStart = variation * CUDA_marshal.variationSize;         // Start index to store the modelling data for the variation
     LOCAL_BUFFERS;
     LOAD_ATTRIBUTES(false);
 

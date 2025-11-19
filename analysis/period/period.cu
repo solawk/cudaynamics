@@ -1,8 +1,8 @@
 #include "period.h"
 
-__device__  void Period(Computation* data, int variation, void(*finiteDifferenceScheme)(numb*, numb*, numb*))
+__device__  void Period(Computation* data, uint64_t variation, void(*finiteDifferenceScheme)(numb*, numb*, numb*))
 {
-    int variationStart = variation * CUDA_marshal.variationSize;
+    uint64_t variationStart = variation * CUDA_marshal.variationSize;
     int varCount = CUDA_kernel.VAR_COUNT;
     int variationSize = CUDA_marshal.variationSize;
 
@@ -10,7 +10,7 @@ __device__  void Period(Computation* data, int variation, void(*finiteDifference
     LOAD_ATTRIBUTES(true);
     if (data->isHires) TRANSIENT_SKIP_NEW(finiteDifferenceScheme);
 
-    int stepStart, s = -1;
+    uint64_t stepStart, s = -1;
     numb variablesPrev[MAX_ATTRIBUTES]{ 0 }, variablesCurr[MAX_ATTRIBUTES]{ 0 }; // variables will store "next" values, variablesPrev – "prev", variablesCurr – "curr"
     // When using hi-res (with no trajectory buffer available), one trajectory steps is precomputed, making first "prev" and "curr" values
     // Each next computed step will be a "next" one
