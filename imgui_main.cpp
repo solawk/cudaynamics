@@ -21,6 +21,8 @@ bool spoilerVars = true;
 bool spoilerStep = true;
 bool spoilerParams = true;
 
+bool preciseNumbDrags = false;
+
 Computation computations[2];
 Computation computationHires;
 int playedBufferIndex = 0; // Buffer currently shown
@@ -814,6 +816,11 @@ int imgui_main(int, char**)
             ImGui::PushItemWidth(200.0f);
             ImGui::InputFloat("Value drag speed", &(dragChangeSpeed));
             TOOLTIP("Drag speed of attribute values, allows for precise automatic parameter setting");
+
+            bool tempPreciseNumbDrags = preciseNumbDrags;
+            ImGui::Checkbox("Precise numb values", &tempPreciseNumbDrags);
+            TOOLTIP("Enable 12-digit fraction for attribute values");
+            preciseNumbDrags = tempPreciseNumbDrags;
 
             ImGui::NewLine();
 

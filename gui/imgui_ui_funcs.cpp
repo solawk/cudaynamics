@@ -13,6 +13,7 @@ extern bool anyChanged;
 extern int maxNameLength;
 extern Kernel kernelNew;
 extern Kernel kernelHiresNew;
+extern bool preciseNumbDrags;
 
 #define ATTR_BEGIN  ImGui::SameLine(); popStyle = false; \
     if (hiresHeatmapWindow == nullptr) { if (isChanged && !autoLoadNewParams) { PUSH_UNSAVED_FRAME; popStyle = true; } } \
@@ -46,7 +47,7 @@ void listAttrNumb(Attribute* attr, numb* field, std::string name, std::string in
     ATTR_BEGIN;
     ImGui::PushItemWidth(200.0f);
     float var = (float)(*field);
-    ImGui::DragFloat(("##" + name + attr->name).c_str(), &var, dragChangeSpeed, 0.0f, 0.0f, (inner + "%f").c_str(), dragFlag);
+    ImGui::DragFloat(("##" + name + attr->name).c_str(), &var, dragChangeSpeed, 0.0f, 0.0f, (inner + (!preciseNumbDrags ? "%f" : "%.12f")).c_str(), dragFlag);
     (*field) = (numb)var;
     ATTR_END;
 }
