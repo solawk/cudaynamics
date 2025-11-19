@@ -240,7 +240,7 @@ void Period_cpu(Computation* data, int variation, void(*finiteDifferenceScheme)(
     numb peakThreshold = settings.peakThreshold;    //minimum value of peak that can be found in peak finder, -inf by default
     numb stepSize = CUDA_kernel.stepType == ST_Parameter ? parameters[CUDA_kernel.PARAM_COUNT - 1] : 1;    //stepsize of system
     numb timeFractionFXP = settings.timeFractionFXP;    //fraction of the trajectory that the system need to b e fixed point for peak finder to deem it a fixed point
-    int fixedPointMaxCount = round((variationSize / varCount) * timeFractionFXP);   //amount of steps in trajectory that the system need to be fixed point for peak finder to deem it a fixed point
+    int fixedPointMaxCount = (int)round((variationSize / varCount) * timeFractionFXP);   //amount of steps in trajectory that the system need to be fixed point for peak finder to deem it a fixed point
 
     // Buffer to hold peak data (amplitudes and indices)
     constexpr int MAX_PEAKS = 128;
@@ -308,7 +308,7 @@ void Period_cpu(Computation* data, int variation, void(*finiteDifferenceScheme)(
                 if (firstpeakreached == false)
                 {
                     firstpeakreached = true;
-                    temppeakindex = (float)i;
+                    temppeakindex = (numb)i;
                 }
                 else
                 {
@@ -324,7 +324,7 @@ void Period_cpu(Computation* data, int variation, void(*finiteDifferenceScheme)(
                 }
             }
             else if (curr == next && curr > prev) { // found a possible peak solved as a line by finiteDifferenceScheme
-                tempPeakFound = true; tempPeakAmp = curr; tempPeakTime = i;
+                tempPeakFound = true; tempPeakAmp = curr; tempPeakTime = (numb)i;
             }
             else if (curr < next) {    // case in which the line was likely not a peak
                 tempPeakFound = false;
@@ -446,7 +446,7 @@ void Period_cpu(Computation* data, int variation, void(*finiteDifferenceScheme)(
 
             //
 
-            mapValue = cluster;
+            mapValue = (numb)cluster;
         }
 
         if (CUDA_kernel.mapWeight == 0.0f)
