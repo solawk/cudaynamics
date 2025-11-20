@@ -37,6 +37,7 @@ void common_main()
     addKernel(mishchenko);
     addKernel(mixed);
     addKernel(ostrovskii);
+    addKernel(hodgkin_huxley);
 
     //selectKernel(kernels.begin()->first);
     selectKernel(lorenz);

@@ -327,6 +327,9 @@
       <Filter>systems</Filter>
     </CudaCompile>
     <CudaCompile Include="gpu_variation.cu" />
+    <CudaCompile Include="systems\hodgkin_huxley\hodgkin_huxley.cu">
+      <Filter>systems</Filter>
+    </CudaCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="CUDAynamics.rc" />

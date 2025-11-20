@@ -236,6 +236,7 @@
     <CudaCompile Include="systems\fourwing\fourwing.cu" />
     <CudaCompile Include="systems\halvorsen\halvorsen.cu" />
     <CudaCompile Include="systems\hindmarsh_rose\hindmarsh_rose.cu" />
+    <CudaCompile Include="systems\hodgkin_huxley\hodgkin_huxley.cu" />
     <CudaCompile Include="systems\izhikevich\izhikevich.cu" />
     <CudaCompile Include="systems\jj_mrlcs\jj_mrlcs.cu" />
     <CudaCompile Include="systems\jj_rlcs\jj_rlcs.cu" />
