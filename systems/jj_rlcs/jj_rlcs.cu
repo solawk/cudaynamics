@@ -10,9 +10,13 @@ namespace attributes
     enum methods { ExplicitEuler, SemiExplicitEuler, ExplicitMidpoint, ExplicitRungeKutta4, VariableSymmetryCD };
 }
 
-__global__ void kernelProgram_(name)(Computation* data)
+__global__ void gpu_wrapper_(name)(Computation* data, uint64_t variation)
 {
-    uint64_t variation = (blockIdx.x * blockDim.x) + threadIdx.x;            // Variation (parameter combination) index
+    kernelProgram_(name)(data, (blockIdx.x * blockDim.x) + threadIdx.x);
+}
+
+__host__ __device__ void kernelProgram_(name)(Computation* data, uint64_t variation)
+{
     if (variation >= CUDA_marshal.totalVariations) return;      // Shutdown thread if there isn't a variation to compute
     uint64_t stepStart, variationStart = variation * CUDA_marshal.variationSize;         // Start index to store the modelling data for the variation
     LOCAL_BUFFERS;
@@ -33,7 +37,7 @@ __global__ void kernelProgram_(name)(Computation* data)
     AnalysisLobby(data, &finiteDifferenceScheme_(name), variation);
 }
 
-__device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* currentV, numb* nextV, numb* parameters)
+__host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* currentV, numb* nextV, numb* parameters)
 {
     ifMETHOD(P(method), ExplicitEuler)
     {

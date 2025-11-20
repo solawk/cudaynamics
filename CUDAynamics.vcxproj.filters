@@ -234,6 +234,7 @@
     <ClInclude Include="anfunc_names.h" />
     <ClInclude Include="splitString.h" />
     <ClInclude Include="analysisLobby.cuh" />
+    <ClInclude Include="gpu_variation.cuh" />
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="main.cu" />
@@ -325,6 +326,7 @@
     <CudaCompile Include="systems\ostrovskii\ostrovskii.cu">
       <Filter>systems</Filter>
     </CudaCompile>
+    <CudaCompile Include="gpu_variation.cu" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="CUDAynamics.rc" />

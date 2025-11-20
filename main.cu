@@ -95,7 +95,7 @@ cudaError_t execute(Computation* data)
 
     // Kernel execution
     //precompute = std::chrono::steady_clock::now();
-    KERNEL_PROG <<< blocks, threads >>> (cuda_computation);
+    KERNEL_GPU <<< blocks, threads >>> (cuda_computation, 0);
     CUDA_LASTERROR;
     CUDA_SYNCHRONIZE;
     //incompute = std::chrono::steady_clock::now();
@@ -195,27 +195,39 @@ int compute(Computation* data)
     bool hasFailed = false;
     cudaError_t cudaStatus;
 
-#define IS_CPU_BENCHMARKING 0
+#define IS_CPU_BENCHMARKING 1
 #define IS_CPU_NOT_OPENMP 0
+
+    printf(data->isGPU ? "GPU mode\n" : "CPU mode\n");
 
     // Execution
     if (!data->isHires)
     {
+        data->startVariationInCurrentExecute = 0;
         fillAttributeBuffers(data, attributeStepIndices, 0, variations, false);
-#if IS_CPU_BENCHMARKING
+        if (!data->isGPU)
+        {
 #if (PRINT_TIME)    
-        std::chrono::steady_clock::time_point cpuNotHiresTP[2];
-        cpuNotHiresTP[0] = std::chrono::steady_clock::now();
+            std::chrono::steady_clock::time_point cpuNotHiresTP[2];
+            cpuNotHiresTP[0] = std::chrono::steady_clock::now();
 #endif
-        cpu_execute(data, !IS_CPU_NOT_OPENMP);
-        cudaStatus = cudaSuccess;
+
+#pragma omp parallel for
+            for (int v = 0; v < variations; v++)
+            {
+                kernelPrograms[selectedKernel](data, v);
+            }
+
+            cudaStatus = cudaSuccess;
 #if (PRINT_TIME)    
-        cpuNotHiresTP[1] = std::chrono::steady_clock::now();
-        printf("cpu execute time: %Ii ms\n", std::chrono::duration_cast<std::chrono::milliseconds>(cpuNotHiresTP[1] - cpuNotHiresTP[0]).count());
+            cpuNotHiresTP[1] = std::chrono::steady_clock::now();
+            printf("cpu execute time: %Ii ms\n", std::chrono::duration_cast<std::chrono::milliseconds>(cpuNotHiresTP[1] - cpuNotHiresTP[0]).count());
 #endif
-#else
-        cudaStatus = execute(data);
-#endif
+        }
+        else
+        {
+            cudaStatus = execute(data);
+        }
         if (cudaStatus != cudaSuccess) { fprintf(stderr, "execute failed!\n"); hasFailed = true; }
     }
     else
@@ -223,6 +235,7 @@ int compute(Computation* data)
         data->variationsFinished = 0;
         data->bufferNo = 0;
         data->otherMarshal = &(CUDA_marshal); // We trick it into thinking its own trajectory is the previous trajectory when copying the variable values (ouroboros moment)
+
         for (unsigned long long v = 0; v < variations; v += data->variationsPerParallelization)
         {
             unsigned long long variationsCurrent = min(variations - v, data->variationsPerParallelization);
@@ -236,12 +249,20 @@ int compute(Computation* data)
 
                 fillAttributeBuffers(data, attributeStepIndices, v, v + variationsCurrent, !data->isFirst);
 
-#if IS_CPU_BENCHMARKING
-                cpu_execute(data, !IS_CPU_NOT_OPENMP);
-                cudaStatus = cudaSuccess;
-#else
-                cudaStatus = execute(data);
-#endif
+                if (!data->isGPU)
+                {
+#pragma omp parallel for
+                    for (int v = 0; v < data->variationsInCurrentExecute; v++)
+                    {
+                        kernelPrograms[selectedKernel](data, v);
+                    }
+
+                    cudaStatus = cudaSuccess;
+                }
+                else
+                {
+                    cudaStatus = execute(data);
+                }
 
                 if (cudaStatus != cudaSuccess) { fprintf(stderr, "execute failed!\n"); hasFailed = true; break; }
                 data->isFirst = false;
@@ -388,40 +409,3 @@ void setupAnFuncs(Computation* data)
         memcpy(CUDA_marshal.maps, data->otherMarshal->maps, sizeof(numb) * CUDA_marshal.totalVariations * CUDA_marshal.totalMapValuesPerVariation);
     }
 }
-
-/*void setMapValues(Computation* data)
-{
-    if (CUDA_marshal.totalVariations == 1)
-        for (int m = 0; m < CUDA_kernel.MAP_COUNT; m++)
-        {
-            CUDA_kernel.mapDatas[m].toCompute = false;
-        }
-
-    // Look through all maps and set their offsets depending on which are to be computed and which are not
-    int offset = 0; // Offset is counted in maps to be computed, so it's then multiplied by totalVariations on the device
-    for (int m = 0; m < CUDA_kernel.MAP_COUNT; m++)
-    {
-        if (CUDA_kernel.mapDatas[m].toCompute)
-        {
-            CUDA_kernel.mapDatas[m].offset = offset;
-            offset += CUDA_kernel.mapDatas[m].valueCount;
-        }
-    }
-    CUDA_marshal.totalMapValuesPerVariation = offset;
-
-    // Initialize buffer
-    if (CUDA_marshal.totalVariations > 1 && CUDA_kernel.MAP_COUNT > 0 && CUDA_marshal.maps == nullptr)
-    {
-        CUDA_marshal.maps = new numb[CUDA_marshal.totalVariations * CUDA_marshal.totalMapValuesPerVariation];
-    }
-
-    // Copy previous map values if present
-    if (data->isFirst || CUDA_kernel.mapWeight == 1.0f)
-    {
-        memset(CUDA_marshal.maps, 0, sizeof(numb) * CUDA_marshal.totalVariations * CUDA_marshal.totalMapValuesPerVariation);
-    }
-    else
-    {
-        memcpy(CUDA_marshal.maps, data->otherMarshal->maps, sizeof(numb) * CUDA_marshal.totalVariations * CUDA_marshal.totalMapValuesPerVariation);
-    }
-}*/

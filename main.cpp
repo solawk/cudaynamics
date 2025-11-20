@@ -39,7 +39,7 @@ void common_main()
     addKernel(ostrovskii);
 
     //selectKernel(kernels.begin()->first);
-    selectKernel(jj_mrlcs);
+    selectKernel(lorenz);
 
     // Indices
     addIndex(IND_MAX, "Maximum variable value", MINMAX, 1);

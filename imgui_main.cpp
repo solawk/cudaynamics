@@ -23,6 +23,8 @@ bool spoilerParams = true;
 
 bool preciseNumbDrags = false;
 
+bool CPU_mode = false;
+
 Computation computations[2];
 Computation computationHires;
 int playedBufferIndex = 0; // Buffer currently shown
@@ -189,7 +191,7 @@ int asyncComputation()
 
 void computing()
 {
-    computations[bufferToFillIndex].bufferNo += 2; // One computation buffer only gets even trajectories, the other one get odd trajectories
+    computations[bufferToFillIndex].bufferNo += 2; // One computation buffer only gets even trajectories, the other one gets odd trajectories
     computations[bufferToFillIndex].future = std::async(asyncComputation);
     //asyncComputation();
 }
@@ -325,6 +327,7 @@ void prepareAndCompute(bool hires)
     
     if (hires) computationHires.Clear();
 
+    computations[0].isGPU = computations[1].isGPU = computationHires.isGPU = !CPU_mode;
     executedOnLaunch = true;
     computeAfterShiftSelect = false;
     bufferNo = 0;
@@ -487,9 +490,9 @@ int imgui_main(int, char**)
 
         style.WindowMenuButtonPosition = ImGuiDir_Left;
 
-        FullscreenActLogic(&mainWindow, &fullscreenSize);
+        //FullscreenActLogic(&mainWindow, &fullscreenSize);
         ImGui::Begin("CUDAynamics", &work);
-        FullscreenButtonPressLogic(&mainWindow, ImGui::GetCurrentWindow());
+        //FullscreenButtonPressLogic(&mainWindow, ImGui::GetCurrentWindow());
 
         // Selecting kernel
         if (ImGui::BeginCombo("##selectingKernel", KERNEL.name.c_str()))
@@ -708,6 +711,11 @@ int imgui_main(int, char**)
         {
             POP_FRAME(3);
         }
+
+        bool tempCPU_mode = CPU_mode;
+        ImGui::Checkbox("Use CPU", &tempCPU_mode);
+        TOOLTIP("Use CPU with OpenMP instead of GPU with CUDA");
+        CPU_mode = tempCPU_mode;
 
         variation = 0;
 
@@ -947,7 +955,6 @@ int imgui_main(int, char**)
                 ((lastHiresStopped ? lastHiresEnd : std::chrono::steady_clock::now()) - lastHiresStart).count()) / 1000.0f);
         }
 
-        // COMMON
         if (anyChanged && !autoLoadNewParams)
         {
             if (ImGui::Button("Reset changed values"))

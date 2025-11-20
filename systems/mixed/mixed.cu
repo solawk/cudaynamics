@@ -11,31 +11,34 @@ namespace attributes
     enum methods { ExplicitEuler, ExplicitMidpoint, ExplicitRungeKutta4, VariableSymmetryCD };
 }
 
-__global__ void kernelProgram_(name)(Computation* data)
+__global__ void gpu_wrapper_(name)(Computation* data, uint64_t variation)
 {
-	uint64_t variation = (blockIdx.x * blockDim.x) + threadIdx.x;            // Variation (parameter combination) index
-    if (variation >= CUDA_marshal.totalVariations) return;      // Shutdown thread if there isn't a variation to compute
+	kernelProgram_(name)(data, (blockIdx.x * blockDim.x) + threadIdx.x);
+}
+
+__host__ __device__ void kernelProgram_(name)(Computation* data, uint64_t variation)
+{
+	if (variation >= CUDA_marshal.totalVariations) return;      // Shutdown thread if there isn't a variation to compute
 	uint64_t stepStart, variationStart = variation * CUDA_marshal.variationSize;         // Start index to store the modelling data for the variation
 	LOCAL_BUFFERS;
-    LOAD_ATTRIBUTES(false);
+	LOAD_ATTRIBUTES(false);
 
-    // Custom area (usually) starts here
+	// Custom area (usually) starts here
 
-    TRANSIENT_SKIP_NEW(finiteDifferenceScheme_mixed);
+	TRANSIENT_SKIP_NEW(finiteDifferenceScheme_(name));
 
-    for (int s = 0; s < CUDA_kernel.steps && !data->isHires; s++)
-    {
-        stepStart = variationStart + s * CUDA_kernel.VAR_COUNT;
-        finiteDifferenceScheme_mixed(FDS_ARGUMENTS);
-        RECORD_STEP;
-    }
+	for (int s = 0; s < CUDA_kernel.steps && !data->isHires; s++)
+	{
+		stepStart = variationStart + s * CUDA_kernel.VAR_COUNT;
+		finiteDifferenceScheme_(name)(FDS_ARGUMENTS);
+		RECORD_STEP;
+	}
 
-    // Analysis
-
+	// Analysis
 	AnalysisLobby(data, &finiteDifferenceScheme_(name), variation);
 }
 
-__device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* currentV, numb* nextV, numb* parameters)
+__host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* currentV, numb* nextV, numb* parameters)
 {
     ifSIGNAL(P(signal), square)
 	{

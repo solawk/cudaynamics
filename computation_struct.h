@@ -13,6 +13,7 @@ public:
 	int threads_per_block;
 	float timeElapsed;
 	int index; // 0 or 1
+	bool isGPU;
 
 	bool isFirst;
 	int bufferNo; // When computing starts, this holds the continuous index of the current buffer

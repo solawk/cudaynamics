@@ -2,7 +2,7 @@
 #pragma warning(push)
 #pragma warning(disable:6385)
 
-__device__ void LLE(Computation* data, uint64_t variation, void(* finiteDifferenceScheme)(numb*, numb*, numb*))
+__host__ __device__ void LLE(Computation* data, uint64_t variation, void(* finiteDifferenceScheme)(numb*, numb*, numb*))
 {
     uint64_t stepStart, variationStart = variation * CUDA_marshal.variationSize;
     LOCAL_BUFFERS;
