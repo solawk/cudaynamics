@@ -1,5 +1,4 @@
-﻿#include "main.h"
-#include "thomas.h"
+﻿#include "thomas.h"
 
 #define name thomas
 

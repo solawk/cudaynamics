@@ -1,5 +1,4 @@
-﻿#include "main.h"
-#include "sprottJm.h"
+﻿#include "sprottJm.h"
 
 #define name sprottJm
 

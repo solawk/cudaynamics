@@ -1,6 +1,5 @@
 #pragma once
 #include "cuda_runtime.h"
-#include "cuda_macros.h"
 #include "device_launch_parameters.h"
 #include <stdio.h>
 #include <fstream>
@@ -10,6 +9,7 @@
 #include "analysisSettingsHeaders.h"
 #include "analysisLobby.cuh"
 #include "gpu_variation.cuh"
+#include "cuda_macros.h"
 
 #define CONCAT(a, b) a##b
 #define THREADS_PER_BLOCK_(name) CONCAT(THREADS_PER_BLOCK_, name)

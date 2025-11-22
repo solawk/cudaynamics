@@ -1,5 +1,4 @@
-﻿#include "main.h"
-#include "wilson.h"
+﻿#include "wilson.h"
 
 #define name wilson
 

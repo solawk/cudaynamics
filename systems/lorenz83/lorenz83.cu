@@ -1,5 +1,4 @@
-﻿#include "main.h"
-#include "lorenz83.h"
+﻿#include "lorenz83.h"
 
 #define name lorenz83
 

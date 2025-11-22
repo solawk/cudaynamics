@@ -1,5 +1,4 @@
-﻿#include "main.h"
-#include "fourwing.h"
+﻿#include "fourwing.h"
 
 #define name fourwing
 

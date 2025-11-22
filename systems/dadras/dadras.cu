@@ -1,4 +1,3 @@
-#include "main.h"
 #include "dadras.h"
 
 #define name dadras

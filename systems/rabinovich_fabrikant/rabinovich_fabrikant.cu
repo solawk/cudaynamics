@@ -1,5 +1,4 @@
-﻿#include "main.h"
-#include "rabinovich_fabrikant.h"
+﻿#include "rabinovich_fabrikant.h"
 
 #define name rabinovich_fabrikant
 

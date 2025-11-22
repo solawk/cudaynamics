@@ -1,5 +1,4 @@
-﻿#include "main.h"
-#include "sprott14.h"
+﻿#include "sprott14.h"
 
 #define name sprott14
 

@@ -1,5 +1,4 @@
-﻿#include "main.h"
-#include "three_scroll.h"
+﻿#include "three_scroll.h"
 
 #define name three_scroll
 

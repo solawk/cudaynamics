@@ -1,5 +1,4 @@
-﻿#include "main.h"
-#include "fitzhugh_nagumo.h"
+﻿#include "fitzhugh_nagumo.h"
 
 #define name fitzhugh_nagumo
 

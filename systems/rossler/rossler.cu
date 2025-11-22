@@ -1,5 +1,4 @@
-﻿#include "main.h"
-#include "rossler.h"
+﻿#include "rossler.h"
 
 #define name rossler
 

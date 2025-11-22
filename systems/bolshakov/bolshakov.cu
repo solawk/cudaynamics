@@ -1,5 +1,4 @@
-﻿#include "main.h"
-#include "bolshakov.h"
+﻿#include "bolshakov.h"
 
 #define name bolshakov
 

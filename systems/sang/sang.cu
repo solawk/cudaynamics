@@ -1,5 +1,4 @@
-﻿#include "main.h"
-#include "sang.h"
+﻿#include "sang.h"
 
 #define name sang
 

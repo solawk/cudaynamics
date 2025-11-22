@@ -1,5 +1,4 @@
-﻿#include "main.h"
-#include "vnm.h"
+﻿#include "vnm.h"
 
 #define name vnm
 

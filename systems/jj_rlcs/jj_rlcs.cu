@@ -1,5 +1,4 @@
-﻿#include "main.h"
-#include "jj_rlcs.h"
+﻿#include "jj_rlcs.h"
 
 #define name jj_rlcs
 

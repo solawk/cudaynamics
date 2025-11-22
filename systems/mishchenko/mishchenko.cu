@@ -1,5 +1,4 @@
-﻿#include "main.h"
-#include "mishchenko.h"
+﻿#include "mishchenko.h"
 
 #define name mishchenko
 

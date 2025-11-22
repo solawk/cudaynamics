@@ -1,5 +1,4 @@
-﻿#include "main.h"
-#include "halvorsen.h"
+﻿#include "halvorsen.h"
 
 #define name halvorsen
 

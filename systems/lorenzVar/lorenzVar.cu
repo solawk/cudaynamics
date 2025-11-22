@@ -1,5 +1,4 @@
-﻿#include "main.h"
-#include "lorenzVar.h"
+﻿#include "lorenzVar.h"
 
 #define name lorenzVar
 

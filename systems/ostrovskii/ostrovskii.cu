@@ -1,5 +1,4 @@
-﻿#include "main.h"
-#include "ostrovskii.h"
+﻿#include "ostrovskii.h"
 
 #define name ostrovskii
 

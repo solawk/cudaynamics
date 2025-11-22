@@ -1,5 +1,4 @@
-﻿#include "main.h"
-#include "chen.h"
+﻿#include "chen.h"
 
 #define name chen
 

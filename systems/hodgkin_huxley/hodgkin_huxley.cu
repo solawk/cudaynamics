@@ -1,5 +1,4 @@
-﻿#include "main.h"
-#include "hodgkin_huxley.h"
+﻿#include "hodgkin_huxley.h"
 
 #define name hodgkin_huxley
 

@@ -1,5 +1,4 @@
-﻿#include "main.h"
-#include "langford.h"
+﻿#include "langford.h"
 
 #define name langford
 

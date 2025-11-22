@@ -1,5 +1,4 @@
-﻿#include "main.h"
-#include "mixed.h"
+﻿#include "mixed.h"
 
 #define name mixed
 

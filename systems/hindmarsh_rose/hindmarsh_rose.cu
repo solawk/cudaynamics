@@ -1,5 +1,4 @@
-﻿#include "main.h"
-#include "hindmarsh_rose.h"
+﻿#include "hindmarsh_rose.h"
 
 #define name hindmarsh_rose
 

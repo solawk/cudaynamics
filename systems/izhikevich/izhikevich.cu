@@ -1,5 +1,4 @@
-﻿#include "main.h"
-#include "izhikevich.h"
+﻿#include "izhikevich.h"
 
 #define name izhikevich
 
