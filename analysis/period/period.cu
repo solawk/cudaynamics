@@ -10,7 +10,8 @@ __host__ __device__ void Period(Computation* data, uint64_t variation, void(*fin
     LOAD_ATTRIBUTES(true);
     if (data->isHires) TRANSIENT_SKIP_NEW(finiteDifferenceScheme);
 
-    uint64_t stepStart, s = -1;
+    uint64_t stepStart = variationStart;
+    long long s = -1;
     numb variablesPrev[MAX_ATTRIBUTES]{ 0 }, variablesCurr[MAX_ATTRIBUTES]{ 0 }; // variables will store "next" values, variablesPrev – "prev", variablesCurr – "curr"
     // When using hi-res (with no trajectory buffer available), one trajectory steps is precomputed, making first "prev" and "curr" values
     // Each next computed step will be a "next" one

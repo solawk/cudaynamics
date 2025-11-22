@@ -71,6 +71,13 @@
     <ClCompile Include="anfunc2indices.cpp" />
     <ClCompile Include="anfunc_names.cpp" />
     <ClCompile Include="splitString.cpp" />
+    <ClCompile Include="fonts.cpp" />
+    <ClCompile Include="gui\mainWindowMenu.cpp">
+      <Filter>gui</Filter>
+    </ClCompile>
+    <ClCompile Include="gui\styles.cpp">
+      <Filter>gui</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="imgui">
@@ -189,9 +196,6 @@
     <ClInclude Include="analysis\max\max.h">
       <Filter>analysis\max</Filter>
     </ClInclude>
-    <ClInclude Include="styles.h">
-      <Filter>gui</Filter>
-    </ClInclude>
     <ClInclude Include="kernels_common.h" />
     <ClInclude Include="gui\imgui_ui_funcs.h">
       <Filter>gui</Filter>
@@ -235,6 +239,17 @@
     <ClInclude Include="splitString.h" />
     <ClInclude Include="analysisLobby.cuh" />
     <ClInclude Include="gpu_variation.cuh" />
+    <ClInclude Include="fonts.h" />
+    <ClInclude Include="gui\mainWindowMenu.h">
+      <Filter>gui</Filter>
+    </ClInclude>
+    <ClInclude Include="gui\customStylesEnum.h">
+      <Filter>gui</Filter>
+    </ClInclude>
+    <ClInclude Include="gui\styles.h">
+      <Filter>gui</Filter>
+    </ClInclude>
+    <ClInclude Include="fontSettings_struct.h" />
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="main.cu" />

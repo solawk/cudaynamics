@@ -3,6 +3,7 @@
 #include <vector>
 #include <set>
 #include "heatmapProperties.hpp"
+#include "fontSettings_struct.h"
 
 // Maximum amount of variables and parameters in the plot
 #define MAX_VARS_PARAMS 32
@@ -30,6 +31,10 @@ public:
 
 	// Plot settings
 	bool settingsListEnabled;
+
+	bool overrideFontOnNextFrame;
+	bool overrideFontSettings;
+	FontSettings localFontSettings;
 
 	float markerWidth;
 	float markerOutlineWidth;
@@ -96,6 +101,10 @@ public:
 		scale = ImVec4(1.0f, 1.0f, 1.0f, 0.0f);
 
 		settingsListEnabled = true;
+
+		overrideFontOnNextFrame = false;
+		overrideFontSettings = false;
+		localFontSettings = FontSettings(0, false, false, 24);
 
 		markerWidth = 1.0f;
 		markerOutlineWidth = 0.0f;

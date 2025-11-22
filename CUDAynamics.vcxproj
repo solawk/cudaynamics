@@ -123,11 +123,14 @@
     <ClCompile Include="anfunc_names.cpp" />
     <ClCompile Include="benchmarking\cpu_bm.cpp" />
     <ClCompile Include="file_export.cpp" />
+    <ClCompile Include="fonts.cpp" />
     <ClCompile Include="gui\fullscreen_funcs.cpp" />
     <ClCompile Include="gui\imgui_ui_funcs.cpp" />
     <ClCompile Include="gui\img_loading.cpp" />
+    <ClCompile Include="gui\mainWindowMenu.cpp" />
     <ClCompile Include="gui\map_img.cpp" />
     <ClCompile Include="gui\plotWindowMenu.cpp" />
+    <ClCompile Include="gui\styles.cpp" />
     <ClCompile Include="imgui\backends\imgui_impl_dx11.cpp" />
     <ClCompile Include="imgui\backends\imgui_impl_win32.cpp" />
     <ClCompile Include="imgui\imgui.cpp" />
@@ -175,14 +178,19 @@
     <ClInclude Include="constraint.h" />
     <ClInclude Include="cuda_macros.h" />
     <ClInclude Include="file_export.h" />
+    <ClInclude Include="fonts.h" />
+    <ClInclude Include="fontSettings_struct.h" />
     <ClInclude Include="gpu_variation.cuh" />
+    <ClInclude Include="gui\customStylesEnum.h" />
     <ClInclude Include="gui\d3dx11tex.h" />
     <ClInclude Include="gui\fullscreen_funcs.h" />
     <ClInclude Include="gui\imgui_ui_funcs.h" />
     <ClInclude Include="gui\img_loading.h" />
+    <ClInclude Include="gui\mainWindowMenu.h" />
     <ClInclude Include="gui\map_img.h" />
     <ClInclude Include="gui\plotWindowMenu.h" />
     <ClInclude Include="gui\stb_image.h" />
+    <ClInclude Include="gui\styles.h" />
     <ClInclude Include="gui\window_configs.h" />
     <ClInclude Include="heatmapProperties.hpp" />
     <ClInclude Include="heatmapSizing_struct.h" />
@@ -219,7 +227,6 @@
     <ClInclude Include="quaternion.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="splitString.h" />
-    <ClInclude Include="styles.h" />
     <ClInclude Include="systemsHeaders.h" />
     <ClInclude Include="variationSteps.h" />
   </ItemGroup>

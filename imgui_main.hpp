@@ -34,6 +34,9 @@
 #include "anfunc2indices.h"
 #include "anfunc_names.h"
 #include "plotWindow.h"
+#include "fonts.h"
+#include "gui/styles.h"
+#include "gui/mainWindowMenu.h"
 
 bool CreateDeviceD3D(HWND hWnd);
 void CleanupDeviceD3D();
@@ -48,6 +51,13 @@ void listParameter(int i);
 void listEnum(int i);
 void heatmapRangingSelection(PlotWindow* window, ImPlotPlot* plot, HeatmapSizing* sizing, bool isHires);
 void hiresShiftClickCompute(PlotWindow* window, HeatmapSizing* sizing, numb valueX, numb valueY);
+
+extern ImGuiCustomStyle appStyle;
+extern float dragChangeSpeed;
+extern bool preciseNumbDrags;
+
+#define DONT_CLOSE_ON_CLICK_PUSH	ImGui::PushItemFlag(ImGuiItemFlags_AutoClosePopups, false);
+#define DONT_CLOSE_ON_CLICK_POP		ImGui::PopItemFlag();
 
 // Kernel-related macros
 #define HIRES_ON (hiresHeatmapWindow != nullptr)

@@ -1,7 +1,4 @@
-﻿#pragma once
-#include "../imgui/imgui.h"
-
-enum ImGuiCustomStyle { Dark, Light };
+﻿#include "styles.h"
 
 void SetupImGuiStyle(ImGuiCustomStyle cs)
 {
@@ -10,10 +7,10 @@ void SetupImGuiStyle(ImGuiCustomStyle cs)
     // light style from Pacôme Danhiez (user itamago) https://github.com/ocornut/imgui/pull/511#issuecomment-175719267
     style.Alpha = 1.0f;
     style.FrameRounding = 3.0f;
-    
+
     switch (cs)
     {
-    case Dark:
+    case ImGuiCustomStyle::Dark:
         style.Colors[ImGuiCol_Text] = ImVec4(0.00f, 0.00f, 0.00f, 1.00f);
         style.Colors[ImGuiCol_TextDisabled] = ImVec4(0.60f, 0.60f, 0.60f, 1.00f);
         style.Colors[ImGuiCol_WindowBg] = ImVec4(0.94f, 0.94f, 0.94f, 0.94f);
@@ -24,7 +21,7 @@ void SetupImGuiStyle(ImGuiCustomStyle cs)
         style.Colors[ImGuiCol_FrameBg] = ImVec4(0.90f, 0.90f, 0.90f, 0.94f);
         style.Colors[ImGuiCol_FrameBgHovered] = ImVec4(0.26f, 0.59f, 0.98f, 0.40f);
         style.Colors[ImGuiCol_FrameBgActive] = ImVec4(0.26f, 0.59f, 0.98f, 0.67f);
-        style.Colors[ImGuiCol_Tab] = style.Colors[ImGuiCol_TabDimmed] = style.Colors[ImGuiCol_TabDimmedSelected] = style.Colors[ImGuiCol_TabDimmedSelectedOverline] = 
+        style.Colors[ImGuiCol_Tab] = style.Colors[ImGuiCol_TabDimmed] = style.Colors[ImGuiCol_TabDimmedSelected] = style.Colors[ImGuiCol_TabDimmedSelectedOverline] =
             style.Colors[ImGuiCol_TabSelected] = style.Colors[ImGuiCol_TabSelectedOverline] = ImVec4(0.26f, 0.59f, 0.98f, 0.60f);
         style.Colors[ImGuiCol_TabHovered] = ImVec4(0.26f, 0.59f, 0.98f, 0.80f);
         style.Colors[ImGuiCol_TitleBg] = ImVec4(0.96f, 0.96f, 0.96f, 1.00f);
@@ -88,7 +85,7 @@ void SetupImGuiStyle(ImGuiCustomStyle cs)
         style.Colors[ImGuiCol_C_ZAxis] = ImVec4(0.3f, 0.45f, 0.7f, 1.0f);
 
         break;
-    case Light: 
+    case ImGuiCustomStyle::Light:
         style.Colors[ImGuiCol_Text] = ImVec4(0.00f, 0.00f, 0.00f, 1.00f);
         style.Colors[ImGuiCol_TextDisabled] = ImVec4(0.60f, 0.60f, 0.60f, 1.00f);
         style.Colors[ImGuiCol_WindowBg] = ImVec4(0.94f, 0.94f, 0.94f, 0.94f);

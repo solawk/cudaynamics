@@ -5,7 +5,6 @@
 #include "gui/map_img.h"
 #include "gui/fullscreen_funcs.h"
 #include "gui/window_configs.h"
-#include "styles.h"
 
 static ID3D11Device* g_pd3dDevice = nullptr;
 static ID3D11DeviceContext* g_pd3dDeviceContext = nullptr;
@@ -421,8 +420,8 @@ int imgui_main(int, char**)
     ImGui_ImplWin32_Init(hwnd);
     ImGui_ImplDX11_Init(g_pd3dDevice, g_pd3dDeviceContext);
 
-    io.Fonts->AddFontFromFileTTF("UbuntuMono-R.ttf", 24.0f);
-
+    //io.Fonts->AddFontFromFileTTF("UbuntuMono-R.ttf", 24.0f);
+    FontLoading(io);
     SetupImGuiStyle(appStyle);
 
     // Main loop
@@ -479,6 +478,8 @@ int imgui_main(int, char**)
     {
         IMGUI_WORK_BEGIN;
 
+        if (fontNotDefault) ImGui::PushFont(GetFont(GlobalFontSettings.family, GlobalFontSettings.size, GlobalFontSettings.isBold, GlobalFontSettings.isItalic));
+
         timeElapsed += frameTime;
         float breath = (cosf(timeElapsed * 6.0f) + 1.0f) / 2.0f;
         float buttonBreathMult = 1.2f + breath * 0.8f;
@@ -491,8 +492,10 @@ int imgui_main(int, char**)
         style.WindowMenuButtonPosition = ImGuiDir_Left;
 
         //FullscreenActLogic(&mainWindow, &fullscreenSize);
-        ImGui::Begin("CUDAynamics", &work);
+        ImGui::Begin("CUDAynamics", &work, ImGuiWindowFlags_MenuBar);
         //FullscreenButtonPressLogic(&mainWindow, ImGui::GetCurrentWindow());
+
+        mainWindowMenu();
 
         // Selecting kernel
         if (ImGui::BeginCombo("##selectingKernel", KERNEL.name.c_str()))
@@ -1291,6 +1294,9 @@ int imgui_main(int, char**)
             FullscreenActLogic(window, &fullscreenSize);
             ImGui::Begin(windowName.c_str(), &(window->active), ImGuiWindowFlags_MenuBar);
             FullscreenButtonPressLogic(window, ImGui::GetCurrentWindow());
+
+            if (fontNotDefault && window->overrideFontSettings)
+                ImGui::PushFont(GetFont(window->localFontSettings.family, window->localFontSettings.size, window->localFontSettings.isBold, window->localFontSettings.isItalic));
 
             autofitHeatmap = false;
 
@@ -2769,8 +2775,12 @@ int imgui_main(int, char**)
                     break;
             }          
 
+            if (fontNotDefault && window->overrideFontSettings) ImGui::PopFont();
+            window->overrideFontSettings = window->overrideFontOnNextFrame;
             ImGui::End();
         }
+
+        if (fontNotDefault) ImGui::PopFont();
 
         // Rendering
         IMGUI_WORK_END;

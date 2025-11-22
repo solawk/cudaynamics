@@ -1,9 +1,7 @@
 #include "plotWindowMenu.h"
 
-#define DONT_CLOSE_ON_CLICK_PUSH	ImGui::PushItemFlag(ImGuiItemFlags_AutoClosePopups, false);
-#define DONT_CLOSE_ON_CLICK_POP		ImGui::PopItemFlag();
-
 void plotWindowMenu_File(PlotWindow* window);
+void plotWindowMenu_View(PlotWindow* window);
 void plotWindowMenu_PhasePlot(PlotWindow* window);
 void plotWindowMenu_HeatmapPlot(PlotWindow* window);
 void plotWindowMenu_HeatmapColors(PlotWindow* window);
@@ -23,6 +21,7 @@ void plotWindowMenu(PlotWindow* window)
 	if (ImGui::BeginMenuBar())
 	{
 		plotWindowMenu_File(window);
+		plotWindowMenu_View(window);
 		if (window->type == Phase || window->type == Phase2D) plotWindowMenu_PhasePlot(window);
 		if (window->type == Heatmap || window->type == MCHeatmap) plotWindowMenu_HeatmapPlot(window);
 		if (window->type == Heatmap) plotWindowMenu_HeatmapColors(window);
@@ -47,7 +46,7 @@ void plotWindowMenu(PlotWindow* window)
 		}
 		if (window->type == Orbit) plotWindowMenu_OrbitPlot(window);
 		if (window->type == Metric) plotWindowMenu_MetricPlot(window);
-		if (window->type == Series)plotWindowMenu_SeriesPlot(window);
+		if (window->type == Series) plotWindowMenu_SeriesPlot(window);
 		ImGui::EndMenuBar();
 	}
 }
@@ -56,23 +55,6 @@ void plotWindowMenu_File(PlotWindow* window)
 {
 	if (ImGui::BeginMenu("File"))
 	{
-		/*if (ImGui::MenuItem("Export"))
-		{
-			switch (window->type)
-			{
-			case Heatmap:
-				bool isHires = hiresHeatmapWindow == window;
-				numb* values = isHires ? window->hireshmp.values.valueBuffer : window->hmp.values.valueBuffer;
-				int valuesCount = isHires ? window->hireshmp.lastBufferSize : window->hmp.lastBufferSize;
-				std::string mapName = KERNEL.mapDatas[window->variables[0]].name;
-				if (values == nullptr) break;
-
-				exportToFile(mapName + "_" + timeAsString() + ".txt", values, valuesCount);
-
-				break;
-			}
-		}*/
-		
 		if (ImGui::MenuItem("Export to .csv", nullptr, false,
 			(window->type == Heatmap) || (window->type == Series)))
 		{
@@ -144,6 +126,22 @@ void plotWindowMenu_File(PlotWindow* window)
 				}
 			}
 		}
+
+		ImGui::EndMenu();
+	}
+}
+
+void plotWindowMenu_View(PlotWindow* window)
+{
+	if (ImGui::BeginMenu("View"))
+	{
+		bool tempOverrideFont = window->overrideFontSettings;
+		if (ImGui::Checkbox(("Override font settings##" + window->name).c_str(), &tempOverrideFont))
+		{
+			if (!window->overrideFontSettings)	window->overrideFontOnNextFrame = true;
+			else								window->overrideFontOnNextFrame = false;
+		}
+		if (window->overrideFontSettings) FontMenu(window);
 
 		ImGui::EndMenu();
 	}
@@ -272,19 +270,6 @@ void plotWindowMenu_HeatmapPlot(PlotWindow* window)
 			if (ImGui::Selectable(diapasonsStrings[1].c_str(), !heatmap->showActualDiapasons)) heatmap->showActualDiapasons = false;
 			ImGui::EndCombo();
 		}
-
-		/*bool tempHiresMode = window == hiresHeatmapWindow; if (ImGui::Checkbox(("##" + windowName + "isHiresMode").c_str(), &tempHiresMode))
-		{
-			if (window != hiresHeatmapWindow)
-			{
-				hiresHeatmapWindow = window;
-			}
-			else
-			{
-				hiresHeatmapWindow = nullptr;
-			}
-		}
-		ImGui::SameLine(); ImGui::Text("Hi-Res mode");*/
 
 		bool tempHeatmapAutoCompute = heatmap->isHeatmapAutoComputeOn; if (ImGui::Checkbox(("##" + windowName + "heatmapAutoCompute").c_str(), &tempHeatmapAutoCompute)) heatmap->isHeatmapAutoComputeOn = !heatmap->isHeatmapAutoComputeOn;
 		ImGui::SameLine(); ImGui::Text("Auto-compute on Shift+RMB");
