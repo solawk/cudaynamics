@@ -22,7 +22,8 @@ bool spoilerParams = true;
 
 bool preciseNumbDrags = false;
 
-bool CPU_mode = false;
+bool CPU_mode_interactive = true;
+bool CPU_mode_hires = false;
 
 Computation computations[2];
 Computation computationHires;
@@ -326,7 +327,8 @@ void prepareAndCompute(bool hires)
     
     if (hires) computationHires.Clear();
 
-    computations[0].isGPU = computations[1].isGPU = computationHires.isGPU = !CPU_mode;
+    computations[0].isGPU = computations[1].isGPU = !CPU_mode_interactive;
+    computationHires.isGPU = !CPU_mode_hires;
     executedOnLaunch = true;
     computeAfterShiftSelect = false;
     bufferNo = 0;
@@ -715,10 +717,15 @@ int imgui_main(int, char**)
             POP_FRAME(3);
         }
 
-        bool tempCPU_mode = CPU_mode;
-        ImGui::Checkbox("Use CPU", &tempCPU_mode);
-        TOOLTIP("Use CPU with OpenMP instead of GPU with CUDA");
-        CPU_mode = tempCPU_mode;
+        bool tempCPUinter_mode = CPU_mode_interactive;
+        ImGui::Checkbox("Use CPU in interactive mode", &tempCPUinter_mode);
+        TOOLTIP("Use CPU with OpenMP instead of GPU with CUDA in non-Hi-Res mode");
+        CPU_mode_interactive = tempCPUinter_mode;
+
+        bool tempCPUhires_mode = CPU_mode_hires;
+        ImGui::Checkbox("Use CPU in Hi-Res mode", &tempCPUhires_mode);
+        TOOLTIP("Use CPU with OpenMP instead of GPU with CUDA in Hi-Res mode");
+        CPU_mode_hires = tempCPUhires_mode;
 
         variation = 0;
 
