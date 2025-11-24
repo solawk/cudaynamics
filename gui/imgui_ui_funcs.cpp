@@ -14,6 +14,7 @@ extern int maxNameLength;
 extern Kernel kernelNew;
 extern Kernel kernelHiresNew;
 extern bool preciseNumbDrags;
+extern float attributeTableWidths[3];
 
 #define ATTR_BEGIN  /*ImGui::SameLine();*/ popStyle = false; \
     if (hiresHeatmapWindow == nullptr) { if (isChanged && !autoLoadNewParams) { PUSH_UNSAVED_FRAME; popStyle = true; } } \
@@ -218,10 +219,6 @@ void listEnum(int i)
 {
     if (!isParameterUnconstrainted(i)) return;
 
-    float nameWidth = ImGui::GetColumnWidth(0);
-    float contentWidth = ImGui::GetColumnWidth(1) + ImGui::GetColumnWidth(2) + ImGui::GetColumnWidth(3) + ImGui::GetColumnWidth(4);
-    float selWidth = ImGui::GetColumnWidth(5);
-
     ImGui::EndTable();
 
     bool changeAllowed = KERNELNEWCURRENT.parameters[i].rangingType == RT_None || !playingParticles || !autoLoadNewParams;
@@ -229,9 +226,7 @@ void listEnum(int i)
     thisChanged = false;
     if (KERNELNEWCURRENT.parameters[i].IsDifferentFrom(&(KERNEL.parameters[i]))) { anyChanged = true; thisChanged = true; }
 
-    //ImGui::TableNextRow();
-    //ImGui::TableSetColumnIndex(0); ImGui::SetNextItemWidth(-1);
-    ImGui::SetNextItemWidth(nameWidth);
+    ImGui::SetNextItemWidth(GlobalFontSettings.size * 4.0f);
     ImGui::Text(padString(KERNEL.parameters[i].name, maxNameLength).c_str());
 
     if (!changeAllowed)
@@ -257,18 +252,11 @@ void listEnum(int i)
         selectedCount++;
     }
 
-    if (selectedKernelsString.length() > 52)
-        selectedKernelsString = selectedKernelsString.substr(0, 52) + "...";
+    if (selectedKernelsString.length() > 40)
+        selectedKernelsString = selectedKernelsString.substr(0, 40) + "...";
 
-    //ImRect spanRect = ImGui::TableGetCellBgRect(ImGui::GetCurrentTable(), 2);
-    //spanRect.Max.x = ImGui::TableGetCellBgRect(ImGui::GetCurrentTable(), 4).Max.x;
-    
-    //ImGui::PushClipRect(spanRect.Min, spanRect.Max, false);
-
-    //ImGui::TableSetColumnIndex(2);
-    //ImGui::SetNextItemWidth(spanRect.GetWidth());
     ImGui::SameLine();
-    ImGui::PushItemWidth(contentWidth);
+    ImGui::PushItemWidth(GlobalFontSettings.size * 25.0f);
     bool isChanged = false;
     ATTR_BEGIN;
     if (ImGui::BeginCombo(("##ENUMSELECT_" + KERNELNEWCURRENT.parameters[i].name).c_str(), selectedCount == 0 ? "None" : selectedKernelsString.c_str()))
@@ -286,12 +274,9 @@ void listEnum(int i)
         ImGui::EndCombo();
     }
     ATTR_END;
-    //ImGui::PopItemWidth();
-    //ImGui::PopClipRect();
+    ImGui::PopItemWidth();
 
-    //ImGui::TableSetColumnIndex(5); ImGui::SetNextItemWidth(-1);
     ImGui::SameLine();
-    ImGui::SetNextItemWidth(selWidth);
     ImGui::Text((std::to_string(selectedCount) + " item" + ((selectedCount % 10 != 1 || selectedCount == 11) ? "s" : "")).c_str());
 
     if (playingParticles)

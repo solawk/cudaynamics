@@ -855,15 +855,6 @@ int imgui_main(int, char**)
             TOOLTIP("1.0 to create new map each buffer, 0.0 to continuously calculate the average, 0.0-1.0 defines the weight of each new map");
             if (popStyle) POP_FRAME(3);
 
-            ImGui::PushItemWidth(200.0f);
-            ImGui::InputFloat("Value drag speed", &(dragChangeSpeed));
-            TOOLTIP("Drag speed of attribute values, allows for precise automatic parameter setting");
-
-            bool tempPreciseNumbDrags = preciseNumbDrags;
-            ImGui::Checkbox("Precise numb values", &tempPreciseNumbDrags);
-            TOOLTIP("Enable 12-digit fraction for attribute values");
-            preciseNumbDrags = tempPreciseNumbDrags;
-
             ImGui::NewLine();
 
             if (ImGui::Button("Next buffer"))
