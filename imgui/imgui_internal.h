@@ -1911,8 +1911,8 @@ struct IMGUI_API ImGuiDockNode
     bool                    HasCloseButton          :1; // Provide space for a close button (if any of the docked window has one). Note that button may be hidden on window without one.
     bool                    HasFullscreenButton     :1; // Provide space for a fullscreen button
     bool                    First;                      // Check if node is drawn for the first time
-    bool                    IsFullscreen;               // Is currently in Fullscreen mode
-    bool                    IsFullscreenEnded;          // Shows what fullscreen mode just ended
+    bool                    IsFullscreen = false;               // Is currently in Fullscreen mode
+    bool                    IsFullscreenEnded = false;          // Shows what fullscreen mode just ended
     ImVec2                  OriginalPos;                // Pos of node before fullscreen
     ImVec2                  OriginalSize;               // Size of node before fullscreen
     bool                    OnParent;                   // is node a part of larger window
