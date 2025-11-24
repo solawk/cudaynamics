@@ -535,7 +535,14 @@ int imgui_main(int, char**)
         if (spoilerVars) ImGui::SetNextItemOpen(true);
         if (ImGui::TreeNode("Variables##VariablesList"))
         {
-            for (int i = 0; i < KERNEL.VAR_COUNT - (KERNEL.stepType == ST_Variable ? 1 : 0); i++) listVariable(i);
+            if (ImGui::BeginTable("##VarTable", 6))
+            {
+                ImGui::TableSetupColumn(nullptr, ImGuiTableColumnFlags_WidthFixed, GlobalFontSettings.size * 4.0f);
+                ImGui::TableSetupColumn(nullptr, ImGuiTableColumnFlags_WidthFixed, GlobalFontSettings.size * 5.0f);
+                for (int c = 2; c < 6; c++) ImGui::TableSetupColumn(nullptr);
+                for (int i = 0; i < KERNEL.VAR_COUNT - (KERNEL.stepType == ST_Variable ? 1 : 0); i++) listVariable(i);
+                ImGui::EndTable();
+            }
             ImGui::TreePop();
             spoilerVars = true;
         }
@@ -547,8 +554,16 @@ int imgui_main(int, char**)
             if (spoilerStep) ImGui::SetNextItemOpen(true);
             if (ImGui::TreeNode("Step##StepList"))
             {
-                if (KERNEL.stepType == ST_Variable) listVariable(KERNEL.VAR_COUNT - 1);
-                if (KERNEL.stepType == ST_Parameter) listParameter(KERNEL.PARAM_COUNT - 1);
+                if (ImGui::BeginTable("##StepTable", 6))
+                {
+                    ImGui::TableSetupColumn(nullptr, ImGuiTableColumnFlags_WidthFixed, GlobalFontSettings.size * 4.0f);
+                    ImGui::TableSetupColumn(nullptr, ImGuiTableColumnFlags_WidthFixed, GlobalFontSettings.size * 5.0f);
+                    for (int c = 2; c < 6; c++) ImGui::TableSetupColumn(nullptr);
+                    if (KERNEL.stepType == ST_Variable) listVariable(KERNEL.VAR_COUNT - 1);
+                    if (KERNEL.stepType == ST_Parameter) listParameter(KERNEL.PARAM_COUNT - 1);
+                    ImGui::EndTable();
+                }
+
                 ImGui::TreePop();
                 spoilerStep = true;
             }
@@ -560,13 +575,22 @@ int imgui_main(int, char**)
         if (spoilerParams) ImGui::SetNextItemOpen(true);
         if (ImGui::TreeNode("Parameters##ParametersList"))
         {
-            for (int i = 0; i < KERNEL.PARAM_COUNT - (KERNEL.stepType == ST_Parameter ? 1 : 0); i++)
+            if (ImGui::BeginTable("##ParamTable", 6))
             {
-                if (KERNEL.parameters[i].rangingType != RT_Enum)
-                    listParameter(i);
-                else
-                    listEnum(i);
+                ImGui::TableSetupColumn(nullptr, ImGuiTableColumnFlags_WidthFixed, GlobalFontSettings.size * 4.0f);
+                ImGui::TableSetupColumn(nullptr, ImGuiTableColumnFlags_WidthFixed, GlobalFontSettings.size * 5.0f);
+                for (int c = 2; c < 6; c++) ImGui::TableSetupColumn(nullptr);
+                for (int i = 0; i < KERNEL.PARAM_COUNT - (KERNEL.stepType == ST_Parameter ? 1 : 0); i++)
+                {
+                    if (KERNEL.parameters[i].rangingType != RT_Enum)
+                        listParameter(i);
+                    else
+                        listEnum(i);
+                }
+                ImGui::EndTable();
             }
+
+            
 
             // Parameter auto-loading
             bool tempAutoLoadNewParams = autoLoadNewParams;
