@@ -3,6 +3,7 @@
 void SetupImGuiStyle(ImGuiCustomStyle cs)
 {
     ImGuiStyle& style = ImGui::GetStyle();
+    ImPlot3DStyle& styleImplot3d = ImPlot3D::GetStyle();
 
     // light style from Pacôme Danhiez (user itamago) https://github.com/ocornut/imgui/pull/511#issuecomment-175719267
     style.Alpha = 1.0f;
@@ -60,6 +61,7 @@ void SetupImGuiStyle(ImGuiCustomStyle cs)
         style.Colors[ImGuiCol_C_Disabled] = ImVec4(0.137f * 0.5f, 0.271f * 0.5f, 0.427f * 0.5f, 1.0f);
         style.Colors[ImGuiCol_C_DisabledBg] = ImVec4(0.5f, 0.5f, 0.5f, 0.5f);
         style.Colors[ImGuiCol_C_DisabledText] = ImVec4(0.00f, 0.00f, 0.00f, 0.5f);
+        styleImplot3d.Colors[ImPlot3DCol_FrameBg] = ImVec4(0.00f, 0.00f, 0.00f, 1.00f);
 
         for (int i = 0; i <= ImGuiCol_COUNT; i++)
         {
@@ -86,6 +88,7 @@ void SetupImGuiStyle(ImGuiCustomStyle cs)
 
         break;
     case ImGuiCustomStyle::Light:
+
         style.Colors[ImGuiCol_Text] = ImVec4(0.00f, 0.00f, 0.00f, 1.00f);
         style.Colors[ImGuiCol_TextDisabled] = ImVec4(0.60f, 0.60f, 0.60f, 1.00f);
         style.Colors[ImGuiCol_WindowBg] = ImVec4(0.94f, 0.94f, 0.94f, 0.94f);
@@ -132,6 +135,7 @@ void SetupImGuiStyle(ImGuiCustomStyle cs)
         style.Colors[ImGuiCol_PlotHistogramHovered] = ImVec4(1.00f, 0.60f, 0.00f, 1.00f);
         style.Colors[ImGuiCol_TextSelectedBg] = ImVec4(0.26f, 0.59f, 0.98f, 0.35f);
         //style.Colors[ImGuiCol_ModalWindowDarkening] = ImVec4(0.20f, 0.20f, 0.20f, 0.35f);
+        styleImplot3d.Colors[ImPlot3DCol_FrameBg] = ImVec4(0.96f, 0.96f, 0.96f, 1.00f);
 
         style.Colors[ImGuiCol_C_Unsaved] = ImVec4(0.827f, 0.827f, 0.437f, 1.0f);
         style.Colors[ImGuiCol_C_UnsavedHovered] = ImVec4(0.827f * 1.3f, 0.827f * 1.3f, 0.437f * 1.3f, 1.0f);

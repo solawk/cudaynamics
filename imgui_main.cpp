@@ -1716,7 +1716,7 @@ int imgui_main(int, char**)
                         }
                         break;
                     case PhaseImplot3D:
-                        ImPlot3D::PushStyleColor(ImPlot3DCol_FrameBg, ImVec4(0.07f, 0.07f, 0.07f, 1.0f));
+                        //ImPlot3D::PushStyleColor(ImPlot3DCol_FrameBg, ImVec4(0.07f, 0.07f, 0.07f, 1.0f));
                         break;
                     case Phase2D:
                         plot->is3d = false;
@@ -1884,7 +1884,7 @@ int imgui_main(int, char**)
                     switch (subtype)
                     {
                     case PhaseImplot3D:
-                        ImPlot3D::PopStyleColor(1);
+                        //ImPlot3D::PopStyleColor(1);
                         ImPlot3D::EndPlot();
                         break;
                     case Phase3D:
