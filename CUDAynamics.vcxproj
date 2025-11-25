@@ -237,6 +237,7 @@
     <CudaCompile Include="analysis\period\period.cu" />
     <CudaCompile Include="gpu_variation.cu" />
     <CudaCompile Include="systems\bolshakov\bolshakov.cu" />
+    <CudaCompile Include="systems\b\b.cu" />
     <CudaCompile Include="systems\chen\chen.cu" />
     <CudaCompile Include="systems\dadras\dadras.cu" />
     <CudaCompile Include="systems\fitzhugh_nagumo\fitzhugh_nagumo.cu" />

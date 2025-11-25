@@ -345,6 +345,9 @@
     <CudaCompile Include="systems\hodgkin_huxley\hodgkin_huxley.cu">
       <Filter>systems</Filter>
     </CudaCompile>
+    <CudaCompile Include="systems\b\b.cu">
+      <Filter>systems</Filter>
+    </CudaCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="CUDAynamics.rc" />

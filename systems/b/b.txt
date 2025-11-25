@@ -1,0 +1,38 @@
+Name: B
+Steps: 1000
+Transient: 0
+// Defining step:
+// parameter/variable/discrete
+// Then, unless it is discrete, provide its name and define it like an attribute
+// If it is discrete, add nothing after
+Step type: parameter h Fixed 0.01 0.1 0.01 100 0.0 0.0
+// Compute on CUDAynamics launch: yes/no
+Execute on launch: yes
+// Ranging types:
+// Fixed (single <minimum value>)
+// Linear (<step count> values uniformly distributed between <minimum value> and <maximum value>, inclusively)
+// Step (values are picked from <minimum value> to <maximum value> with a step <step>, including minimum, including maximum if it ends up as a picked value)
+// Random (<step count> values randomly picked from <minimum value> to <maximum value>)
+// Normal (normal distribution of <step count> values, defined by <normal mean> and <normal deviation>
+//
+// Defining variables/parameters:
+// var/param <name> <ranging type> <minimum value> <maximum value> <step> <step count> <normal mean> <normal deviation>
+// If a variable/parameter is to be constrained (only shown when specific enums has specific options on):
+// constraint <enum0 name> <option of enum0> <enum1 name> <option of enum1> ...
+// Constraints are a disjunction clause ("display if constraint0 OR constraint1 OR constraint2 ...")
+var x Linear 0.1 3.0 1.0 5 0.0 0.0
+var y Linear 0.1 3.0 0.1 5 0.0 0.0
+var z Linear 0.1 3.0 0.1 5 0.0 0.0
+param a Fixed 5.0 50.0 0.1 200 0.0 0.0
+param b Fixed 5.0 50.0 0.1 200 0.0 0.0
+param symmetry Fixed 0.0 1.0 0.01 100 0.0 0.0
+// "symmetry" parameter will only be displayed if method equals VariableSymmetryCD
+constraint method VariableSymmetryCD
+// Defining enumerated parameters (useful for methods):
+// enum <name> <ranging type> <minimum value> <maximum value> <step> <step count> <normal mean> <normal deviation> <enum names, no spaces>
+enum method 1ExplicitEuler 0ExplicitMidpoint 0ExplicitRungeKutta4 0VariableSymmetryCD
+//
+// Defining settings for analysis functions:
+// analysis <name from "anfunc_names.cpp"> settings <values, must exactly match the settings struct>
+//analysis Minimum/maximum settings 1 2
+//analysis Largest Lyapunov exponent settings 0.01 30 0 0 1 2 -1

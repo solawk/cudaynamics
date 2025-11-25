@@ -779,6 +779,12 @@ int imgui_main(int, char**)
                 ImGui::Text(("(max " + std::to_string(stepsPerSecond) + " before stalling)").c_str());
                 TOOLTIP("Predicted speed that allows for seamless playback");
             }
+            else
+            {
+                ImGui::SameLine();
+                ImGui::Text("(computed in less than 1 ms)");
+                TOOLTIP("Predicted speed that allows for seamless playback");
+            }
 
             ImGui::PushItemWidth(200.0f);
             ImGui::DragInt("##Animation step", &(particleStep), 1.0f, 0, KERNEL.steps);
