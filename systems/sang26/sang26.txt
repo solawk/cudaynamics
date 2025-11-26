@@ -1,4 +1,4 @@
-Name: B
+Name: Sang 26 system
 Steps: 1000
 Transient: 0
 // Defining step:

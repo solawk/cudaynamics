@@ -27,4 +27,4 @@
 #include "systems/mixed/mixed.h"
 #include "systems/ostrovskii/ostrovskii.h"
 #include "systems/hodgkin_huxley/hodgkin_huxley.h"
-#include "systems/b/b.h"
+#include "systems/sang26/sang26.h"

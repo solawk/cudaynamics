@@ -345,7 +345,7 @@
     <CudaCompile Include="systems\hodgkin_huxley\hodgkin_huxley.cu">
       <Filter>systems</Filter>
     </CudaCompile>
-    <CudaCompile Include="systems\b\b.cu">
+    <CudaCompile Include="systems\sang26\sang26.cu">
       <Filter>systems</Filter>
     </CudaCompile>
   </ItemGroup>

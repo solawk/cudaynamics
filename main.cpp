@@ -38,7 +38,7 @@ void common_main()
     addKernel(mixed);
     addKernel(ostrovskii);
     addKernel(hodgkin_huxley);
-    addKernel(b);
+    addKernel(sang26);
 
     //selectKernel(kernels.begin()->first);
     selectKernel(lorenz);

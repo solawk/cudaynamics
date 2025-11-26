@@ -1,7 +1,7 @@
 #pragma once
 #include <kernels_common.h>
 
-#define name b
+#define name sang26
 
 const int THREADS_PER_BLOCK_(name) = 64;
 
