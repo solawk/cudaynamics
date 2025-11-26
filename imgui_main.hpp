@@ -55,6 +55,9 @@ void hiresShiftClickCompute(PlotWindow* window, HeatmapSizing* sizing, numb valu
 extern ImGuiCustomStyle appStyle;
 extern float dragChangeSpeed;
 extern bool preciseNumbDrags;
+extern bool CPU_mode_interactive;
+extern bool CPU_mode_hires;
+extern Kernel kernelNew;
 
 #define DONT_CLOSE_ON_CLICK_PUSH	ImGui::PushItemFlag(ImGuiItemFlags_AutoClosePopups, false);
 #define DONT_CLOSE_ON_CLICK_POP		ImGui::PopItemFlag();

@@ -22,7 +22,7 @@ bool spoilerParams = true;
 
 bool preciseNumbDrags = false;
 
-bool CPU_mode_interactive = true;
+bool CPU_mode_interactive = false;
 bool CPU_mode_hires = false;
 
 Computation computations[2];
@@ -741,16 +741,6 @@ int imgui_main(int, char**)
             POP_FRAME(3);
         }
 
-        bool tempCPUinter_mode = CPU_mode_interactive;
-        ImGui::Checkbox("Use CPU in interactive mode", &tempCPUinter_mode);
-        TOOLTIP("Use CPU with OpenMP instead of GPU with CUDA in non-Hi-Res mode");
-        CPU_mode_interactive = tempCPUinter_mode;
-
-        bool tempCPUhires_mode = CPU_mode_hires;
-        ImGui::Checkbox("Use CPU in Hi-Res mode", &tempCPUhires_mode);
-        TOOLTIP("Use CPU with OpenMP instead of GPU with CUDA in Hi-Res mode");
-        CPU_mode_hires = tempCPUhires_mode;
-
         variation = 0;
 
         ImGui::NewLine();
@@ -782,7 +772,7 @@ int imgui_main(int, char**)
             else
             {
                 ImGui::SameLine();
-                ImGui::Text("(computed in less than 1 ms)");
+                ImGui::Text("(pending)");
                 TOOLTIP("Predicted speed that allows for seamless playback");
             }
 
@@ -846,20 +836,6 @@ int imgui_main(int, char**)
                     }
                 }
             }
-
-            // Map continuous computing
-            popStyle = false;
-            if (kernelNew.mapWeight != KERNEL.mapWeight)
-            {
-                anyChanged = true;
-                PUSH_UNSAVED_FRAME;
-                popStyle = true;
-            }
-            float tempContinuousMaps = kernelNew.mapWeight;
-            ImGui::InputFloat("Map weight", &tempContinuousMaps);
-            kernelNew.mapWeight = tempContinuousMaps;
-            TOOLTIP("1.0 to create new map each buffer, 0.0 to continuously calculate the average, 0.0-1.0 defines the weight of each new map");
-            if (popStyle) POP_FRAME(3);
 
             ImGui::NewLine();
 
@@ -992,18 +968,6 @@ int imgui_main(int, char**)
             {
                 kernelNew.CopyFrom(&KERNEL);
             }
-        }
-
-        // Color style
-        ImGui::NewLine();
-        bool isDark = appStyle == ImGuiCustomStyle::Dark;
-        if (ImGui::Checkbox("Dark theme", &isDark))
-        {
-            if (isDark)
-                appStyle = ImGuiCustomStyle::Dark;
-            else
-                appStyle = ImGuiCustomStyle::Light;
-            SetupImGuiStyle(appStyle);
         }
 
         ImGui::End();
