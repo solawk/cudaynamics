@@ -954,6 +954,11 @@ int imgui_main(int, char**)
             {
                 prepareAndCompute(true); OrbitRedraw = true;
             }
+
+            if (ImGui::Button("Compute this variation"))
+            {
+                hiresShiftClickCompute();
+            }
         }
         if (computationHiresInProgress)
         {
@@ -2397,7 +2402,7 @@ int imgui_main(int, char**)
                                                 window->dragLineHiresPos = ImVec2(floor(plot->shiftClickLocation.x), floor(plot->shiftClickLocation.y));
                                             }
 
-                                            hiresShiftClickCompute(window, &sizing, valueX, valueY);
+                                            hiresShiftClickCompute();
                                         }
                                     }
 
@@ -2995,7 +3000,7 @@ void heatmapRangingSelection(PlotWindow* window, ImPlotPlot* plot, HeatmapSizing
     }
 }
 
-void hiresShiftClickCompute(PlotWindow* window, HeatmapSizing* sizing, numb valueX, numb valueY)
+void hiresShiftClickCompute()
 {
     kernelNew.CopyFrom(&kernelHiresComputed);
 
@@ -3028,32 +3033,6 @@ void hiresShiftClickCompute(PlotWindow* window, HeatmapSizing* sizing, numb valu
         }
         kernelNew.parameters[p].min = valueFromStep(kernelNew.parameters[p].min, kernelNew.parameters[p].step, attributeValueIndicesHires[kernelNew.VAR_COUNT + p]);
     }
-
-    /*
-    for (int i = 0; i < kernelNew.VAR_COUNT; i++) kernelNew.variables[i].rangingType = RT_None;
-    for (int i = 0; i < kernelNew.PARAM_COUNT; i++) if (kernelNew.parameters[i].rangingType != RT_Enum) kernelNew.parameters[i].rangingType = RT_None;
-
-    if (sizing->hmp->typeX == MDT_Variable)
-    {
-        kernelNew.variables[sizing->hmp->indexX].min = valueX;
-        kernelNew.variables[sizing->hmp->indexX].rangingType = RT_None;
-    }
-    else
-    {
-        kernelNew.parameters[sizing->hmp->indexX].min = valueX;
-        kernelNew.parameters[sizing->hmp->indexX].rangingType = RT_None;
-    }
-
-    if (sizing->hmp->typeY == MDT_Variable)
-    {
-        kernelNew.variables[sizing->hmp->indexY].min = valueY;
-        kernelNew.variables[sizing->hmp->indexY].rangingType = RT_None;
-    }
-    else
-    {
-        kernelNew.parameters[sizing->hmp->indexY].min = valueY;
-        kernelNew.parameters[sizing->hmp->indexY].rangingType = RT_None;
-    }*/
 
     autoLoadNewParams = false; // Otherwise the map immediately starts drawing the cut region
     computeAfterShiftSelect = true;

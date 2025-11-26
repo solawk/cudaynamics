@@ -50,7 +50,7 @@ void listVariable(int i);
 void listParameter(int i);
 void listEnum(int i);
 void heatmapRangingSelection(PlotWindow* window, ImPlotPlot* plot, HeatmapSizing* sizing, bool isHires);
-void hiresShiftClickCompute(PlotWindow* window, HeatmapSizing* sizing, numb valueX, numb valueY);
+void hiresShiftClickCompute();
 
 extern ImGuiCustomStyle appStyle;
 extern float dragChangeSpeed;
