@@ -103,6 +103,7 @@ std::string rangingDescriptions[] =
     "Uniform random distribution of values between 'min' and 'max'",
     "Normal random distribution of values around 'mu' with standard deviation 'sigma'"
 };
+std::string plottypes[] = { "Time series", "3D Phase diagram", "2D Phase diagram", "Orbit diagram", "Heatmap", "RGB Heatmap", "Index diagram" };
 
 bool rangingWindowEnabled = true;
 bool graphBuilderWindowEnabled = true;
@@ -985,7 +986,6 @@ int imgui_main(int, char**)
             FullscreenButtonPressLogic(&graphBuilderWindow, ImGui::GetCurrentWindow());
 
             // Type
-            std::string plottypes[] = { "Time series", "3D Phase diagram", "2D Phase diagram", "Orbit diagram", "Heatmap", "RGB Heatmap", "Index diagram"};
             ImGui::Text("Plot type ");
             ImGui::SameLine();
             ImGui::PushItemWidth(250.0f);
@@ -1156,7 +1156,7 @@ int imgui_main(int, char**)
 
             if (ImGui::Button("Create graph"))
             {
-                PlotWindow plotWindow = PlotWindow(uniqueIds++, plottypes[plotType], true);
+                PlotWindow plotWindow = PlotWindow(uniqueIds++, "Plot_", true);
                 plotWindow.type = plotType;
                 plotWindow.newWindow = true;
 
@@ -1259,7 +1259,7 @@ int imgui_main(int, char**)
             }
 
             style.WindowMenuButtonPosition = ImGuiDir_None;
-            std::string windowName = window->name + " " + std::to_string(window->id);
+            std::string windowName = plottypes[window->type] + " " + std::to_string(window->id);
             std::string plotName = windowName + "_plot";
 
             if (window->newWindow)
@@ -1604,7 +1604,12 @@ int imgui_main(int, char**)
                     }
                 }
 
-                if (window->whiteBg) { ImPlot::PushStyleColor(ImPlotCol_PlotBg, ImVec4(1.0f, 1.0f, 1.0f, 1.0f)); ImPlot::PushStyleColor(ImPlotCol_AxisGrid, ImVec4(0.2f, 0.2f, 0.2f, 1.0f)); }
+                if (window->whiteBg) 
+                { 
+                    ImPlot::PushStyleColor(ImPlotCol_PlotBg, ImVec4(1.0f, 1.0f, 1.0f, 1.0f)); 
+                    ImPlot::PushStyleColor(ImPlotCol_AxisGrid, ImVec4(0.2f, 0.2f, 0.2f, 1.0f));
+                    ImPlot3D::PushStyleColor(ImPlot3DCol_PlotBg, ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
+                }
 
                 axisFlags |= ImPlotAxisFlags_NoGridLines | ImPlotAxisFlags_NoTickMarks | ImPlotAxisFlags_NoTickLabels;
                 bool isPlotBegun;
@@ -1882,7 +1887,11 @@ int imgui_main(int, char**)
                         break;
                     }
                 }
-                if (window->whiteBg) ImPlot::PopStyleColor(2);
+                if (window->whiteBg)
+                {
+                    ImPlot::PopStyleColor(2);
+                    ImPlot3D::PopStyleColor(1);
+                }
                 break;
 
                 case Orbit:
