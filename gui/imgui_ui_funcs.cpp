@@ -18,7 +18,7 @@ extern float attributeTableWidths[3];
 
 #define ATTR_BEGIN  /*ImGui::SameLine();*/ popStyle = false; \
     if (hiresHeatmapWindow == nullptr) { if (isChanged && !autoLoadNewParams) { PUSH_UNSAVED_FRAME; popStyle = true; } } \
-    else { PUSH_HIRES_FRAME; popStyle = true; }
+    else { /*PUSH_HIRES_FRAME; popStyle = true;*/ }
 #define ATTR_END    /*ImGui::PopItemWidth();*/ if (popStyle) POP_FRAME(3);
 
 void listAttrRanging(Attribute* attr, bool isChanged)

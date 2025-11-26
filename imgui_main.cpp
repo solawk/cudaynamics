@@ -25,6 +25,10 @@ bool preciseNumbDrags = false;
 bool CPU_mode_interactive = false;
 bool CPU_mode_hires = false;
 
+ImVec4 cudaColor = ImVec4(0.40f, 0.56f, 0.18f, 1.00f);
+ImVec4 openmpColor = ImVec4(0.03f, 0.45f, 0.49f, 1.00f);
+ImVec4 hiresColor = ImVec4(0.50f, 0.10f, 0.30f, 1.00f);
+
 Computation computations[2];
 Computation computationHires;
 int playedBufferIndex = 0; // Buffer currently shown
@@ -425,7 +429,6 @@ int imgui_main(int, char**)
 
     //io.Fonts->AddFontFromFileTTF("UbuntuMono-R.ttf", 24.0f);
     FontLoading(io);
-    SetupImGuiStyle(appStyle);
 
     // Main loop
     bool work = true;
@@ -480,12 +483,13 @@ int imgui_main(int, char**)
     while (work)
     {
         IMGUI_WORK_BEGIN;
+        SetupImGuiStyle(appStyle, cudaColor, hiresColor, openmpColor, HIRES_ON, !HIRES_ON ? CPU_mode_interactive : CPU_mode_hires);
 
         if (fontNotDefault) ImGui::PushFont(GetFont(GlobalFontSettings.family, GlobalFontSettings.size, GlobalFontSettings.isBold, GlobalFontSettings.isItalic));
 
         timeElapsed += frameTime;
         float breath = (cosf(timeElapsed * 6.0f) + 1.0f) / 2.0f;
-        float buttonBreathMult = 1.2f + breath * 0.8f;
+        float buttonBreathMult = 0.6f + breath * 0.3f;
         bool noComputedData = computations[0].marshal.trajectory == nullptr;
 
         if (particleStep > computedSteps) particleStep = computedSteps;
@@ -934,7 +938,9 @@ int imgui_main(int, char**)
 
         if (!HIRES_ON)
         {
-            if (playBreath) ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.137f * buttonBreathMult, 0.271f * buttonBreathMult, 0.427f * buttonBreathMult, 1.0f));
+            ImVec4 buttonColor = ImGui::GetStyleColorVec4(ImGuiCol_Button);
+            if (playBreath) ImGui::PushStyleColor(ImGuiCol_Button, 
+                ImVec4(buttonColor.x * buttonBreathMult, buttonColor.y * buttonBreathMult, buttonColor.z * buttonBreathMult, 1.0f));
             if (ImGui::Button("= COMPUTE =") || (KERNEL.executeOnLaunch && !executedOnLaunch) || computeAfterShiftSelect)
             {
                 prepareAndCompute(false); OrbitRedraw = true;
@@ -1264,7 +1270,7 @@ int imgui_main(int, char**)
             }
 
             style.WindowMenuButtonPosition = ImGuiDir_None;
-            std::string windowName = plottypes[window->type] + " " + std::to_string(window->id);
+            std::string windowName = "Plot "/*plottypes[window->type]*/ + std::to_string(window->id) + "##" + window->name + std::to_string(window->id);
             std::string plotName = windowName + "_plot";
 
             if (window->newWindow)

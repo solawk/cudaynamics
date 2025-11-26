@@ -12,8 +12,12 @@ void mainWindowMenu()
             {
                 if (isDark) appStyle = ImGuiCustomStyle::Dark;
                 else appStyle = ImGuiCustomStyle::Light;
-                SetupImGuiStyle(appStyle);
+                //SetupImGuiStyle(appStyle);
             }
+
+            ImGui::ColorEdit4("##cudaColorPicker", (float*)(&cudaColor)); ImGui::SameLine(); ImGui::Text("CUDA mode color");
+            ImGui::ColorEdit4("##openmpColorPicker", (float*)(&openmpColor)); ImGui::SameLine(); ImGui::Text("OpenMP mode color");
+            ImGui::ColorEdit4("##hiresColorPicker", (float*)(&hiresColor)); ImGui::SameLine(); ImGui::Text("Hi-Res mode color");
 
             ImGui::SeparatorText("Font");
             FontMenu(nullptr);

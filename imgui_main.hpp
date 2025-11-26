@@ -58,6 +58,9 @@ extern bool preciseNumbDrags;
 extern bool CPU_mode_interactive;
 extern bool CPU_mode_hires;
 extern Kernel kernelNew;
+extern ImVec4 cudaColor;
+extern ImVec4 openmpColor;
+extern ImVec4 hiresColor;
 
 #define DONT_CLOSE_ON_CLICK_PUSH	ImGui::PushItemFlag(ImGuiItemFlags_AutoClosePopups, false);
 #define DONT_CLOSE_ON_CLICK_POP		ImGui::PopItemFlag();
