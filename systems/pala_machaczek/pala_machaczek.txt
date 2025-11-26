@@ -1,11 +1,11 @@
-Name: Sang cos system
-Steps: 1000
-Transient: 0
+Name: Pala-Machaczek system
+Steps: 200000
+Transient: 400000
 // Defining step:
 // parameter/variable/discrete
 // Then, unless it is discrete, provide its name and define it like an attribute
 // If it is discrete, add nothing after
-Step type: parameter h Fixed 0.01 0.1 0.01 100 0.0 0.0
+Step type: parameter h Fixed 0.005 0.1 0.01 100 0.0 0.0
 // Compute on CUDAynamics launch: yes/no
 Execute on launch: yes
 // Ranging types:
@@ -17,23 +17,17 @@ Execute on launch: yes
 //
 // Defining variables/parameters:
 // var/param <name> <ranging type> <minimum value> <maximum value> <step> <step count> <normal mean> <normal deviation>
-var x Linear -10.0 10.0 1.0 20 0.0 0.0
-var y Linear -10.0 10.0 1.0 20 0.0 0.0
-var z Linear -5.0 5.0 1.0 10 0.0 0.0
-param a Fixed 2.5 5.0 0.1 250 0.0 0.0
-param b Fixed 1.0 2.0 0.1 250 0.0 0.0
-param c Fixed 0.01 0.05 0.1 0 0.0 0.0
-param mu Fixed 1.0 2.0 0.1 0 0.0 0.0
-param omega Fixed 1.85 100.0 0.1 0 0.0 0.0
-param symmetry Fixed 0.0 1.0 0.01 100 0.0 0.0
+var x Fixed 0.5 3.0 1.0 50 0.0 0.0
+var y Fixed 4.0 2.5 0.1 50 0.0 0.0
+var z Fixed 1.0 1.5 0.1 0 0.0 0.0
+param R Linear 5.0 25.0 0.1 10 0.0 0.0
+param L Linear 0.16 1.45 0.1 10 0.0 0.0
+param C Fixed 3.14 29.0 0.1 0 0.0 0.0
+param m Fixed -0.666666667 29.0 0.1 0 0.0 0.0
 // Defining enumerated parameters (useful for methods):
 // enum <name> <ranging type> <minimum value> <maximum value> <step> <step count> <normal mean> <normal deviation> <enum names, no spaces>
-enum method 0ExplicitEuler 0ExplicitMidpoint 1ExplicitRungeKutta4 0VariableSymmetryCD
 //
-// Defining maps:
-// map <name> <map settings count (inside its struct)> <map settings, beginning with "n" for numbs and "i" for ints>
-map LLE 1 7 r n0.01 L i50 variableToDeflect i0 norm0 i0 norm1 i1 norm2 i2 norm3 i-1
-map MAX 1 1 i i0
-map MeanInterval 1 5 analysedVariable i2 MaxAllowedValue n1e4 epsFXP n1e-3 timeFractionFXP n0.05 peakThreshold n-inf i1
-map MeanPeak 1 0 i1
-map Period 1 3 epsDBSCAN n1.0 CoefIntervals n15.0 CoefPeaks n5.0 
+// Defining settings for analysis functions:
+// analysis <name from "anfunc_names.cpp"> settings <values, must exactly match the settings struct>
+analysis Minimum/maximum settings 1 2
+analysis Largest Lyapunov exponent settings 0.01 30 0 0 1 2 -1

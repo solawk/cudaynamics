@@ -301,16 +301,7 @@
     <CudaCompile Include="systems\sprott14\sprott14.cu">
       <Filter>systems</Filter>
     </CudaCompile>
-    <CudaCompile Include="systems\sprottJm\sprottJm.cu">
-      <Filter>systems</Filter>
-    </CudaCompile>
-    <CudaCompile Include="systems\sang\sang.cu">
-      <Filter>systems</Filter>
-    </CudaCompile>
     <CudaCompile Include="systems\rabinovich_fabrikant\rabinovich_fabrikant.cu">
-      <Filter>systems</Filter>
-    </CudaCompile>
-    <CudaCompile Include="systems\vnm\vnm.cu">
       <Filter>systems</Filter>
     </CudaCompile>
     <CudaCompile Include="systems\bolshakov\bolshakov.cu">
@@ -346,6 +337,12 @@
       <Filter>systems</Filter>
     </CudaCompile>
     <CudaCompile Include="systems\sang26\sang26.cu">
+      <Filter>systems</Filter>
+    </CudaCompile>
+    <CudaCompile Include="systems\pala_machaczek\pala_machaczek.cu">
+      <Filter>systems</Filter>
+    </CudaCompile>
+    <CudaCompile Include="systems\sang25\sang25.cu">
       <Filter>systems</Filter>
     </CudaCompile>
   </ItemGroup>

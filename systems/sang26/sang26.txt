@@ -1,4 +1,4 @@
-Name: Sang 26 system
+Name: Sang 26 sin system
 Steps: 1000
 Transient: 0
 // Defining step:

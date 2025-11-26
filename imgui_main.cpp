@@ -1372,7 +1372,7 @@ int imgui_main(int, char**)
                     }
 
                     ImGui::TableSetColumnIndex(1);
-                    if (ImGui::Button(("<=>##" + windowName + "_flipAxesButton").c_str()))
+                    if (ImGui::Button(("<>##" + windowName + "_flipAxesButton").c_str()))
                     {
                         int tempIndex = heatmap->indexX;
                         MapDimensionType tempMDT = heatmap->typeX;

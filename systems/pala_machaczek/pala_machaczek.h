@@ -1,9 +1,9 @@
 #pragma once
 #include <kernels_common.h>
 
-#define name sang
+#define name pala_machaczek
 
-const int THREADS_PER_BLOCK_(name) = 64;
+const int THREADS_PER_BLOCK_(name) = 32;
 
 __global__ void gpu_wrapper_(name)(Computation* data, uint64_t variation);
 

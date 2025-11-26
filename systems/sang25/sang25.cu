@@ -1,6 +1,6 @@
-﻿#include "sang.h"
+﻿#include "sang25.h"
 
-#define name sang
+#define name sang25
 
 namespace attributes
 {

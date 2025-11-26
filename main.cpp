@@ -25,13 +25,11 @@ void common_main()
     addKernel(langford);
     addKernel(rossler);
     addKernel(sprott14);
-    addKernel(sprottJm);
     addKernel(three_scroll);
     addKernel(wilson);
     addKernel(rabinovich_fabrikant);
-    addKernel(sang);
+    addKernel(sang25);
     addKernel(thomas);
-    addKernel(vnm);
     addKernel(fitzhugh_nagumo);
     addKernel(bolshakov);
     addKernel(mishchenko);
@@ -39,6 +37,7 @@ void common_main()
     addKernel(ostrovskii);
     addKernel(hodgkin_huxley);
     addKernel(sang26);
+    addKernel(pala_machaczek);
 
     //selectKernel(kernels.begin()->first);
     selectKernel(lorenz);

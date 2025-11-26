@@ -256,15 +256,14 @@
     <CudaCompile Include="systems\mishchenko\mishchenko.cu" />
     <CudaCompile Include="systems\mixed\mixed.cu" />
     <CudaCompile Include="systems\ostrovskii\ostrovskii.cu" />
+    <CudaCompile Include="systems\pala_machaczek\pala_machaczek.cu" />
     <CudaCompile Include="systems\rabinovich_fabrikant\rabinovich_fabrikant.cu" />
     <CudaCompile Include="systems\rossler\rossler.cu" />
+    <CudaCompile Include="systems\sang25\sang25.cu" />
     <CudaCompile Include="systems\sang26\sang26.cu" />
-    <CudaCompile Include="systems\sang\sang.cu" />
     <CudaCompile Include="systems\sprott14\sprott14.cu" />
-    <CudaCompile Include="systems\sprottJm\sprottJm.cu" />
     <CudaCompile Include="systems\thomas\thomas.cu" />
     <CudaCompile Include="systems\three_scroll\three_scroll.cu" />
-    <CudaCompile Include="systems\vnm\vnm.cu" />
     <CudaCompile Include="systems\wilson\wilson.cu" />
     <CudaCompile Include="main.cu" />
   </ItemGroup>
