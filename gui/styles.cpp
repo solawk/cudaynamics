@@ -126,7 +126,7 @@ void SetupImGuiStyle(ImGuiCustomStyle cs, ImVec4 normal, ImVec4 hires, ImVec4 cp
 		style.Colors[ImGuiCol_FrameBgHovered] = tcol(theme, 0.26f, 0.59f, 0.98f, 0.40f);
 		style.Colors[ImGuiCol_FrameBgActive] = tcol(theme, 0.26f, 0.59f, 0.98f, 0.67f);
 		style.Colors[ImGuiCol_Tab] = style.Colors[ImGuiCol_TabDimmed] = style.Colors[ImGuiCol_TabDimmedSelected] = style.Colors[ImGuiCol_TabDimmedSelectedOverline] =
-			style.Colors[ImGuiCol_TabSelected] = style.Colors[ImGuiCol_TabSelectedOverline] = theme;
+			style.Colors[ImGuiCol_TabSelected] = style.Colors[ImGuiCol_TabSelectedOverline] = tcol(theme, 0.21f, 0.48f, 0.80f, 1.00f);
 		style.Colors[ImGuiCol_TabHovered] = tcol(theme, 0.26f, 0.59f, 0.98f, 0.80f);
 		style.Colors[ImGuiCol_CheckMark] = tcol(theme, 0.26f, 0.59f, 0.98f, 1.00f);
 		style.Colors[ImGuiCol_SliderGrab] = tcol(theme, 0.24f, 0.52f, 0.88f, 1.00f);
