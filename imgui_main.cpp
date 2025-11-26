@@ -747,11 +747,15 @@ int imgui_main(int, char**)
         if (!HIRES_ON)
         {
             //enabledParticles = true;
-            bool tempParticlesMode = enabledParticles;
+            /*bool tempParticlesMode = enabledParticles;
             if (ImGui::Checkbox("Orbits/Particles", &(tempParticlesMode)))
             {
                 enabledParticles = !enabledParticles;
-            }
+            }*/
+
+            if (ImGui::RadioButton("Orbits", !enabledParticles))    enabledParticles = false;
+            ImGui::SameLine();
+            if (ImGui::RadioButton("Particles", enabledParticles))  enabledParticles = true;
 
             // PARTICLES MODE
             ImGui::PushItemWidth(200.0f);
@@ -1152,7 +1156,7 @@ int imgui_main(int, char**)
 
             if (ImGui::Button("Create graph"))
             {
-                PlotWindow plotWindow = PlotWindow(uniqueIds++, plotNameBuffer, true);
+                PlotWindow plotWindow = PlotWindow(uniqueIds++, plottypes[plotType], true);
                 plotWindow.type = plotType;
                 plotWindow.newWindow = true;
 
@@ -1255,7 +1259,7 @@ int imgui_main(int, char**)
             }
 
             style.WindowMenuButtonPosition = ImGuiDir_None;
-            std::string windowName = window->name + std::to_string(window->id);
+            std::string windowName = window->name + " " + std::to_string(window->id);
             std::string plotName = windowName + "_plot";
 
             if (window->newWindow)
