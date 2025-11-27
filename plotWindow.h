@@ -52,6 +52,7 @@ public:
 
 	HeatmapProperties hmp;
 	HeatmapProperties hireshmp;
+	bool isDelta;
 	
 	ImVec2 dragLineHiresPos;
 
@@ -120,6 +121,7 @@ public:
 		isImplot3d = false;
 		drawAllTrajectories = false;
 
+		isDelta = false;
 		dragLineHiresPos = ImVec2(0.0f, 0.0f);
 
 		showAxis = true;

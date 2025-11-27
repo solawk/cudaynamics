@@ -250,6 +250,13 @@ void plotWindowMenu_HeatmapPlot(PlotWindow* window)
 
 		plotWindowMenu_CommonPlot(window, windowName);
 
+		bool tempIsDelta = window->isDelta; if (ImGui::Checkbox(("##" + windowName + "isDelta").c_str(), &tempIsDelta))
+		{
+			window->isDelta = !window->isDelta;
+			heatmap->areValuesDirty = true;
+		}
+		ImGui::SameLine(); ImGui::Text("Show delta");
+
 		bool tempShowHeatmapValues = heatmap->showHeatmapValues; if (ImGui::Checkbox(("##" + windowName + "showHeatmapValues").c_str(), &tempShowHeatmapValues)) heatmap->showHeatmapValues = !heatmap->showHeatmapValues;
 		ImGui::SameLine(); ImGui::Text("Show values");
 

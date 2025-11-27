@@ -20,8 +20,12 @@ struct Marshal
 	// Attribute step indices for each variation
 	int* stepIndices;
 
-	// Map data
+	// Map (analysis index) data
 	numb* maps;
+
+	// Analysis index values delta (for delta and decay plots)
+	numb* indecesDelta;
+	bool indecesDeltaExists;
 
 	// Ranging attribute combinations count
 	int totalVariations;	

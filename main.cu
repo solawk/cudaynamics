@@ -397,6 +397,18 @@ void setupAnFuncs(Computation* data)
     if (CUDA_marshal.totalVariations > 1 && CUDA_marshal.maps == nullptr)
     {
         CUDA_marshal.maps = new numb[CUDA_marshal.totalVariations * CUDA_marshal.totalMapValuesPerVariation];
+        CUDA_marshal.indecesDelta = new numb[CUDA_marshal.totalVariations * CUDA_marshal.totalMapValuesPerVariation];
+    }
+
+    // Calculate the delta if it's not the first launch
+    if (data->isFirst)
+    {
+        CUDA_marshal.indecesDeltaExists = false;
+    }
+    else
+    {
+        for (uint64_t v = 0; v < CUDA_marshal.totalVariations * CUDA_marshal.totalMapValuesPerVariation; v++) CUDA_marshal.indecesDelta[v] = data->otherMarshal->maps[v] - CUDA_marshal.maps[v];
+        CUDA_marshal.indecesDeltaExists = true;
     }
 
     // Copy previous map values if present

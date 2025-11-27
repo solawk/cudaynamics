@@ -2251,10 +2251,13 @@ int imgui_main(int, char**)
                     int* var =                      isHires ? &variationHires : &variation;
                     int* prevVar =                  isHires ? &prevVariationHires : &prevVariation;
 
+                    bool showLegend = heatmap->showLegend;
+
                     if (!isMC)
                     {
                         if (!indices[mapIndex].enabled) { ImGui::Text(("Index " + indices[mapIndex].name + " has been disabled").c_str()); break; }
                         if (!index2port(cmp->marshal.kernel.analyses, mapIndex)->used) { ImGui::Text(("Index " + indices[mapIndex].name + " has not been computed").c_str()); break; }
+                        if (window->isDelta && !cmp->marshal.indecesDeltaExists) { ImGui::Text("Delta not computed yet"); break; }
                     }
 
                     Attribute* axisX = heatmap->typeX == MDT_Variable ? &(krnl->variables[heatmap->indexX]) : &(krnl->parameters[heatmap->indexX]);
@@ -2270,12 +2273,12 @@ int imgui_main(int, char**)
                         break;
                     }
 
-                    if (ImGui::BeginTable((plotName + "_table").c_str(), heatmap->showLegend ? 2 : 1, ImGuiTableFlags_Reorderable, ImVec2(-1, 0)))
+                    if (ImGui::BeginTable((plotName + "_table").c_str(), showLegend ? 2 : 1, ImGuiTableFlags_Reorderable, ImVec2(-1, 0)))
                     {
                         axisFlags = 0;
 
                         ImGui::TableSetupColumn(nullptr);
-                        if (heatmap->showLegend)
+                        if (showLegend)
                         {
                             ImGui::TableSetupColumn(nullptr, ImGuiTableColumnFlags_WidthFixed, 170.0f * (isMC ? 3 : 1));
                         }
@@ -2498,7 +2501,8 @@ int imgui_main(int, char**)
                                 {
                                     if (!isMC)
                                     {
-                                        extractMap(cmp->marshal.maps + (index2port(cmp->marshal.kernel.analyses, mapIndex)->offset + heatmap->values.mapValueIndex) * cmp->marshal.totalVariations,
+                                        extractMap((!window->isDelta ? cmp->marshal.maps : cmp->marshal.indecesDelta)
+                                            + (index2port(cmp->marshal.kernel.analyses, mapIndex)->offset + heatmap->values.mapValueIndex) * cmp->marshal.totalVariations,
                                             heatmap->values.valueBuffer, heatmap->indexBuffer, &(avi->data()[0]),
                                             sizing.hmp->typeX == MDT_Parameter ? sizing.hmp->indexX + krnl->VAR_COUNT : sizing.hmp->indexX,
                                             sizing.hmp->typeY == MDT_Parameter ? sizing.hmp->indexY + krnl->VAR_COUNT : sizing.hmp->indexY,
@@ -2682,9 +2686,9 @@ int imgui_main(int, char**)
 
                         ImPlot::PopColormap();
 
-                        ImGui::TableSetColumnIndex(1);
-                        if (heatmap->showLegend)
+                        if (showLegend)
                         {
+                            ImGui::TableSetColumnIndex(1);
                             if (isMC)
                             {
                                 if (ImGui::BeginTable((plotName + "_rgbColormapsTable").c_str(), 3, ImGuiTableFlags_Reorderable, ImVec2(-1, 0)))
