@@ -1098,24 +1098,12 @@ int imgui_main(int, char**)
                     ImGui::SameLine();
                     if (ImGui::BeginCombo(("##Plot builder var " + std::to_string(sv + 1)).c_str(), selectedPlotVarsOrbitVer[sv] > -1 ? KERNEL.variables[selectedPlotVarsOrbitVer[sv]].name.c_str() : "-"))
                     {
-                        for (int v = (sv > 0 ? -1 : 0); v < KERNEL.VAR_COUNT; v++)
+                        for (int v = 0 ; v < KERNEL.VAR_COUNT; v++)
                         {
                             bool isSelected = selectedPlotVarsOrbitVer[sv] == v;
                             ImGuiSelectableFlags selectableFlags = 0;
-
-                            if (v == -1)
-                            {
-                                if (sv == 0 && (selectedPlotVarsOrbitVer[1] > -1 || selectedPlotVarsOrbitVer[2] > -1)) selectableFlags = ImGuiSelectableFlags_Disabled;
-                                if (sv == 1 && (selectedPlotVarsOrbitVer[2] > -1)) selectableFlags = ImGuiSelectableFlags_Disabled;
-                                if (ImGui::Selectable("-", isSelected, selectableFlags)) selectedPlotVarsOrbitVer[sv] = -1;
-                            }
-                            else
-                            {
-                                if (sv == 1 && selectedPlotVarsOrbitVer[0] == -1) selectableFlags = ImGuiSelectableFlags_Disabled;
-                                if (sv == 2 && selectedPlotVarsOrbitVer[1] == -1) selectableFlags = ImGuiSelectableFlags_Disabled;
-                                if (v == selectedPlotVarsOrbitVer[(sv + 1) % 3] || v == selectedPlotVarsOrbitVer[(sv + 2) % 3]) selectableFlags = ImGuiSelectableFlags_Disabled;
-                                if (ImGui::Selectable(v > -1 ? KERNEL.variables[v].name.c_str() : "-", isSelected, selectableFlags)) selectedPlotVarsOrbitVer[sv] = v;
-                            }
+                            if (ImGui::Selectable(v > -1 ? KERNEL.variables[v].name.c_str() : "-", isSelected, selectableFlags)) selectedPlotVarsOrbitVer[sv] = v;
+                            
                         }
                         ImGui::EndCombo();
                     }
@@ -2386,7 +2374,6 @@ int imgui_main(int, char**)
                                             break;
                                         }
                                     }
-
                                     if (isHires)
                                     {
                                         if (plot->shiftClicked && plot->shiftClickLocation.x != 0.0)
@@ -2416,6 +2403,8 @@ int imgui_main(int, char**)
                                     {
                                         heatmapRangingSelection(window, plot, &sizing, isHires);
                                     }
+
+                                    
                                 }
                                 /*else
                                 {
@@ -2590,15 +2579,37 @@ int imgui_main(int, char**)
                                 {
                                     bool ret = LoadTextureFromRaw(&(heatmap->pixelBuffer), sizing.xSize, sizing.ySize, (ID3D11ShaderResourceView**)&(heatmap->texture), g_pd3dDevice);
                                     IM_ASSERT(ret);
+
                                 }
+                                
 
                                 ImPlotPoint from = heatmap->showActualDiapasons ? ImPlotPoint(sizing.minX, sizing.maxY + sizing.stepY) : ImPlotPoint(0, sizing.ySize);
                                 ImPlotPoint to = heatmap->showActualDiapasons ? ImPlotPoint(sizing.maxX + sizing.stepX, sizing.minY) : ImPlotPoint(sizing.xSize, 0);
 
                                 ImPlot::SetupAxes(sizing.hmp->typeX == MDT_Parameter ? krnl->parameters[sizing.hmp->indexX].name.c_str() : krnl->variables[sizing.hmp->indexX].name.c_str(),
                                     sizing.hmp->typeY == MDT_Parameter ? krnl->parameters[sizing.hmp->indexY].name.c_str() : krnl->variables[sizing.hmp->indexY].name.c_str());
+
                                 ImPlot::PlotImage(("Map " + std::to_string(mapIndex) + "##" + plotName + std::to_string(0)).c_str(), (ImTextureID)(heatmap->texture),
                                     from, to, ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f), ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
+
+                                if (ImGui::IsMouseDown(0) && ImGui::IsKeyPressed(ImGuiMod_Shift) && ImGui::IsMouseHoveringRect(plot->PlotRect.Min, plot->PlotRect.Max) && plot->ContextLocked || plot->shiftClicked) {
+                                    numb MousePosX = (numb)ImPlot::GetPlotMousePos().x;
+                                    if (axisX->min > MousePosX)sizing.hmp->typeX == MDT_Variable ? attributeValueIndices[sizing.hmp->indexX] = 0 : attributeValueIndices[sizing.hmp->indexX + krnl->VAR_COUNT] = 0;
+                                    else if (axisX->max < MousePosX)sizing.hmp->typeX == MDT_Variable ? attributeValueIndices[sizing.hmp->indexX] = axisX->stepCount - 1 : attributeValueIndices[sizing.hmp->indexX + krnl->VAR_COUNT] = axisX->stepCount - 1;
+                                    else {
+                                        numb NotRoundedIndex = (MousePosX - axisX->min) / (axisX->max - axisX->min) * axisX->stepCount - 1.5;
+                                        int index = static_cast<int>(std::round(NotRoundedIndex)); if (index > axisX->stepCount - 1)index = axisX->stepCount - 1;
+                                        sizing.hmp->typeX == MDT_Variable ? attributeValueIndices[sizing.hmp->indexX] = index : attributeValueIndices[sizing.hmp->indexX + krnl->VAR_COUNT] = index;
+                                    }
+                                    numb MousePosY = (numb)ImPlot::GetPlotMousePos().y;
+                                    if (axisY->min > MousePosY)sizing.hmp->typeY == MDT_Variable ? attributeValueIndices[sizing.hmp->indexY] = 0 : attributeValueIndices[sizing.hmp->indexY + krnl->VAR_COUNT] = 0;
+                                    else if (axisY->max < MousePosY)sizing.hmp->typeY == MDT_Variable ? attributeValueIndices[sizing.hmp->indexY] = axisY->stepCount - 1 : attributeValueIndices[sizing.hmp->indexY + krnl->VAR_COUNT] = axisY->stepCount - 1;
+                                    else {
+                                        numb NotRoundedIndex = (MousePosY - axisY->min) / (axisY->max - axisY->min) * axisY->stepCount;
+                                        int index = static_cast<int>(std::round(NotRoundedIndex)) -1; if (index > axisY->stepCount - 1)index = axisY->stepCount - 1;
+                                        sizing.hmp->typeY == MDT_Variable ? attributeValueIndices[sizing.hmp->indexY] = index : attributeValueIndices[sizing.hmp->indexY + krnl->VAR_COUNT] = index;
+                                    }
+                                }
 
                                 // Value labels
                                 if (sizing.cutWidth > 0 && sizing.cutHeight > 0) // If there's anything to be shown in the plot
