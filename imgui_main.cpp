@@ -438,7 +438,7 @@ int imgui_main(int, char**)
 
     PlotType plotType = Series;
     int selectedPlotVars[3]; selectedPlotVars[0] = 0; for (int i = 1; i < 3; i++) selectedPlotVars[i] = -1;
-    int selectedPlotVarsOrbitVer[3]; selectedPlotVars[0] = 0; for (int i = 1; i < 3; i++) selectedPlotVars[i] = -1;
+    int selectedPlotVarsOrbitVer[3]; selectedPlotVars[0] = 0; for (int i = 1; i < 3; i++) selectedPlotVarsOrbitVer[i] = -1;
     std::set<int> selectedPlotVarsSet;
     std::set<int> selectedPlotMapsSet;
     int selectedPlotMap = 0;
