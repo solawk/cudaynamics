@@ -17,7 +17,7 @@ struct DBSCAN_Settings : AbstractAnalysisSettingsStruct
     numb timeFractionFXP;
     numb peakThreshold;
 
-    Port periodicity, meanPeak, meanInterval;
+    Port periodicity, minimumPeak, minimumInterval, meanPeak, meanInterval, maximumPeak, maximumInterval;
 
     DBSCAN_Settings()
     {
@@ -30,7 +30,7 @@ struct DBSCAN_Settings : AbstractAnalysisSettingsStruct
         timeFractionFXP = (numb)0.05;
         peakThreshold = (numb)-INFINITY;
 
-        periodicity = meanPeak = meanInterval = Port();
+        periodicity = meanPeak = meanInterval = minimumPeak = maximumPeak = minimumInterval = maximumInterval = Port();
     }
 
     void DisplaySettings(std::vector<Attribute>& variables)

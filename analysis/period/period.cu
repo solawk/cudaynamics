@@ -143,7 +143,90 @@ __host__ __device__ void Period(Computation* data, uint64_t variation, void(*fin
     if (peakCount == 0)returnZero = true;
     //
     numb mapValue;
-    
+    if (CUDA_kernel.analyses.PERIOD.minimumPeak.used) {
+        numb minPeakValue = INFINITY;
+        for (int i = 0; i < peakCount; i++) {
+            if (peakAmplitudes[i] < minPeakValue)minPeakValue = peakAmplitudes[i];
+        }
+        mapValue = minPeakValue;
+        if (CUDA_kernel.mapWeight == 0.0f)
+        {
+            numb existingValue = CUDA_marshal.maps[indexPosition(settings.minimumPeak.offset, 0)] * data->bufferNo;
+            CUDA_marshal.maps[indexPosition(settings.minimumPeak.offset, 0)] = (existingValue + mapValue) / (data->bufferNo + 1);
+        }
+        else if (CUDA_kernel.mapWeight == 1.0f)
+        {
+            CUDA_marshal.maps[indexPosition(settings.minimumPeak.offset, 0)] = mapValue;
+        }
+        else
+        {
+            CUDA_marshal.maps[indexPosition(settings.minimumPeak.offset, 0)]
+                = CUDA_marshal.maps[indexPosition(settings.minimumPeak.offset, 0)] * (1.0f - CUDA_kernel.mapWeight) + mapValue * CUDA_kernel.mapWeight;
+        }
+    }
+    if (CUDA_kernel.analyses.PERIOD.maximumPeak.used) {
+        numb maxPeakValue = -INFINITY;
+        for (int i = 0; i < peakCount; i++) {
+            if (peakAmplitudes[i] > maxPeakValue)maxPeakValue = peakAmplitudes[i];
+        }
+        mapValue = maxPeakValue;
+        if (CUDA_kernel.mapWeight == 0.0f)
+        {
+            numb existingValue = CUDA_marshal.maps[indexPosition(settings.maximumPeak.offset, 0)] * data->bufferNo;
+            CUDA_marshal.maps[indexPosition(settings.maximumPeak.offset, 0)] = (existingValue + mapValue) / (data->bufferNo + 1);
+        }
+        else if (CUDA_kernel.mapWeight == 1.0f)
+        {
+            CUDA_marshal.maps[indexPosition(settings.maximumPeak.offset, 0)] = mapValue;
+        }
+        else
+        {
+            CUDA_marshal.maps[indexPosition(settings.maximumPeak.offset, 0)]
+                = CUDA_marshal.maps[indexPosition(settings.maximumPeak.offset, 0)] * (1.0f - CUDA_kernel.mapWeight) + mapValue * CUDA_kernel.mapWeight;
+        }
+    }
+    if (CUDA_kernel.analyses.PERIOD.minimumInterval.used) {
+        numb minIntervalValue = INFINITY;
+        for (int i = 0; i < peakCount; i++) {
+            if (peakIntervals[i] < minIntervalValue)minIntervalValue = peakIntervals[i];
+        }
+        mapValue = minIntervalValue;
+        if (CUDA_kernel.mapWeight == 0.0f)
+        {
+            numb existingValue = CUDA_marshal.maps[indexPosition(settings.minimumInterval.offset, 0)] * data->bufferNo;
+            CUDA_marshal.maps[indexPosition(settings.minimumInterval.offset, 0)] = (existingValue + mapValue) / (data->bufferNo + 1);
+        }
+        else if (CUDA_kernel.mapWeight == 1.0f)
+        {
+            CUDA_marshal.maps[indexPosition(settings.minimumInterval.offset, 0)] = mapValue;
+        }
+        else
+        {
+            CUDA_marshal.maps[indexPosition(settings.minimumInterval.offset, 0)]
+                = CUDA_marshal.maps[indexPosition(settings.minimumInterval.offset, 0)] * (1.0f - CUDA_kernel.mapWeight) + mapValue * CUDA_kernel.mapWeight;
+        }
+    }
+    if (CUDA_kernel.analyses.PERIOD.maximumInterval.used) {
+        numb maxIntervalValue = -INFINITY;
+        for (int i = 0; i < peakCount; i++) {
+            if (peakIntervals[i] > maxIntervalValue)maxIntervalValue = peakIntervals[i];
+        }
+        mapValue = maxIntervalValue;
+        if (CUDA_kernel.mapWeight == 0.0f)
+        {
+            numb existingValue = CUDA_marshal.maps[indexPosition(settings.maximumInterval.offset, 0)] * data->bufferNo;
+            CUDA_marshal.maps[indexPosition(settings.maximumInterval.offset, 0)] = (existingValue + mapValue) / (data->bufferNo + 1);
+        }
+        else if (CUDA_kernel.mapWeight == 1.0f)
+        {
+            CUDA_marshal.maps[indexPosition(settings.maximumInterval.offset, 0)] = mapValue;
+        }
+        else
+        {
+            CUDA_marshal.maps[indexPosition(settings.maximumInterval.offset, 0)]
+                = CUDA_marshal.maps[indexPosition(settings.maximumInterval.offset, 0)] * (1.0f - CUDA_kernel.mapWeight) + mapValue * CUDA_kernel.mapWeight;
+        }
+    }
     if (CUDA_kernel.analyses.PERIOD.meanPeak.used)
     {
         mapValue = sumPeak / peakCount;
