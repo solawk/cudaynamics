@@ -1509,7 +1509,7 @@ int imgui_main(int, char**)
 
                     if (computations[playedBufferIndex].ready)
                     {
-                        int variationSize = KERNEL.VAR_COUNT * (computedSteps + 1);
+                        uint64_t variationSize = KERNEL.VAR_COUNT * (computedSteps + 1);
 
                         void* computedVariation = (numb*)(computations[playedBufferIndex].marshal.trajectory) + (variationSize * variation);
                         memcpy(dataBuffer, computedVariation, variationSize * sizeof(numb));
