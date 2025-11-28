@@ -2597,20 +2597,20 @@ int imgui_main(int, char**)
                                     from, to, ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f), ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
 
                                 if (ImGui::IsMouseDown(0) && ImGui::IsKeyPressed(ImGuiMod_Shift) && ImGui::IsMouseHoveringRect(plot->PlotRect.Min, plot->PlotRect.Max) && plot->ContextLocked || plot->shiftClicked) {
-                                    numb MousePosX = (numb)ImPlot::GetPlotMousePos().x;
+                                    numb MousePosX = (numb)ImPlot::GetPlotMousePos().x ;
                                     if (axisX->min > MousePosX)sizing.hmp->typeX == MDT_Variable ? attributeValueIndices[sizing.hmp->indexX] = 0 : attributeValueIndices[sizing.hmp->indexX + krnl->VAR_COUNT] = 0;
                                     else if (axisX->max < MousePosX)sizing.hmp->typeX == MDT_Variable ? attributeValueIndices[sizing.hmp->indexX] = axisX->stepCount - 1 : attributeValueIndices[sizing.hmp->indexX + krnl->VAR_COUNT] = axisX->stepCount - 1;
                                     else {
-                                        numb NotRoundedIndex = (MousePosX - axisX->min) / (axisX->max - axisX->min) * axisX->stepCount - 1.5;
-                                        int index = static_cast<int>(std::round(NotRoundedIndex)); if (index > axisX->stepCount - 1)index = axisX->stepCount - 1;
+                                        numb NotRoundedIndex = (MousePosX - axisX->min) / (axisX->max - axisX->min) * axisX->stepCount-0.75;
+                                        int index = static_cast<int>(std::round(NotRoundedIndex)); index < 0 ? index=0 : 1; if (index > axisX->stepCount - 1)index = axisX->stepCount - 1;
                                         sizing.hmp->typeX == MDT_Variable ? attributeValueIndices[sizing.hmp->indexX] = index : attributeValueIndices[sizing.hmp->indexX + krnl->VAR_COUNT] = index;
                                     }
-                                    numb MousePosY = (numb)ImPlot::GetPlotMousePos().y;
+                                    numb MousePosY = (numb)ImPlot::GetPlotMousePos().y ;
                                     if (axisY->min > MousePosY)sizing.hmp->typeY == MDT_Variable ? attributeValueIndices[sizing.hmp->indexY] = 0 : attributeValueIndices[sizing.hmp->indexY + krnl->VAR_COUNT] = 0;
                                     else if (axisY->max < MousePosY)sizing.hmp->typeY == MDT_Variable ? attributeValueIndices[sizing.hmp->indexY] = axisY->stepCount - 1 : attributeValueIndices[sizing.hmp->indexY + krnl->VAR_COUNT] = axisY->stepCount - 1;
                                     else {
-                                        numb NotRoundedIndex = (MousePosY - axisY->min) / (axisY->max - axisY->min) * axisY->stepCount;
-                                        int index = static_cast<int>(std::round(NotRoundedIndex)) -1; if (index > axisY->stepCount - 1)index = axisY->stepCount - 1;
+                                        numb NotRoundedIndex = (MousePosY - axisY->min) / (axisY->max - axisY->min) * axisY->stepCount-0.75;
+                                        int index = static_cast<int>(std::round(NotRoundedIndex)); index < 0 ? index = 0 : 1; if (index > axisY->stepCount - 1)index = axisY->stepCount - 1;
                                         sizing.hmp->typeY == MDT_Variable ? attributeValueIndices[sizing.hmp->indexY] = index : attributeValueIndices[sizing.hmp->indexY + krnl->VAR_COUNT] = index;
                                     }
                                 }

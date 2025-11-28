@@ -17,8 +17,12 @@ std::vector<AnalysisIndex> anfunc2indices(AnalysisFunction anfunc)
 
 	case ANF_PERIOD:
 		result.push_back(IND_PERIOD);
+		result.push_back(IND_MNMPEAK);
+		result.push_back(IND_MNMINT);
 		result.push_back(IND_MNPEAK);
 		result.push_back(IND_MNINT);
+		result.push_back(IND_MXMPEAK);
+		result.push_back(IND_MXMINT);
 		break;
 	}
 
