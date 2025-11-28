@@ -159,7 +159,6 @@ void plotWindowMenu_PhasePlot(PlotWindow* window)
 	if (ImGui::BeginMenu("Plot"))
 	{
 		std::string windowName = window->name + std::to_string(window->id);
-
 		plotWindowMenu_CommonPlot(window, windowName);
 
 		if (enabledParticles)
@@ -194,9 +193,10 @@ void plotWindowMenu_OrbitPlot(PlotWindow* window) {
 	if (ImGui::BeginMenu("Plot"))
 	{
 		std::string windowName = window->name + std::to_string(window->id);
-		plotWindowMenu_CommonPlot(window, windowName);
+		
+		ImGui::SeparatorText("Plot Type");
 		ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.58f);
-		std::string orbitplottypes[] = { "Peaks Bifurcation", "Intervals Bifurcation", "Features Bifurcation", "Features Section" };
+		std::string orbitplottypes[] = { "Peaks / Parameter", "Intervals / Parameter", "Peaks / Intervals / Parameter", "Peaks / Intervals" };
 		if (ImGui::BeginCombo(("##" + windowName + "_OrbitPlotType").c_str(), (orbitplottypes[window->OrbitType]).c_str(), 0))
 		{
 			for (int t = 0; t < OrbitPlotType_COUNT; t++)
@@ -210,6 +210,8 @@ void plotWindowMenu_OrbitPlot(PlotWindow* window) {
 		}
 		ImGui::SameLine();
 		ImGui::Text("Orbit plot type");
+
+		ImGui::SeparatorText("Point");
 		ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.485f);
 		std::string orbitdottypes[] = { "Circle", "Square", "Diamond", "Up Triangle", "Down Triangle", "Left Triangle", "Right Triangle", "Cross", "Plus", "Asterisk"};
 		if (ImGui::BeginCombo(("##" + windowName + "_OrbitDotShape").c_str(), (orbitdottypes[window->markerShape]).c_str(), 0))
@@ -227,12 +229,18 @@ void plotWindowMenu_OrbitPlot(PlotWindow* window) {
 		ImGui::ColorEdit4(("##" + windowName + "_dotColor").c_str(), (float*)(&(window->plotColor)));		ImGui::SameLine(); ImGui::Text("Point color");
 		ImGui::DragFloat("Point size", &window->OrbitPointSize, 0.1f, 0.5f, 4.0f,"%.1f");
 
+		ImGui::SeparatorText("Marker");
 		ImGui::Checkbox("Show parameter marker", &window->ShowOrbitParLines);
 		ImGui::ColorEdit4(("##" + windowName + "_markerColor").c_str(), (float*)(&(window->OrbitMarkerColor)));		ImGui::SameLine(); ImGui::Text("Marker color");
 		ImGui::DragFloat("Marker width", &window->OrbitMarkerWidth, 0.1f, 0.5f, 4.0f, "%.1f");
 
+		ImGui::SeparatorText("Other settings");
 		ImGui::Checkbox("Invert axes", &window->OrbitInvertedAxes);
+		plotWindowMenu_CommonPlot(window, windowName);
 
+		
+
+		ImGui::SeparatorText("Auto-compute");
 		ImGui::Checkbox("Auto - compute on Shift + RMB", &window->isAutoComputeOn);
 
 		ImGui::EndMenu();
@@ -247,6 +255,8 @@ void plotWindowMenu_HeatmapPlot(PlotWindow* window)
 		HeatmapProperties* heatmap = isHires ? &window->hireshmp : &window->hmp;
 
 		std::string windowName = window->name + std::to_string(window->id);
+
+		ImGui::SeparatorText("Plot View");
 
 		plotWindowMenu_CommonPlot(window, windowName);
 
@@ -277,6 +287,8 @@ void plotWindowMenu_HeatmapPlot(PlotWindow* window)
 			if (ImGui::Selectable(diapasonsStrings[1].c_str(), !heatmap->showActualDiapasons)) heatmap->showActualDiapasons = false;
 			ImGui::EndCombo();
 		}
+
+		ImGui::SeparatorText("Auto-compute");
 
 		bool tempHeatmapAutoCompute = heatmap->isHeatmapAutoComputeOn; if (ImGui::Checkbox(("##" + windowName + "heatmapAutoCompute").c_str(), &tempHeatmapAutoCompute)) heatmap->isHeatmapAutoComputeOn = !heatmap->isHeatmapAutoComputeOn;
 		ImGui::SameLine(); ImGui::Text("Auto-compute on Shift+RMB");
@@ -338,6 +350,7 @@ void plotWindowMenu_HeatmapColors(PlotWindow* window)
 void plotWindowMenu_MetricPlot(PlotWindow*window) {
 	if (ImGui::BeginMenu("Plot")) {
 		std::string windowName = window->name + std::to_string(window->id);
+		ImGui::SeparatorText("Plot View");
 		plotWindowMenu_CommonPlot(window, windowName);
 
 		if (window->variableCount==1) {
@@ -367,6 +380,7 @@ void plotWindowMenu_MetricPlot(PlotWindow*window) {
 
 		ImGui::Checkbox("Show multiple axes", &window->ShowMultAxes);
 
+		ImGui::SeparatorText("Auto-compute");
 		ImGui::Checkbox("Auto - compute on Shift + RMB", &window->isAutoComputeOn);
 
 		ImGui::EndMenu();
@@ -375,6 +389,8 @@ void plotWindowMenu_MetricPlot(PlotWindow*window) {
 
 void plotWindowMenu_SeriesPlot(PlotWindow* window) {
 	if (ImGui::BeginMenu("Plot")) {
+
+		ImGui::SeparatorText("Plot View");
 		std::string windowName = window->name + std::to_string(window->id);
 		plotWindowMenu_CommonPlot(window, windowName);
 

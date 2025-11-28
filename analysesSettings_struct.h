@@ -13,6 +13,6 @@ struct AnalysesSettings
 	{
 		MINMAX.toCompute = MINMAX.minimum.used || MINMAX.maximum.used;
 		LLE.toCompute = LLE.LLE.used;
-		PERIOD.toCompute = PERIOD.periodicity.used || PERIOD.meanInterval.used || PERIOD.meanPeak.used;
+		PERIOD.toCompute = PERIOD.periodicity.used || PERIOD.minimumPeak.used || PERIOD.minimumInterval.used || PERIOD.meanInterval.used || PERIOD.meanPeak.used || PERIOD.maximumPeak.used || PERIOD.maximumInterval.used ;
 	}
 };
