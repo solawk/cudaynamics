@@ -250,12 +250,19 @@ void plotWindowMenu_HeatmapPlot(PlotWindow* window)
 
 		plotWindowMenu_CommonPlot(window, windowName);
 
-		bool tempIsDelta = window->isDelta; if (ImGui::Checkbox(("##" + windowName + "isDelta").c_str(), &tempIsDelta))
+		std::string deltaStateStrings[] = { "Index", "Delta", "Decay" };
+		if (ImGui::BeginCombo(("##" + windowName + "_DeltaState").c_str(), (deltaStateStrings[window->deltaState]).c_str(), 0))
 		{
-			window->isDelta = !window->isDelta;
-			heatmap->areValuesDirty = true;
+			for (int t = 0; t < 3; t++)
+			{
+				bool isSelected = window->deltaState == t;
+				ImGuiSelectableFlags selectableFlags = 0;
+				if (ImGui::Selectable(deltaStateStrings[t].c_str(), isSelected, selectableFlags)) window->deltaState = (DeltaState)t;
+				heatmap->areValuesDirty = true;
+			}
+
+			ImGui::EndCombo();
 		}
-		ImGui::SameLine(); ImGui::Text("Show delta");
 
 		bool tempShowHeatmapValues = heatmap->showHeatmapValues; if (ImGui::Checkbox(("##" + windowName + "showHeatmapValues").c_str(), &tempShowHeatmapValues)) heatmap->showHeatmapValues = !heatmap->showHeatmapValues;
 		ImGui::SameLine(); ImGui::Text("Show values");

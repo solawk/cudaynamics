@@ -8,8 +8,9 @@
 // Maximum amount of variables and parameters in the plot
 #define MAX_VARS_PARAMS 32
 
-enum PlotType { Series, Phase, Phase2D, Orbit, Heatmap, MCHeatmap, Metric, PlotType_COUNT };
+enum PlotType { Series, Phase, Phase2D, Orbit, Heatmap, MCHeatmap, Metric, Decay, PlotType_COUNT };
 enum OrbitPlotType {  Peak_Bifurcation, Interval_Bifurcation, Bifurcation_3D, Selected_Var_Section, OrbitPlotType_COUNT};
+enum DeltaState { DS_No, DS_Delta, DS_Decay };
 
 struct PlotWindow
 {
@@ -52,7 +53,12 @@ public:
 
 	HeatmapProperties hmp;
 	HeatmapProperties hireshmp;
-	bool isDelta;
+
+	DeltaState deltaState;
+
+	std::vector<int> decayBuffer;
+	std::vector<int> decayTotal;
+	std::vector<int> decayAlive;
 	
 	ImVec2 dragLineHiresPos;
 
@@ -121,7 +127,7 @@ public:
 		isImplot3d = false;
 		drawAllTrajectories = false;
 
-		isDelta = false;
+		deltaState = DS_No;
 		dragLineHiresPos = ImVec2(0.0f, 0.0f);
 
 		showAxis = true;

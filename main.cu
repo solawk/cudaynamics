@@ -398,6 +398,9 @@ void setupAnFuncs(Computation* data)
     {
         CUDA_marshal.maps = new numb[CUDA_marshal.totalVariations * CUDA_marshal.totalMapValuesPerVariation];
         CUDA_marshal.indecesDelta = new numb[CUDA_marshal.totalVariations * CUDA_marshal.totalMapValuesPerVariation];
+
+        CUDA_marshal.indecesDecay = new numb[CUDA_marshal.totalVariations * CUDA_marshal.totalMapValuesPerVariation];
+        memset(CUDA_marshal.indecesDecay, 0.0, sizeof(numb) * CUDA_marshal.totalVariations * CUDA_marshal.totalMapValuesPerVariation);
     }
 
     // Calculate the delta if it's not the first launch
@@ -408,6 +411,29 @@ void setupAnFuncs(Computation* data)
     else
     {
         for (uint64_t v = 0; v < CUDA_marshal.totalVariations * CUDA_marshal.totalMapValuesPerVariation; v++) CUDA_marshal.indecesDelta[v] = data->otherMarshal->maps[v] - CUDA_marshal.maps[v];
+        memcpy(CUDA_marshal.indecesDecay, data->otherMarshal->indecesDecay, sizeof(numb) * CUDA_marshal.totalVariations * CUDA_marshal.totalMapValuesPerVariation);
+
+        // Calculating decayed variations
+        if (data->bufferNo > 1)
+        {
+            for (auto& indexPair : indices)
+            {
+                Port* port = index2port(CUDA_kernel.analyses, indexPair.first);
+                if (port->used)
+                {
+                    int indexStart = port->offset * CUDA_marshal.totalVariations;
+                    int indexEnd = indexStart + indexPair.second.size * CUDA_marshal.totalVariations;
+                    for (uint64_t v = indexStart; v < indexEnd; v++)
+                    {
+                        if (CUDA_marshal.indecesDecay[v] == (numb)0 && abs(CUDA_marshal.indecesDelta[v]) >= indexPair.second.decayDeltaThreshold)
+                        {
+                            CUDA_marshal.indecesDecay[v] = (numb)1;
+                        }
+                    }
+                }
+            }
+        }
+
         CUDA_marshal.indecesDeltaExists = true;
     }
 

@@ -35,6 +35,7 @@ public:
 		if (marshal.stepIndices != nullptr)				{ delete[] marshal.stepIndices;			marshal.stepIndices = nullptr; }
 		if (marshal.maps != nullptr)					{ delete[] marshal.maps;				marshal.maps = nullptr; }
 		if (marshal.indecesDelta != nullptr)			{ delete[] marshal.indecesDelta;		marshal.indecesDelta = nullptr; }
+		if (marshal.indecesDecay != nullptr)			{ delete[] marshal.indecesDecay;		marshal.indecesDecay = nullptr; }
 
 		ready = false;
 		timeElapsed = 0.0f;

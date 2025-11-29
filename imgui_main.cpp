@@ -107,7 +107,7 @@ std::string rangingDescriptions[] =
     "Uniform random distribution of values between 'min' and 'max'",
     "Normal random distribution of values around 'mu' with standard deviation 'sigma'"
 };
-std::string plottypes[] = { "Time series", "3D Phase diagram", "2D Phase diagram", "Orbit diagram", "Heatmap", "RGB Heatmap", "Index diagram" };
+std::string plottypes[] = { "Time series", "3D Phase diagram", "2D Phase diagram", "Orbit diagram", "Heatmap", "RGB Heatmap", "Index diagram", "Decay plot" };
 
 bool rangingWindowEnabled = true;
 bool graphBuilderWindowEnabled = true;
@@ -124,6 +124,13 @@ void deleteBuffers(bool deleteHires)
 
     playedBufferIndex = 0;
     bufferToFillIndex = 0;
+
+    for (int i = 0; i < plotWindows.size(); i++)
+    {
+        plotWindows[i].decayAlive.clear();
+        plotWindows[i].decayBuffer.clear();
+        plotWindows[i].decayTotal.clear();
+    }
 }
 
 void resetTempBuffers(Computation* data)
@@ -444,6 +451,7 @@ int imgui_main(int, char**)
     int selectedPlotMap = 0;
     int selectedPlotMCMaps[3]{ 0 };
     int selectedPlotMapMetric = 0;
+    int selectedPlotMapDecay = 0;
 
 #define RESET_GRAPH_BUILDER_SETTINGS \
     selectedPlotVars[0] = 0; for (int i = 1; i < 3; i++) selectedPlotVars[i] = -1;  \
@@ -1121,6 +1129,14 @@ int imgui_main(int, char**)
             case MCHeatmap:
                 break;
 
+            case Decay:
+                if (selectedPlotMapDecay >= indices.size()) selectedPlotMapDecay = 0;
+
+                ImGui::Text("Index");
+                ImGui::SameLine();
+                mapSelectionCombo("##Plot builder decay map index selection", selectedPlotMapDecay, false);
+                break;
+
             case Metric:
                 ImGui::Text("Add indeces");
                 ImGui::SameLine();
@@ -1166,6 +1182,7 @@ int imgui_main(int, char**)
                 if (plotType == MCHeatmap) plotWindow.AssignVariables(selectedPlotMCMaps);
                 if (plotType == Orbit) plotWindow.AssignVariables(selectedPlotVarsOrbitVer);
                 if (plotType == Metric) plotWindow.AssignVariables(selectedPlotMapsSet);
+                if (plotType == Decay) plotWindow.AssignVariables(selectedPlotMapDecay);
 
                 int indexOfColorsLutFrom = -1;
                 if (colorsLUTfrom != nullptr)
@@ -1480,6 +1497,9 @@ int imgui_main(int, char**)
             ImVec4 rotationEulerEditable, rotationEulerBeforeEdit;
             enum PhaseSubType { Phase3D, PhaseImplot3D, Phase2D };
             PhaseSubType subtype;
+            HeatmapProperties* heatmap;
+            Kernel* krnl;
+            Computation* cmp;
 
             switch (window->type)
             {
@@ -2238,15 +2258,63 @@ int imgui_main(int, char**)
                     }
                     break;
 
+                case Decay:
+                    mapIndex    = (AnalysisIndex)window->variables[0];
+                    heatmap     = &window->hmp;
+                    cmp         = &(computations[playedBufferIndex]);
+                    krnl        = &(KERNEL);
+
+                    ImGui::Text("Decay delta threshold"); ImGui::SameLine();
+                    ImGui::InputFloat(("##Decay_Threshold" + plotName).c_str(), &(indices[mapIndex].decayDeltaThreshold));
+
+                    if (cmp->marshal.indecesDelta == nullptr || cmp->bufferNo <= 1)
+                    {
+                        ImGui::Text("Decay plot not ready yet");
+                        break;
+                    }
+
+                    if (heatmap->areValuesDirty)
+                    {
+                        int decayAlive = 0, decayTotal = cmp->marshal.totalVariations;
+                        window->decayBuffer.push_back(cmp->bufferNo);
+
+                        numb* decay = cmp->marshal.indecesDecay + (index2port(cmp->marshal.kernel.analyses, mapIndex)->offset + heatmap->values.mapValueIndex) * cmp->marshal.totalVariations;
+                        for (int i = 0; i < cmp->marshal.totalVariations; i++)
+                        {
+                            if (decay[i] == (numb)0) decayAlive++;
+                        }
+
+                        window->decayTotal.push_back(decayTotal);
+                        window->decayAlive.push_back(decayAlive);
+
+                        heatmap->areValuesDirty = false;
+                    }
+
+                    ImPlot::SetNextAxisLimits(ImAxis_Y1, 0.0, (double)cmp->marshal.totalVariations, ImPlotCond_Always);
+
+                    if (ImPlot::BeginPlot(("##Decay_Plot" + plotName).c_str(), ImVec2(-1, -1), ImPlotFlags_NoTitle))
+                    {
+                        ImPlot::SetupAxes("Buffer No.", "Variations alive", ImPlotAxisFlags_AutoFit, ImPlotAxisFlags_AutoFit);
+
+                        plot = ImPlot::GetPlot(("##Decay_Plot" + plotName).c_str());
+                        plot->is3d = false;
+                        
+                        ImPlot::PlotShaded(("##" + plotName + "_plotShade").c_str(), &(window->decayBuffer[0]), &(window->decayAlive[0]), (int)window->decayBuffer.size(), INFINITY);
+                        ImPlot::PlotLine(("##" + plotName + "_plot").c_str(), &(window->decayBuffer[0]), &(window->decayAlive[0]), (int)window->decayBuffer.size());
+
+                        ImPlot::EndPlot();
+                    }
+                    break;
+
                 case Heatmap:
                 case MCHeatmap:
                     bool isMC = window->type == MCHeatmap;
                     mapIndex = (AnalysisIndex)window->variables[0];
                     if (isMC) for (int ch = 0; ch < 3; ch++) channelMapIndex[ch] = (AnalysisIndex)window->variables[ch];
                     bool isHires = window == hiresHeatmapWindow;
-                    HeatmapProperties* heatmap =    isHires ? &window->hireshmp : &window->hmp;
-                    Kernel* krnl =                  isHires ? &kernelHiresComputed : &(KERNEL);
-                    Computation* cmp =              isHires ? &computationHires : &(computations[playedBufferIndex]);
+                    heatmap =                       isHires ? &window->hireshmp : &window->hmp;
+                    krnl =                          isHires ? &kernelHiresComputed : &(KERNEL);
+                    cmp =                           isHires ? &computationHires : &(computations[playedBufferIndex]);
                     std::vector<int>* avi =         isHires ? &attributeValueIndicesHires : &attributeValueIndices;
                     int* var =                      isHires ? &variationHires : &variation;
                     int* prevVar =                  isHires ? &prevVariationHires : &prevVariation;
@@ -2257,7 +2325,10 @@ int imgui_main(int, char**)
                     {
                         if (!indices[mapIndex].enabled) { ImGui::Text(("Index " + indices[mapIndex].name + " has been disabled").c_str()); break; }
                         if (!index2port(cmp->marshal.kernel.analyses, mapIndex)->used) { ImGui::Text(("Index " + indices[mapIndex].name + " has not been computed").c_str()); break; }
-                        if (window->isDelta && !cmp->marshal.indecesDeltaExists) { ImGui::Text("Delta not computed yet"); break; }
+                        if (window->deltaState == DS_Delta && !cmp->marshal.indecesDeltaExists) { ImGui::Text("Delta not computed yet"); break; }
+                        if (window->deltaState == DS_Delta && cmp->bufferNo < 2) { ImGui::Text("Delta not ready yet"); break; }
+                        if (window->deltaState == DS_Decay && !cmp->marshal.indecesDeltaExists) { ImGui::Text("Decay not computed yet"); break; }
+                        if (window->deltaState == DS_Decay && cmp->bufferNo < 2) { ImGui::Text("Decay not ready yet"); break; }
                     }
 
                     Attribute* axisX = heatmap->typeX == MDT_Variable ? &(krnl->variables[heatmap->indexX]) : &(krnl->parameters[heatmap->indexX]);
@@ -2501,7 +2572,7 @@ int imgui_main(int, char**)
                                 {
                                     if (!isMC)
                                     {
-                                        extractMap((!window->isDelta ? cmp->marshal.maps : cmp->marshal.indecesDelta)
+                                        extractMap((window->deltaState == DS_No ? cmp->marshal.maps : (window->deltaState == DS_Delta ? cmp->marshal.indecesDelta : cmp->marshal.indecesDecay))
                                             + (index2port(cmp->marshal.kernel.analyses, mapIndex)->offset + heatmap->values.mapValueIndex) * cmp->marshal.totalVariations,
                                             heatmap->values.valueBuffer, heatmap->indexBuffer, &(avi->data()[0]),
                                             sizing.hmp->typeX == MDT_Parameter ? sizing.hmp->indexX + krnl->VAR_COUNT : sizing.hmp->indexX,
