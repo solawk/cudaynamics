@@ -13,7 +13,7 @@ extern bool enabledParticles;
 extern bool autofitHeatmap;
 extern PlotWindow* colorsLUTfrom;
 extern int paintLUTsize;
-extern PlotWindow* hiresHeatmapWindow;
+extern AnalysisIndex hiresIndex;
 extern Kernel kernelNew, kernelHiresNew, kernelHiresComputed;
 
 void plotWindowMenu(PlotWindow* window)
@@ -30,16 +30,16 @@ void plotWindowMenu(PlotWindow* window)
 			ImGui::Text("   ");
 			ImGui::SameLine();
 
-			bool isHires = window == hiresHeatmapWindow;
+			bool isHires = window->isTheHiresWindow(hiresIndex);
 			if (ImGui::Checkbox(("Hi-Res Mode##" + window->name + "_hirescheckbox").c_str(), &isHires))
 			{
-				if (window == hiresHeatmapWindow)
+				if (window->isTheHiresWindow(hiresIndex))
 				{
-					hiresHeatmapWindow = nullptr;
+					hiresIndex = IND_NONE;
 				}
 				else
 				{
-					hiresHeatmapWindow = window;
+					hiresIndex = (AnalysisIndex)window->variables[0];
 					kernelHiresNew.CopyFrom(&kernelNew);
 				}
 			}
@@ -66,7 +66,7 @@ void plotWindowMenu_File(PlotWindow* window)
 				// === HEATMAP (LLE / MAX / ...) ===
 			case Heatmap:
 			{
-				const bool isHires = (hiresHeatmapWindow == window);
+				const bool isHires = window->isTheHiresWindow(hiresIndex);
 				const HeatmapProperties* heatmap = isHires ? &window->hireshmp : &window->hmp;
 				Kernel* krnl = isHires ? &kernelHiresComputed : &(KERNEL);
 
@@ -251,7 +251,7 @@ void plotWindowMenu_HeatmapPlot(PlotWindow* window)
 {
 	if (ImGui::BeginMenu("Plot"))
 	{
-		bool isHires = window == hiresHeatmapWindow;
+		bool isHires = window->isTheHiresWindow(hiresIndex);
 		HeatmapProperties* heatmap = isHires ? &window->hireshmp : &window->hmp;
 
 		std::string windowName = window->name + std::to_string(window->id);
@@ -305,7 +305,7 @@ void plotWindowMenu_HeatmapColors(PlotWindow* window)
 	if (ImGui::BeginMenu("Colors"))
 	{
 		std::string windowName = window->name + std::to_string(window->id);
-		bool isHires = window == hiresHeatmapWindow;
+		bool isHires = window->isTheHiresWindow(hiresIndex);
 		HeatmapProperties* heatmap = isHires ? &window->hireshmp : &window->hmp;
 
 		std::string colormapStrings[] = { "Deep", "Dark", "Pastel", "Paired", "Viridis", "Plasma", "Hot", "Cool", "Pink", "Jet", "Twilight", "RdBu", "BrBG", "PiYG", "Spectral", "Greys" };
