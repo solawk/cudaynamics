@@ -13,6 +13,7 @@ struct HeatmapValues
 	numb* valueBuffer;
 	numb heatmapMax;
 	numb heatmapMin;
+	numb lastShiftClicked;
 	int mapValueIndex;
 	bool areHeatmapLimitsDefined;
 
@@ -22,6 +23,7 @@ struct HeatmapValues
 		areHeatmapLimitsDefined = false; 
 		heatmapMax = 0.0f;
 		heatmapMin = 0.0f;
+		lastShiftClicked = 0.0f;
 		mapValueIndex = 0;
 	}
 };

@@ -2346,6 +2346,29 @@ int imgui_main(int, char**)
                                             stepY = (int)floor(plot->shiftClickLocation.y);
                                         }
 
+                                        if (stepX < 0 || stepX >= (sizing.hmp->typeX == MDT_Variable ? krnl->variables[sizing.hmp->indexX].TrueStepCount() : krnl->parameters[sizing.hmp->indexX].TrueStepCount())
+                                            || stepY < 0 || stepY >= (sizing.hmp->typeY == MDT_Variable ? krnl->variables[sizing.hmp->indexY].TrueStepCount() : krnl->parameters[sizing.hmp->indexY].TrueStepCount())) {}
+                                        else
+                                        {
+                                            if (!isMC)
+                                            {
+                                                if (heatmap->values.valueBuffer != nullptr)
+                                                {
+                                                    heatmap->values.lastShiftClicked = heatmap->values.valueBuffer[sizing.xSize * stepY + stepX];
+                                                }
+                                            }
+                                            else
+                                            {
+                                                for (int ch = 0; ch < 3; ch++)
+                                                {
+                                                    if (heatmap->channel[ch].valueBuffer != nullptr)
+                                                    {
+                                                        heatmap->channel[ch].lastShiftClicked = heatmap->channel[ch].valueBuffer[sizing.xSize * stepY + stepX];
+                                                    }
+                                                }
+                                            }
+                                        }
+
 #define IGNOREOUTOFREACH    if (stepX < 0 || stepX >= (sizing.hmp->typeX == MDT_Variable ? krnl->variables[sizing.hmp->indexX].TrueStepCount() : krnl->parameters[sizing.hmp->indexX].TrueStepCount())) break; \
                         if (stepY < 0 || stepY >= (sizing.hmp->typeY == MDT_Variable ? krnl->variables[sizing.hmp->indexY].TrueStepCount() : krnl->parameters[sizing.hmp->indexY].TrueStepCount())) break;
 
@@ -2406,8 +2429,6 @@ int imgui_main(int, char**)
                                     {
                                         heatmapRangingSelection(window, plot, &sizing, isHires);
                                     }
-
-                                    
                                 }
                                 /*else
                                 {
@@ -2583,9 +2604,7 @@ int imgui_main(int, char**)
                                 {
                                     bool ret = LoadTextureFromRaw(&(heatmap->pixelBuffer), sizing.xSize, sizing.ySize, (ID3D11ShaderResourceView**)&(heatmap->texture), g_pd3dDevice);
                                     IM_ASSERT(ret);
-
                                 }
-                                
 
                                 ImPlotPoint from = heatmap->showActualDiapasons ? ImPlotPoint(sizing.minX, sizing.maxY + sizing.stepY) : ImPlotPoint(0, sizing.ySize);
                                 ImPlotPoint to = heatmap->showActualDiapasons ? ImPlotPoint(sizing.maxX + sizing.stepX, sizing.minY) : ImPlotPoint(sizing.xSize, 0);
@@ -2596,7 +2615,8 @@ int imgui_main(int, char**)
                                 ImPlot::PlotImage(("Map " + std::to_string(mapIndex) + "##" + plotName + std::to_string(0)).c_str(), (ImTextureID)(heatmap->texture),
                                     from, to, ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f), ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
 
-                                if (ImGui::IsMouseDown(0) && ImGui::IsKeyPressed(ImGuiMod_Shift) && ImGui::IsMouseHoveringRect(plot->PlotRect.Min, plot->PlotRect.Max) && plot->ContextLocked || plot->shiftClicked) {
+                                // TODO: Does not work with "steps" mode instead of "values"
+                                /*if (ImGui::IsMouseDown(0) && ImGui::IsKeyPressed(ImGuiMod_Shift) && ImGui::IsMouseHoveringRect(plot->PlotRect.Min, plot->PlotRect.Max) && plot->ContextLocked || plot->shiftClicked) {
                                     numb MousePosX = (numb)ImPlot::GetPlotMousePos().x ;
                                     if (axisX->min > MousePosX)sizing.hmp->typeX == MDT_Variable ? attributeValueIndices[sizing.hmp->indexX] = 0 : attributeValueIndices[sizing.hmp->indexX + krnl->VAR_COUNT] = 0;
                                     else if (axisX->max < MousePosX)sizing.hmp->typeX == MDT_Variable ? attributeValueIndices[sizing.hmp->indexX] = axisX->stepCount - 1 : attributeValueIndices[sizing.hmp->indexX + krnl->VAR_COUNT] = axisX->stepCount - 1;
@@ -2613,7 +2633,7 @@ int imgui_main(int, char**)
                                         int index = static_cast<int>(std::round(NotRoundedIndex)); index < 0 ? index = 0 : 1; if (index > axisY->stepCount - 1)index = axisY->stepCount - 1;
                                         sizing.hmp->typeY == MDT_Variable ? attributeValueIndices[sizing.hmp->indexY] = index : attributeValueIndices[sizing.hmp->indexY + krnl->VAR_COUNT] = index;
                                     }
-                                }
+                                }*/
 
                                 // Value labels
                                 if (sizing.cutWidth > 0 && sizing.cutHeight > 0) // If there's anything to be shown in the plot
@@ -2661,21 +2681,45 @@ int imgui_main(int, char**)
 
                                 if (heatmap->showDragLines)
                                 {
-                                    double valueX, valueY;
+                                    double valueX = (double)heatmap->lastClickedLocation.x + (heatmap->showActualDiapasons ? sizing.stepX * 0.5 : 0.5);
+                                    double valueY = (double)heatmap->lastClickedLocation.y + (heatmap->showActualDiapasons ? sizing.stepY * 0.5 : 0.5);
 
-                                    if (1)
-                                    {
-                                        valueX = (double)heatmap->lastClickedLocation.x + (heatmap->showActualDiapasons ? sizing.stepX * 0.5 : 0.5);
-                                        valueY = (double)heatmap->lastClickedLocation.y + (heatmap->showActualDiapasons ? sizing.stepY * 0.5 : 0.5);
-                                    }
-                                    /*else
-                                    {
-                                        valueX = (double)window->dragLineHiresPos.x;
-                                        valueY = (double)window->dragLineHiresPos.y;
-                                    }*/
-
-                                    ImPlot::DragLineX(0, &valueX, window->markerColor,window->markerWidth, ImPlotDragToolFlags_NoInputs);
+                                    ImPlot::DragLineX(0, &valueX, window->markerColor, window->markerWidth, ImPlotDragToolFlags_NoInputs);
                                     ImPlot::DragLineY(1, &valueY, window->markerColor, window->markerWidth, ImPlotDragToolFlags_NoInputs);
+                                }
+
+                                // Show value in the bottom-left corner
+                                {
+                                    if (!isMC)
+                                    {
+                                        if (heatmap->values.valueBuffer != nullptr)
+                                        {
+                                            std::string heatmapValueString = std::to_string(heatmap->values.lastShiftClicked);
+                                            ImVec2 valueTextSize = ImGui::CalcTextSize(heatmapValueString.c_str());
+                                            ImDrawList* draw_list = ImPlot::GetPlotDrawList();
+                                            ImVec2 text_pos = ImVec2(ImPlot::GetPlotPos().x + 10, ImPlot::GetPlotPos().y + ImPlot::GetPlotSize().y - valueTextSize.y - 10);
+                                            draw_list->AddText(text_pos, ImGui::ColorConvertFloat4ToU32(ImGui::GetStyleColorVec4(ImGuiCol_Text)), heatmapValueString.c_str());
+                                        }
+                                    }
+                                    else
+                                    {
+                                        int shift = 0;
+                                        for (int ch = 0; ch < 3; ch++)
+                                            if (heatmap->channel[ch].valueBuffer != nullptr) shift++;
+
+                                        for (int ch = 0; ch < 3; ch++)
+                                        {
+                                            if (heatmap->channel[ch].valueBuffer != nullptr)
+                                            {
+                                                std::string heatmapValueString = std::to_string(heatmap->channel[ch].lastShiftClicked);
+                                                ImVec2 valueTextSize = ImGui::CalcTextSize(heatmapValueString.c_str());
+                                                ImDrawList* draw_list = ImPlot::GetPlotDrawList();
+                                                ImVec2 text_pos = ImVec2(ImPlot::GetPlotPos().x + 10, ImPlot::GetPlotPos().y + ImPlot::GetPlotSize().y - (valueTextSize.y * shift) - 10);
+                                                draw_list->AddText(text_pos, ImGui::ColorConvertFloat4ToU32(ImGui::GetStyleColorVec4(ImGuiCol_Text)), heatmapValueString.c_str());
+                                                shift--;
+                                            }
+                                        }
+                                    }
                                 }
 
                                 plotSize = ImPlot::GetPlotSize();
@@ -2764,7 +2808,7 @@ int imgui_main(int, char**)
 
                                         ImGui::SetNextItemWidth(120);
                                         ImGui::DragFloat(maxName.c_str(), &heatMaxFloat, 0.01f);
-                                        ImPlot::ColormapScale(colormapName.c_str(), values->heatmapMin, values->heatmapMax, ImVec2(120, plotSize.y - 30.0f), "%g", 0, multichannelHeatmapColormaps[ch]);
+                                        ImPlot::ColormapScale(colormapName.c_str(), values->heatmapMin, values->heatmapMax, values->lastShiftClicked, ImVec2(120, plotSize.y - 30.0f), "%g", 0, multichannelHeatmapColormaps[ch]);
                                         ImGui::SetNextItemWidth(120);
                                         ImGui::DragFloat(minName.c_str(), &heatMinFloat, 0.01f);
 
@@ -2788,7 +2832,7 @@ int imgui_main(int, char**)
 
                                 ImGui::SetNextItemWidth(120);
                                 ImGui::DragFloat(maxName.c_str(), &heatMaxFloat, 0.01f);
-                                ImPlot::ColormapScale(colormapName.c_str(), values->heatmapMin, values->heatmapMax, ImVec2(120, plotSize.y - 30.0f), "%g", 0, heatmap->colormap);
+                                ImPlot::ColormapScale(colormapName.c_str(), values->heatmapMin, values->heatmapMax, values->lastShiftClicked, ImVec2(120, plotSize.y - 30.0f), "%g", 0, heatmap->colormap);
                                 ImGui::SetNextItemWidth(120);
                                 ImGui::DragFloat(minName.c_str(), &heatMinFloat, 0.01f);
 

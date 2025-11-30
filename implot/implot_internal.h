@@ -1054,7 +1054,7 @@ struct ImPlotPlot
 
     bool shiftClicked;
     bool shiftSelected;
-    ImVec2 shiftClickLocation;
+    ImVec2 shiftClickLocation = ImVec2(0, 0);
     ImVec2 shiftSelect1Location;
     ImVec2 shiftSelect2Location;
 
