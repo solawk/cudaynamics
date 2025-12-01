@@ -12,14 +12,14 @@
 // UI drawing-related macros
 #define CUSTOM_COLOR(c)     ImGui::GetStyle().Colors[ImGuiCol_C_##c]
 #define PUSH_DISABLED_FRAME {ImGui::PushStyleColor(ImGuiCol_FrameBg, CUSTOM_COLOR(DisabledBg)); \
-                            ImGui::PushStyleColor(ImGuiCol_FrameBgActive, CUSTOM_COLOR(DisabledBg)); \
-                            ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, CUSTOM_COLOR(DisabledBg));}
+							ImGui::PushStyleColor(ImGuiCol_FrameBgActive, CUSTOM_COLOR(DisabledBg)); \
+							ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, CUSTOM_COLOR(DisabledBg));}
 #define PUSH_UNSAVED_FRAME  {ImGui::PushStyleColor(ImGuiCol_FrameBg, CUSTOM_COLOR(Unsaved)); \
-                            ImGui::PushStyleColor(ImGuiCol_FrameBgActive, CUSTOM_COLOR(UnsavedActive)); \
-                            ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, CUSTOM_COLOR(UnsavedHovered));}
+							ImGui::PushStyleColor(ImGuiCol_FrameBgActive, CUSTOM_COLOR(UnsavedActive)); \
+							ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, CUSTOM_COLOR(UnsavedHovered));}
 #define PUSH_HIRES_FRAME  {ImGui::PushStyleColor(ImGuiCol_FrameBg, CUSTOM_COLOR(Hires)); \
-                            ImGui::PushStyleColor(ImGuiCol_FrameBgActive, CUSTOM_COLOR(HiresActive)); \
-                            ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, CUSTOM_COLOR(HiresHovered));}
+							ImGui::PushStyleColor(ImGuiCol_FrameBgActive, CUSTOM_COLOR(HiresActive)); \
+							ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, CUSTOM_COLOR(HiresHovered));}
 #define POP_FRAME(n)        {ImGui::PopStyleColor(n);}
 #define CLAMP01(x)          if (x < 0.0f) x = 0.0f; if (x > 1.0f) x = 1.0f;
 #define TOOLTIP(text)       if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal)) ImGui::SetTooltip(text);

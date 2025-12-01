@@ -4731,7 +4731,7 @@ void RenderColorBar(const ImU32* colors, int size, ImDrawList& DrawList, const I
     }
 }
 
-void ColormapScale(const char* label, double scale_min, double scale_max, double markerValue, const ImVec2& size, const char* format, ImPlotColormapScaleFlags flags, ImPlotColormap cmap) {
+void ColormapScale(const char* label, double scale_min, double scale_max, ColormapMarkerSettings& marker, const ImVec2& size, const char* format, ImPlotColormapScaleFlags flags, ImPlotColormap cmap) {
     ImGuiContext &G      = *GImGui;
     ImGuiWindow * Window = G.CurrentWindow;
     if (Window->SkipItems)
@@ -4810,11 +4810,11 @@ void ColormapScale(const char* label, double scale_min, double scale_max, double
         DrawList.AddText(ImVec2(txt_x, txt_y), col_text, gp.CTicker.GetText(i));
     }
 
-    if (markerValue != INFINITY)
+    for (int v = 0; v < marker.valueCount; v++)
     {
-        float markerPos = (float)((markerValue - scale_min) / (scale_max - scale_min));
+        float markerPos = (float)((marker.values[v] - scale_min) / (scale_max - scale_min));
         float markerY = bb_grad.Max.y + (bb_grad.Min.y - bb_grad.Max.y) * markerPos;
-        DrawList.AddLine(ImVec2(bb_grad.Min.x, markerY), ImVec2(bb_grad.Max.x, markerY), IM_COL32(255, 255, 255, 255), 4.0f);
+        DrawList.AddLine(ImVec2(bb_grad.Min.x, markerY), ImVec2(bb_grad.Max.x, markerY), (ImU32)marker.color, marker.width);
     }
 
     if (rend_label) {

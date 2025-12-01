@@ -250,6 +250,9 @@
       <Filter>gui</Filter>
     </ClInclude>
     <ClInclude Include="fontSettings_struct.h" />
+    <ClInclude Include="gui\colormapMarkerSettings_struct.h">
+      <Filter>gui</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="main.cu" />

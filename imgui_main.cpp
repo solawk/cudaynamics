@@ -2808,7 +2808,9 @@ int imgui_main(int, char**)
 
                                         ImGui::SetNextItemWidth(120);
                                         ImGui::DragFloat(maxName.c_str(), &heatMaxFloat, 0.01f);
-                                        ImPlot::ColormapScale(colormapName.c_str(), values->heatmapMin, values->heatmapMax, values->lastShiftClicked, ImVec2(120, plotSize.y - 30.0f), "%g", 0, multichannelHeatmapColormaps[ch]);
+                                        ImU32 markerColor32 = ImGui::ColorConvertFloat4ToU32(window->markerColor);
+                                        ColormapMarkerSettings markerSettings(&(values->lastShiftClicked), 1, markerColor32, window->markerWidth);
+                                        ImPlot::ColormapScale(colormapName.c_str(), values->heatmapMin, values->heatmapMax, markerSettings, ImVec2(120, plotSize.y - 30.0f), "%g", 0, multichannelHeatmapColormaps[ch]);
                                         ImGui::SetNextItemWidth(120);
                                         ImGui::DragFloat(minName.c_str(), &heatMinFloat, 0.01f);
 
@@ -2832,7 +2834,9 @@ int imgui_main(int, char**)
 
                                 ImGui::SetNextItemWidth(120);
                                 ImGui::DragFloat(maxName.c_str(), &heatMaxFloat, 0.01f);
-                                ImPlot::ColormapScale(colormapName.c_str(), values->heatmapMin, values->heatmapMax, values->lastShiftClicked, ImVec2(120, plotSize.y - 30.0f), "%g", 0, heatmap->colormap);
+                                ImU32 markerColor32 = ImGui::ColorConvertFloat4ToU32(window->markerColor);
+                                ColormapMarkerSettings markerSettings(&(values->lastShiftClicked), 1, markerColor32, window->markerWidth);
+                                ImPlot::ColormapScale(colormapName.c_str(), values->heatmapMin, values->heatmapMax, markerSettings, ImVec2(120, plotSize.y - 30.0f), "%g", 0, heatmap->colormap);
                                 ImGui::SetNextItemWidth(120);
                                 ImGui::DragFloat(minName.c_str(), &heatMinFloat, 0.01f);
 

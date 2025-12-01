@@ -181,6 +181,7 @@
     <ClInclude Include="fonts.h" />
     <ClInclude Include="fontSettings_struct.h" />
     <ClInclude Include="gpu_variation.cuh" />
+    <ClInclude Include="gui\colormapMarkerSettings_struct.h" />
     <ClInclude Include="gui\customStylesEnum.h" />
     <ClInclude Include="gui\d3dx11tex.h" />
     <ClInclude Include="gui\fullscreen_funcs.h" />

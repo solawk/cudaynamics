@@ -37,6 +37,7 @@
 #include "fonts.h"
 #include "gui/styles.h"
 #include "gui/mainWindowMenu.h"
+#include "gui/colormapMarkerSettings_struct.h"
 
 bool CreateDeviceD3D(HWND hWnd);
 void CleanupDeviceD3D();
