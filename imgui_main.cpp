@@ -2328,7 +2328,7 @@ int imgui_main(int, char**)
                                     }
 
                                     // Hovering
-                                    if (!heatmap->onlyShowValuesOnShiftClick)
+                                    if (heatmap->valueDisplay == VDM_Always)
                                     {
                                         int stepX = 0;
                                         int stepY = 0;
@@ -2390,33 +2390,6 @@ int imgui_main(int, char**)
                                             stepY = (int)floor(plot->shiftClickLocation.y);
                                         }
 
-                                        if (heatmap->onlyShowValuesOnShiftClick)
-                                        {
-                                            if (stepX < 0 || stepX >= (sizing.hmp->typeX == MDT_Variable ? krnl->variables[sizing.hmp->indexX].TrueStepCount() : krnl->parameters[sizing.hmp->indexX].TrueStepCount())
-                                                || stepY < 0 || stepY >= (sizing.hmp->typeY == MDT_Variable ? krnl->variables[sizing.hmp->indexY].TrueStepCount() : krnl->parameters[sizing.hmp->indexY].TrueStepCount())) {
-                                            }
-                                            else
-                                            {
-                                                if (!isMC)
-                                                {
-                                                    if (heatmap->values.valueBuffer != nullptr)
-                                                    {
-                                                        heatmap->values.lastShiftClicked = heatmap->values.valueBuffer[sizing.xSize * stepY + stepX];
-                                                    }
-                                                }
-                                                else
-                                                {
-                                                    for (int ch = 0; ch < 3; ch++)
-                                                    {
-                                                        if (heatmap->channel[ch].valueBuffer != nullptr)
-                                                        {
-                                                            heatmap->channel[ch].lastShiftClicked = heatmap->channel[ch].valueBuffer[sizing.xSize * stepY + stepX];
-                                                        }
-                                                    }
-                                                }
-                                            }
-                                        }
-
 #define IGNOREOUTOFREACH    if (stepX < 0 || stepX >= (sizing.hmp->typeX == MDT_Variable ? krnl->variables[sizing.hmp->indexX].TrueStepCount() : krnl->parameters[sizing.hmp->indexX].TrueStepCount())) break; \
                         if (stepY < 0 || stepY >= (sizing.hmp->typeY == MDT_Variable ? krnl->variables[sizing.hmp->indexY].TrueStepCount() : krnl->parameters[sizing.hmp->indexY].TrueStepCount())) break;
 
@@ -2446,6 +2419,39 @@ int imgui_main(int, char**)
                                             (*avi)[krnl->VAR_COUNT + sizing.hmp->indexY] = stepY;
                                             heatmap->lastClickedLocation.y = plot->shiftClickLocation.y;
                                             break;
+                                        }
+                                    }
+
+                                    if (heatmap->valueDisplay == VDM_OnlyOnShiftClick)
+                                    {
+                                        int stepX = 0;
+                                        int stepY = 0;
+
+                                        stepX = (*avi)[sizing.hmp->indexX + (sizing.hmp->typeX == MDT_Variable ? 0 : krnl->VAR_COUNT)];
+                                        stepY = (*avi)[sizing.hmp->indexY + (sizing.hmp->typeY == MDT_Variable ? 0 : krnl->VAR_COUNT)];
+
+                                        if (stepX < 0 || stepX >= (sizing.hmp->typeX == MDT_Variable ? krnl->variables[sizing.hmp->indexX].TrueStepCount() : krnl->parameters[sizing.hmp->indexX].TrueStepCount())
+                                            || stepY < 0 || stepY >= (sizing.hmp->typeY == MDT_Variable ? krnl->variables[sizing.hmp->indexY].TrueStepCount() : krnl->parameters[sizing.hmp->indexY].TrueStepCount())) {
+                                        }
+                                        else
+                                        {
+                                            if (!isMC)
+                                            {
+                                                if (heatmap->values.valueBuffer != nullptr)
+                                                {
+                                                    heatmap->values.lastShiftClicked = heatmap->values.valueBuffer[sizing.xSize * stepY + stepX];
+                                                }
+                                            }
+                                            else
+                                            {
+                                                for (int ch = 0; ch < 3; ch++)
+                                                {
+                                                    if (heatmap->channel[ch].valueBuffer != nullptr)
+                                                    {
+                                                        heatmap->channel[ch].lastShiftClicked = heatmap->channel[ch].valueBuffer[sizing.xSize * stepY + stepX];
+                                                    }
+                                                }
+                                            }
                                         }
                                     }
 
@@ -2479,35 +2485,6 @@ int imgui_main(int, char**)
                                         heatmapRangingSelection(window, plot, &sizing, isHires);
                                     }
                                 }
-                                /*else
-                                {
-                                    if (plot->shiftClicked && plot->shiftClickLocation.x != 0.0)
-                                    {
-                                        numb valueX = 0.0; numb valueY = 0.0;
-
-                                        if (heatmap->showActualDiapasons)
-                                        {
-                                            // Values
-                                            valueX = plot->shiftClickLocation.x;
-                                            valueY = plot->shiftClickLocation.y;
-                                            window->dragLineHiresPos = ImVec2((float)valueX, (float)valueY);
-                                        }
-                                        else
-                                        {
-                                            // Steps
-                                            valueX = valueFromStep(sizing.minX, sizing.stepX, (int)floor(plot->shiftClickLocation.x));
-                                            valueY = valueFromStep(sizing.minY, sizing.stepY, (int)floor(plot->shiftClickLocation.y));
-                                            window->dragLineHiresPos = ImVec2(floor(plot->shiftClickLocation.x), floor(plot->shiftClickLocation.y));
-                                        }
-
-                                        hiresShiftClickCompute(window, &sizing, valueX, valueY);
-                                    }
-
-                                    if (plot->shiftSelected)
-                                    {
-                                        heatmapRangingSelection(window, plot, &sizing, true);
-                                    }
-                                }*/
 
                                 sizing.initCutoff((float)plot->Axes[plot->CurrentX].Range.Min, (float)plot->Axes[plot->CurrentY].Range.Min,
                                     (float)plot->Axes[plot->CurrentX].Range.Max, (float)plot->Axes[plot->CurrentY].Range.Max, heatmap->showActualDiapasons);
@@ -2738,6 +2715,7 @@ int imgui_main(int, char**)
                                 }
 
                                 // Show value in the bottom-left corner
+                                if (heatmap->valueDisplay != VDM_Never)
                                 {
                                     if (!isMC)
                                     {

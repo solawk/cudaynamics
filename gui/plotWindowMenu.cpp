@@ -267,8 +267,13 @@ void plotWindowMenu_HeatmapPlot(PlotWindow* window)
 		}
 		ImGui::SameLine(); ImGui::Text("Show delta");
 
-		bool tempOnlyShiftClick = heatmap->onlyShowValuesOnShiftClick; if (ImGui::Checkbox(("##" + windowName + "onlyShiftClick").c_str(), &tempOnlyShiftClick)) heatmap->onlyShowValuesOnShiftClick = !heatmap->onlyShowValuesOnShiftClick;
-		ImGui::SameLine(); ImGui::Text("Only display value on Shift+Click");
+		std::string valueDisplayStrings[] = { "No value in the corner", "Value of selected variation", "Value under mouse" };
+		if (ImGui::BeginCombo(("##" + windowName + "valueDisplay").c_str(), valueDisplayStrings[heatmap->valueDisplay].c_str()))
+		{
+			for (int i = 0; i < 3; i++)
+				if (ImGui::Selectable(valueDisplayStrings[i].c_str(), (int)heatmap->valueDisplay == i)) heatmap->valueDisplay = (ValueDisplayMode)i;
+			ImGui::EndCombo();
+		}
 
 		bool tempShowHeatmapValues = heatmap->showHeatmapValues; if (ImGui::Checkbox(("##" + windowName + "showHeatmapValues").c_str(), &tempShowHeatmapValues)) heatmap->showHeatmapValues = !heatmap->showHeatmapValues;
 		ImGui::SameLine(); ImGui::Text("Show values");

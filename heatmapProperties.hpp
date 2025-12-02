@@ -28,6 +28,8 @@ struct HeatmapValues
 	}
 };
 
+enum ValueDisplayMode { VDM_Never, VDM_OnlyOnShiftClick, VDM_Always };
+
 struct HeatmapProperties
 {
 	bool areValuesDirty; // Values have changed and heatmap should be updated
@@ -61,7 +63,7 @@ struct HeatmapProperties
 	bool showDragLines;
 	bool showLegend;
 	ImPlotColormap colormap;
-	bool onlyShowValuesOnShiftClick;
+	ValueDisplayMode valueDisplay;
 
 	bool ignoreLimitsRecalculationOnSelection;
 	bool ignoreNextLimitsRecalculation;
@@ -95,7 +97,7 @@ struct HeatmapProperties
 		showDragLines = true;
 		showLegend = true;
 		colormap = ImPlotColormap_Jet;
-		onlyShowValuesOnShiftClick = false;
+		valueDisplay = VDM_Always;
 
 		ignoreLimitsRecalculationOnSelection = false;
 		ignoreNextLimitsRecalculation = false;
