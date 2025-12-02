@@ -267,6 +267,9 @@ void plotWindowMenu_HeatmapPlot(PlotWindow* window)
 		}
 		ImGui::SameLine(); ImGui::Text("Show delta");
 
+		bool tempOnlyShiftClick = heatmap->onlyShowValuesOnShiftClick; if (ImGui::Checkbox(("##" + windowName + "onlyShiftClick").c_str(), &tempOnlyShiftClick)) heatmap->onlyShowValuesOnShiftClick = !heatmap->onlyShowValuesOnShiftClick;
+		ImGui::SameLine(); ImGui::Text("Only display value on Shift+Click");
+
 		bool tempShowHeatmapValues = heatmap->showHeatmapValues; if (ImGui::Checkbox(("##" + windowName + "showHeatmapValues").c_str(), &tempShowHeatmapValues)) heatmap->showHeatmapValues = !heatmap->showHeatmapValues;
 		ImGui::SameLine(); ImGui::Text("Show values");
 

@@ -1851,6 +1851,12 @@ bool UpdateInput(ImPlotPlot& plot) {
     ImGui::SetItemAllowOverlap(); // Handled by ButtonBehavior()
 #endif
 
+    ImPlotAxis& x_axis = plot.XAxis(0);
+    double vhx = x_axis.PixelsToPlot(IO.MousePos.x);
+    ImPlotAxis& y_axis = plot.YAxis(0);
+    double vhy = y_axis.PixelsToPlot(IO.MousePos.y);
+    plot.mouseLocation = ImVec2((float)vhx, (float)vhy);
+
     plot.shiftClicked = false;
 
     if (plot_clicked)

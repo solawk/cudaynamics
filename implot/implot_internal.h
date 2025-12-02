@@ -1052,6 +1052,7 @@ struct ImPlotPlot
     float* deltay;
     bool isHeatmapSelectionModeOn;
 
+    ImVec2 mouseLocation = ImVec2(0, 0);
     bool shiftClicked;
     bool shiftSelected;
     ImVec2 shiftClickLocation = ImVec2(0, 0);

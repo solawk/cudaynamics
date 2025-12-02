@@ -61,6 +61,7 @@ struct HeatmapProperties
 	bool showDragLines;
 	bool showLegend;
 	ImPlotColormap colormap;
+	bool onlyShowValuesOnShiftClick;
 
 	bool ignoreLimitsRecalculationOnSelection;
 	bool ignoreNextLimitsRecalculation;
@@ -94,6 +95,7 @@ struct HeatmapProperties
 		showDragLines = true;
 		showLegend = true;
 		colormap = ImPlotColormap_Jet;
+		onlyShowValuesOnShiftClick = false;
 
 		ignoreLimitsRecalculationOnSelection = false;
 		ignoreNextLimitsRecalculation = false;
