@@ -1226,13 +1226,18 @@ int imgui_main(int, char**)
                     ImGui::Text("Calculate indices:");
                     for (AnalysisIndex index : anfuncIndices)
                     {
-                        bool indexUserEnabled = indices[index].enabled;
-                        ImGui::Checkbox(("##IndexEnabled" + indices[index].name).c_str(), &indexUserEnabled);
-                        indices[index].enabled = indexUserEnabled;
+                        bool indexEnabled = indices[index].enabled;
+                        bool hiresEnabled = hiresIndex == index;
+                        if (hiresIndex != IND_NONE) ImGui::BeginDisabled();
+                        if (hiresIndex == IND_NONE)
+                            ImGui::Checkbox(("##IndexEnabled" + indices[index].name).c_str(), &indexEnabled);
+                        else
+                            ImGui::Checkbox(("##HiresIndexEnabled" + indices[index].name).c_str(), &hiresEnabled);
+                        indices[index].enabled = indexEnabled;
 
                         ImGui::SameLine();
-                        if (hiresIndex != IND_NONE && hiresIndex == index) AddBackgroundToElement(ImGui::GetStyleColorVec4(ImGuiCol_HeaderActive), true);
                         ImGui::Text(indices[index].name.c_str());
+                        if (hiresIndex != IND_NONE) ImGui::EndDisabled();
                     }
 
                     ImGui::TreePop();
