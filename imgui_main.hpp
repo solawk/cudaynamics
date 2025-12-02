@@ -67,7 +67,7 @@ extern ImVec4 hiresColor;
 #define DONT_CLOSE_ON_CLICK_POP		ImGui::PopItemFlag();
 
 // Kernel-related macros
-#define HIRES_ON (hiresHeatmapWindow != nullptr)
+#define HIRES_ON (hiresIndex != IND_NONE)
 #define KERNELNEWCURRENT (HIRES_ON ? kernelHiresNew : kernelNew)
 #define KERNELSAVEDCURRENT (HIRES_ON ? kernelHiresComputed : KERNEL)
 #define KERNELINTERNALCURRENT (HIRES_ON ? kernelHiresNew : KERNEL)

@@ -4,6 +4,7 @@
 #include <set>
 #include "heatmapProperties.hpp"
 #include "fontSettings_struct.h"
+#include "index.h"
 
 // Maximum amount of variables and parameters in the plot
 #define MAX_VARS_PARAMS 32
@@ -150,6 +151,11 @@ public:
 
 		indexX = 0;
 		typeX = MDT_Variable;
+	}
+
+	bool isTheHiresWindow(AnalysisIndex _hiresIndex)
+	{
+		return variables[0] == _hiresIndex;
 	}
 
 	void AssignVariables(int* variablesArray)

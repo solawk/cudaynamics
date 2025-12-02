@@ -37,9 +37,11 @@ std::vector<int> attributeValueIndices; // Currently selected indices of ranging
 std::vector<int> attributeValueIndicesHires; // Currently selected indices of ranging attributes
 
 bool autoLoadNewParams = false;
-PlotWindow* hiresHeatmapWindow = nullptr;
+//PlotWindow* hiresHeatmapWindow = nullptr;
 Kernel kernelNew, kernelHiresNew; // Front-end for the kernels in the GUI
 Kernel kernelHiresComputed; // Hi-res computation kernel buffer which has been sent to computation
+
+AnalysisIndex hiresIndex = IND_NONE;
 
 numb* dataBuffer = nullptr; // One variation local buffer
 numb* particleBuffer = nullptr; // One step local buffer
@@ -175,7 +177,7 @@ int asyncComputation()
 
     if (isFirstBatch)
     {
-        if (hiresHeatmapWindow == nullptr) autofitAfterComputing = true;
+        if (hiresIndex == IND_NONE) autofitAfterComputing = true;
         resetTempBuffers(&(computations[bufferToFillIndex]));
         initAVI(false);
     }
@@ -209,7 +211,7 @@ int hiresAsyncComputation()
 {
     computationHires.ready = false;
     computationHires.isFirst = true;
-    computationHires.mapIndex = hiresHeatmapWindow->variables[0];
+    computationHires.mapIndex = hiresIndex;
 
     computationHires.marshal.kernel.CopyFrom(&kernelHiresComputed);
     computationHires.marshal.kernel.mapWeight = 0.0f;
@@ -227,8 +229,13 @@ int hiresAsyncComputation()
 
     computationHires.ready = true;
 
-    hiresHeatmapWindow->hireshmp.initClickedLocation = true;
-    hiresHeatmapWindow->hireshmp.areValuesDirty = true;
+    for (int i = 0; i < plotWindows.size(); i++)
+    {
+        if (!plotWindows[i].isTheHiresWindow(hiresIndex)) continue;
+
+        plotWindows[i].hmp.initClickedLocation = true;
+        plotWindows[i].hmp.areValuesDirty = true;
+    }
 
     return computationResult;
 }
@@ -280,7 +287,7 @@ void initializeKernel(bool needTerminate)
     computations[1].Clear();
     computationHires.Clear();
 
-    hiresHeatmapWindow = nullptr;
+    hiresIndex = IND_NONE;
 
     initAVI(false);
     initAVI(true);
@@ -1176,20 +1183,10 @@ int imgui_main(int, char**)
                     }
                 }
 
-                int indexOfHires = -1;
-                if (hiresHeatmapWindow != nullptr)
-                {
-                    for (int i = 0; i < plotWindows.size() && indexOfHires == -1; i++)
-                    {
-                        if (&(plotWindows[i]) == hiresHeatmapWindow) indexOfHires = i;
-                    }
-                }
-
                 setVaryingAttributesToOneWindow(plotWindow, KERNEL);
                 plotWindows.push_back(plotWindow);
 
                 if (indexOfColorsLutFrom != -1) colorsLUTfrom = &(plotWindows[indexOfColorsLutFrom]);
-                if (indexOfHires != -1) hiresHeatmapWindow = &(plotWindows[indexOfHires]);
 
                 saveWindows();
             }
@@ -1209,6 +1206,7 @@ int imgui_main(int, char**)
 
             for (int anfunc = 0; anfunc < (int)AnalysisFunction::COUNT; anfunc++)
             {
+                if (hiresIndex != IND_NONE && indices[hiresIndex].function == (AnalysisFunction)anfunc) AddBackgroundToElement(ImGui::GetStyleColorVec4(ImGuiCol_HeaderActive), false);
                 if (ImGui::TreeNode(std::string(AnFuncNames[anfunc] + std::string("##AnFunc") + std::to_string(anfunc)).c_str()))
                 {
                     switch ((AnalysisFunction)anfunc)
@@ -1228,9 +1226,18 @@ int imgui_main(int, char**)
                     ImGui::Text("Calculate indices:");
                     for (AnalysisIndex index : anfuncIndices)
                     {
-                        bool indexUserEnabled = indices[index].enabled;
-                        ImGui::Checkbox((indices[index].name + "##IndexEnabled" + indices[index].name).c_str(), &indexUserEnabled);
-                        indices[index].enabled = indexUserEnabled;
+                        bool indexEnabled = indices[index].enabled;
+                        bool hiresEnabled = hiresIndex == index;
+                        if (hiresIndex != IND_NONE) ImGui::BeginDisabled();
+                        if (hiresIndex == IND_NONE)
+                            ImGui::Checkbox(("##IndexEnabled" + indices[index].name).c_str(), &indexEnabled);
+                        else
+                            ImGui::Checkbox(("##HiresIndexEnabled" + indices[index].name).c_str(), &hiresEnabled);
+                        indices[index].enabled = indexEnabled;
+
+                        ImGui::SameLine();
+                        ImGui::Text(indices[index].name.c_str());
+                        if (hiresIndex != IND_NONE) ImGui::EndDisabled();
                     }
 
                     ImGui::TreePop();
@@ -1302,7 +1309,7 @@ int imgui_main(int, char**)
             if (window->type == Heatmap || window->type == MCHeatmap)
             {
                 AnalysisIndex mapIndex = (AnalysisIndex)window->variables[0];
-                bool isHires = window == hiresHeatmapWindow;
+                bool isHires = window->isTheHiresWindow(hiresIndex);
                 HeatmapProperties* heatmap = isHires ? &window->hireshmp : &window->hmp;
                 Kernel* krnl = isHires ? &kernelHiresComputed : &(KERNEL);
                 //MapData* mapData = nullptr;
@@ -2243,7 +2250,7 @@ int imgui_main(int, char**)
                     bool isMC = window->type == MCHeatmap;
                     mapIndex = (AnalysisIndex)window->variables[0];
                     if (isMC) for (int ch = 0; ch < 3; ch++) channelMapIndex[ch] = (AnalysisIndex)window->variables[ch];
-                    bool isHires = window == hiresHeatmapWindow;
+                    bool isHires = window->isTheHiresWindow(hiresIndex);
                     HeatmapProperties* heatmap =    isHires ? &window->hireshmp : &window->hmp;
                     Kernel* krnl =                  isHires ? &kernelHiresComputed : &(KERNEL);
                     Computation* cmp =              isHires ? &computationHires : &(computations[playedBufferIndex]);
