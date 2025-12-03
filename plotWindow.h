@@ -45,6 +45,7 @@ public:
 
 	ImPlotMarker markerShape;
 
+	bool isYLog;
 	float rulerAlpha;
 	float gridAlpha;
 	bool whiteBg;
@@ -121,6 +122,7 @@ public:
 
 		markerShape = ImPlotMarker_Circle;
 
+		isYLog = false;
 		rulerAlpha = 0.5f;
 		gridAlpha = 0.15f;
 		whiteBg = false;

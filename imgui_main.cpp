@@ -2264,8 +2264,20 @@ int imgui_main(int, char**)
                     cmp         = &(computations[playedBufferIndex]);
                     krnl        = &(KERNEL);
 
-                    ImGui::Text("Decay delta threshold"); ImGui::SameLine();
-                    ImGui::InputFloat(("##Decay_Threshold" + plotName).c_str(), &(indices[mapIndex].decayDeltaThreshold));
+                    ImGui::Text("Source:"); ImGui::SameLine();
+                    if (ImGui::RadioButton(("Index##DTSIndex" + plotName).c_str(), indices[mapIndex].decay.source == DTS_Index)) indices[mapIndex].decay.source = DTS_Index;
+                    ImGui::SameLine();
+                    if (ImGui::RadioButton(("Delta##DTSDelta" + plotName).c_str(), indices[mapIndex].decay.source == DTS_Delta)) indices[mapIndex].decay.source = DTS_Delta;
+
+                    ImGui::Text("Mode:"); ImGui::SameLine();
+                    if (ImGui::RadioButton(("Less than##DTMLess" + plotName).c_str(), indices[mapIndex].decay.mode == DTM_Less)) indices[mapIndex].decay.mode = DTM_Less;
+                    ImGui::SameLine();
+                    if (ImGui::RadioButton(("More than##DTMMore" + plotName).c_str(), indices[mapIndex].decay.mode == DTM_More)) indices[mapIndex].decay.mode = DTM_More;
+                    ImGui::SameLine();
+                    if (ImGui::RadioButton(("Absolute value more than##DTMAbsMore" + plotName).c_str(), indices[mapIndex].decay.mode == DTM_Abs_More)) indices[mapIndex].decay.mode = DTM_Abs_More;
+
+                    ImGui::Text("Threshold"); ImGui::SameLine();
+                    ImGui::InputFloat(("##DT" + plotName).c_str(), &(indices[mapIndex].decay.threshold));
 
                     if (cmp->marshal.indecesDelta == nullptr || cmp->bufferNo <= 1)
                     {

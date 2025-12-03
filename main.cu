@@ -397,44 +397,71 @@ void setupAnFuncs(Computation* data)
     if (CUDA_marshal.totalVariations > 1 && CUDA_marshal.maps == nullptr)
     {
         CUDA_marshal.maps = new numb[CUDA_marshal.totalVariations * CUDA_marshal.totalMapValuesPerVariation];
-        CUDA_marshal.indecesDelta = new numb[CUDA_marshal.totalVariations * CUDA_marshal.totalMapValuesPerVariation];
 
-        CUDA_marshal.indecesDecay = new numb[CUDA_marshal.totalVariations * CUDA_marshal.totalMapValuesPerVariation];
-        memset(CUDA_marshal.indecesDecay, 0.0, sizeof(numb) * CUDA_marshal.totalVariations * CUDA_marshal.totalMapValuesPerVariation);
-    }
-
-    // Calculate the delta if it's not the first launch
-    if (data->isFirst)
-    {
-        CUDA_marshal.indecesDeltaExists = false;
-    }
-    else
-    {
-        for (uint64_t v = 0; v < CUDA_marshal.totalVariations * CUDA_marshal.totalMapValuesPerVariation; v++) CUDA_marshal.indecesDelta[v] = data->otherMarshal->maps[v] - CUDA_marshal.maps[v];
-        memcpy(CUDA_marshal.indecesDecay, data->otherMarshal->indecesDecay, sizeof(numb) * CUDA_marshal.totalVariations * CUDA_marshal.totalMapValuesPerVariation);
-
-        // Calculating decayed variations
-        if (data->bufferNo > 1)
+        if (!data->isHires)
         {
-            for (auto& indexPair : indices)
+            CUDA_marshal.indecesDelta = new numb[CUDA_marshal.totalVariations * CUDA_marshal.totalMapValuesPerVariation];
+            CUDA_marshal.indecesDecay = new numb[CUDA_marshal.totalVariations * CUDA_marshal.totalMapValuesPerVariation];
+            memset(CUDA_marshal.indecesDecay, 0.0, sizeof(numb) * CUDA_marshal.totalVariations * CUDA_marshal.totalMapValuesPerVariation);
+        }
+    }
+
+    if (!data->isHires)
+    {
+        // Calculate the delta if it's not the first launch
+        if (data->isFirst)
+        {
+            CUDA_marshal.indecesDeltaExists = false;
+        }
+        else
+        {
+            for (uint64_t v = 0; v < CUDA_marshal.totalVariations * CUDA_marshal.totalMapValuesPerVariation; v++) CUDA_marshal.indecesDelta[v] = data->otherMarshal->maps[v] - CUDA_marshal.maps[v];
+            memcpy(CUDA_marshal.indecesDecay, data->otherMarshal->indecesDecay, sizeof(numb) * CUDA_marshal.totalVariations * CUDA_marshal.totalMapValuesPerVariation);
+
+            // Calculating decayed variations
+            if (data->bufferNo > 1)
             {
-                Port* port = index2port(CUDA_kernel.analyses, indexPair.first);
-                if (port->used)
+                for (auto& indexPair : indices)
                 {
-                    int indexStart = port->offset * CUDA_marshal.totalVariations;
-                    int indexEnd = indexStart + indexPair.second.size * CUDA_marshal.totalVariations;
-                    for (uint64_t v = indexStart; v < indexEnd; v++)
+                    Port* port = index2port(CUDA_kernel.analyses, indexPair.first);
+                    if (port->used)
                     {
-                        if (CUDA_marshal.indecesDecay[v] == (numb)0 && abs(CUDA_marshal.indecesDelta[v]) >= indexPair.second.decayDeltaThreshold)
+                        int indexStart = port->offset * CUDA_marshal.totalVariations;
+                        int indexEnd = indexStart + indexPair.second.size * CUDA_marshal.totalVariations;
+                        DecaySettings* settings = &(indexPair.second.decay);
+                        float threshold = settings->threshold;
+                        bool decayed;
+                        for (uint64_t v = indexStart; v < indexEnd; v++)
                         {
-                            CUDA_marshal.indecesDecay[v] = (numb)1;
+                            if (CUDA_marshal.indecesDecay[v] == (numb)0)
+                            {
+                                decayed = false;
+
+                                switch (settings->mode)
+                                {
+                                case DTM_Less:
+                                    if (settings->source == DTS_Index && CUDA_marshal.maps[v] < threshold) decayed = true;
+                                    if (settings->source == DTS_Delta && CUDA_marshal.indecesDelta[v] < threshold) decayed = true;
+                                    break;
+                                case DTM_More:
+                                    if (settings->source == DTS_Index && CUDA_marshal.maps[v] > threshold) decayed = true;
+                                    if (settings->source == DTS_Delta && CUDA_marshal.indecesDelta[v] > threshold) decayed = true;
+                                    break;
+                                case DTM_Abs_More:
+                                    if (settings->source == DTS_Index && abs(CUDA_marshal.maps[v]) > threshold) decayed = true;
+                                    if (settings->source == DTS_Delta && abs(CUDA_marshal.indecesDelta[v]) > threshold) decayed = true;
+                                    break;
+                                }
+
+                                if (decayed) CUDA_marshal.indecesDecay[v] = (numb)1;
+                            }
                         }
                     }
                 }
             }
-        }
 
-        CUDA_marshal.indecesDeltaExists = true;
+            CUDA_marshal.indecesDeltaExists = true;
+        }
     }
 
     // Copy previous map values if present

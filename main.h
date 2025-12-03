@@ -26,7 +26,7 @@
 #define KERNEL_PROG kernelPrograms[selectedKernel]
 #define KERNEL_GPU  kernelWrappers[selectedKernel]
 
-#define addIndex(name, fullname, function, size, decay)  indices[name] = Index(fullname, ANF_##function, size, decay);
+#define addIndex(name, fullname, function, size)  indices[name] = Index(fullname, ANF_##function, size);
 
 int compute(Computation*);
 

@@ -177,6 +177,7 @@
     <ClInclude Include="computation_struct.h" />
     <ClInclude Include="constraint.h" />
     <ClInclude Include="cuda_macros.h" />
+    <ClInclude Include="decaySettings_struct.h" />
     <ClInclude Include="file_export.h" />
     <ClInclude Include="fonts.h" />
     <ClInclude Include="fontSettings_struct.h" />

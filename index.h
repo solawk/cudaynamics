@@ -1,6 +1,7 @@
 #pragma once
 #include <string>
 #include "anfuncs.h"
+#include "decaySettings_struct.h"
 
 enum AnalysisIndex
 {
@@ -15,7 +16,7 @@ struct Index
 	std::string name;
 	AnalysisFunction function;
 	unsigned int size; // previously valueCount
-	float decayDeltaThreshold;
+	DecaySettings decay;
 
 	Index()
 	{
@@ -23,15 +24,13 @@ struct Index
 		name = "ERROR";
 		function = ANF_MINMAX;
 		size = 1;
-		decayDeltaThreshold = 1.0f;
 	}
 
-	Index(std::string _name, AnalysisFunction _function, unsigned int _size, float _decay)
+	Index(std::string _name, AnalysisFunction _function, unsigned int _size)
 	{
 		enabled = true;
 		name = _name;
 		function = _function;
 		size = _size;
-		decayDeltaThreshold = _decay;
 	}
 };
