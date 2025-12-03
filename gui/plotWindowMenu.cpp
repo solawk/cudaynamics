@@ -272,11 +272,20 @@ void plotWindowMenu_HeatmapPlot(PlotWindow* window)
 		}
 		ImGui::SameLine(); ImGui::Text("Show delta");
 
-		std::string valueDisplayStrings[] = { "No value in the corner", "Value of selected variation", "Value under mouse" };
+		std::string valueDisplayStrings[] = { "No display value", "Value of selected variation", "Split", "Value under mouse" };
+		std::string valueDisplayTooltips[] = { 
+			"Don't show any heatmap value in the corner and on the color scale",
+			"Show heatmap value of selected variation in the corner and on the scale",
+			"Show value of the variation on the scale and value under mouse cursor in the corner",
+			"Show heatmap value under mouse cursor in the corner and on the scale"
+		};
 		if (ImGui::BeginCombo(("##" + windowName + "valueDisplay").c_str(), valueDisplayStrings[heatmap->valueDisplay].c_str()))
 		{
-			for (int i = 0; i < 3; i++)
+			for (int i = 0; i < 4; i++)
+			{
 				if (ImGui::Selectable(valueDisplayStrings[i].c_str(), (int)heatmap->valueDisplay == i)) heatmap->valueDisplay = (ValueDisplayMode)i;
+				TOOLTIP(valueDisplayTooltips[i].c_str());
+			}
 			ImGui::EndCombo();
 		}
 

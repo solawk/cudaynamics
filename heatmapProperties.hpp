@@ -13,7 +13,11 @@ struct HeatmapValues
 	numb* valueBuffer;
 	numb heatmapMax;
 	numb heatmapMin;
-	numb lastShiftClicked;
+
+	numb lastHovered; // Display value under mouse cursor
+	bool hoveredAway; // Is ^ out of bounds
+	numb lastSelected; // Display value of selected variation (by ranging or shift+click)
+	
 	int mapValueIndex;
 	bool areHeatmapLimitsDefined;
 
@@ -23,12 +27,16 @@ struct HeatmapValues
 		areHeatmapLimitsDefined = false; 
 		heatmapMax = 0.0f;
 		heatmapMin = 0.0f;
-		lastShiftClicked = 0.0f;
+
+		lastHovered = 0.0f;
+		hoveredAway = false;
+		lastSelected = 0.0f;
+
 		mapValueIndex = 0;
 	}
 };
 
-enum ValueDisplayMode { VDM_Never, VDM_OnlyOnShiftClick, VDM_Always };
+enum ValueDisplayMode { VDM_Never, VDM_OnlyOnShiftClick, VDM_Split, VDM_Always };
 
 struct HeatmapProperties
 {

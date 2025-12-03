@@ -4816,12 +4816,13 @@ void ColormapScale(const char* label, double scale_min, double scale_max, Colorm
         DrawList.AddText(ImVec2(txt_x, txt_y), col_text, gp.CTicker.GetText(i));
     }
 
-    for (int v = 0; v < marker.valueCount; v++)
-    {
-        float markerPos = (float)((marker.values[v] - scale_min) / (scale_max - scale_min));
-        float markerY = bb_grad.Max.y + (bb_grad.Min.y - bb_grad.Max.y) * markerPos;
-        DrawList.AddLine(ImVec2(bb_grad.Min.x, markerY), ImVec2(bb_grad.Max.x, markerY), (ImU32)marker.color, marker.width);
-    }
+    if (marker.enabled)
+        for (int v = 0; v < marker.valueCount; v++)
+        {
+            float markerPos = (float)((marker.values[v] - scale_min) / (scale_max - scale_min));
+            float markerY = bb_grad.Max.y + (bb_grad.Min.y - bb_grad.Max.y) * markerPos;
+            DrawList.AddLine(ImVec2(bb_grad.Min.x, markerY), ImVec2(bb_grad.Max.x, markerY), (ImU32)marker.color, marker.width);
+        }
 
     if (rend_label) {
         const float pos_x = opposite ? bb_frame.Min.x + gp.Style.PlotPadding.x : bb_grad.Max.x + 2 * txt_off + gp.CTicker.MaxSize.x;
