@@ -3,6 +3,7 @@
 void plotWindowMenu_File(PlotWindow* window);
 void plotWindowMenu_View(PlotWindow* window);
 void plotWindowMenu_PhasePlot(PlotWindow* window);
+void plotWindowMenu_DecayPlot(PlotWindow* window);
 void plotWindowMenu_HeatmapPlot(PlotWindow* window);
 void plotWindowMenu_HeatmapColors(PlotWindow* window);
 void plotWindowMenu_OrbitPlot(PlotWindow* window);
@@ -47,6 +48,7 @@ void plotWindowMenu(PlotWindow* window)
 		if (window->type == Orbit) plotWindowMenu_OrbitPlot(window);
 		if (window->type == Metric) plotWindowMenu_MetricPlot(window);
 		if (window->type == Series) plotWindowMenu_SeriesPlot(window);
+		if (window->type == Decay) plotWindowMenu_DecayPlot(window);
 		ImGui::EndMenuBar();
 	}
 }
@@ -152,6 +154,21 @@ void plotWindowMenu_CommonPlot(PlotWindow* window, std::string windowName)
 	bool tempWhiteBg = window->whiteBg; if (ImGui::Checkbox(("##" + windowName + "whiteBG").c_str(), &tempWhiteBg)) window->whiteBg = !window->whiteBg;
 	ImGui::SameLine(); ImGui::Text("White background");
 
+}
+
+void plotWindowMenu_DecayPlot(PlotWindow* window)
+{
+	if (ImGui::BeginMenu("Plot"))
+	{
+		std::string windowName = window->name + std::to_string(window->id);
+
+		plotWindowMenu_CommonPlot(window, windowName);
+
+		bool tempYLog = window->isYLog; if (ImGui::Checkbox(("##" + windowName + "YLog").c_str(), &tempYLog)) window->isYLog = !window->isYLog;
+		ImGui::SameLine(); ImGui::Text("Y Log Scale");
+
+		ImGui::EndMenu();
+	}
 }
 
 void plotWindowMenu_PhasePlot(PlotWindow* window)

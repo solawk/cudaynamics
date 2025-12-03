@@ -2302,14 +2302,30 @@ int imgui_main(int, char**)
                         heatmap->areValuesDirty = false;
                     }
 
-                    ImPlot::SetNextAxisLimits(ImAxis_Y1, 0.0, (double)cmp->marshal.totalVariations, ImPlotCond_Always);
+                    if (toAutofitTimeSeries) ImPlot::SetNextAxisLimits(ImAxis_Y1, 0.0, (double)cmp->marshal.totalVariations, ImPlotCond_Always);
 
                     if (ImPlot::BeginPlot(("##Decay_Plot" + plotName).c_str(), ImVec2(-1, -1), ImPlotFlags_NoTitle))
                     {
-                        ImPlot::SetupAxes("Buffer No.", "Variations alive", ImPlotAxisFlags_AutoFit, ImPlotAxisFlags_AutoFit);
+                        ImPlot::SetupAxes("Buffer No.", "Variations alive", 0, 0);
+                        ImPlot::SetupAxisScale(ImAxis_Y1, !window->isYLog ? ImPlotScale_Linear : ImPlotScale_Log10);
 
                         plot = ImPlot::GetPlot(("##Decay_Plot" + plotName).c_str());
                         plot->is3d = false;
+
+                        if (toAutofitTimeSeries)
+                        {
+                            plot->FitThisFrame = true;
+                            for (int i = 0; i < IMPLOT_NUM_X_AXES; i++)
+                            {
+                                ImPlotAxis& x_axis = plot->XAxis(i);
+                                x_axis.FitThisFrame = true;
+                            }
+                            for (int i = 0; i < IMPLOT_NUM_Y_AXES; i++)
+                            {
+                                ImPlotAxis& y_axis = plot->YAxis(i);
+                                y_axis.FitThisFrame = true;
+                            }
+                        }
                         
                         ImPlot::PlotShaded(("##" + plotName + "_plotShade").c_str(), &(window->decayBuffer[0]), &(window->decayAlive[0]), (int)window->decayBuffer.size(), INFINITY);
                         ImPlot::PlotLine(("##" + plotName + "_plot").c_str(), &(window->decayBuffer[0]), &(window->decayAlive[0]), (int)window->decayBuffer.size());
