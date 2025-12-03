@@ -39,8 +39,8 @@ void plotWindowMenu(PlotWindow* window)
 				}
 				else
 				{
+					if (hiresIndex == IND_NONE) kernelHiresNew.CopyFrom(&kernelNew);
 					hiresIndex = (AnalysisIndex)window->variables[0];
-					kernelHiresNew.CopyFrom(&kernelNew);
 				}
 			}
 		}
