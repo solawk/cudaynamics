@@ -758,13 +758,6 @@ int imgui_main(int, char**)
         ImGui::NewLine();
         if (!HIRES_ON)
         {
-            //enabledParticles = true;
-            /*bool tempParticlesMode = enabledParticles;
-            if (ImGui::Checkbox("Orbits/Particles", &(tempParticlesMode)))
-            {
-                enabledParticles = !enabledParticles;
-            }*/
-
             if (ImGui::RadioButton("Orbits", !enabledParticles))    enabledParticles = false;
             ImGui::SameLine();
             if (ImGui::RadioButton("Particles", enabledParticles))  enabledParticles = true;
@@ -828,8 +821,7 @@ int imgui_main(int, char**)
             }
             if (anyChanged) POP_FRAME(4);
 
-            // PARTICLES MODE
-            if (playingParticles/* && enabledParticles*/)
+            if (playingParticles)
             {
                 particlePhase += frameTime * particleSpeed;
                 int passedSteps = (int)floor(particlePhase);
@@ -937,7 +929,6 @@ int imgui_main(int, char**)
         // default button color is 0.137 0.271 0.427
         bool playBreath = noComputedData || (anyChanged && (!playingParticles || !enabledParticles));
         
-
         bool computation0InProgress = !computations[0].ready && computations[0].marshal.trajectory != nullptr;
         bool computation1InProgress = !computations[1].ready && computations[1].marshal.trajectory != nullptr;
         bool computationHiresInProgress = !computationHires.ready && computationHires.marshal.variableInits != nullptr;
@@ -1730,7 +1721,7 @@ int imgui_main(int, char**)
 
                     if (computations[playedBufferIndex].ready)
                     {
-                        if (!enabledParticles) // Trajectory - one variation, all steps
+                        if (!enabledParticles || HIRES_ON) // Trajectory - one (all if selected) variation, all steps
                         {
                             for (int drawnVariation = 0; drawnVariation < (!window->drawAllTrajectories ? 1 : computations[playedBufferIndex].marshal.totalVariations); drawnVariation++) // In case of drawing all trajectories
                             {
@@ -3050,7 +3041,6 @@ void heatmapRangingSelection(PlotWindow* window, ImPlotPlot* plot, HeatmapSizing
         stepY2 = (int)floor(plot->shiftSelect2Location.y);
     }
 
-    //enabledParticles = false;
     playingParticles = false;
 
     int xMaxStep = sizing->hmp->typeX == MDT_Parameter ? krnlComputed->parameters[sizing->hmp->indexX].TrueStepCount() :
