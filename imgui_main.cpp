@@ -1723,7 +1723,7 @@ int imgui_main(int, char**)
                     {
                         if (!enabledParticles || HIRES_ON) // Trajectory - one (all if selected) variation, all steps
                         {
-                            for (int drawnVariation = 0; drawnVariation < (!window->drawAllTrajectories ? 1 : computations[playedBufferIndex].marshal.totalVariations); drawnVariation++) // In case of drawing all trajectories
+                            for (uint64_t drawnVariation = 0; drawnVariation < (!window->drawAllTrajectories ? 1 : computations[playedBufferIndex].marshal.totalVariations); drawnVariation++) // In case of drawing all trajectories
                             {
                                 numb* computedVariation =
                                     computations[playedBufferIndex].marshal.trajectory + (computations[playedBufferIndex].marshal.variationSize * (window->drawAllTrajectories ? drawnVariation : variation));
@@ -1777,9 +1777,9 @@ int imgui_main(int, char**)
                             if (particleStep > KERNEL.steps) particleStep = KERNEL.steps;
                             int totalVariations = computations[playedBufferIndex].marshal.totalVariations;
                             int varCount = KERNEL.VAR_COUNT; // If you don't make this local, it increases the copying time by 30 times, tee-hee
-                            int variationSize = computations[playedBufferIndex].marshal.variationSize;
+                            uint64_t variationSize = computations[playedBufferIndex].marshal.variationSize;
                             numb* trajectory = computations[playedBufferIndex].marshal.trajectory;
-                            for (int v = 0; v < totalVariations; v++)
+                            for (uint64_t v = 0; v < totalVariations; v++)
                                 for (int var = 0; var < varCount; var++)
                                     particleBuffer[v * varCount + var] = trajectory[(variationSize * v) + (varCount * particleStep) + var];
 
