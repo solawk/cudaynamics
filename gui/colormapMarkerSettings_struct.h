@@ -3,11 +3,9 @@
 
 struct ColormapMarkerSettings
 {
-	bool enabled;
-
 	numb* values;
 	int valueCount;
-
+	bool enabled;
 	int color;
 	float width;
 
