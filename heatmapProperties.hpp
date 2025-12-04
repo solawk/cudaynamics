@@ -105,7 +105,7 @@ struct HeatmapProperties
 		showDragLines = true;
 		showLegend = true;
 		colormap = ImPlotColormap_Jet;
-		valueDisplay = VDM_Always;
+		valueDisplay = VDM_Split;
 
 		ignoreLimitsRecalculationOnSelection = false;
 		ignoreNextLimitsRecalculation = false;
