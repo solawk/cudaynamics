@@ -290,7 +290,7 @@ void plotWindowMenu_HeatmapPlot(PlotWindow* window)
 		//std::string valueDisplayStrings[] = { "No value in the corner", "Value of selected variation", "Value under mouse" };
 		if (ImGui::BeginCombo(("##" + windowName + "valueDisplay").c_str(), valueDisplayStrings[heatmap->valueDisplay].c_str()))
 		{
-			for (int i = 0; i < 3; i++) 
+			for (int i = 0; i < 4; i++) 
 			{
 				if (ImGui::Selectable(valueDisplayStrings[i].c_str(), (int)heatmap->valueDisplay == i)) heatmap->valueDisplay = (ValueDisplayMode)i;
 				TOOLTIP(valueDisplayTooltips[i].c_str());
