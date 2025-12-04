@@ -2477,7 +2477,7 @@ int imgui_main(int, char**)
                                         }
                                     }
 
-                                    if (heatmap->valueDisplay == VDM_OnlyOnShiftClick)
+                                    if (heatmap->valueDisplay == VDM_OnlyOnShiftClick || heatmap->valueDisplay == VDM_Split)
                                     {
                                         int stepX = 0;
                                         int stepY = 0;
