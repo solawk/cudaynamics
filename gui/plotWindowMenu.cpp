@@ -8,7 +8,6 @@ void plotWindowMenu_HeatmapColors(PlotWindow* window);
 void plotWindowMenu_OrbitPlot(PlotWindow* window);
 void plotWindowMenu_MetricPlot(PlotWindow* window);
 void plotWindowMenu_SeriesPlot(PlotWindow* window);
-void plotWindowMenu_IndSeriesPlot(PlotWindow* window);
 
 extern bool enabledParticles;
 extern bool autofitHeatmap;
@@ -40,15 +39,14 @@ void plotWindowMenu(PlotWindow* window)
 				}
 				else
 				{
+					if (hiresIndex == IND_NONE) kernelHiresNew.CopyFrom(&kernelNew);
 					hiresIndex = (AnalysisIndex)window->variables[0];
-					kernelHiresNew.CopyFrom(&kernelNew);
 				}
 			}
 		}
 		if (window->type == Orbit) plotWindowMenu_OrbitPlot(window);
 		if (window->type == Metric) plotWindowMenu_MetricPlot(window);
-		if (window->type == VarSeries) plotWindowMenu_SeriesPlot(window);
-		if (window->type == IndSeries) plotWindowMenu_IndSeriesPlot(window);
+		if (window->type == Series) plotWindowMenu_SeriesPlot(window);
 		ImGui::EndMenuBar();
 	}
 }
@@ -58,7 +56,7 @@ void plotWindowMenu_File(PlotWindow* window)
 	if (ImGui::BeginMenu("File"))
 	{
 		if (ImGui::MenuItem("Export to .csv", nullptr, false,
-			(window->type == Heatmap) || (window->type == VarSeries)))
+			(window->type == Heatmap) || (window->type == Series)))
 		{
 			std::string savedPath;
 			bool attempted = false; 
@@ -103,7 +101,7 @@ void plotWindowMenu_File(PlotWindow* window)
 			}
 
 			// === TIME SERIES ===
-			case VarSeries:
+			case Series:
 			{
 				savedPath = exportTimeSeriesCSV(window);
 				attempted = true;
@@ -137,6 +135,14 @@ void plotWindowMenu_View(PlotWindow* window)
 {
 	if (ImGui::BeginMenu("View"))
 	{
+		std::string windowName = window->name + std::to_string(window->id);
+
+		if (window->type == Phase)
+		{
+			bool tempSettingsEnabled = window->settingsListEnabled; if (ImGui::Checkbox(("##" + windowName + "setList").c_str(), &tempSettingsEnabled)) window->settingsListEnabled = !window->settingsListEnabled;
+			ImGui::SameLine(); ImGui::Text("View settings");
+		}
+
 		bool tempOverrideFont = window->overrideFontSettings;
 		if (ImGui::Checkbox(("Override font settings##" + window->name).c_str(), &tempOverrideFont))
 		{
@@ -182,9 +188,6 @@ void plotWindowMenu_PhasePlot(PlotWindow* window)
 		{
 			bool tempIsI3d = window->isImplot3d; if (ImGui::Checkbox(("##" + windowName + "isI3D").c_str(), &tempIsI3d)) window->isImplot3d = !window->isImplot3d;
 			ImGui::SameLine(); ImGui::Text("Use ImPlot3D");
-
-			bool tempSettingsEnabled = window->settingsListEnabled; if (ImGui::Checkbox(("##" + windowName + "setList").c_str(), &tempSettingsEnabled)) window->settingsListEnabled = !window->settingsListEnabled;
-			ImGui::SameLine(); ImGui::Text("View settings");
 		}
 
 		ImGui::EndMenu();
@@ -198,7 +201,7 @@ void plotWindowMenu_OrbitPlot(PlotWindow* window) {
 		
 		ImGui::SeparatorText("Plot Type");
 		ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.58f);
-		std::string orbitplottypes[] = { "Peaks / Parameter", "Intervals / Parameter", "Peaks / Intervals" , "Peaks / Intervals / Parameter"};
+		std::string orbitplottypes[] = { "Peaks / Parameter", "Intervals / Parameter", "Peaks / Intervals / Parameter", "Peaks / Intervals" };
 		if (ImGui::BeginCombo(("##" + windowName + "_OrbitPlotType").c_str(), (orbitplottypes[window->OrbitType]).c_str(), 0))
 		{
 			for (int t = 0; t < OrbitPlotType_COUNT; t++)
@@ -269,11 +272,20 @@ void plotWindowMenu_HeatmapPlot(PlotWindow* window)
 		}
 		ImGui::SameLine(); ImGui::Text("Show delta");
 
-		std::string valueDisplayStrings[] = { "No value in the corner", "Value of selected variation", "Value under mouse" };
+		std::string valueDisplayStrings[] = { "No display value", "Value of selected variation", "Split", "Value under mouse" };
+		std::string valueDisplayTooltips[] = { 
+			"Don't show any heatmap value in the corner and on the color scale",
+			"Show heatmap value of selected variation in the corner and on the scale",
+			"Show value of the variation on the scale and value under mouse cursor in the corner",
+			"Show heatmap value under mouse cursor in the corner and on the scale"
+		};
 		if (ImGui::BeginCombo(("##" + windowName + "valueDisplay").c_str(), valueDisplayStrings[heatmap->valueDisplay].c_str()))
 		{
-			for (int i = 0; i < 3; i++)
+			for (int i = 0; i < 4; i++)
+			{
 				if (ImGui::Selectable(valueDisplayStrings[i].c_str(), (int)heatmap->valueDisplay == i)) heatmap->valueDisplay = (ValueDisplayMode)i;
+				TOOLTIP(valueDisplayTooltips[i].c_str());
+			}
 			ImGui::EndCombo();
 		}
 
@@ -398,42 +410,6 @@ void plotWindowMenu_MetricPlot(PlotWindow*window) {
 }
 
 void plotWindowMenu_SeriesPlot(PlotWindow* window) {
-	if (ImGui::BeginMenu("Plot")) {
-
-		ImGui::SeparatorText("Plot View");
-		std::string windowName = window->name + std::to_string(window->id);
-		plotWindowMenu_CommonPlot(window, windowName);
-
-		if (window->variableCount == 1) {
-			ImGui::ColorEdit4(("##" + windowName + "_lineColor").c_str(), (float*)(&(window->markerColor)));		ImGui::SameLine(); ImGui::Text("Line color");
-		}
-		else {
-			std::string colormapStrings[] = { "Deep", "Dark", "Pastel", "Paired", "Viridis", "Plasma", "Hot", "Cool", "Pink", "Jet", "Twilight", "RdBu", "BrBG", "PiYG", "Spectral", "Greys" };
-			ImGui::PushItemFlag(ImGuiItemFlags_AutoClosePopups, false);
-			if (ImGui::BeginCombo(("##" + windowName + "colormap").c_str(), (colormapStrings[window->colormap]).c_str()))
-			{
-				for (int i = 0; i < 16; i++)
-					if (ImGui::Selectable(colormapStrings[i].c_str(), window->colormap == i))
-					{
-						window->colormap = i;
-					}
-
-				ImGui::EndCombo();
-			}
-			ImGui::PopItemFlag();
-
-		}
-		ImGui::DragFloat("Line width", &window->markerWidth, 0.1f, 0.5f, 4.0f, "%.1f");
-
-		ImGui::Checkbox("Show multiple axes", &window->ShowMultAxes);
-
-
-
-		ImGui::EndMenu();
-	}
-}
-
-void plotWindowMenu_IndSeriesPlot(PlotWindow* window) {
 	if (ImGui::BeginMenu("Plot")) {
 
 		ImGui::SeparatorText("Plot View");
