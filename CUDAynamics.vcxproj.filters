@@ -348,6 +348,9 @@
     <CudaCompile Include="systems\sang25\sang25.cu">
       <Filter>systems</Filter>
     </CudaCompile>
+    <CudaCompile Include="systems\kazantsev_gordleeva_matrosov\kazantsev_gordleeva_matrosov.cu">
+      <Filter>systems</Filter>
+    </CudaCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="CUDAynamics.rc" />
