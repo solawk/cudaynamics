@@ -251,6 +251,7 @@
     <CudaCompile Include="systems\izhikevich\izhikevich.cu" />
     <CudaCompile Include="systems\jj_mrlcs\jj_mrlcs.cu" />
     <CudaCompile Include="systems\jj_rlcs\jj_rlcs.cu" />
+    <CudaCompile Include="systems\kazantsev_gordleeva_matrosov\kazantsev_gordleeva_matrosov.cu" />
     <CudaCompile Include="systems\langford\langford.cu" />
     <CudaCompile Include="systems\lorenz83\lorenz83.cu" />
     <CudaCompile Include="systems\lorenzVar\lorenzVar.cu" />
