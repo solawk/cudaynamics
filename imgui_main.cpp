@@ -1767,7 +1767,7 @@ int imgui_main(int, char**)
 
                     if (computations[playedBufferIndex].ready)
                     {
-                        if (!enabledParticles) // Trajectory - one variation, all steps
+                        if (!enabledParticles || HIRES_ON) // Trajectory - one variation, all steps
                         {
                             for (uint64_t drawnVariation = 0; drawnVariation < (!window->drawAllTrajectories ? 1 : computations[playedBufferIndex].marshal.totalVariations); drawnVariation++) // In case of drawing all trajectories
                             {
@@ -2373,7 +2373,7 @@ int imgui_main(int, char**)
                                     }
 
                                     // Hovering
-                                    if (heatmap->valueDisplay == VDM_Always)
+                                    if (heatmap->valueDisplay == VDM_Always || heatmap->valueDisplay == VDM_Split)
                                     {
                                         int stepX = 0;
                                         int stepY = 0;
@@ -2392,15 +2392,24 @@ int imgui_main(int, char**)
                                         }
 
                                         if (stepX < 0 || stepX >= (sizing.hmp->typeX == MDT_Variable ? krnl->variables[sizing.hmp->indexX].TrueStepCount() : krnl->parameters[sizing.hmp->indexX].TrueStepCount())
-                                            || stepY < 0 || stepY >= (sizing.hmp->typeY == MDT_Variable ? krnl->variables[sizing.hmp->indexY].TrueStepCount() : krnl->parameters[sizing.hmp->indexY].TrueStepCount())) {
+                                            || stepY < 0 || stepY >= (sizing.hmp->typeY == MDT_Variable ? krnl->variables[sizing.hmp->indexY].TrueStepCount() : krnl->parameters[sizing.hmp->indexY].TrueStepCount()))
+                                        {
+                                            heatmap->values.hoveredAway = true;
+                                            for (int ch = 0; ch < 3; ch++)
+                                                heatmap->channel[ch].hoveredAway = true;
                                         }
                                         else
                                         {
+                                            heatmap->values.hoveredAway = false;
+                                            for (int ch = 0; ch < 3; ch++)
+                                                heatmap->channel[ch].hoveredAway = false;
+
                                             if (!isMC)
                                             {
                                                 if (heatmap->values.valueBuffer != nullptr)
                                                 {
-                                                    heatmap->values.lastShiftClicked = heatmap->values.valueBuffer[sizing.xSize * stepY + stepX];
+                                                    heatmap->values.lastHovered = heatmap->values.valueBuffer[sizing.xSize * stepY + stepX];
+                                                    //heatmap->values.lastShiftClicked = heatmap->values.valueBuffer[sizing.xSize * stepY + stepX];
                                                 }
                                             }
                                             else
@@ -2409,7 +2418,8 @@ int imgui_main(int, char**)
                                                 {
                                                     if (heatmap->channel[ch].valueBuffer != nullptr)
                                                     {
-                                                        heatmap->channel[ch].lastShiftClicked = heatmap->channel[ch].valueBuffer[sizing.xSize * stepY + stepX];
+                                                        heatmap->channel[ch].lastHovered = heatmap->channel[ch].valueBuffer[sizing.xSize * stepY + stepX];
+                                                        //heatmap->channel[ch].lastShiftClicked = heatmap->channel[ch].valueBuffer[sizing.xSize * stepY + stepX];
                                                     }
                                                 }
                                             }
@@ -2484,7 +2494,8 @@ int imgui_main(int, char**)
                                             {
                                                 if (heatmap->values.valueBuffer != nullptr)
                                                 {
-                                                    heatmap->values.lastShiftClicked = heatmap->values.valueBuffer[sizing.xSize * stepY + stepX];
+                                                    //heatmap->values.lastShiftClicked = heatmap->values.valueBuffer[sizing.xSize * stepY + stepX];
+                                                    heatmap->values.lastSelected = heatmap->values.valueBuffer[sizing.xSize * stepY + stepX];
                                                 }
                                             }
                                             else
@@ -2493,7 +2504,8 @@ int imgui_main(int, char**)
                                                 {
                                                     if (heatmap->channel[ch].valueBuffer != nullptr)
                                                     {
-                                                        heatmap->channel[ch].lastShiftClicked = heatmap->channel[ch].valueBuffer[sizing.xSize * stepY + stepX];
+                                                        //heatmap->channel[ch].lastShiftClicked = heatmap->channel[ch].valueBuffer[sizing.xSize * stepY + stepX];
+                                                        heatmap->channel[ch].lastSelected = heatmap->channel[ch].valueBuffer[sizing.xSize * stepY + stepX];
                                                     }
                                                 }
                                             }
@@ -2788,7 +2800,10 @@ int imgui_main(int, char**)
                                     {
                                         if (heatmap->values.valueBuffer != nullptr)
                                         {
-                                            std::string heatmapValueString = std::to_string(heatmap->values.lastShiftClicked);
+                                            std::string heatmapValueString = std::to_string(
+                                                heatmap->valueDisplay == VDM_OnlyOnShiftClick ? heatmap->values.lastSelected : heatmap->values.lastHovered);
+                                            if (heatmap->values.hoveredAway) heatmapValueString = "";
+                                            //std::string heatmapValueString = std::to_string(heatmap->values.lastShiftClicked);
                                             ImVec2 valueTextSize = ImGui::CalcTextSize(heatmapValueString.c_str());
                                             ImDrawList* draw_list = ImPlot::GetPlotDrawList();
                                             ImVec2 text_pos = ImVec2(ImPlot::GetPlotPos().x + 10, ImPlot::GetPlotPos().y + ImPlot::GetPlotSize().y - valueTextSize.y - 10);
@@ -2805,7 +2820,10 @@ int imgui_main(int, char**)
                                         {
                                             if (heatmap->channel[ch].valueBuffer != nullptr)
                                             {
-                                                std::string heatmapValueString = std::to_string(heatmap->channel[ch].lastShiftClicked);
+                                                std::string heatmapValueString = std::to_string(
+                                                    heatmap->valueDisplay == VDM_OnlyOnShiftClick ? heatmap->channel[ch].lastSelected : heatmap->channel[ch].lastHovered);
+                                                if (heatmap->channel[ch].hoveredAway) heatmapValueString = "";
+                                                //std::string heatmapValueString = std::to_string(heatmap->channel[ch].lastShiftClicked);
                                                 ImVec2 valueTextSize = ImGui::CalcTextSize(heatmapValueString.c_str());
                                                 ImDrawList* draw_list = ImPlot::GetPlotDrawList();
                                                 ImVec2 text_pos = ImVec2(ImPlot::GetPlotPos().x + 10, ImPlot::GetPlotPos().y + ImPlot::GetPlotSize().y - (valueTextSize.y * shift) - 10);
@@ -2903,7 +2921,10 @@ int imgui_main(int, char**)
                                         ImGui::SetNextItemWidth(120);
                                         ImGui::DragFloat(maxName.c_str(), &heatMaxFloat, 0.01f);
                                         ImU32 markerColor32 = ImGui::ColorConvertFloat4ToU32(window->markerColor);
-                                        ColormapMarkerSettings markerSettings(&(values->lastShiftClicked), 1, markerColor32, window->markerWidth);
+                                        //ColormapMarkerSettings markerSettings(&(values->lastShiftClicked), 1, markerColor32, window->markerWidth);
+                                        ColormapMarkerSettings markerSettings(heatmap->valueDisplay != VDM_Never,
+                                            &(heatmap->valueDisplay == VDM_Always ? values->lastHovered : values->lastSelected),
+                                            1, markerColor32, window->markerWidth);
                                         ImPlot::ColormapScale(colormapName.c_str(), values->heatmapMin, values->heatmapMax, markerSettings, ImVec2(120, plotSize.y - 30.0f), "%g", 0, multichannelHeatmapColormaps[ch]);
                                         ImGui::SetNextItemWidth(120);
                                         ImGui::DragFloat(minName.c_str(), &heatMinFloat, 0.01f);
@@ -2929,7 +2950,10 @@ int imgui_main(int, char**)
                                 ImGui::SetNextItemWidth(120);
                                 ImGui::DragFloat(maxName.c_str(), &heatMaxFloat, 0.01f);
                                 ImU32 markerColor32 = ImGui::ColorConvertFloat4ToU32(window->markerColor);
-                                ColormapMarkerSettings markerSettings(&(values->lastShiftClicked), 1, markerColor32, window->markerWidth);
+                                ColormapMarkerSettings markerSettings(heatmap->valueDisplay != VDM_Never,
+                                    &(heatmap->valueDisplay == VDM_Always ? values->lastHovered : values->lastSelected),
+                                    1, markerColor32, window->markerWidth);
+                                //ColormapMarkerSettings markerSettings(&(values->lastShiftClicked), 1, markerColor32, window->markerWidth);
                                 ImPlot::ColormapScale(colormapName.c_str(), values->heatmapMin, values->heatmapMax, markerSettings, ImVec2(120, plotSize.y - 30.0f), "%g", 0, heatmap->colormap);
                                 ImGui::SetNextItemWidth(120);
                                 ImGui::DragFloat(minName.c_str(), &heatMinFloat, 0.01f);

@@ -12,12 +12,10 @@ struct HeatmapValues
 {
 	numb* valueBuffer;
 	numb heatmapMax;
-	numb heatmapMin;
-
+	numb heatmapMin; 
 	numb lastHovered; // Display value under mouse cursor
 	bool hoveredAway; // Is ^ out of bounds
 	numb lastSelected; // Display value of selected variation (by ranging or shift+click)
-	
 	int mapValueIndex;
 	bool areHeatmapLimitsDefined;
 
@@ -27,11 +25,9 @@ struct HeatmapValues
 		areHeatmapLimitsDefined = false; 
 		heatmapMax = 0.0f;
 		heatmapMin = 0.0f;
-
 		lastHovered = 0.0f;
 		hoveredAway = false;
 		lastSelected = 0.0f;
-
 		mapValueIndex = 0;
 	}
 };

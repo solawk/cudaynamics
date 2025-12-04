@@ -106,7 +106,7 @@ public:
 		offset = ImVec4(0.0f, 0.0f, 0.0f, 0.0f);
 		scale = ImVec4(1.0f, 1.0f, 1.0f, 0.0f);
 
-		settingsListEnabled = true;
+		settingsListEnabled = false;
 
 		overrideFontOnNextFrame = false;
 		overrideFontSettings = false;
