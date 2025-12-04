@@ -88,7 +88,7 @@ __host__ __device__ void Period(Computation* data, uint64_t variation, void(*fin
             fixedPointCount = 0;  
         }
         
-        if (abs(curr) > maxAllowedValue) { //check if value is too big to be a dispesive system
+        if (abs(curr) > maxAllowedValue) { //check if value is too big to be a dispersive system
             returnNan = true;
         }
         else if(curr>peakThreshold) { 
