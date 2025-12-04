@@ -113,6 +113,9 @@
     <Filter Include="analysis\period">
       <UniqueIdentifier>{7225bc9b-34c4-4ffd-a03f-a310f75ed79b}</UniqueIdentifier>
     </Filter>
+    <Filter Include="analysis\phaseVolume">
+      <UniqueIdentifier>{af5f75cf-386a-483e-8f1c-342ef4f060e0}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="imgui\imconfig.h">
@@ -253,6 +256,12 @@
     <ClInclude Include="gui\colormapMarkerSettings_struct.h">
       <Filter>gui</Filter>
     </ClInclude>
+    <ClInclude Include="analysis\phaseVolume\phaseVolume.h">
+      <Filter>analysis\phaseVolume</Filter>
+    </ClInclude>
+    <ClInclude Include="analysis\phaseVolume\phaseVolume_settings.h">
+      <Filter>analysis\phaseVolume</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="main.cu" />
@@ -347,6 +356,9 @@
     </CudaCompile>
     <CudaCompile Include="systems\sang25\sang25.cu">
       <Filter>systems</Filter>
+    </CudaCompile>
+    <CudaCompile Include="analysis\phaseVolume\phaseVolume.cu">
+      <Filter>analysis\phaseVolume</Filter>
     </CudaCompile>
   </ItemGroup>
   <ItemGroup>

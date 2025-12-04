@@ -53,6 +53,7 @@ void common_main()
     addIndex(IND_MNINT, "Mean interval", PERIOD, 1);
     addIndex(IND_MXMPEAK, "Maximum peak", PERIOD, 1);
     addIndex(IND_MXMINT, "Maximum interval", PERIOD, 1);
+    addIndex(IND_PV, "Phase volume", PV, 1);
 
     imgui_main(0, 0);
 }

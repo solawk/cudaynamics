@@ -24,6 +24,10 @@ std::vector<AnalysisIndex> anfunc2indices(AnalysisFunction anfunc)
 		result.push_back(IND_MXMPEAK);
 		result.push_back(IND_MXMINT);
 		break;
+
+	case ANF_PV:
+		result.push_back(IND_PV);
+		break;
 	}
 
 	return result;

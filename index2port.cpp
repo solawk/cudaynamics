@@ -24,6 +24,8 @@ Port* index2port(AnalysesSettings& analyses, AnalysisIndex index)
 		return &(analyses.PERIOD.maximumPeak);
 	case IND_MXMINT:
 		return &(analyses.PERIOD.maximumInterval);
+	case IND_PV:
+		return &(analyses.PV.PV);
 	}
 
 	return nullptr;
