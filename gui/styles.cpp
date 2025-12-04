@@ -77,7 +77,7 @@ void SetupImGuiStyle(ImGuiCustomStyle cs, ImVec4 normal, ImVec4 hires, ImVec4 cp
 		style.Colors[ImGuiCol_PlotLines] = ImVec4(0.39f, 0.39f, 0.39f, 1.00f);
 		style.Colors[ImGuiCol_C_DisabledBg] = ImVec4(0.5f, 0.5f, 0.5f, 0.5f);
 		style.Colors[ImGuiCol_C_DisabledText] = ImVec4(0.00f, 0.00f, 0.00f, 0.5f);
-		styleImplot3d.Colors[ImPlot3DCol_FrameBg] = ImVec4(0.00f, 0.00f, 0.00f, 1.00f);
+		styleImplot3d.Colors[ImPlot3DCol_FrameBg] = ImVec4(1.00f, 1.00f, 1.00f, 1.00f);
 		style.Colors[ImGuiCol_C_DisabledBg] = ImVec4(0.5f, 0.5f, 0.5f, 0.5f);
 		style.Colors[ImGuiCol_C_DisabledText] = ImVec4(0.00f, 0.00f, 0.00f, 0.5f);
 
