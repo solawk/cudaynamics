@@ -38,6 +38,7 @@ void common_main()
     addKernel(hodgkin_huxley);
     addKernel(sang26);
     addKernel(pala_machaczek);
+    addKernel(kazantsev_gordleeva_matrosov);
 
     //selectKernel(kernels.begin()->first);
     selectKernel(lorenz);

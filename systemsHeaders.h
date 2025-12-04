@@ -27,3 +27,4 @@
 #include "systems/hodgkin_huxley/hodgkin_huxley.h"
 #include "systems/sang26/sang26.h"
 #include "systems/pala_machaczek/pala_machaczek.h"
+#include "systems/kazantsev_gordleeva_matrosov/kazantsev_gordleeva_matrosov.h"
