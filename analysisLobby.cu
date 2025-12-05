@@ -16,4 +16,8 @@ __host__ __device__ void AnalysisLobby(Computation* data, void(*finiteDifference
     {
         Period(data, variation, finiteDifferenceScheme);
     }
+    if (CUDA_kernel.analyses.PV.toCompute)
+    {
+        PhaseVolume(data, variation, finiteDifferenceScheme);
+    }
 }

@@ -109,7 +109,7 @@ std::string rangingDescriptions[] =
     "Uniform random distribution of values between 'min' and 'max'",
     "Normal random distribution of values around 'mu' with standard deviation 'sigma'"
 };
-std::string plottypes[] = { "Time series", "3D Phase diagram", "2D Phase diagram", "Orbit diagram", "Heatmap", "RGB Heatmap", "Index diagram" };
+std::string plottypes[] = { "Variables time series", "3D Phase diagram", "2D Phase diagram", "Orbit diagram", "Heatmap", "RGB Heatmap", "Indeces diagram", "Indeces time series"};
 
 bool rangingWindowEnabled = true;
 bool graphBuilderWindowEnabled = true;
@@ -443,11 +443,12 @@ int imgui_main(int, char**)
     char* plotNameBuffer = new char[64]();
     strcpy_s(plotNameBuffer, 5, "Plot");
 
-    PlotType plotType = Series;
+    PlotType plotType = VarSeries;
     int selectedPlotVars[3]; selectedPlotVars[0] = 0; for (int i = 1; i < 3; i++) selectedPlotVars[i] = -1;
     int selectedPlotVarsOrbitVer[3]; selectedPlotVars[0] = 0; for (int i = 1; i < 3; i++) selectedPlotVarsOrbitVer[i] = -1;
     std::set<int> selectedPlotVarsSet;
-    std::set<int> selectedPlotMapsSet;
+    std::set<int> selectedPlotMapsSetMetric;
+    std::set<int> selectedPlotMapSetIndSeries;
     int selectedPlotMap = 0;
     int selectedPlotMCMaps[3]{ 0 };
     int selectedPlotMapMetric = 0;
@@ -758,6 +759,13 @@ int imgui_main(int, char**)
         ImGui::NewLine();
         if (!HIRES_ON)
         {
+            //enabledParticles = true;
+            /*bool tempParticlesMode = enabledParticles;
+            if (ImGui::Checkbox("Orbits/Particles", &(tempParticlesMode)))
+            {
+                enabledParticles = !enabledParticles;
+            }*/
+
             if (ImGui::RadioButton("Orbits", !enabledParticles))    enabledParticles = false;
             ImGui::SameLine();
             if (ImGui::RadioButton("Particles", enabledParticles))  enabledParticles = true;
@@ -821,7 +829,8 @@ int imgui_main(int, char**)
             }
             if (anyChanged) POP_FRAME(4);
 
-            if (playingParticles)
+            // PARTICLES MODE
+            if (playingParticles/* && enabledParticles*/)
             {
                 particlePhase += frameTime * particleSpeed;
                 int passedSteps = (int)floor(particlePhase);
@@ -929,6 +938,7 @@ int imgui_main(int, char**)
         // default button color is 0.137 0.271 0.427
         bool playBreath = noComputedData || (anyChanged && (!playingParticles || !enabledParticles));
         
+
         bool computation0InProgress = !computations[0].ready && computations[0].marshal.trajectory != nullptr;
         bool computation1InProgress = !computations[1].ready && computations[1].marshal.trajectory != nullptr;
         bool computationHiresInProgress = !computationHires.ready && computationHires.marshal.variableInits != nullptr;
@@ -1019,7 +1029,7 @@ int imgui_main(int, char**)
 
             switch (plotType)
             {
-            case Series:
+            case VarSeries:
 
                 // Variable adding combo
 
@@ -1120,6 +1130,7 @@ int imgui_main(int, char**)
                 break;
 
             case Metric:
+            {
                 ImGui::Text("Add indeces");
                 ImGui::SameLine();
 
@@ -1128,8 +1139,8 @@ int imgui_main(int, char**)
                 {
                     for (int i = 0; i < indicesSize; i++)
                     {
-                        bool isSelected = selectedPlotMapsSet.find(i) != selectedPlotMapsSet.end();
-                        if (ImGui::Selectable(indices[(AnalysisIndex)i].name.c_str(), isSelected, isSelected ? ImGuiSelectableFlags_Disabled : 0)) selectedPlotMapsSet.insert(i);
+                        bool isSelected = selectedPlotMapsSetMetric.find(i) != selectedPlotMapsSetMetric.end();
+                        if (ImGui::Selectable(indices[(AnalysisIndex)i].name.c_str(), isSelected, isSelected ? ImGuiSelectableFlags_Disabled : 0)) selectedPlotMapsSetMetric.insert(i);
                     }
 
                     ImGui::EndCombo();
@@ -1137,17 +1148,48 @@ int imgui_main(int, char**)
 
                 // List with removal buttons
 
-                for (const int i : selectedPlotMapsSet)
+                for (const int i : selectedPlotMapsSetMetric)
                 {
                     if (ImGui::Button(("x##" + std::to_string(i)).c_str()))
                     {
-                        selectedPlotMapsSet.erase(i);
+                        selectedPlotMapsSetMetric.erase(i);
                         break;
                     }
                     ImGui::SameLine();
                     ImGui::Text(("- " + indices[(AnalysisIndex)i].name).c_str());
                 }
+            }
+                break;
+            case IndSeries:
+            {
+                ImGui::Text("Add indeces");
+                ImGui::SameLine();
 
+                int indicesSize = (int)indices.size();
+                if (ImGui::BeginCombo("##Add index combo", "", ImGuiComboFlags_NoPreview))
+                {
+                    for (int i = 0; i < indicesSize; i++)
+                    {
+                        bool isSelected = selectedPlotMapSetIndSeries.find(i) != selectedPlotMapSetIndSeries.end();
+                        if (ImGui::Selectable(indices[(AnalysisIndex)i].name.c_str(), isSelected, isSelected ? ImGuiSelectableFlags_Disabled : 0)) selectedPlotMapSetIndSeries.insert(i);
+                    }
+
+                    ImGui::EndCombo();
+                }
+
+                // List with removal buttons
+
+                for (const int i : selectedPlotMapSetIndSeries)
+                {
+                    if (ImGui::Button(("x##" + std::to_string(i)).c_str()))
+                    {
+                        selectedPlotMapSetIndSeries.erase(i);
+                        break;
+                    }
+                    ImGui::SameLine();
+                    ImGui::Text(("- " + indices[(AnalysisIndex)i].name).c_str());
+                }
+            }
                 break;
             }
 
@@ -1157,13 +1199,14 @@ int imgui_main(int, char**)
                 plotWindow.type = plotType;
                 plotWindow.newWindow = true;
 
-                if (plotType == Series) plotWindow.AssignVariables(selectedPlotVarsSet);
+                if (plotType == VarSeries) plotWindow.AssignVariables(selectedPlotVarsSet);
                 if (plotType == Phase) plotWindow.AssignVariables(selectedPlotVars);
                 if (plotType == Phase2D) plotWindow.AssignVariables(selectedPlotVars);
                 if (plotType == Heatmap) plotWindow.AssignVariables(selectedPlotMap);
                 if (plotType == MCHeatmap) plotWindow.AssignVariables(selectedPlotMCMaps);
                 if (plotType == Orbit) plotWindow.AssignVariables(selectedPlotVarsOrbitVer);
-                if (plotType == Metric) plotWindow.AssignVariables(selectedPlotMapsSet);
+                if (plotType == Metric) plotWindow.AssignVariables(selectedPlotMapsSetMetric);
+                if (plotType == IndSeries) { plotWindow.AssignVariables(selectedPlotMapSetIndSeries); plotWindow.firstBufferNo = (computations[playedBufferIndex]).bufferNo; plotWindow.prevbufferNo = (computations[playedBufferIndex]).bufferNo;  }
 
                 int indexOfColorsLutFrom = -1;
                 if (colorsLUTfrom != nullptr)
@@ -1210,6 +1253,9 @@ int imgui_main(int, char**)
                         break;
                     case AnalysisFunction::ANF_PERIOD:
                         krn->analyses.PERIOD.DisplaySettings(krn->variables);
+                        break;
+                    case AnalysisFunction::ANF_PV:
+                        krn->analyses.PV.DisplaySettings(krn->variables);
                         break;
                     }
 
@@ -1481,7 +1527,7 @@ int imgui_main(int, char**)
 
             switch (window->type)
             {
-            case Series:
+            case VarSeries:
 
                 if (window->whiteBg) ImPlot::PushStyleColor(ImPlotCol_PlotBg, ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
                 if (ImPlot::BeginPlot(plotName.c_str(), "", "", ImVec2(-1, -1), ImPlotFlags_NoTitle, axisFlags, axisFlags))
@@ -1523,7 +1569,7 @@ int imgui_main(int, char**)
                         {
                             ImPlot::SetupAxis(ImAxis_X1, KERNEL.usingTime ? "Time" : "Steps", 0);
                             for (int i = 0; i < window->variableCount; i++) {
-                                ImPlot::SetupAxis(3 + i, KERNEL.variables[window->variables[i]].name.c_str(), 0);
+                                ImPlot::SetupAxis(3 + i, KERNEL.variables[window->variables[i]].name.c_str(), 0); 
                             }
                         }
 
@@ -1721,7 +1767,7 @@ int imgui_main(int, char**)
 
                     if (computations[playedBufferIndex].ready)
                     {
-                        if (!enabledParticles || HIRES_ON) // Trajectory - one (all if selected) variation, all steps
+                        if (!enabledParticles || HIRES_ON) // Trajectory - one variation, all steps
                         {
                             for (uint64_t drawnVariation = 0; drawnVariation < (!window->drawAllTrajectories ? 1 : computations[playedBufferIndex].marshal.totalVariations); drawnVariation++) // In case of drawing all trajectories
                             {
@@ -2238,16 +2284,17 @@ int imgui_main(int, char**)
 
                 case Heatmap:
                 case MCHeatmap:
+                {
                     bool isMC = window->type == MCHeatmap;
                     mapIndex = (AnalysisIndex)window->variables[0];
                     if (isMC) for (int ch = 0; ch < 3; ch++) channelMapIndex[ch] = (AnalysisIndex)window->variables[ch];
                     bool isHires = window->isTheHiresWindow(hiresIndex);
-                    HeatmapProperties* heatmap =    isHires ? &window->hireshmp : &window->hmp;
-                    Kernel* krnl =                  isHires ? &kernelHiresComputed : &(KERNEL);
-                    Computation* cmp =              isHires ? &computationHires : &(computations[playedBufferIndex]);
-                    std::vector<int>* avi =         isHires ? &attributeValueIndicesHires : &attributeValueIndices;
-                    int* var =                      isHires ? &variationHires : &variation;
-                    int* prevVar =                  isHires ? &prevVariationHires : &prevVariation;
+                    HeatmapProperties* heatmap = isHires ? &window->hireshmp : &window->hmp;
+                    Kernel* krnl = isHires ? &kernelHiresComputed : &(KERNEL);
+                    Computation* cmp = isHires ? &computationHires : &(computations[playedBufferIndex]);
+                    std::vector<int>* avi = isHires ? &attributeValueIndicesHires : &attributeValueIndices;
+                    int* var = isHires ? &variationHires : &variation;
+                    int* prevVar = isHires ? &prevVariationHires : &prevVariation;
 
                     bool showLegend = heatmap->showLegend;
 
@@ -2345,7 +2392,7 @@ int imgui_main(int, char**)
                                         }
 
                                         if (stepX < 0 || stepX >= (sizing.hmp->typeX == MDT_Variable ? krnl->variables[sizing.hmp->indexX].TrueStepCount() : krnl->parameters[sizing.hmp->indexX].TrueStepCount())
-                                            || stepY < 0 || stepY >= (sizing.hmp->typeY == MDT_Variable ? krnl->variables[sizing.hmp->indexY].TrueStepCount() : krnl->parameters[sizing.hmp->indexY].TrueStepCount())) 
+                                            || stepY < 0 || stepY >= (sizing.hmp->typeY == MDT_Variable ? krnl->variables[sizing.hmp->indexY].TrueStepCount() : krnl->parameters[sizing.hmp->indexY].TrueStepCount()))
                                         {
                                             heatmap->values.hoveredAway = true;
                                             for (int ch = 0; ch < 3; ch++)
@@ -2362,6 +2409,7 @@ int imgui_main(int, char**)
                                                 if (heatmap->values.valueBuffer != nullptr)
                                                 {
                                                     heatmap->values.lastHovered = heatmap->values.valueBuffer[sizing.xSize * stepY + stepX];
+                                                    //heatmap->values.lastShiftClicked = heatmap->values.valueBuffer[sizing.xSize * stepY + stepX];
                                                 }
                                             }
                                             else
@@ -2371,6 +2419,7 @@ int imgui_main(int, char**)
                                                     if (heatmap->channel[ch].valueBuffer != nullptr)
                                                     {
                                                         heatmap->channel[ch].lastHovered = heatmap->channel[ch].valueBuffer[sizing.xSize * stepY + stepX];
+                                                        //heatmap->channel[ch].lastShiftClicked = heatmap->channel[ch].valueBuffer[sizing.xSize * stepY + stepX];
                                                     }
                                                 }
                                             }
@@ -2445,6 +2494,7 @@ int imgui_main(int, char**)
                                             {
                                                 if (heatmap->values.valueBuffer != nullptr)
                                                 {
+                                                    //heatmap->values.lastShiftClicked = heatmap->values.valueBuffer[sizing.xSize * stepY + stepX];
                                                     heatmap->values.lastSelected = heatmap->values.valueBuffer[sizing.xSize * stepY + stepX];
                                                 }
                                             }
@@ -2454,6 +2504,7 @@ int imgui_main(int, char**)
                                                 {
                                                     if (heatmap->channel[ch].valueBuffer != nullptr)
                                                     {
+                                                        //heatmap->channel[ch].lastShiftClicked = heatmap->channel[ch].valueBuffer[sizing.xSize * stepY + stepX];
                                                         heatmap->channel[ch].lastSelected = heatmap->channel[ch].valueBuffer[sizing.xSize * stepY + stepX];
                                                     }
                                                 }
@@ -2517,7 +2568,7 @@ int imgui_main(int, char**)
                                     }
                                     else
                                     {
-                                        for (int ch = 0; ch < 3; ch++) 
+                                        for (int ch = 0; ch < 3; ch++)
                                             if (heatmap->channel[ch].valueBuffer != nullptr)
                                             {
                                                 delete[] heatmap->channel[ch].valueBuffer;
@@ -2539,7 +2590,7 @@ int imgui_main(int, char**)
                                         for (int ch = 0; ch < 3; ch++)
                                         {
                                             //if (cmp->marshal.kernel.mapDatas[channelMapIndex[ch]].toCompute)
-                                                heatmap->channel[ch].valueBuffer = new numb[mapSize];
+                                            heatmap->channel[ch].valueBuffer = new numb[mapSize];
                                         }
                                     }
 
@@ -2620,7 +2671,7 @@ int imgui_main(int, char**)
                                         heatmap->paintLUT.Clear();
 
                                         heatmap->paintLUT.lutGroups = paintLUTsize;
-                                        heatmap->paintLUT.lut = new int*[paintLUTsize];
+                                        heatmap->paintLUT.lut = new int* [paintLUTsize];
                                         for (int i = 0; i < paintLUTsize; i++) heatmap->paintLUT.lut[i] = new int[cmp->marshal.totalVariations];
                                         heatmap->paintLUT.lutSizes = new int[paintLUTsize];
 
@@ -2647,25 +2698,47 @@ int imgui_main(int, char**)
                                 ImPlot::PlotImage(("Map " + std::to_string(mapIndex) + "##" + plotName + std::to_string(0)).c_str(), (ImTextureID)(heatmap->texture),
                                     from, to, ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f), ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
 
-                                // TODO: Does not work with "steps" mode instead of "values"
-                                /*if (ImGui::IsMouseDown(0) && ImGui::IsKeyPressed(ImGuiMod_Shift) && ImGui::IsMouseHoveringRect(plot->PlotRect.Min, plot->PlotRect.Max) && plot->ContextLocked || plot->shiftClicked) {
-                                    numb MousePosX = (numb)ImPlot::GetPlotMousePos().x ;
-                                    if (axisX->min > MousePosX)sizing.hmp->typeX == MDT_Variable ? attributeValueIndices[sizing.hmp->indexX] = 0 : attributeValueIndices[sizing.hmp->indexX + krnl->VAR_COUNT] = 0;
-                                    else if (axisX->max < MousePosX)sizing.hmp->typeX == MDT_Variable ? attributeValueIndices[sizing.hmp->indexX] = axisX->stepCount - 1 : attributeValueIndices[sizing.hmp->indexX + krnl->VAR_COUNT] = axisX->stepCount - 1;
-                                    else {
-                                        numb NotRoundedIndex = (MousePosX - axisX->min) / (axisX->max - axisX->min) * axisX->stepCount-0.75;
-                                        int index = static_cast<int>(std::round(NotRoundedIndex)); index < 0 ? index=0 : 1; if (index > axisX->stepCount - 1)index = axisX->stepCount - 1;
-                                        sizing.hmp->typeX == MDT_Variable ? attributeValueIndices[sizing.hmp->indexX] = index : attributeValueIndices[sizing.hmp->indexX + krnl->VAR_COUNT] = index;
+                                // If shift-clicked inside of plot object in correct window
+                                bool plotDragShiftClicked = ImGui::IsMouseDown(0) && ImGui::IsKeyPressed(ImGuiMod_Shift) && ImGui::IsMouseHoveringRect(plot->PlotRect.Min, plot->PlotRect.Max) && plot->ContextLocked;
+                                if (plotDragShiftClicked) {
+                                    //values
+                                    if (heatmap->showActualDiapasons) {
+                                        numb MousePosX = (numb)ImPlot::GetPlotMousePos().x; //find mouse Position
+                                        if (axisX->min > MousePosX)sizing.hmp->typeX == MDT_Variable ? attributeValueIndices[sizing.hmp->indexX] = 0 : attributeValueIndices[sizing.hmp->indexX + krnl->VAR_COUNT] = 0; // check if position is under minimum of parameter
+                                        else if (axisX->max < MousePosX)sizing.hmp->typeX == MDT_Variable ? attributeValueIndices[sizing.hmp->indexX] = axisX->stepCount - 1 : attributeValueIndices[sizing.hmp->indexX + krnl->VAR_COUNT] = axisX->stepCount - 1; // or above maximum
+                                        else {
+                                            numb NotRoundedIndex = (MousePosX - axisX->min - axisX->step) / (axisX->max - axisX->min) * axisX->stepCount;   // mathematically find what index would the mouse pos be
+                                            int index = static_cast<int>(std::round(NotRoundedIndex)); index < 0 ? index = 0 : 1; if (index > axisX->stepCount - 1)index = axisX->stepCount - 1;    // round the index and check if it is in parameter bounds
+                                            sizing.hmp->typeX == MDT_Variable ? attributeValueIndices[sizing.hmp->indexX] = index : attributeValueIndices[sizing.hmp->indexX + krnl->VAR_COUNT] = index;    // write index into attrivuteValueIndices
+                                        }
+                                        numb MousePosY = (numb)ImPlot::GetPlotMousePos().y;
+                                        if (axisY->min > MousePosY)sizing.hmp->typeY == MDT_Variable ? attributeValueIndices[sizing.hmp->indexY] = 0 : attributeValueIndices[sizing.hmp->indexY + krnl->VAR_COUNT] = 0;
+                                        else if (axisY->max < MousePosY)sizing.hmp->typeY == MDT_Variable ? attributeValueIndices[sizing.hmp->indexY] = axisY->stepCount - 1 : attributeValueIndices[sizing.hmp->indexY + krnl->VAR_COUNT] = axisY->stepCount - 1;
+                                        else {
+                                            numb NotRoundedIndex = (MousePosY - axisY->min - axisY->step) / (axisY->max - axisY->min) * axisY->stepCount;
+                                            int index = static_cast<int>(std::round(NotRoundedIndex)); index < 0 ? index = 0 : 1; if (index > axisY->stepCount - 1)index = axisY->stepCount - 1;
+                                            sizing.hmp->typeY == MDT_Variable ? attributeValueIndices[sizing.hmp->indexY] = index : attributeValueIndices[sizing.hmp->indexY + krnl->VAR_COUNT] = index;
+                                        }
                                     }
-                                    numb MousePosY = (numb)ImPlot::GetPlotMousePos().y ;
-                                    if (axisY->min > MousePosY)sizing.hmp->typeY == MDT_Variable ? attributeValueIndices[sizing.hmp->indexY] = 0 : attributeValueIndices[sizing.hmp->indexY + krnl->VAR_COUNT] = 0;
-                                    else if (axisY->max < MousePosY)sizing.hmp->typeY == MDT_Variable ? attributeValueIndices[sizing.hmp->indexY] = axisY->stepCount - 1 : attributeValueIndices[sizing.hmp->indexY + krnl->VAR_COUNT] = axisY->stepCount - 1;
+                                    //steps
                                     else {
-                                        numb NotRoundedIndex = (MousePosY - axisY->min) / (axisY->max - axisY->min) * axisY->stepCount-0.75;
-                                        int index = static_cast<int>(std::round(NotRoundedIndex)); index < 0 ? index = 0 : 1; if (index > axisY->stepCount - 1)index = axisY->stepCount - 1;
-                                        sizing.hmp->typeY == MDT_Variable ? attributeValueIndices[sizing.hmp->indexY] = index : attributeValueIndices[sizing.hmp->indexY + krnl->VAR_COUNT] = index;
+                                        numb MousePosX = (numb)ImPlot::GetPlotMousePos().x - 0.5;
+                                        if (0 > MousePosX)sizing.hmp->typeX == MDT_Variable ? attributeValueIndices[sizing.hmp->indexX] = 0 : attributeValueIndices[sizing.hmp->indexX + krnl->VAR_COUNT] = 0;
+                                        else if (axisX->stepCount < MousePosX)sizing.hmp->typeX == MDT_Variable ? attributeValueIndices[sizing.hmp->indexX] = axisX->stepCount - 1 : attributeValueIndices[sizing.hmp->indexX + krnl->VAR_COUNT] = axisX->stepCount - 1;
+                                        else {
+                                            int index = static_cast<int>(std::round(MousePosX)); index < 0 ? index = 0 : 1; if (index > axisX->stepCount - 1)index = axisX->stepCount - 1;
+                                            sizing.hmp->typeX == MDT_Variable ? attributeValueIndices[sizing.hmp->indexX] = index : attributeValueIndices[sizing.hmp->indexX + krnl->VAR_COUNT] = index;
+                                        }
+                                        numb MousePosY = (numb)ImPlot::GetPlotMousePos().y - 0.5;
+                                        if (0 > MousePosY)sizing.hmp->typeY == MDT_Variable ? attributeValueIndices[sizing.hmp->indexY] = 0 : attributeValueIndices[sizing.hmp->indexY + krnl->VAR_COUNT] = 0;
+                                        else if (axisY->stepCount < MousePosY)sizing.hmp->typeY == MDT_Variable ? attributeValueIndices[sizing.hmp->indexY] = axisY->stepCount - 1 : attributeValueIndices[sizing.hmp->indexY + krnl->VAR_COUNT] = axisY->stepCount - 1;
+                                        else {
+                                            int index = static_cast<int>(std::round(MousePosY)); index < 0 ? index = 0 : 1; if (index > axisY->stepCount - 1)index = axisY->stepCount - 1;
+                                            sizing.hmp->typeY == MDT_Variable ? attributeValueIndices[sizing.hmp->indexY] = index : attributeValueIndices[sizing.hmp->indexY + krnl->VAR_COUNT] = index;
+                                        }
+
                                     }
-                                }*/
+                                }
 
                                 // Value labels
                                 if (sizing.cutWidth > 0 && sizing.cutHeight > 0) // If there's anything to be shown in the plot
@@ -2689,7 +2762,7 @@ int imgui_main(int, char**)
                                         }
                                         else
                                         {
-                                            void* cutoffHeatmap; 
+                                            void* cutoffHeatmap;
                                             for (int ch = 0; ch < 3; ch++)
                                             {
                                                 if (window->variables[ch] == -1) continue;
@@ -2730,6 +2803,7 @@ int imgui_main(int, char**)
                                             std::string heatmapValueString = std::to_string(
                                                 heatmap->valueDisplay == VDM_OnlyOnShiftClick ? heatmap->values.lastSelected : heatmap->values.lastHovered);
                                             if (heatmap->values.hoveredAway) heatmapValueString = "";
+                                            //std::string heatmapValueString = std::to_string(heatmap->values.lastShiftClicked);
                                             ImVec2 valueTextSize = ImGui::CalcTextSize(heatmapValueString.c_str());
                                             ImDrawList* draw_list = ImPlot::GetPlotDrawList();
                                             ImVec2 text_pos = ImVec2(ImPlot::GetPlotPos().x + 10, ImPlot::GetPlotPos().y + ImPlot::GetPlotSize().y - valueTextSize.y - 10);
@@ -2749,6 +2823,7 @@ int imgui_main(int, char**)
                                                 std::string heatmapValueString = std::to_string(
                                                     heatmap->valueDisplay == VDM_OnlyOnShiftClick ? heatmap->channel[ch].lastSelected : heatmap->channel[ch].lastHovered);
                                                 if (heatmap->channel[ch].hoveredAway) heatmapValueString = "";
+                                                //std::string heatmapValueString = std::to_string(heatmap->channel[ch].lastShiftClicked);
                                                 ImVec2 valueTextSize = ImGui::CalcTextSize(heatmapValueString.c_str());
                                                 ImDrawList* draw_list = ImPlot::GetPlotDrawList();
                                                 ImVec2 text_pos = ImVec2(ImPlot::GetPlotPos().x + 10, ImPlot::GetPlotPos().y + ImPlot::GetPlotSize().y - (valueTextSize.y * shift) - 10);
@@ -2837,7 +2912,7 @@ int imgui_main(int, char**)
 
                                         HeatmapValues* values = &(heatmap->channel[ch]);
                                         numb minBefore = values->heatmapMin, maxBefore = values->heatmapMax;
-                                        
+
                                         float heatMinFloat = values->heatmapMin, heatMaxFloat = values->heatmapMax;
                                         std::string maxName = "Max##Max" + std::to_string(ch);
                                         std::string minName = "Min##Min" + std::to_string(ch);
@@ -2846,6 +2921,7 @@ int imgui_main(int, char**)
                                         ImGui::SetNextItemWidth(120);
                                         ImGui::DragFloat(maxName.c_str(), &heatMaxFloat, 0.01f);
                                         ImU32 markerColor32 = ImGui::ColorConvertFloat4ToU32(window->markerColor);
+                                        //ColormapMarkerSettings markerSettings(&(values->lastShiftClicked), 1, markerColor32, window->markerWidth);
                                         ColormapMarkerSettings markerSettings(heatmap->valueDisplay != VDM_Never,
                                             &(heatmap->valueDisplay == VDM_Always ? values->lastHovered : values->lastSelected),
                                             1, markerColor32, window->markerWidth);
@@ -2874,9 +2950,10 @@ int imgui_main(int, char**)
                                 ImGui::SetNextItemWidth(120);
                                 ImGui::DragFloat(maxName.c_str(), &heatMaxFloat, 0.01f);
                                 ImU32 markerColor32 = ImGui::ColorConvertFloat4ToU32(window->markerColor);
-                                ColormapMarkerSettings markerSettings(heatmap->valueDisplay != VDM_Never, 
+                                ColormapMarkerSettings markerSettings(heatmap->valueDisplay != VDM_Never,
                                     &(heatmap->valueDisplay == VDM_Always ? values->lastHovered : values->lastSelected),
                                     1, markerColor32, window->markerWidth);
+                                //ColormapMarkerSettings markerSettings(&(values->lastShiftClicked), 1, markerColor32, window->markerWidth);
                                 ImPlot::ColormapScale(colormapName.c_str(), values->heatmapMin, values->heatmapMax, markerSettings, ImVec2(120, plotSize.y - 30.0f), "%g", 0, heatmap->colormap);
                                 ImGui::SetNextItemWidth(120);
                                 ImGui::DragFloat(minName.c_str(), &heatMinFloat, 0.01f);
@@ -2891,8 +2968,88 @@ int imgui_main(int, char**)
 
                         ImGui::EndTable();
                     }
-
+                }
                     break;
+
+                case IndSeries:
+                {
+                    if (window->whiteBg)
+                        ImPlot::PushStyleColor(ImPlotCol_PlotBg, ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
+
+                    Kernel* krnl = &(KERNEL);
+                    Computation* cmp = &(computations[playedBufferIndex]);
+                    Marshal* mrsl = &cmp->marshal;
+
+                    if (cmp->bufferNo != window->prevbufferNo) 
+                    {
+                        window->prevbufferNo = cmp->bufferNo;
+                        for (int ind = 0; ind < window->variableCount; ind++) 
+                        {
+                            int variation;
+                            steps2Variation(&variation, &(attributeValueIndices.data()[0]), &KERNEL);
+                            mapIndex = (AnalysisIndex)window->variables[ind];
+                            numb* MapSlice = cmp->marshal.maps + index2port(cmp->marshal.kernel.analyses, mapIndex)->offset * cmp->marshal.totalVariations;
+                            window->indSeries.push_back(MapSlice[variation]);
+                        }
+                    }
+
+                    if (window->prevbufferNo - window->firstBufferNo <= 1) 
+                    {
+                        ImGui::Text("Index series not ready yet");
+                        break;
+                    }
+                    else 
+                    {
+                        if (ImPlot::BeginPlot(plotName.c_str(), "", "", ImVec2(-1, -1), ImPlotFlags_NoTitle, axisFlags, axisFlags))
+                        {
+                            plot = ImPlot::GetPlot(plotName.c_str());
+                            plot->is3d = false;
+                            if (!window->ShowMultAxes) ImPlot::SetupAxes(KERNEL.usingTime ? "Time" : "Steps", "Indices", toAutofitTimeSeries ? ImPlotAxisFlags_AutoFit : 0, toAutofitTimeSeries ? ImPlotAxisFlags_AutoFit : 0);
+                            else
+                            {
+                                ImPlot::SetupAxis(ImAxis_X1, "Time", toAutofitTimeSeries ? ImPlotAxisFlags_AutoFit : 0);
+                                for (int i = 0; i < window->variableCount; i++) 
+                                {
+                                    ImPlot::SetupAxis(ImAxis_Y1 + i, indices[(AnalysisIndex)window->variables[i]].name.c_str(), toAutofitTimeSeries ? ImPlotAxisFlags_AutoFit : 0);
+                                }
+                            }
+
+                            std::vector<numb> Xaxis;
+                            std::vector<numb> Yaxis;
+                            for (int i = 0; i < window->prevbufferNo - window->firstBufferNo; i++) 
+                            {
+                                Xaxis.push_back(cmp->marshal.variationSize / krnl->VAR_COUNT * i);
+                            }
+
+                            for (int ind = 0; ind < window->variableCount; ind++) 
+                            {
+                                for (int i = 0; i < window->prevbufferNo - window->firstBufferNo; i++) Yaxis.push_back(window->indSeries[i * window->variableCount + ind]);
+
+                                if (window->ShowMultAxes) 
+                                {
+                                    ImPlot::SetAxes(ImAxis_X1, ImAxis_Y1 + ind);
+                                }
+
+                                ImVec4 color;
+                                if (window->variableCount > 1) 
+                                {
+                                    color = ImPlot::GetColormapColor(ind, window->colormap);
+                                }
+
+                                ImPlot::SetNextLineStyle(window->variableCount > 1 ? color : window->markerColor, window->markerWidth);
+                                ImPlot::PlotLine(indices[(AnalysisIndex)window->variables[ind]].name.c_str(), Xaxis.data(), Yaxis.data(), window->prevbufferNo - window->firstBufferNo);
+                                Yaxis.clear();
+                            }
+
+                            Xaxis.clear();
+                            ImPlot::EndPlot();
+                        }
+                    }
+
+                    if (window->whiteBg)
+                        ImPlot::PopStyleColor();
+                }
+                break;
             }          
 
             if (fontNotDefault && window->overrideFontSettings) ImGui::PopFont();
@@ -3057,6 +3214,7 @@ void heatmapRangingSelection(PlotWindow* window, ImPlotPlot* plot, HeatmapSizing
         stepY2 = (int)floor(plot->shiftSelect2Location.y);
     }
 
+    //enabledParticles = false;
     playingParticles = false;
 
     int xMaxStep = sizing->hmp->typeX == MDT_Parameter ? krnlComputed->parameters[sizing->hmp->indexX].TrueStepCount() :

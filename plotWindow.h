@@ -9,8 +9,8 @@
 // Maximum amount of variables and parameters in the plot
 #define MAX_VARS_PARAMS 32
 
-enum PlotType { Series, Phase, Phase2D, Orbit, Heatmap, MCHeatmap, Metric, PlotType_COUNT };
-enum OrbitPlotType {  Peak_Bifurcation, Interval_Bifurcation, Bifurcation_3D, Selected_Var_Section, OrbitPlotType_COUNT};
+enum PlotType { VarSeries, Phase, Phase2D, Orbit, Heatmap, MCHeatmap, Metric, IndSeries, PlotType_COUNT };
+enum OrbitPlotType {  Peak_Bifurcation, Interval_Bifurcation, Selected_Var_Section, Bifurcation_3D,  OrbitPlotType_COUNT};
 
 struct PlotWindow
 {
@@ -89,6 +89,10 @@ public:
 	int indexX;
 	MapDimensionType typeX;
 
+	std::vector<numb> indSeries;
+	int firstBufferNo;
+	int prevbufferNo;
+
 	PlotWindow(int _id, std::string _name = "plot", bool _is3d = false)
 	{
 		active = true;
@@ -151,6 +155,10 @@ public:
 
 		indexX = 0;
 		typeX = MDT_Variable;
+
+		
+		firstBufferNo = 0;
+		prevbufferNo = 0;
 	}
 
 	bool isTheHiresWindow(AnalysisIndex _hiresIndex)
