@@ -2980,53 +2980,67 @@ int imgui_main(int, char**)
                     Computation* cmp = &(computations[playedBufferIndex]);
                     Marshal* mrsl = &cmp->marshal;
 
-                    if (cmp->bufferNo != window->prevbufferNo) {
+                    if (cmp->bufferNo != window->prevbufferNo) 
+                    {
                         window->prevbufferNo = cmp->bufferNo;
-                        for (int ind = 0; ind < window->variableCount; ind++) {
+                        for (int ind = 0; ind < window->variableCount; ind++) 
+                        {
                             int variation;
                             steps2Variation(&variation, &(attributeValueIndices.data()[0]), &KERNEL);
                             mapIndex = (AnalysisIndex)window->variables[ind];
                             numb* MapSlice = cmp->marshal.maps + index2port(cmp->marshal.kernel.analyses, mapIndex)->offset * cmp->marshal.totalVariations;
-                            window->indSeries.push_back(MapSlice[variation]) ;
+                            window->indSeries.push_back(MapSlice[variation]);
                         }
                     }
 
-                    if (window->prevbufferNo - window->firstBufferNo <= 1) {
+                    if (window->prevbufferNo - window->firstBufferNo <= 1) 
+                    {
                         ImGui::Text("Index series not ready yet");
                         break;
                     }
-                    else {
+                    else 
+                    {
                         if (ImPlot::BeginPlot(plotName.c_str(), "", "", ImVec2(-1, -1), ImPlotFlags_NoTitle, axisFlags, axisFlags))
                         {
                             plot = ImPlot::GetPlot(plotName.c_str());
                             plot->is3d = false;
-                            if (!window->ShowMultAxes) ImPlot::SetupAxes(KERNEL.usingTime ? "Time" : "Steps", "Indices");
+                            if (!window->ShowMultAxes) ImPlot::SetupAxes(KERNEL.usingTime ? "Time" : "Steps", "Indices", toAutofitTimeSeries ? ImPlotAxisFlags_AutoFit : 0, toAutofitTimeSeries ? ImPlotAxisFlags_AutoFit : 0);
                             else
                             {
-                                ImPlot::SetupAxis(ImAxis_X1, "Time", 0);
-                                for (int i = 0; i < window->variableCount; i++) {
-                                    ImPlot::SetupAxis(3 + i, indices[(AnalysisIndex)window->variables[i]].name.c_str(), 0);
+                                ImPlot::SetupAxis(ImAxis_X1, "Time", toAutofitTimeSeries ? ImPlotAxisFlags_AutoFit : 0);
+                                for (int i = 0; i < window->variableCount; i++) 
+                                {
+                                    ImPlot::SetupAxis(ImAxis_Y1 + i, indices[(AnalysisIndex)window->variables[i]].name.c_str(), toAutofitTimeSeries ? ImPlotAxisFlags_AutoFit : 0);
                                 }
                             }
+
                             std::vector<numb> Xaxis;
                             std::vector<numb> Yaxis;
-                            for (int i = 0; i < window->prevbufferNo - window->firstBufferNo; i++) {
+                            for (int i = 0; i < window->prevbufferNo - window->firstBufferNo; i++) 
+                            {
                                 Xaxis.push_back(cmp->marshal.variationSize / krnl->VAR_COUNT * i);
                             }
-                            for (int ind = 0; ind < window->variableCount; ind++) {
-                                for (int i = 0; i < window->prevbufferNo - window->firstBufferNo; i++) Yaxis.push_back(window->indSeries[i * window->variableCount + ind]) ;
 
-                                if (window->ShowMultAxes) {
-                                    ImPlot::SetAxes(ImAxis_X1, 3 + ind);
+                            for (int ind = 0; ind < window->variableCount; ind++) 
+                            {
+                                for (int i = 0; i < window->prevbufferNo - window->firstBufferNo; i++) Yaxis.push_back(window->indSeries[i * window->variableCount + ind]);
+
+                                if (window->ShowMultAxes) 
+                                {
+                                    ImPlot::SetAxes(ImAxis_X1, ImAxis_Y1 + ind);
                                 }
+
                                 ImVec4 color;
-                                if (window->variableCount > 1) {
+                                if (window->variableCount > 1) 
+                                {
                                     color = ImPlot::GetColormapColor(ind, window->colormap);
                                 }
+
                                 ImPlot::SetNextLineStyle(window->variableCount > 1 ? color : window->markerColor, window->markerWidth);
                                 ImPlot::PlotLine(indices[(AnalysisIndex)window->variables[ind]].name.c_str(), Xaxis.data(), Yaxis.data(), window->prevbufferNo - window->firstBufferNo);
                                 Yaxis.clear();
                             }
+
                             Xaxis.clear();
                             ImPlot::EndPlot();
                         }
@@ -3035,11 +3049,7 @@ int imgui_main(int, char**)
                     if (window->whiteBg)
                         ImPlot::PopStyleColor();
                 }
-                    break;
-
-
-
-
+                break;
             }          
 
             if (fontNotDefault && window->overrideFontSettings) ImGui::PopFont();
