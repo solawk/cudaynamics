@@ -57,9 +57,9 @@ public:
 
 	DeltaState deltaState;
 
-	std::vector<int> decayBuffer;
-	std::vector<int> decayTotal;
-	std::vector<int> decayAlive;
+	std::vector<std::vector<int>> decayBuffer;
+	std::vector<std::vector<int>> decayTotal;
+	std::vector<std::vector<int>> decayAlive;
 	
 	ImVec2 dragLineHiresPos;
 

@@ -112,6 +112,19 @@ std::string plottypes[] = { "Time series", "3D Phase diagram", "2D Phase diagram
 bool rangingWindowEnabled = true;
 bool graphBuilderWindowEnabled = true;
 
+void deleteDecayBuffers(PlotWindow& window)
+{
+    for (int t = 0; t < window.decayAlive.size(); t++)
+    {
+        window.decayAlive[t].clear();
+        window.decayBuffer[t].clear();
+        window.decayTotal[t].clear();
+    }
+    window.decayAlive.clear();
+    window.decayBuffer.clear();
+    window.decayTotal.clear();
+}
+
 void deleteBuffers(bool deleteHires)
 {
     if (!deleteHires)
@@ -127,9 +140,7 @@ void deleteBuffers(bool deleteHires)
 
     for (int i = 0; i < plotWindows.size(); i++)
     {
-        plotWindows[i].decayAlive.clear();
-        plotWindows[i].decayBuffer.clear();
-        plotWindows[i].decayTotal.clear();
+        deleteDecayBuffers(plotWindows[i]);
     }
 }
 
@@ -1492,6 +1503,7 @@ int imgui_main(int, char**)
             ImPlot3DPlot* plot3d;
             AnalysisIndex mapIndex;
             AnalysisIndex channelMapIndex[3];
+            DecaySettings* decay;
             ImPlotColormap heatmapColorMap =  ImPlotColormap_Jet;
             ImVec4 rotationEuler;
             ImVec4 rotationEulerEditable, rotationEulerBeforeEdit;
@@ -2263,21 +2275,47 @@ int imgui_main(int, char**)
                     heatmap     = &window->hmp;
                     cmp         = &(computations[playedBufferIndex]);
                     krnl        = &(KERNEL);
+                    decay       = &(indices[mapIndex].decay);
 
                     ImGui::Text("Source:"); ImGui::SameLine();
-                    if (ImGui::RadioButton(("Index##DTSIndex" + plotName).c_str(), indices[mapIndex].decay.source == DTS_Index)) indices[mapIndex].decay.source = DTS_Index;
+                    if (ImGui::RadioButton(("Index##DTSIndex" + plotName).c_str(), decay->source == DTS_Index)) decay->source = DTS_Index;
                     ImGui::SameLine();
-                    if (ImGui::RadioButton(("Delta##DTSDelta" + plotName).c_str(), indices[mapIndex].decay.source == DTS_Delta)) indices[mapIndex].decay.source = DTS_Delta;
+                    if (ImGui::RadioButton(("Delta##DTSDelta" + plotName).c_str(), decay->source == DTS_Delta)) decay->source = DTS_Delta;
 
                     ImGui::Text("Mode:"); ImGui::SameLine();
-                    if (ImGui::RadioButton(("Less than##DTMLess" + plotName).c_str(), indices[mapIndex].decay.mode == DTM_Less)) indices[mapIndex].decay.mode = DTM_Less;
+                    if (ImGui::RadioButton(("Less than##DTMLess" + plotName).c_str(), decay->mode == DTM_Less)) decay->mode = DTM_Less;
                     ImGui::SameLine();
-                    if (ImGui::RadioButton(("More than##DTMMore" + plotName).c_str(), indices[mapIndex].decay.mode == DTM_More)) indices[mapIndex].decay.mode = DTM_More;
+                    if (ImGui::RadioButton(("More than##DTMMore" + plotName).c_str(), decay->mode == DTM_More)) decay->mode = DTM_More;
                     ImGui::SameLine();
-                    if (ImGui::RadioButton(("Absolute value more than##DTMAbsMore" + plotName).c_str(), indices[mapIndex].decay.mode == DTM_Abs_More)) indices[mapIndex].decay.mode = DTM_Abs_More;
+                    if (ImGui::RadioButton(("Absolute value more than##DTMAbsMore" + plotName).c_str(), decay->mode == DTM_Abs_More)) decay->mode = DTM_Abs_More;
 
-                    ImGui::Text("Threshold"); ImGui::SameLine();
-                    ImGui::InputFloat(("##DT" + plotName).c_str(), &(indices[mapIndex].decay.threshold));
+                    if (decay->thresholds.size() < 2)
+                    {
+                        ImGui::Text("Threshold"); ImGui::SameLine();
+                        ImGui::InputFloat(("##DT" + plotName).c_str(), &(decay->thresholds[0]));
+                    }
+                    else
+                    {
+                        ImGui::Text("Thresholds"); ImGui::SameLine();
+                        std::string previewThresholds = "";
+                        for (int t = 0; t < decay->thresholds.size(); t++) previewThresholds += std::to_string(decay->thresholds[t]) + (t < decay->thresholds.size() - 1 ? ", " : "");
+                        if (ImGui::BeginCombo(("##DTs" + plotName).c_str(), previewThresholds.c_str()))
+                        {
+                            ImGui::Text("Must be in descending order");
+                            for (int t = 0; t < decay->thresholds.size(); t++)
+                            {
+                                ImGui::Text(("Threshold " + std::to_string(t)).c_str()); ImGui::SameLine();
+                                ImGui::InputFloat(("##DT" + std::to_string(t) + plotName).c_str(), &(decay->thresholds[t]));
+                            }
+
+                            ImGui::EndCombo();
+                        }
+                    }
+
+                    ImGui::BeginDisabled(decay->thresholds.size() < 2);
+                    ImGui::SameLine(); if (ImGui::Button(("-##minusThreshold" + plotName).c_str())) { decay->thresholds.pop_back(); deleteDecayBuffers(*window); };
+                    ImGui::EndDisabled();
+                    ImGui::SameLine(); if (ImGui::Button(("+##plusThreshold" + plotName).c_str())) { decay->thresholds.push_back(decay->thresholds[decay->thresholds.size() - 1]); deleteDecayBuffers(*window); };
 
                     if (cmp->marshal.indecesDelta == nullptr)
                     {
@@ -2287,24 +2325,37 @@ int imgui_main(int, char**)
 
                     if (heatmap->areValuesDirty)
                     {
-                        int decayAlive = 0, decayTotal = cmp->marshal.totalVariations;
-                        window->decayBuffer.push_back(cmp->bufferNo);
-
-                        numb* decay = cmp->marshal.indecesDecay + (index2port(cmp->marshal.kernel.analyses, mapIndex)->offset + heatmap->values.mapValueIndex) * cmp->marshal.totalVariations;
-                        for (int i = 0; i < cmp->marshal.totalVariations; i++)
+                        if (window->decayBuffer.size() == 0)
                         {
-                            if (decay[i] == (numb)0) decayAlive++;
+                            for (int t = 0; t < decay->thresholds.size(); t++)
+                            {
+                                window->decayBuffer.push_back(std::vector<int>{});
+                                window->decayTotal.push_back(std::vector<int>{});
+                                window->decayAlive.push_back(std::vector<int>{});
+                            }
                         }
 
-                        window->decayTotal.push_back(decayTotal);
-                        window->decayAlive.push_back(decayAlive);
+                        for (int t = 0; t < decay->thresholds.size(); t++)
+                        {
+                            int decayAlive = 0, decayTotal = cmp->marshal.totalVariations;
+                            window->decayBuffer[t].push_back(cmp->bufferNo);
+
+                            numb* decay = cmp->marshal.indecesDecay + (index2port(cmp->marshal.kernel.analyses, mapIndex)->offset + heatmap->values.mapValueIndex) * cmp->marshal.totalVariations;
+                            for (int i = 0; i < cmp->marshal.totalVariations; i++)
+                            {
+                                if (decay[i] < (numb)(t + 1)) decayAlive++;
+                            }
+
+                            window->decayTotal[t].push_back(decayTotal);
+                            window->decayAlive[t].push_back(decayAlive);
+                        }
 
                         heatmap->areValuesDirty = false;
                     }
 
                     if (toAutofitTimeSeries) ImPlot::SetNextAxisLimits(ImAxis_Y1, 0.0, (double)cmp->marshal.totalVariations, ImPlotCond_Always);
 
-                    if (window->decayBuffer.size() > 0)
+                    if (window->decayBuffer.size() > 0 && window->decayBuffer[0].size() > 0)
                     {
                         if (ImPlot::BeginPlot(("##Decay_Plot" + plotName).c_str(), ImVec2(-1, -1), ImPlotFlags_NoTitle))
                         {
@@ -2322,15 +2373,22 @@ int imgui_main(int, char**)
                                     ImPlotAxis& x_axis = plot->XAxis(i);
                                     x_axis.FitThisFrame = true;
                                 }
-                                for (int i = 0; i < IMPLOT_NUM_Y_AXES; i++)
-                                {
-                                    ImPlotAxis& y_axis = plot->YAxis(i);
-                                    y_axis.FitThisFrame = true;
-                                }
                             }
 
-                            ImPlot::PlotShaded(("##" + plotName + "_plotShade").c_str(), &(window->decayBuffer[0]), &(window->decayAlive[0]), (int)window->decayBuffer.size(), INFINITY);
-                            ImPlot::PlotLine(("##" + plotName + "_plot").c_str(), &(window->decayBuffer[0]), &(window->decayAlive[0]), (int)window->decayBuffer.size());
+                            ImPlot::PushStyleVar(ImPlotStyleVar_FillAlpha, (1.0f / decay->thresholds.size()) * 0.75f);
+                            for (int t = 0; t < decay->thresholds.size(); t++)
+                            {
+                                ImPlot::SetNextFillStyle(decay->thresholds.size() > 1 ? ImPlot::GetColormapColor(t, window->colormap) : window->markerColor);
+                                ImPlot::PlotShaded(("##" + plotName + "_plotShade" + std::to_string(t)).c_str(),
+                                    &(window->decayBuffer[t][0]), &(window->decayAlive[t][0]), (int)window->decayBuffer[t].size(), INFINITY);
+                            }
+                            ImPlot::PopStyleVar();
+                            for (int t = 0; t < decay->thresholds.size(); t++)
+                            {
+                                ImPlot::SetNextLineStyle(decay->thresholds.size() > 1 ? ImPlot::GetColormapColor(t, window->colormap) : window->markerColor, window->markerWidth);
+                                ImPlot::PlotLine(((decay->thresholds.size() > 1 ? std::to_string(decay->thresholds[t]) : "") + "##" + plotName + "_plot").c_str(),
+                                    &(window->decayBuffer[t][0]), &(window->decayAlive[t][0]), (int)window->decayBuffer[t].size());
+                            }
 
                             ImPlot::EndPlot();
                         }
