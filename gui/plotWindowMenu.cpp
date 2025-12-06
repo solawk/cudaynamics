@@ -16,6 +16,7 @@ extern PlotWindow* colorsLUTfrom;
 extern int paintLUTsize;
 extern PlotWindow* hiresHeatmapWindow;
 extern Kernel kernelNew, kernelHiresNew, kernelHiresComputed;
+extern bool autofitTimeSeries;
 
 void plotWindowMenu(PlotWindow* window)
 {
@@ -164,7 +165,11 @@ void plotWindowMenu_DecayPlot(PlotWindow* window)
 
 		plotWindowMenu_CommonPlot(window, windowName);
 
-		bool tempYLog = window->isYLog; if (ImGui::Checkbox(("##" + windowName + "YLog").c_str(), &tempYLog)) window->isYLog = !window->isYLog;
+		bool tempYLog = window->isYLog; if (ImGui::Checkbox(("##" + windowName + "YLog").c_str(), &tempYLog))
+		{
+			window->isYLog = !window->isYLog;
+			autofitTimeSeries = true;
+		}
 		ImGui::SameLine(); ImGui::Text("Y Log Scale");
 
 		ImGui::EndMenu();

@@ -2353,13 +2353,13 @@ int imgui_main(int, char**)
                         heatmap->areValuesDirty = false;
                     }
 
-                    if (toAutofitTimeSeries) ImPlot::SetNextAxisLimits(ImAxis_Y1, 0.0, (double)cmp->marshal.totalVariations, ImPlotCond_Always);
+                    if (toAutofitTimeSeries && !window->isYLog) ImPlot::SetNextAxisLimits(ImAxis_Y1, 0.0, (double)cmp->marshal.totalVariations, ImPlotCond_Always);
 
                     if (window->decayBuffer.size() > 0 && window->decayBuffer[0].size() > 0)
                     {
                         if (ImPlot::BeginPlot(("##Decay_Plot" + plotName).c_str(), ImVec2(-1, -1), ImPlotFlags_NoTitle))
                         {
-                            ImPlot::SetupAxes(!KERNEL.usingTime ? "Steps" : "Time", "Variations alive", 0, 0);
+                            ImPlot::SetupAxes(!KERNEL.usingTime ? "Steps" : "Time", "Variations alive", 0, toAutofitTimeSeries ? ImPlotAxisFlags_AutoFit : 0);
                             ImPlot::SetupAxisScale(ImAxis_Y1, !window->isYLog ? ImPlotScale_Linear : ImPlotScale_Log10);
 
                             plot = ImPlot::GetPlot(("##Decay_Plot" + plotName).c_str());
