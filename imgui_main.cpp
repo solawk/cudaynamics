@@ -3004,21 +3004,22 @@ int imgui_main(int, char**)
                         {
                             plot = ImPlot::GetPlot(plotName.c_str());
                             plot->is3d = false;
-                            if (!window->ShowMultAxes) ImPlot::SetupAxes(KERNEL.usingTime ? "Time" : "Steps", "Indices", toAutofitTimeSeries ? ImPlotAxisFlags_AutoFit : 0, toAutofitTimeSeries ? ImPlotAxisFlags_AutoFit : 0);
+                            if (!window->ShowMultAxes) ImPlot::SetupAxes(KERNEL.usingTime ? "Time" : "Steps", "Indices", toAutofitTimeSeries ? ImPlotAxisFlags_AutoFit : 0, 0);
                             else
                             {
-                                ImPlot::SetupAxis(ImAxis_X1, "Time", toAutofitTimeSeries ? ImPlotAxisFlags_AutoFit : 0);
+                                ImPlot::SetupAxis(ImAxis_X1, KERNEL.usingTime ? "Time" : "Steps", toAutofitTimeSeries ? ImPlotAxisFlags_AutoFit : 0);
                                 for (int i = 0; i < window->variableCount; i++) 
                                 {
-                                    ImPlot::SetupAxis(ImAxis_Y1 + i, indices[(AnalysisIndex)window->variables[i]].name.c_str(), toAutofitTimeSeries ? ImPlotAxisFlags_AutoFit : 0);
+                                    ImPlot::SetupAxis(ImAxis_Y1 + i, indices[(AnalysisIndex)window->variables[i]].name.c_str(), 0);
                                 }
                             }
 
                             std::vector<numb> Xaxis;
                             std::vector<numb> Yaxis;
+                            float stepsize = getStepSize(KERNEL);
                             for (int i = 0; i < window->prevbufferNo - window->firstBufferNo; i++) 
                             {
-                                Xaxis.push_back(cmp->marshal.variationSize / krnl->VAR_COUNT * i);
+                                Xaxis.push_back(KERNEL.usingTime ? cmp->marshal.variationSize / krnl->VAR_COUNT * stepsize * i : cmp->marshal.variationSize / krnl->VAR_COUNT * i);
                             }
 
                             for (int ind = 0; ind < window->variableCount; ind++) 
