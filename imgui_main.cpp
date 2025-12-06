@@ -2380,7 +2380,7 @@ int imgui_main(int, char**)
                             {
                                 ImPlot::SetNextFillStyle(decay->thresholds.size() > 1 ? ImPlot::GetColormapColor(t, window->colormap) : window->markerColor);
                                 ImPlot::PlotShaded(("##" + plotName + "_plotShade" + std::to_string(t)).c_str(),
-                                    &(window->decayBuffer[t][0]), &(window->decayAlive[t][0]), (int)window->decayBuffer[t].size(), INFINITY);
+                                    &(window->decayBuffer[t][0]), &(window->decayAlive[t][0]), (int)window->decayBuffer[t].size(), (double)cmp->marshal.totalVariations);
                             }
                             ImPlot::PopStyleVar();
                             for (int t = 0; t < decay->thresholds.size(); t++)
