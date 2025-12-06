@@ -2338,7 +2338,7 @@ int imgui_main(int, char**)
                         for (int t = 0; t < decay->thresholds.size(); t++)
                         {
                             int decayAlive = 0, decayTotal = cmp->marshal.totalVariations;
-                            window->decayBuffer[t].push_back(cmp->bufferNo);
+                            window->decayBuffer[t].push_back(!KERNEL.usingTime ? (cmp->bufferNo * KERNEL.steps + KERNEL.transientSteps) : (cmp->bufferNo * KERNEL.time + KERNEL.transientTime));
 
                             numb* decay = cmp->marshal.indecesDecay + (index2port(cmp->marshal.kernel.analyses, mapIndex)->offset + heatmap->values.mapValueIndex) * cmp->marshal.totalVariations;
                             for (int i = 0; i < cmp->marshal.totalVariations; i++)
@@ -2359,7 +2359,7 @@ int imgui_main(int, char**)
                     {
                         if (ImPlot::BeginPlot(("##Decay_Plot" + plotName).c_str(), ImVec2(-1, -1), ImPlotFlags_NoTitle))
                         {
-                            ImPlot::SetupAxes("Buffer No.", "Variations alive", 0, 0);
+                            ImPlot::SetupAxes(!KERNEL.usingTime ? "Steps" : "Time", "Variations alive", 0, 0);
                             ImPlot::SetupAxisScale(ImAxis_Y1, !window->isYLog ? ImPlotScale_Linear : ImPlotScale_Log10);
 
                             plot = ImPlot::GetPlot(("##Decay_Plot" + plotName).c_str());
