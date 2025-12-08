@@ -2273,7 +2273,7 @@ int imgui_main(int, char**)
                 case Decay:
                     mapIndex    = (AnalysisIndex)window->variables[0];
                     heatmap     = &window->hmp;
-                    cmp         = &(computations[playedBufferIndex]);
+                    cmp         = &(computations[1 - bufferToFillIndex]);
                     krnl        = &(KERNEL);
                     decay       = &(indices[mapIndex].decay);
 
@@ -2319,7 +2319,7 @@ int imgui_main(int, char**)
 
                     if (cmp->marshal.indecesDelta == nullptr)
                     {
-                        ImGui::Text("Decay plot not ready yet");
+                        ImGui::Text("Decay plot delta not ready yet");
                         break;
                     }
 

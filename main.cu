@@ -442,7 +442,7 @@ void indexDecayPostprocessing(Computation* data)
             DecaySettings* settings = &(indexPair.second.decay);
             float thresholdCount = settings->thresholds.size();
 
-            if (data->bufferNo >= (settings->source == DTS_Index ? 0 : 1) && port->used)
+            if (data->bufferNo >= (settings->source == DTS_Index ? -2 : 1) && port->used)
             {
                 for (uint64_t v = indexStart; v < indexEnd; v++)
                 {

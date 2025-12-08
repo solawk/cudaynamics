@@ -198,3 +198,58 @@ std::string exportTimeSeriesCSV(const PlotWindow* window)
 
     return path;
 }
+
+
+// ======================================================
+//                DECAY EXPORT
+// ======================================================
+std::string exportDecayCSV(const PlotWindow* window)
+{
+    if (!window) return {};
+
+    // Активное вычисление
+    const Computation& comp = computations[playedBufferIndex];
+    if (!comp.ready || !comp.marshal.trajectory)
+        return {};
+
+    // Проверки шагов и переменных
+    const int steps = computedSteps;
+    if (steps <= 0 || KERNEL.VAR_COUNT <= 0)
+        return {};
+
+    // Имя файла
+    const std::string systemName = safe_system_name(KERNEL);
+    const std::string path = build_export_path(systemName, "decay", /*extra*/"", ".csv");
+    std::ofstream f = open_csv(path);
+    if (!f.is_open()) return {};
+
+    // Ось X
+    const bool useTime = KERNEL.usingTime;
+
+    // === Заголовок ===
+    f << (useTime ? "time" : "step");
+    Index* index = &(indices[(AnalysisIndex)window->variables[0]]);
+    int thresholdCount = (int)index->decay.thresholds.size();
+    for (float threshold : index->decay.thresholds) 
+    {
+        f << ',' << threshold;
+    }
+    f << ",total" << '\n';
+
+    // === Данные ===
+    const int rows = (int)window->decayBuffer[0].size();
+    for (int i = 0; i < rows; ++i) 
+    {
+        const double x = window->decayBuffer[0][i];
+        f << x;
+
+        for (int t = 0; t < thresholdCount; t++)
+        {
+            f << ',' << window->decayAlive[t][i];
+        }
+
+        f << ',' << window->decayTotal[0][i] << '\n';
+    }
+
+    return path;
+}
