@@ -60,6 +60,7 @@ public:
 	std::vector<std::vector<int>> decayBuffer;
 	std::vector<std::vector<int>> decayTotal;
 	std::vector<std::vector<int>> decayAlive;
+	bool decayIndicesAreAND; // true if AND, false if OR
 	
 	ImVec2 dragLineHiresPos;
 
@@ -130,6 +131,7 @@ public:
 		drawAllTrajectories = false;
 
 		deltaState = DS_No;
+		decayIndicesAreAND = true;
 		dragLineHiresPos = ImVec2(0.0f, 0.0f);
 
 		showAxis = true;

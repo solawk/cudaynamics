@@ -179,6 +179,13 @@ void plotWindowMenu_DecayPlot(PlotWindow* window)
 		}
 		ImGui::SameLine(); ImGui::Text("Y Log Scale");
 
+		bool tempAND = window->decayIndicesAreAND; if (ImGui::Checkbox(("##" + windowName + "AND").c_str(), &tempAND))
+		{
+			window->decayIndicesAreAND = !window->decayIndicesAreAND;
+		}
+		ImGui::SameLine(); ImGui::Text("Alive AND");
+		TOOLTIP("Trajectory alive only if alive in all indices. False if it needs to be alive at least in one index")
+
 		ImGui::EndMenu();
 	}
 }

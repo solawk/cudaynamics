@@ -462,7 +462,7 @@ int imgui_main(int, char**)
     int selectedPlotMap = 0;
     int selectedPlotMCMaps[3]{ 0 };
     int selectedPlotMapMetric = 0;
-    int selectedPlotMapDecay = 0;
+    std::set<int> selectedPlotMapDecay;
 
 #define RESET_GRAPH_BUILDER_SETTINGS \
     selectedPlotVars[0] = 0; for (int i = 1; i < 3; i++) selectedPlotVars[i] = -1;  \
@@ -1141,15 +1141,41 @@ int imgui_main(int, char**)
                 break;
 
             case Decay:
-                if (selectedPlotMapDecay >= indices.size()) selectedPlotMapDecay = 0;
+                // Index adding combo
 
-                ImGui::Text("Index");
+                ImGui::Text("Add index");
                 ImGui::SameLine();
-                mapSelectionCombo("##Plot builder decay map index selection", selectedPlotMapDecay, false);
+                if (ImGui::BeginCombo("##Add index combo", " ", ImGuiComboFlags_NoPreview))
+                {
+                    for (int i = 0; i < (int)indices.size(); i++)
+                    {
+                        bool isSelected = selectedPlotMapDecay.find(i) != selectedPlotMapDecay.end();
+                        ImGuiSelectableFlags selectableFlags = 0;
+
+                        if (isSelected) selectableFlags = ImGuiSelectableFlags_Disabled;
+                        if (ImGui::Selectable(indices[(AnalysisIndex)i].name.c_str())) selectedPlotMapDecay.insert(i);
+                    }
+
+                    ImGui::EndCombo();
+                }
+
+                // Index list
+
+                for (const int i : selectedPlotMapDecay)
+                {
+                    if (ImGui::Button(("x##" + std::to_string(i)).c_str()))
+                    {
+                        selectedPlotMapDecay.erase(i);
+                        break;
+                    }
+                    ImGui::SameLine();
+                    ImGui::Text(("- " + indices[(AnalysisIndex)i].name).c_str());
+                }
+
                 break;
 
             case Metric:
-                ImGui::Text("Add indeces");
+                ImGui::Text("Add indices");
                 ImGui::SameLine();
 
                 int indicesSize = (int)indices.size();
@@ -2271,23 +2297,28 @@ int imgui_main(int, char**)
                     break;
 
                 case Decay:
-                    mapIndex    = (AnalysisIndex)window->variables[0];
+                    mapIndex    = (AnalysisIndex)window->variables[0]; // Using only the first index for previews etc., but editing all indices of the window
                     heatmap     = &window->hmp;
                     cmp         = &(computations[1 - bufferToFillIndex]);
                     krnl        = &(KERNEL);
                     decay       = &(indices[mapIndex].decay);
 
                     ImGui::Text("Source:"); ImGui::SameLine();
-                    if (ImGui::RadioButton(("Index##DTSIndex" + plotName).c_str(), decay->source == DTS_Index)) decay->source = DTS_Index;
+                    if (ImGui::RadioButton(("Index##DTSIndex" + plotName).c_str(), decay->source == DTS_Index))
+                        for (int i : window->variables) indices[(AnalysisIndex)i].decay.source = DTS_Index;
                     ImGui::SameLine();
-                    if (ImGui::RadioButton(("Delta##DTSDelta" + plotName).c_str(), decay->source == DTS_Delta)) decay->source = DTS_Delta;
+                    if (ImGui::RadioButton(("Delta##DTSDelta" + plotName).c_str(), decay->source == DTS_Delta))
+                        for (int i : window->variables) indices[(AnalysisIndex)i].decay.source = DTS_Delta;
 
                     ImGui::Text("Mode:"); ImGui::SameLine();
-                    if (ImGui::RadioButton(("Less than##DTMLess" + plotName).c_str(), decay->mode == DTM_Less)) decay->mode = DTM_Less;
+                    if (ImGui::RadioButton(("Less than##DTMLess" + plotName).c_str(), decay->mode == DTM_Less))
+                        for (int i : window->variables) indices[(AnalysisIndex)i].decay.mode = DTM_Less;
                     ImGui::SameLine();
-                    if (ImGui::RadioButton(("More than##DTMMore" + plotName).c_str(), decay->mode == DTM_More)) decay->mode = DTM_More;
+                    if (ImGui::RadioButton(("More than##DTMMore" + plotName).c_str(), decay->mode == DTM_More))
+                        for (int i : window->variables) indices[(AnalysisIndex)i].decay.mode = DTM_More;
                     ImGui::SameLine();
-                    if (ImGui::RadioButton(("Absolute value more than##DTMAbsMore" + plotName).c_str(), decay->mode == DTM_Abs_More)) decay->mode = DTM_Abs_More;
+                    if (ImGui::RadioButton(("Absolute value more than##DTMAbsMore" + plotName).c_str(), decay->mode == DTM_Abs_More))
+                        for (int i : window->variables) indices[(AnalysisIndex)i].decay.mode = DTM_Abs_More;
 
                     if (decay->thresholds.size() < 2)
                     {
@@ -2317,6 +2348,8 @@ int imgui_main(int, char**)
                     ImGui::EndDisabled();
                     ImGui::SameLine(); if (ImGui::Button(("+##plusThreshold" + plotName).c_str())) { decay->thresholds.push_back(decay->thresholds[decay->thresholds.size() - 1]); deleteDecayBuffers(*window); };
 
+                    for (int i : window->variables) indices[(AnalysisIndex)i].decay.thresholds = decay->thresholds;
+
                     if (cmp->marshal.indecesDelta == nullptr)
                     {
                         ImGui::Text("Decay plot delta not ready yet");
@@ -2340,10 +2373,20 @@ int imgui_main(int, char**)
                             int decayAlive = 0, decayTotal = cmp->marshal.totalVariations;
                             window->decayBuffer[t].push_back(!KERNEL.usingTime ? (cmp->bufferNo * KERNEL.steps + KERNEL.transientSteps) : (cmp->bufferNo * KERNEL.time + KERNEL.transientTime));
 
-                            numb* decay = cmp->marshal.indecesDecay + (index2port(cmp->marshal.kernel.analyses, mapIndex)->offset + heatmap->values.mapValueIndex) * cmp->marshal.totalVariations;
                             for (int i = 0; i < cmp->marshal.totalVariations; i++)
                             {
-                                if (decay[i] < (numb)(t + 1)) decayAlive++;
+                                bool anyAlive = false;
+                                bool anyDead = false;
+                                for (int index : window->variables)
+                                {
+                                    numb* decay = cmp->marshal.indecesDecay + (index2port(cmp->marshal.kernel.analyses, (AnalysisIndex)index)->offset + heatmap->values.mapValueIndex) * cmp->marshal.totalVariations;
+                                    if (decay[i] < (numb)(t + 1))
+                                        anyAlive = true;
+                                    else
+                                        anyDead = true;
+                                }
+                                if (window->decayIndicesAreAND && !anyDead) decayAlive++;
+                                else if (!window->decayIndicesAreAND && anyAlive) decayAlive++;
                             }
 
                             window->decayTotal[t].push_back(decayTotal);
