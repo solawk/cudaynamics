@@ -419,7 +419,7 @@ void setupAnFuncs(Computation* data)
 
 void indexDecayPostprocessing(Computation* data)
 {
-    if (!data->isHires)
+    //if (!data->isHires)
     {
         // Calculate the delta if it's not the first launch
         if (data->isFirst)
