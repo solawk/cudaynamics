@@ -59,7 +59,7 @@ void plotWindowMenu_File(PlotWindow* window)
 	if (ImGui::BeginMenu("File"))
 	{
 		if (ImGui::MenuItem("Export to .csv", nullptr, false,
-			(window->type == Heatmap) || (window->type == Series) || (window->type == Decay)))
+			(window->type == Heatmap) || (window->type == Series) || (window->type == Decay) || (window->type == Orbit)))
 		{
 			std::string savedPath;
 			bool attempted = false; 
@@ -114,6 +114,13 @@ void plotWindowMenu_File(PlotWindow* window)
 			case Decay:
 			{
 				savedPath = exportDecayCSV(window);
+				attempted = true;
+				break;
+			}
+
+			case Orbit:
+			{
+				savedPath = exportOrbitCSV(window);
 				attempted = true;
 				break;
 			}
