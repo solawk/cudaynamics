@@ -2822,7 +2822,8 @@ int imgui_main(int, char**)
                                         for (int i = 0; i < paintLUTsize; i++) heatmap->paintLUT.lut[i] = new int[cmp->marshal.totalVariations];
                                         heatmap->paintLUT.lutSizes = new int[paintLUTsize];
 
-                                        setupLUT(cmp->marshal.maps + (index2port(cmp->marshal.kernel.analyses, mapIndex)->offset + heatmap->values.mapValueIndex) * cmp->marshal.totalVariations,
+                                        setupLUT((window->deltaState == DS_No ? cmp->marshal.maps : (window->deltaState == DS_Delta ? cmp->marshal.indecesDelta : cmp->marshal.indecesDecay))
+                                            + (index2port(cmp->marshal.kernel.analyses, mapIndex)->offset + heatmap->values.mapValueIndex) * cmp->marshal.totalVariations,
                                             cmp->marshal.totalVariations, heatmap->paintLUT.lut, heatmap->paintLUT.lutSizes, paintLUTsize,
                                             heatmap->values.heatmapMin, heatmap->values.heatmapMax);
                                     }
