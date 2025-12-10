@@ -1,4 +1,4 @@
-Name: Izhikevich neuron model
+Name: Izhikevich neuron
 Steps: 80000
 Transient: 40000
 // Defining step:

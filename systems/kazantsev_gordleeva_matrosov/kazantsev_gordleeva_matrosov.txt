@@ -1,4 +1,4 @@
-Name: Kazantsev-Gordleeva-Matrosov astrocyte model
+Name: Kazantsev-Gordleeva-Matrosov astrocyte
 Steps: 10000
 Transient: 0
 // Defining step:

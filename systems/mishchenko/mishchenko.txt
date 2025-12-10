@@ -1,4 +1,4 @@
-Name: Mishchenko neuron model
+Name: Mishchenko neuron
 Steps: 1000
 Transient: 0
 // Defining step:

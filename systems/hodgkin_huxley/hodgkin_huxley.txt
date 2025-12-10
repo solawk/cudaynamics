@@ -1,4 +1,4 @@
-Name: Hodgkin-Huxley neuron model
+Name: Hodgkin-Huxley neuron
 Steps: 10000
 Transient: 2000
 // Defining step:

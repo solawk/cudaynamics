@@ -1,4 +1,4 @@
-Name: Ostrovskii neuron model
+Name: Ostrovskii neuron
 Steps: 500000
 Transient: 0
 // Defining step:

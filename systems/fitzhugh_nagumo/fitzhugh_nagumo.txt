@@ -1,4 +1,4 @@
-Name: FitzHugh-Nagumo neuron model
+Name: FitzHugh-Nagumo neuron
 Steps: 1000
 Transient: 0
 // Defining step:

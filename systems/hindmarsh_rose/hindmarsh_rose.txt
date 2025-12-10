@@ -1,4 +1,4 @@
-Name: Hindmarsh-Rose neuron model
+Name: Hindmarsh-Rose neuron
 Steps: 10000
 Transient: 1000
 // Defining step:

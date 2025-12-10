@@ -1,4 +1,4 @@
-Name: Wilson neuron model
+Name: Wilson neuron
 Steps: 10000
 Transient: 2000
 // Defining step:
