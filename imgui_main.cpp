@@ -1048,6 +1048,7 @@ int imgui_main(int, char**)
             ImGui::PopItemWidth();
 
             std::string variablexyz[] = { "x", "y", "z" };
+            int indicesSize;
 
             switch (plotType)
             {
@@ -1189,7 +1190,7 @@ int imgui_main(int, char**)
                 ImGui::Text("Add indices");
                 ImGui::SameLine();
 
-                int indicesSize = (int)indices.size();
+                indicesSize = (int)indices.size();
                 if (ImGui::BeginCombo("##Add index combo", "", ImGuiComboFlags_NoPreview))
                 {
                     for (int i = 0; i < indicesSize; i++)
@@ -1219,7 +1220,7 @@ int imgui_main(int, char**)
                 ImGui::Text("Add indeces");
                 ImGui::SameLine();
 
-                int indicesSize = (int)indices.size();
+                indicesSize = (int)indices.size();
                 if (ImGui::BeginCombo("##Add index combo", "", ImGuiComboFlags_NoPreview))
                 {
                     for (int i = 0; i < indicesSize; i++)
