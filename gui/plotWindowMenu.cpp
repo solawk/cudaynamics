@@ -298,19 +298,7 @@ void plotWindowMenu_HeatmapPlot(PlotWindow* window)
 			ImGui::EndCombo();
 		}
 
-		bool tempShowHeatmapValues = heatmap->showHeatmapValues; if (ImGui::Checkbox(("##" + windowName + "showHeatmapValues").c_str(), &tempShowHeatmapValues)) heatmap->showHeatmapValues = !heatmap->showHeatmapValues;
-		ImGui::SameLine(); ImGui::Text("Show values");
-
-		bool tempShowDragLines = heatmap->showDragLines; if (ImGui::Checkbox(("##" + windowName + "showDragLines").c_str(), &tempShowDragLines)) heatmap->showDragLines = !heatmap->showDragLines;
-		ImGui::SameLine(); ImGui::Text("Show crosshair lines");
-
-		ImGui::ColorEdit4(("##" + windowName + "_markerColor").c_str(), (float*)(&(window->markerColor)));		ImGui::SameLine(); ImGui::Text("Marker color");
-		ImGui::DragFloat("Marker width", &window->markerWidth, 0.1f, 0.5f, 4.0f, "%.1f");
-
-		bool tempShowLegend = heatmap->showLegend; if (ImGui::Checkbox(("##" + windowName + "showLegend").c_str(), &tempShowLegend)) heatmap->showLegend = !heatmap->showLegend;
-		ImGui::SameLine(); ImGui::Text("Show colormap");
-
-		std::string diapasonsStrings[] = { "Values", "Steps" };
+		std::string diapasonsStrings[] = { "Parameter values", "Parameter steps" };
 		bool tempShowActualDiapasons = heatmap->showActualDiapasons;
 		if (ImGui::BeginCombo(("##" + windowName + "diapasons").c_str(), (heatmap->showActualDiapasons ? diapasonsStrings[0] : diapasonsStrings[1]).c_str()))
 		{
@@ -319,8 +307,24 @@ void plotWindowMenu_HeatmapPlot(PlotWindow* window)
 			ImGui::EndCombo();
 		}
 
-		ImGui::SeparatorText("Auto-compute");
+		bool tempShowHeatmapValues = heatmap->showHeatmapValues; if (ImGui::Checkbox(("##" + windowName + "showHeatmapValues").c_str(), &tempShowHeatmapValues)) heatmap->showHeatmapValues = !heatmap->showHeatmapValues;
+		ImGui::SameLine(); ImGui::Text("Show values");
 
+		bool tempShowLegend = heatmap->showLegend; if (ImGui::Checkbox(("##" + windowName + "showLegend").c_str(), &tempShowLegend)) heatmap->showLegend = !heatmap->showLegend;
+		ImGui::SameLine(); ImGui::Text("Show colormap");
+
+		ImGui::SeparatorText("Crosshair / markers");
+		bool tempShowDragLines = heatmap->showDragLines; if (ImGui::Checkbox(("##" + windowName + "showDragLines").c_str(), &tempShowDragLines)) heatmap->showDragLines = !heatmap->showDragLines;
+		ImGui::SameLine(); ImGui::Text("Show crosshair lines");
+
+		ImGui::ColorEdit4(("##" + windowName + "_markerColor").c_str(), (float*)(&(window->markerColor)));		ImGui::SameLine(); ImGui::Text("Marker color");
+		ImGui::DragFloat("Marker width", &window->markerWidth, 0.1f, 0.5f, 4.0f, "%.1f");
+
+
+		
+
+		
+		ImGui::SeparatorText("Auto-compute");
 		bool tempHeatmapAutoCompute = heatmap->isHeatmapAutoComputeOn; if (ImGui::Checkbox(("##" + windowName + "heatmapAutoCompute").c_str(), &tempHeatmapAutoCompute)) heatmap->isHeatmapAutoComputeOn = !heatmap->isHeatmapAutoComputeOn;
 		ImGui::SameLine(); ImGui::Text("Auto-compute on Shift+RMB");
 
@@ -381,9 +385,10 @@ void plotWindowMenu_HeatmapColors(PlotWindow* window)
 void plotWindowMenu_MetricPlot(PlotWindow*window) {
 	if (ImGui::BeginMenu("Plot")) {
 		std::string windowName = window->name + std::to_string(window->id);
+
 		ImGui::SeparatorText("Plot View");
 		plotWindowMenu_CommonPlot(window, windowName);
-
+		ImGui::Checkbox("Show multiple axes", &window->ShowMultAxes);
 		if (window->variableCount==1) {
 			ImGui::ColorEdit4(("##" + windowName + "_lineColor").c_str(), (float*)(&(window->markerColor)));		ImGui::SameLine(); ImGui::Text("Line color");
 		}
@@ -405,11 +410,13 @@ void plotWindowMenu_MetricPlot(PlotWindow*window) {
 		}
 		ImGui::DragFloat("Line width", &window->markerWidth, 0.1f, 0.5f, 4.0f, "%.1f");
 
+
+		ImGui::SeparatorText("Marker");
 		ImGui::Checkbox("Show parameter marker", &window->ShowOrbitParLines);
 		ImGui::ColorEdit4(("##" + windowName + "_markerColor").c_str(), (float*)(&(window->OrbitMarkerColor)));		ImGui::SameLine(); ImGui::Text("Marker color");
 		ImGui::DragFloat("Marker width", &window->OrbitMarkerWidth, 0.1f, 0.5f, 4.0f, "%.1f");
 
-		ImGui::Checkbox("Show multiple axes", &window->ShowMultAxes);
+		
 
 		ImGui::SeparatorText("Auto-compute");
 		ImGui::Checkbox("Auto - compute on Shift + RMB", &window->isAutoComputeOn);
@@ -424,6 +431,7 @@ void plotWindowMenu_SeriesPlot(PlotWindow* window) {
 		ImGui::SeparatorText("Plot View");
 		std::string windowName = window->name + std::to_string(window->id);
 		plotWindowMenu_CommonPlot(window, windowName);
+		ImGui::Checkbox("Show multiple axes", &window->ShowMultAxes);
 
 		if (window->variableCount == 1) {
 			ImGui::ColorEdit4(("##" + windowName + "_lineColor").c_str(), (float*)(&(window->markerColor)));		ImGui::SameLine(); ImGui::Text("Line color");
@@ -446,7 +454,7 @@ void plotWindowMenu_SeriesPlot(PlotWindow* window) {
 		}
 		ImGui::DragFloat("Line width", &window->markerWidth, 0.1f, 0.5f, 4.0f, "%.1f");
 
-		ImGui::Checkbox("Show multiple axes", &window->ShowMultAxes);
+		
 
 
 
