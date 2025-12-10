@@ -2071,6 +2071,7 @@ int imgui_main(int, char**)
                                             window->BifDotAmount = BifDotAmount;
                                             window->areOrbitValuesDirty = false;
                                         }
+                                        if (OrbitRedraw || window->lastAttributevalueindicesContinuations != attributeValueIndices) { window->drawingContinuation = false; window->redrawContinuation = false; }
                                         ImGui::SameLine();
                                         if (ImGui::Button(("Draw continuation diagram##" + windowName + "_ContinuationDiag").c_str()))
                                         {
@@ -2085,8 +2086,9 @@ int imgui_main(int, char**)
                                                 window->redrawContinuation = false;
                                             }
                                         }
-                                        if (OrbitRedraw)window->redrawContinuation = true;
+                                        
                                         if (window->redrawContinuation) {
+                                            window->lastAttributevalueindicesContinuations = attributeValueIndices;
                                             //if (window->continuationAmpsBack != NULL) {
                                             //    delete[]window->continuationParamIndicesBack; 
                                             //    delete[]window->continuationParamIndicesForward;
@@ -2226,7 +2228,7 @@ int imgui_main(int, char**)
                                                         ImPlot::SetNextMarkerStyle(window->OrbDotShapeForward, window->OrbitPointSizeForward, window->OrbDotColorForward, IMPLOT_AUTO, window->OrbDotColorForward);
                                                         ImPlot::PlotScatter(("Forward continuation##Peak to Parameter " + plotName).c_str(), window->continuationParamIndicesForward, window->continuationAmpsForward, window->bifDotAmountForward);
                                                         ImPlot::SetNextMarkerStyle(window->OrbDotShapeBack, window->OrbitPointSizeBack, window->OrbDotColorBack, IMPLOT_AUTO, window->OrbDotColorBack);
-                                                        ImPlot::PlotScatter(("Backwards continuation##Peak to Parameter " + plotName).c_str(), window->continuationParamIndicesBack, window->continuationAmpsBack, window->bifDotAmountBack);
+                                                        ImPlot::PlotScatter(("Backward continuation##Peak to Parameter " + plotName).c_str(), window->continuationParamIndicesBack, window->continuationAmpsBack, window->bifDotAmountBack);
                                                     }
                                                 }
                                                 else {
@@ -2235,7 +2237,7 @@ int imgui_main(int, char**)
                                                         ImPlot::SetNextMarkerStyle(window->OrbDotShapeForward, window->OrbitPointSizeForward, window->OrbDotColorForward, IMPLOT_AUTO, window->OrbDotColorForward);
                                                         ImPlot::PlotScatter(("Forward continuation##Peak to Parameter " + plotName).c_str(),  window->continuationAmpsForward, window->continuationParamIndicesForward, window->bifDotAmountForward);
                                                         ImPlot::SetNextMarkerStyle(window->OrbDotShapeBack, window->OrbitPointSizeBack, window->OrbDotColorBack, IMPLOT_AUTO, window->OrbDotColorBack);
-                                                        ImPlot::PlotScatter(("Backwards continuation##Peak to Parameter " + plotName).c_str(),  window->continuationAmpsBack, window->continuationParamIndicesBack, window->bifDotAmountBack);
+                                                        ImPlot::PlotScatter(("Backward continuation##Peak to Parameter " + plotName).c_str(),  window->continuationAmpsBack, window->continuationParamIndicesBack, window->bifDotAmountBack);
                                                     }
                                                 }
                                                 if (ImGui::IsMouseDown(0) && ImGui::IsKeyPressed(ImGuiMod_Shift) && ImGui::IsMouseHoveringRect(plot->PlotRect.Min, plot->PlotRect.Max) && plot->ContextLocked || plot->shiftClicked) {
@@ -2284,7 +2286,7 @@ int imgui_main(int, char**)
                                                         ImPlot::SetNextMarkerStyle(window->OrbDotShapeForward, window->OrbitPointSizeForward, window->OrbDotColorForward, IMPLOT_AUTO, window->OrbDotColorForward);
                                                         ImPlot::PlotScatter(("Forward continuation##Peak to Parameter " + plotName).c_str(), window->continuationParamIndicesForward, window->continuationIntervalsForward, window->bifDotAmountForward);
                                                         ImPlot::SetNextMarkerStyle(window->OrbDotShapeBack, window->OrbitPointSizeBack, window->OrbDotColorBack, IMPLOT_AUTO, window->OrbDotColorBack);
-                                                        ImPlot::PlotScatter(("Backwards continuation##Peak to Parameter " + plotName).c_str(), window->continuationParamIndicesBack, window->continuationIntervalsBack, window->bifDotAmountBack);
+                                                        ImPlot::PlotScatter(("Backward continuation##Peak to Parameter " + plotName).c_str(), window->continuationParamIndicesBack, window->continuationIntervalsBack, window->bifDotAmountBack);
                                                     }
                                                 }
                                                 else {
@@ -2293,7 +2295,7 @@ int imgui_main(int, char**)
                                                         ImPlot::SetNextMarkerStyle(window->OrbDotShapeForward, window->OrbitPointSizeForward, window->OrbDotColorForward, IMPLOT_AUTO, window->OrbDotColorForward);
                                                         ImPlot::PlotScatter(("Forward continuation##Peak to Parameter " + plotName).c_str(),  window->continuationIntervalsForward, window->continuationParamIndicesForward, window->bifDotAmountForward);
                                                         ImPlot::SetNextMarkerStyle(window->OrbDotShapeBack, window->OrbitPointSizeBack, window->OrbDotColorBack, IMPLOT_AUTO, window->OrbDotColorBack);
-                                                        ImPlot::PlotScatter(("Backwards continuation##Peak to Parameter " + plotName).c_str(),  window->continuationIntervalsBack, window->continuationParamIndicesBack, window->bifDotAmountBack);
+                                                        ImPlot::PlotScatter(("Backward continuation##Peak to Parameter " + plotName).c_str(),  window->continuationIntervalsBack, window->continuationParamIndicesBack, window->bifDotAmountBack);
                                                     }
                                                 }
 
@@ -2339,7 +2341,7 @@ int imgui_main(int, char**)
                                                     ImPlot3D::SetNextMarkerStyle(window->OrbDotShapeForward, window->OrbitPointSizeForward, window->OrbDotColorForward, IMPLOT_AUTO, window->OrbDotColorForward);
                                                     ImPlot3D::PlotScatter(("Forward continuation##3d" + plotName).c_str(), window->continuationParamIndicesForward, window->continuationAmpsForward, window->continuationIntervalsForward, window->bifDotAmountForward, 0, 0);
                                                     ImPlot3D::SetNextMarkerStyle(window->OrbDotShapeBack, window->OrbitPointSizeBack, window->OrbDotColorBack, IMPLOT_AUTO, window->OrbDotColorBack);
-                                                    ImPlot3D::PlotScatter(("Backwards continuation##3d " + plotName).c_str(),  window->continuationParamIndicesBack, window->continuationAmpsBack, window->continuationIntervalsBack, window->bifDotAmountBack, 0 ,0);
+                                                    ImPlot3D::PlotScatter(("Backward continuation##3d " + plotName).c_str(),  window->continuationParamIndicesBack, window->continuationAmpsBack, window->continuationIntervalsBack, window->bifDotAmountBack, 0 ,0);
                                                 }
                                                 ImPlot3D::SetNextFillStyle(window->OrbitMarkerColor);
                                                 ImPlot3D::SetNextLineStyle(window->OrbitMarkerColor, 2);

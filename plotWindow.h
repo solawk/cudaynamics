@@ -93,6 +93,7 @@ public:
 	numb* continuationParamIndicesForward;
 	int bifDotAmountForward;
 	int bifDotAmountBack;
+	std::vector<int> lastAttributevalueindicesContinuations;
 
 	float OrbitPointSizeForward;
 	float OrbitPointSizeBack;
