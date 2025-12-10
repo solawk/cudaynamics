@@ -280,7 +280,7 @@ int compute(Computation* data)
 
     // Output
 
-    if (!data->isHires) indexDecayPostprocessing(data); // Checking for hi-res outside to check if it affects the time
+    if (!data->isHires && data->calculateDeltaDecay) indexDecayPostprocessing(data);
     after = std::chrono::steady_clock::now();
     std::chrono::steady_clock::duration elapsed = after - before;
     auto timeElapsed = std::chrono::duration_cast<std::chrono::milliseconds>(elapsed).count();

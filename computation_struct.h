@@ -14,6 +14,7 @@ public:
 	float timeElapsed;
 	int index; // 0 or 1
 	bool isGPU;
+	bool calculateDeltaDecay;
 
 	bool isFirst;
 	int bufferNo; // When computing starts, this holds the continuous index of the current buffer
