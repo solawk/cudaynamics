@@ -241,10 +241,46 @@ void plotWindowMenu_OrbitPlot(PlotWindow* window) {
 		ImGui::ColorEdit4(("##" + windowName + "_dotColor").c_str(), (float*)(&(window->plotColor)));		ImGui::SameLine(); ImGui::Text("Point color");
 		ImGui::DragFloat("Point size", &window->OrbitPointSize, 0.1f, 0.5f, 4.0f,"%.1f");
 
+		ImGui::SeparatorText("Forward continuation Point");
+		ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.485f);
+		if (ImGui::BeginCombo(("##" + windowName + "_OrbitDotShapeForward").c_str(), (orbitdottypes[window->OrbDotShapeForward]).c_str(), 0))
+		{
+			for (int t = 0; t < ImPlotMarker_COUNT; t++)
+			{
+				bool isSelected = window->OrbitType == t;
+				ImGuiSelectableFlags selectableFlags = 0;
+				if (ImGui::Selectable(orbitdottypes[t].c_str(), isSelected, selectableFlags)) window->OrbDotShapeForward = (ImPlotMarker)t;
+			}
+
+			ImGui::EndCombo();
+		}
+		ImGui::SameLine(); ImGui::Text("Point shape");
+		ImGui::ColorEdit4(("##" + windowName + "_dotColorForward").c_str(), (float*)(&(window->OrbDotColorForward)));		ImGui::SameLine(); ImGui::Text("Point color");
+		ImGui::DragFloat("Point size##Forward", &window->OrbitPointSizeForward, 0.1f, 0.5f, 4.0f, "%.1f");
+
+		ImGui::SeparatorText("Backward continuation Point");
+		ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.485f);
+		if (ImGui::BeginCombo(("##" + windowName + "_OrbitDotShapeBAck").c_str(), (orbitdottypes[window->OrbDotShapeBack]).c_str(), 0))
+		{
+			for (int t = 0; t < ImPlotMarker_COUNT; t++)
+			{
+				bool isSelected = window->OrbitType == t;
+				ImGuiSelectableFlags selectableFlags = 0;
+				if (ImGui::Selectable(orbitdottypes[t].c_str(), isSelected, selectableFlags)) window->OrbDotShapeBack = (ImPlotMarker)t;
+			}
+
+			ImGui::EndCombo();
+		}
+		ImGui::SameLine(); ImGui::Text("Point shape");
+		ImGui::ColorEdit4(("##" + windowName + "_dotColorBack").c_str(), (float*)(&(window->OrbDotColorBack)));		ImGui::SameLine(); ImGui::Text("Point color");
+		ImGui::DragFloat("Point size##Back", &window->OrbitPointSizeBack, 0.1f, 0.5f, 4.0f, "%.1f");
+
 		ImGui::SeparatorText("Marker");
 		ImGui::Checkbox("Show parameter marker", &window->ShowOrbitParLines);
 		ImGui::ColorEdit4(("##" + windowName + "_markerColor").c_str(), (float*)(&(window->OrbitMarkerColor)));		ImGui::SameLine(); ImGui::Text("Marker color");
 		ImGui::DragFloat("Marker width", &window->OrbitMarkerWidth, 0.1f, 0.5f, 4.0f, "%.1f");
+
+		
 
 		ImGui::SeparatorText("Other settings");
 		ImGui::Checkbox("Invert axes", &window->OrbitInvertedAxes);
