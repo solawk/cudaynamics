@@ -16,8 +16,8 @@ void common_main()
     addKernel(lorenzVar);
     addKernel(hindmarsh_rose);
     addKernel(izhikevich);
-    addKernel(jj_mrlcs);
-    addKernel(jj_rlcs);
+    addKernel(jj_mcrls);
+    addKernel(jj_rcls);
     addKernel(chen);
     addKernel(dadras);
     addKernel(fourwing);

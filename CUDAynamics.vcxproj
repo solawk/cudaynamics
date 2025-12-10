@@ -249,8 +249,8 @@
     <CudaCompile Include="systems\hindmarsh_rose\hindmarsh_rose.cu" />
     <CudaCompile Include="systems\hodgkin_huxley\hodgkin_huxley.cu" />
     <CudaCompile Include="systems\izhikevich\izhikevich.cu" />
-    <CudaCompile Include="systems\jj_mrlcs\jj_mrlcs.cu" />
-    <CudaCompile Include="systems\jj_rlcs\jj_rlcs.cu" />
+    <CudaCompile Include="systems\jj_mcrls\jj_mcrls.cu" />
+    <CudaCompile Include="systems\jj_rcls\jj_rcls.cu" />
     <CudaCompile Include="systems\kazantsev_gordleeva_matrosov\kazantsev_gordleeva_matrosov.cu" />
     <CudaCompile Include="systems\langford\langford.cu" />
     <CudaCompile Include="systems\lorenz83\lorenz83.cu" />
