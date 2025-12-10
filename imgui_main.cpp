@@ -208,6 +208,7 @@ int asyncComputation()
     {
         plotWindows[i].hmp.initClickedLocation = true;
         plotWindows[i].hmp.areValuesDirty = true;
+        plotWindows[i].hireshmp.areValuesDirty = true;
     }
 
     if (continuousComputingEnabled) bufferToFillIndex = 1 - bufferToFillIndex;
@@ -256,6 +257,7 @@ int hiresAsyncComputation()
 
         plotWindows[i].hmp.initClickedLocation = true;
         plotWindows[i].hmp.areValuesDirty = true;
+        plotWindows[i].hireshmp.areValuesDirty = true;
     }
 
     return computationResult;
