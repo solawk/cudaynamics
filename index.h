@@ -1,6 +1,7 @@
 #pragma once
 #include <string>
 #include "anfuncs.h"
+#include "decaySettings_struct.h"
 
 enum AnalysisIndex
 {
@@ -17,6 +18,7 @@ struct Index
 	std::string name;
 	AnalysisFunction function;
 	unsigned int size; // previously valueCount
+	DecaySettings decay;
 
 	Index()
 	{

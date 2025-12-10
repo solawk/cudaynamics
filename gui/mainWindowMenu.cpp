@@ -68,6 +68,11 @@ void mainWindowMenu()
             TOOLTIP("1.0 to create new map each buffer, 0.0 to continuously calculate the average, 0.0-1.0 defines the weight of each new map");
             //if (popStyle) POP_FRAME(3);
 
+            bool tempCalcDeltaDecay = calculateDeltaDecay;
+            ImGui::Checkbox("Calculate delta and decay", &tempCalcDeltaDecay);
+            TOOLTIP("Calculate index delta and decay maps");
+            calculateDeltaDecay = tempCalcDeltaDecay;
+
             ImGui::EndMenu();
         }
 

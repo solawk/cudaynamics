@@ -35,5 +35,4 @@ void fillAttributeBuffers(Computation* data, int* attributeStepIndices, unsigned
 
 void setupAnFuncs(Computation*);
 
-// Set and copy map buffers for continuous map computation
-//void setMapValues(Computation*);
+void indexDecayPostprocessing(Computation*);

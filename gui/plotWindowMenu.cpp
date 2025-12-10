@@ -3,6 +3,7 @@
 void plotWindowMenu_File(PlotWindow* window);
 void plotWindowMenu_View(PlotWindow* window);
 void plotWindowMenu_PhasePlot(PlotWindow* window);
+void plotWindowMenu_DecayPlot(PlotWindow* window);
 void plotWindowMenu_HeatmapPlot(PlotWindow* window);
 void plotWindowMenu_HeatmapColors(PlotWindow* window);
 void plotWindowMenu_OrbitPlot(PlotWindow* window);
@@ -16,6 +17,7 @@ extern PlotWindow* colorsLUTfrom;
 extern int paintLUTsize;
 extern AnalysisIndex hiresIndex;
 extern Kernel kernelNew, kernelHiresNew, kernelHiresComputed;
+extern bool autofitTimeSeries;
 
 void plotWindowMenu(PlotWindow* window)
 {
@@ -50,6 +52,7 @@ void plotWindowMenu(PlotWindow* window)
 		if (window->type == Metric) plotWindowMenu_MetricPlot(window);
 		if (window->type == VarSeries) plotWindowMenu_SeriesPlot(window);
 		if (window->type == IndSeries) plotWindowMenu_IndSeriesPlot(window);
+		if (window->type == Decay) plotWindowMenu_DecayPlot(window);
 		ImGui::EndMenuBar();
 	}
 }
@@ -59,7 +62,7 @@ void plotWindowMenu_File(PlotWindow* window)
 	if (ImGui::BeginMenu("File"))
 	{
 		if (ImGui::MenuItem("Export to .csv", nullptr, false,
-			(window->type == Heatmap) || (window->type == VarSeries)))
+			(window->type == Heatmap) || (window->type == VarSeries) || (window->type == Decay) || (window->type == Orbit)))
 		{
 			std::string savedPath;
 			bool attempted = false; 
@@ -107,6 +110,20 @@ void plotWindowMenu_File(PlotWindow* window)
 			case VarSeries:
 			{
 				savedPath = exportTimeSeriesCSV(window);
+				attempted = true;
+				break;
+			}
+
+			case Decay:
+			{
+				savedPath = exportDecayCSV(window);
+				attempted = true;
+				break;
+			}
+
+			case Orbit:
+			{
+				savedPath = exportOrbitCSV(window);
 				attempted = true;
 				break;
 			}
@@ -166,6 +183,43 @@ void plotWindowMenu_CommonPlot(PlotWindow* window, std::string windowName)
 
 }
 
+void plotWindowMenu_DecayPlot(PlotWindow* window)
+{
+	if (ImGui::BeginMenu("Plot"))
+	{
+		std::string windowName = window->name + std::to_string(window->id);
+
+		plotWindowMenu_CommonPlot(window, windowName);
+
+		ImGui::ColorEdit4(("##" + windowName + "_plotFillColor").c_str(), (float*)(&(window->plotFillColor)));	ImGui::SameLine(); ImGui::Text("Bottom fill color");
+		ImGui::DragFloat(("##" + windowName + "_decayFillAlpha").c_str(), &(window->decayFillAlpha), 0.1f, 0.0f, 1.0f);		ImGui::SameLine(); ImGui::Text("Fill alpha");
+
+		bool tempYLog = window->isYLog; if (ImGui::Checkbox(("##" + windowName + "YLog").c_str(), &tempYLog))
+		{
+			window->isYLog = !window->isYLog;
+			autofitTimeSeries = true;
+		}
+		ImGui::SameLine(); ImGui::Text("Y Log Scale");
+
+		bool tempAND = window->decayIndicesAreAND; if (ImGui::Checkbox(("##" + windowName + "AND").c_str(), &tempAND))
+		{
+			window->decayIndicesAreAND = !window->decayIndicesAreAND;
+		}
+		ImGui::SameLine(); ImGui::Text("Alive AND");
+		TOOLTIP("Trajectory alive only if alive in all indices. False if it needs to be alive at least in one index")
+
+		bool tempCalcLifetime = window->decayCalcLifetime; if (ImGui::Checkbox(("##" + windowName + "lifetime").c_str(), &tempCalcLifetime))
+		{
+			window->decayCalcLifetime = !window->decayCalcLifetime;
+			window->decayLifetime = 0.0f;
+		}
+		ImGui::SameLine(); ImGui::Text("Calculate lifetime");
+		TOOLTIP("Calculate average lifetime before the marker")
+
+		ImGui::EndMenu();
+	}
+}
+
 void plotWindowMenu_PhasePlot(PlotWindow* window)
 {
 	if (ImGui::BeginMenu("Plot"))
@@ -193,8 +247,8 @@ void plotWindowMenu_PhasePlot(PlotWindow* window)
 			bool tempIsI3d = window->isImplot3d; if (ImGui::Checkbox(("##" + windowName + "isI3D").c_str(), &tempIsI3d)) window->isImplot3d = !window->isImplot3d;
 			ImGui::SameLine(); ImGui::Text("Use ImPlot3D");
 
-			//bool tempSettingsEnabled = window->settingsListEnabled; if (ImGui::Checkbox(("##" + windowName + "setList").c_str(), &tempSettingsEnabled)) window->settingsListEnabled = !window->settingsListEnabled;
-			//ImGui::SameLine(); ImGui::Text("View settings");
+			bool tempSettingsEnabled = window->settingsListEnabled; if (ImGui::Checkbox(("##" + windowName + "setList").c_str(), &tempSettingsEnabled)) window->settingsListEnabled = !window->settingsListEnabled;
+			ImGui::SameLine(); ImGui::Text("View settings");
 		}
 
 		ImGui::EndMenu();
@@ -250,8 +304,6 @@ void plotWindowMenu_OrbitPlot(PlotWindow* window) {
 		ImGui::Checkbox("Invert axes", &window->OrbitInvertedAxes);
 		plotWindowMenu_CommonPlot(window, windowName);
 
-		
-
 		ImGui::SeparatorText("Auto-compute");
 		ImGui::Checkbox("Auto - compute on Shift + RMB", &window->isAutoComputeOn);
 
@@ -272,12 +324,19 @@ void plotWindowMenu_HeatmapPlot(PlotWindow* window)
 
 		plotWindowMenu_CommonPlot(window, windowName);
 
-		bool tempIsDelta = window->isDelta; if (ImGui::Checkbox(("##" + windowName + "isDelta").c_str(), &tempIsDelta))
+		std::string deltaStateStrings[] = { "Index", "Delta", "Decay" };
+		if (ImGui::BeginCombo(("##" + windowName + "_DeltaState").c_str(), (deltaStateStrings[window->deltaState]).c_str(), 0))
 		{
-			window->isDelta = !window->isDelta;
-			heatmap->areValuesDirty = true;
+			for (int t = 0; t < 3; t++)
+			{
+				bool isSelected = window->deltaState == t;
+				ImGuiSelectableFlags selectableFlags = 0;
+				if (ImGui::Selectable(deltaStateStrings[t].c_str(), isSelected, selectableFlags)) window->deltaState = (DeltaState)t;
+				heatmap->areValuesDirty = true;
+			}
+
+			ImGui::EndCombo();
 		}
-		ImGui::SameLine(); ImGui::Text("Show delta");
 
 		std::string valueDisplayStrings[] = { "No display value", "Value of selected variation", "Split", "Value under mouse" };
 		std::string valueDisplayTooltips[] = {
@@ -321,9 +380,7 @@ void plotWindowMenu_HeatmapPlot(PlotWindow* window)
 		ImGui::DragFloat("Marker width", &window->markerWidth, 0.1f, 0.5f, 4.0f, "%.1f");
 
 
-		
 
-		
 		ImGui::SeparatorText("Auto-compute");
 		bool tempHeatmapAutoCompute = heatmap->isHeatmapAutoComputeOn; if (ImGui::Checkbox(("##" + windowName + "heatmapAutoCompute").c_str(), &tempHeatmapAutoCompute)) heatmap->isHeatmapAutoComputeOn = !heatmap->isHeatmapAutoComputeOn;
 		ImGui::SameLine(); ImGui::Text("Auto-compute on Shift+RMB");
@@ -410,13 +467,10 @@ void plotWindowMenu_MetricPlot(PlotWindow*window) {
 		}
 		ImGui::DragFloat("Line width", &window->markerWidth, 0.1f, 0.5f, 4.0f, "%.1f");
 
-
 		ImGui::SeparatorText("Marker");
 		ImGui::Checkbox("Show parameter marker", &window->ShowOrbitParLines);
 		ImGui::ColorEdit4(("##" + windowName + "_markerColor").c_str(), (float*)(&(window->OrbitMarkerColor)));		ImGui::SameLine(); ImGui::Text("Marker color");
-		ImGui::DragFloat("Marker width", &window->OrbitMarkerWidth, 0.1f, 0.5f, 4.0f, "%.1f");
-
-		
+		ImGui::DragFloat("Marker width", &window->OrbitMarkerWidth, 0.1f, 0.5f, 4.0f, "%.1f");	
 
 		ImGui::SeparatorText("Auto-compute");
 		ImGui::Checkbox("Auto - compute on Shift + RMB", &window->isAutoComputeOn);
@@ -454,10 +508,6 @@ void plotWindowMenu_SeriesPlot(PlotWindow* window) {
 		}
 		ImGui::DragFloat("Line width", &window->markerWidth, 0.1f, 0.5f, 4.0f, "%.1f");
 
-		
-
-
-
 		ImGui::EndMenu();
 	}
 }
@@ -491,8 +541,6 @@ void plotWindowMenu_IndSeriesPlot(PlotWindow* window) {
 		ImGui::DragFloat("Line width", &window->markerWidth, 0.1f, 0.5f, 4.0f, "%.1f");
 
 		ImGui::Checkbox("Show multiple axes", &window->ShowMultAxes);
-
-
 
 		ImGui::EndMenu();
 	}

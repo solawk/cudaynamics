@@ -9,8 +9,9 @@
 // Maximum amount of variables and parameters in the plot
 #define MAX_VARS_PARAMS 32
 
-enum PlotType { VarSeries, Phase, Phase2D, Orbit, Heatmap, MCHeatmap, Metric, IndSeries, PlotType_COUNT };
-enum OrbitPlotType {  Peak_Bifurcation, Interval_Bifurcation, Selected_Var_Section, Bifurcation_3D,  OrbitPlotType_COUNT};
+enum PlotType { VarSeries, Phase, Phase2D, Orbit, Heatmap, MCHeatmap, Metric, IndSeries, Decay, PlotType_COUNT };
+enum OrbitPlotType {  Peak_Bifurcation, Interval_Bifurcation, Selected_Var_Section, Bifurcation_3D, OrbitPlotType_COUNT};
+enum DeltaState { DS_No, DS_Delta, DS_Decay };
 
 struct PlotWindow
 {
@@ -45,6 +46,7 @@ public:
 
 	ImPlotMarker markerShape;
 
+	bool isYLog;
 	float rulerAlpha;
 	float gridAlpha;
 	bool whiteBg;
@@ -53,7 +55,18 @@ public:
 
 	HeatmapProperties hmp;
 	HeatmapProperties hireshmp;
-	bool isDelta;
+
+	DeltaState deltaState;
+
+	std::vector<std::vector<float>> decayBuffer;
+	std::vector<std::vector<float>> decayTotal;
+	std::vector<std::vector<float>> decayAlive;
+	bool decayIndicesAreAND; // true if AND, false if OR
+	ImVec4 plotFillColor;
+	float decayFillAlpha;
+	double decayMarkerPosition;
+	bool decayCalcLifetime;
+	float decayLifetime;
 	
 	ImVec2 dragLineHiresPos;
 
@@ -117,17 +130,24 @@ public:
 		markerColor = ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
 
 		plotColor = ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
+		plotFillColor = ImVec4(1.0f, 1.0f, 1.0f, 0.0f);
 
 		markerShape = ImPlotMarker_Circle;
 
+		isYLog = false;
 		rulerAlpha = 0.5f;
 		gridAlpha = 0.15f;
 		whiteBg = false;
 		isImplot3d = false;
 		drawAllTrajectories = false;
 
-		isDelta = false;
+		deltaState = DS_No;
+		decayIndicesAreAND = true;
+		decayFillAlpha = 0.75f;
 		dragLineHiresPos = ImVec2(0.0f, 0.0f);
+		decayMarkerPosition = 0.0f;
+		decayCalcLifetime = true;
+		decayLifetime = 0.0f;
 
 		showAxis = true;
 		showAxisNames = true;

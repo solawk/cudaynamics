@@ -58,6 +58,7 @@ extern float dragChangeSpeed;
 extern bool preciseNumbDrags;
 extern bool CPU_mode_interactive;
 extern bool CPU_mode_hires;
+extern bool calculateDeltaDecay;
 extern Kernel kernelNew;
 extern ImVec4 cudaColor;
 extern ImVec4 openmpColor;

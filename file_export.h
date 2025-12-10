@@ -17,3 +17,7 @@ std::string exportHeatmapCSV(const std::string& mapName,
     const HeatmapProperties* heatmap);
 
 std::string exportTimeSeriesCSV(const PlotWindow* window);
+
+std::string exportDecayCSV(const PlotWindow* window);
+
+std::string exportOrbitCSV(const PlotWindow* window);
