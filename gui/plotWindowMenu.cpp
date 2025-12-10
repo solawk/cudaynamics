@@ -179,6 +179,9 @@ void plotWindowMenu_DecayPlot(PlotWindow* window)
 
 		plotWindowMenu_CommonPlot(window, windowName);
 
+		ImGui::ColorEdit4(("##" + windowName + "_plotFillColor").c_str(), (float*)(&(window->plotFillColor)));	ImGui::SameLine(); ImGui::Text("Bottom fill color");
+		ImGui::DragFloat(("##" + windowName + "_decayFillAlpha").c_str(), &(window->decayFillAlpha), 0.1f, 0.0f, 1.0f);		ImGui::SameLine(); ImGui::Text("Fill alpha");
+
 		bool tempYLog = window->isYLog; if (ImGui::Checkbox(("##" + windowName + "YLog").c_str(), &tempYLog))
 		{
 			window->isYLog = !window->isYLog;

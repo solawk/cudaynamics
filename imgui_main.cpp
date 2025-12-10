@@ -2442,6 +2442,7 @@ int imgui_main(int, char**)
 
                     if (window->decayBuffer.size() > 0 && window->decayBuffer[0].size() > 0)
                     {
+                        ImPlot::PushStyleColor(ImPlotCol_PlotBg, window->plotFillColor);
                         if (ImPlot::BeginPlot(("##Decay_Plot" + plotName).c_str(), ImVec2(-1, -1), ImPlotFlags_NoTitle))
                         {
                             ImPlot::SetupAxes(!KERNEL.usingTime ? "Steps" : "Time", "Variations alive", toAutofitTimeSeries ? ImPlotAxisFlags_AutoFit : 0, 0);
@@ -2460,23 +2461,24 @@ int imgui_main(int, char**)
                                 }
                             }
 
-                            ImPlot::PushStyleVar(ImPlotStyleVar_FillAlpha, (1.0f / decay->thresholds.size()) * 0.75f);
+                            ImPlot::PushStyleVar(ImPlotStyleVar_FillAlpha, window->decayFillAlpha);
                             for (int t = 0; t < decay->thresholds.size(); t++)
                             {
-                                ImPlot::SetNextFillStyle(decay->thresholds.size() > 1 ? ImPlot::GetColormapColor(t, window->colormap) : window->markerColor);
-                                ImPlot::PlotShaded(((decay->thresholds.size() > 1 ? std::to_string(decay->thresholds[t]) : "") + "##" + plotName + "_plotShade" + std::to_string(t)).c_str(),
+                                ImPlot::SetNextFillStyle(decay->thresholds.size() > 1 ? ImPlot::GetColormapColor(t, window->colormap) : window->plotColor);
+                                ImPlot::PlotShaded(((decay->thresholds.size() > 1 ? std::to_string(decay->thresholds[t]) : "") + "##" + plotName + "_plot" + std::to_string(t)).c_str(),
                                     &(window->decayBuffer[t][0]), &(window->decayAlive[t][0]), (int)window->decayBuffer[t].size(), (double)cmp->marshal.totalVariations);
                             }
                             ImPlot::PopStyleVar();
                             for (int t = 0; t < decay->thresholds.size(); t++)
                             {
-                                ImPlot::SetNextLineStyle(decay->thresholds.size() > 1 ? ImPlot::GetColormapColor(t, window->colormap) : window->markerColor, window->markerWidth);
-                                ImPlot::PlotLine(((decay->thresholds.size() > 1 ? std::to_string(decay->thresholds[t]) : "") + "##" + plotName + "_plot").c_str(),
+                                ImPlot::SetNextLineStyle(decay->thresholds.size() > 1 ? ImPlot::GetColormapColor(t, window->colormap) : window->plotColor);
+                                ImPlot::PlotLine(((decay->thresholds.size() > 1 ? std::to_string(decay->thresholds[t]) : "") + "##" + plotName + "_plot" + std::to_string(t)).c_str(),
                                     &(window->decayBuffer[t][0]), &(window->decayAlive[t][0]), (int)window->decayBuffer[t].size());
                             }
 
                             ImPlot::EndPlot();
                         }
+                        ImPlot::PopStyleColor();
                     }
                     else
                     {

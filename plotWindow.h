@@ -61,6 +61,8 @@ public:
 	std::vector<std::vector<int>> decayTotal;
 	std::vector<std::vector<int>> decayAlive;
 	bool decayIndicesAreAND; // true if AND, false if OR
+	ImVec4 plotFillColor;
+	float decayFillAlpha;
 	
 	ImVec2 dragLineHiresPos;
 
@@ -120,6 +122,7 @@ public:
 		markerColor = ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
 
 		plotColor = ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
+		plotFillColor = ImVec4(1.0f, 1.0f, 1.0f, 0.0f);
 
 		markerShape = ImPlotMarker_Circle;
 
@@ -132,6 +135,7 @@ public:
 
 		deltaState = DS_No;
 		decayIndicesAreAND = true;
+		decayFillAlpha = 0.75f;
 		dragLineHiresPos = ImVec2(0.0f, 0.0f);
 
 		showAxis = true;
