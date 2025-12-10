@@ -1563,7 +1563,6 @@ int imgui_main(int, char**)
                         float start = !isTime ? bufferNo * KERNEL.steps + KERNEL.transientSteps : (bufferNo * KERNEL.steps + KERNEL.transientSteps) * stepSize;
                         float scale = !isTime ? 1.0f : stepSize;
 
-                        ImPlot::SetupAxes(KERNEL.usingTime ? "Time" : "Steps", "Variable");
                         if (!window->ShowMultAxes) ImPlot::SetupAxes(KERNEL.usingTime ? "Time" : "Steps", "Variable");
                         else
                         {
@@ -2980,10 +2979,14 @@ int imgui_main(int, char**)
                     Computation* cmp = &(computations[playedBufferIndex]);
                     Marshal* mrsl = &cmp->marshal;
 
-                    if (cmp->bufferNo != window->prevbufferNo) 
+                    if (!cmp->marshal.maps) {
+                        ImGui::Text("No variables/parameters variating");
+                        break;
+                    }
+                    if (cmp->bufferNo != window->prevbufferNo)
                     {
                         window->prevbufferNo = cmp->bufferNo;
-                        for (int ind = 0; ind < window->variableCount; ind++) 
+                        for (int ind = 0; ind < window->variableCount; ind++)
                         {
                             int variation;
                             steps2Variation(&variation, &(attributeValueIndices.data()[0]), &KERNEL);
@@ -2993,12 +2996,12 @@ int imgui_main(int, char**)
                         }
                     }
 
-                    if (window->prevbufferNo - window->firstBufferNo <= 1) 
+                    if (window->prevbufferNo - window->firstBufferNo <= 1)
                     {
                         ImGui::Text("Index series not ready yet");
                         break;
                     }
-                    else 
+                    else
                     {
                         if (ImPlot::BeginPlot(plotName.c_str(), "", "", ImVec2(-1, -1), ImPlotFlags_NoTitle, axisFlags, axisFlags))
                         {
@@ -3008,7 +3011,7 @@ int imgui_main(int, char**)
                             else
                             {
                                 ImPlot::SetupAxis(ImAxis_X1, KERNEL.usingTime ? "Time" : "Steps", toAutofitTimeSeries ? ImPlotAxisFlags_AutoFit : 0);
-                                for (int i = 0; i < window->variableCount; i++) 
+                                for (int i = 0; i < window->variableCount; i++)
                                 {
                                     ImPlot::SetupAxis(ImAxis_Y1 + i, indices[(AnalysisIndex)window->variables[i]].name.c_str(), 0);
                                 }
@@ -3016,23 +3019,23 @@ int imgui_main(int, char**)
 
                             std::vector<numb> Xaxis;
                             std::vector<numb> Yaxis;
-                            float stepsize = getStepSize(KERNEL);
-                            for (int i = 0; i < window->prevbufferNo - window->firstBufferNo; i++) 
+                            numb stepsize = getStepSize(KERNEL);
+                            for (int i = 0; i < window->prevbufferNo - window->firstBufferNo; i++)
                             {
                                 Xaxis.push_back(KERNEL.usingTime ? cmp->marshal.variationSize / krnl->VAR_COUNT * stepsize * i : cmp->marshal.variationSize / krnl->VAR_COUNT * i);
                             }
 
-                            for (int ind = 0; ind < window->variableCount; ind++) 
+                            for (int ind = 0; ind < window->variableCount; ind++)
                             {
                                 for (int i = 0; i < window->prevbufferNo - window->firstBufferNo; i++) Yaxis.push_back(window->indSeries[i * window->variableCount + ind]);
 
-                                if (window->ShowMultAxes) 
+                                if (window->ShowMultAxes)
                                 {
                                     ImPlot::SetAxes(ImAxis_X1, ImAxis_Y1 + ind);
                                 }
 
                                 ImVec4 color;
-                                if (window->variableCount > 1) 
+                                if (window->variableCount > 1)
                                 {
                                     color = ImPlot::GetColormapColor(ind, window->colormap);
                                 }
@@ -3041,12 +3044,12 @@ int imgui_main(int, char**)
                                 ImPlot::PlotLine(indices[(AnalysisIndex)window->variables[ind]].name.c_str(), Xaxis.data(), Yaxis.data(), window->prevbufferNo - window->firstBufferNo);
                                 Yaxis.clear();
                             }
-
+                            
                             Xaxis.clear();
                             ImPlot::EndPlot();
                         }
                     }
-
+                    
                     if (window->whiteBg)
                         ImPlot::PopStyleColor();
                 }
