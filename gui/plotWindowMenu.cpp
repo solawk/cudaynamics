@@ -223,7 +223,7 @@ void plotWindowMenu_OrbitPlot(PlotWindow* window) {
 		ImGui::SameLine();
 		ImGui::Text("Orbit plot type");
 
-		ImGui::SeparatorText("Point");
+		ImGui::SeparatorText("Standard Point");
 		ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.485f);
 		std::string orbitdottypes[] = { "Circle", "Square", "Diamond", "Up Triangle", "Down Triangle", "Left Triangle", "Right Triangle", "Cross", "Plus", "Asterisk"};
 		if (ImGui::BeginCombo(("##" + windowName + "_OrbitDotShape").c_str(), (orbitdottypes[window->markerShape]).c_str(), 0))
@@ -241,7 +241,7 @@ void plotWindowMenu_OrbitPlot(PlotWindow* window) {
 		ImGui::ColorEdit4(("##" + windowName + "_dotColor").c_str(), (float*)(&(window->plotColor)));		ImGui::SameLine(); ImGui::Text("Point color");
 		ImGui::DragFloat("Point size", &window->OrbitPointSize, 0.1f, 0.5f, 4.0f,"%.1f");
 
-		ImGui::SeparatorText("Forward continuation Point");
+		ImGui::SeparatorText("Forward Point");
 		ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.485f);
 		if (ImGui::BeginCombo(("##" + windowName + "_OrbitDotShapeForward").c_str(), (orbitdottypes[window->OrbDotShapeForward]).c_str(), 0))
 		{
@@ -258,7 +258,7 @@ void plotWindowMenu_OrbitPlot(PlotWindow* window) {
 		ImGui::ColorEdit4(("##" + windowName + "_dotColorForward").c_str(), (float*)(&(window->OrbDotColorForward)));		ImGui::SameLine(); ImGui::Text("Point color");
 		ImGui::DragFloat("Point size##Forward", &window->OrbitPointSizeForward, 0.1f, 0.5f, 4.0f, "%.1f");
 
-		ImGui::SeparatorText("Backward continuation Point");
+		ImGui::SeparatorText("Backward Point");
 		ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.485f);
 		if (ImGui::BeginCombo(("##" + windowName + "_OrbitDotShapeBAck").c_str(), (orbitdottypes[window->OrbDotShapeBack]).c_str(), 0))
 		{
@@ -282,13 +282,13 @@ void plotWindowMenu_OrbitPlot(PlotWindow* window) {
 
 		
 
-		ImGui::SeparatorText("Other settings");
+		ImGui::SeparatorText("Other Settings");
 		ImGui::Checkbox("Invert axes", &window->OrbitInvertedAxes);
 		plotWindowMenu_CommonPlot(window, windowName);
 
 		
 
-		ImGui::SeparatorText("Auto-compute");
+		ImGui::SeparatorText("Auto-Compute");
 		ImGui::Checkbox("Auto - compute on Shift + RMB", &window->isAutoComputeOn);
 
 		ImGui::EndMenu();
