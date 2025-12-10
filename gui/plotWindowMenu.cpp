@@ -196,6 +196,14 @@ void plotWindowMenu_DecayPlot(PlotWindow* window)
 		ImGui::SameLine(); ImGui::Text("Alive AND");
 		TOOLTIP("Trajectory alive only if alive in all indices. False if it needs to be alive at least in one index")
 
+		bool tempCalcLifetime = window->decayCalcLifetime; if (ImGui::Checkbox(("##" + windowName + "lifetime").c_str(), &tempCalcLifetime))
+		{
+			window->decayCalcLifetime = !window->decayCalcLifetime;
+			window->decayLifetime = 0.0f;
+		}
+		ImGui::SameLine(); ImGui::Text("Calculate lifetime");
+		TOOLTIP("Calculate average lifetime before the marker")
+
 		ImGui::EndMenu();
 	}
 }

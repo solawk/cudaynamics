@@ -2447,7 +2447,11 @@ int imgui_main(int, char**)
                         heatmap->areValuesDirty = false;
                     }
 
-                    if (cmp->isFirst && !window->isYLog) ImPlot::SetNextAxisLimits(ImAxis_Y1, 0.0, (double)cmp->marshal.totalVariations, ImPlotCond_Always);
+                    if (cmp->isFirst && !window->isYLog)
+                    {
+                        ImPlot::SetNextAxisLimits(ImAxis_Y1, 0.0, (double)cmp->marshal.totalVariations, ImPlotCond_Always);
+                        window->decayMarkerPosition = !KERNEL.usingTime ? KERNEL.transientSteps : KERNEL.transientTime;
+                    }
 
                     if (window->decayBuffer.size() > 0 && window->decayBuffer[0].size() > 0)
                     {
@@ -2485,38 +2489,43 @@ int imgui_main(int, char**)
                                     &(window->decayBuffer[t][0]), &(window->decayAlive[t][0]), (int)window->decayBuffer[t].size());
                             }
 
-                            double prevMarkerPosition = window->decayMarkerPosition;
-                            ImPlot::DragLineX(0, &(window->decayMarkerPosition), window->markerColor, window->markerWidth);
-                            if (window->decayMarkerPosition != prevMarkerPosition || toAutofitTimeSeries)
+                            if (window->decayCalcLifetime)
                             {
-                                int endDecayTimepointIndex = 0;
-                                for (int tp = 1; tp < window->decayBuffer[0].size(); tp++)
+                                double prevMarkerPosition = window->decayMarkerPosition;
+                                ImPlot::DragLineX(0, &(window->decayMarkerPosition), window->markerColor, window->markerWidth);
+                                if (window->decayMarkerPosition != prevMarkerPosition || toAutofitTimeSeries)
                                 {
-                                    if (window->decayMarkerPosition > window->decayBuffer[0][tp]) endDecayTimepointIndex = tp;
-                                    else break;
-                                }
-
-                                float totalArea = 0.0f;
-
-                                for (int tp = 0; tp < endDecayTimepointIndex; tp++)
-                                {
-                                    float min1 = window->decayAlive[0][tp];
-                                    float min2 = window->decayAlive[0][tp + 1];
-
-                                    for (int t = 1; t < decay->thresholds.size(); t++)
+                                    int endDecayTimepointIndex = 0;
+                                    for (int tp = 1; tp < window->decayBuffer[0].size(); tp++)
                                     {
-                                        if (min1 > window->decayAlive[t][tp]) min1 = window->decayAlive[t][tp];
-                                        if (min2 > window->decayAlive[t][tp + 1]) min2 = window->decayAlive[t][tp + 1];
+                                        if (window->decayMarkerPosition > window->decayBuffer[0][tp]) endDecayTimepointIndex = tp;
+                                        else break;
                                     }
 
-                                    float time1 = window->decayBuffer[0][tp];
-                                    float time2 = window->decayBuffer[0][tp + 1];
+                                    float totalArea = 0.0f;
 
-                                    float area = (time2 - time1) * (min1 + min2) / 2.0f;
-                                    totalArea += area;
+                                    for (int tp = 0; tp < endDecayTimepointIndex; tp++)
+                                    {
+                                        float min1 = window->decayAlive[0][tp];
+                                        float min2 = window->decayAlive[0][tp + 1];
+
+                                        for (int t = 1; t < decay->thresholds.size(); t++)
+                                        {
+                                            if (min1 > window->decayAlive[t][tp]) min1 = window->decayAlive[t][tp];
+                                            if (min2 > window->decayAlive[t][tp + 1]) min2 = window->decayAlive[t][tp + 1];
+                                        }
+
+                                        float time1 = window->decayBuffer[0][tp];
+                                        float time2 = window->decayBuffer[0][tp + 1];
+
+                                        float area = (time2 - time1) * (min1 + min2) / 2.0f;
+                                        totalArea += area;
+                                    }
+
+                                    window->decayLifetime = totalArea / cmp->marshal.totalVariations;
                                 }
 
-                                float avgLifetime = totalArea / cmp->marshal.totalVariations;
+                                ImPlot::PlotText(("Avg lifetime: " + std::to_string(window->decayLifetime)).c_str(), window->decayMarkerPosition, 0);
                             }
 
                             ImPlot::EndPlot();

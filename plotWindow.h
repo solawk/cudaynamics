@@ -64,6 +64,8 @@ public:
 	ImVec4 plotFillColor;
 	float decayFillAlpha;
 	double decayMarkerPosition;
+	bool decayCalcLifetime;
+	float decayLifetime;
 	
 	ImVec2 dragLineHiresPos;
 
@@ -139,6 +141,8 @@ public:
 		decayFillAlpha = 0.75f;
 		dragLineHiresPos = ImVec2(0.0f, 0.0f);
 		decayMarkerPosition = 0.0f;
+		decayCalcLifetime = true;
+		decayLifetime = 0.0f;
 
 		showAxis = true;
 		showAxisNames = true;
