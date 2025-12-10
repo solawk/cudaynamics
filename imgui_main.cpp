@@ -1012,7 +1012,7 @@ int imgui_main(int, char**)
 
         // Graph Builder
 
-        if (/*graphBuilderWindowEnabled*/ 1)
+        if (/*graphBuilderWindowEnabled*/1)
         {
             FullscreenActLogic(&graphBuilderWindow, &fullscreenSize);
             ImGui::Begin("Graph Builder", /*&graphBuilderWindowEnabled*/nullptr);
