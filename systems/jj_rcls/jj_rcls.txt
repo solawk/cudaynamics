@@ -1,0 +1,35 @@
+Name: Josephson RCL-shunted junction
+Steps: 5000
+Transient: 0
+// Defining step:
+// parameter/variable/discrete
+// Then, unless it is discrete, provide its name and define it like an attribute
+// If it is discrete, add nothing after
+Step type: parameter h Fixed 0.01 0.1 0.01 100 0.0 0.0
+// Compute on CUDAynamics launch: yes/no
+Execute on launch: yes
+// Ranging types:
+// Fixed (single <minimum value>)
+// Linear (<step count> values uniformly distributed between <minimum value> and <maximum value>, inclusively)
+// Step (values are picked from <minimum value> to <maximum value> with a step <step>, including minimum, including maximum if it ends up as a picked value)
+// Random (<step count> values randomly picked from <minimum value> to <maximum value>)
+// Normal (normal distribution of <step count> values, defined by <normal mean> and <normal deviation>
+//
+// Defining variables/parameters:
+// var/param <name> <ranging type> <minimum value> <maximum value> <step> <step count> <normal mean> <normal deviation>
+var x1 Fixed 3.14 1.0 0.1 100 0.0 0.0
+var sin_x1 Fixed 0.0 0.0 0.1 0 0.0 0.0
+var x2 Linear -1.0 3.0 0.1 100 0.0 0.0
+var x3 Linear 0.5 1.0 0.1 0 0.0 0.0
+param betaL Fixed 29.215 30.0 0.001 250 0.0 0.0
+param betaC Fixed 0.707 1.0 0.1 250 0.0 0.0
+param i Fixed 1.25 1.5 0.01 100 0.0 0.0
+param gThreshold Fixed 6.9 0.0 0.01 100 0.0 0.0
+param Rn Fixed 0.367 0.0 0.01 100 0.0 0.0
+param Rsg Fixed 0.0478 0.0 0.01 0 0.0 0.0
+param symmetry Fixed 0.0 0.0 0.01 0 0.0 0.0
+enum method 0ExplicitEuler 1SemiExplicitEuler 0ExplicitMidpoint 0ExplicitRungeKutta4 0VariableSymmetryCD
+// Defining maps:
+analysis Minimum/maximum settings 1 2
+analysis Largest Lyapunov exponent settings 0.01 1000 1 1 2 3 -1
+analysis Periodicity settings 1.0 1 20.0 10.0 10000.0 0.001 0.99 1.0

@@ -1,0 +1,46 @@
+Name: Josephson MCRL-shunted junction
+Steps: 10000
+Transient: 5000
+// Defining step:
+// parameter/variable/discrete
+// Then, unless it is discrete, provide its name and define it like an attribute
+// If it is discrete, add nothing after
+Step type: parameter h Fixed 0.01 0.1 0.01 100 0.0 0.0
+// Compute on CUDAynamics launch: yes/no
+Execute on launch: yes
+// Ranging types:
+// Fixed (single <minimum value>)
+// Linear (<step count> values uniformly distributed between <minimum value> and <maximum value>, inclusively)
+// Step (values are picked from <minimum value> to <maximum value> with a step <step>, including minimum, including maximum if it ends up as a picked value)
+// Random (<step count> values randomly picked from <minimum value> to <maximum value>)
+// Normal (normal distribution of <step count> values, defined by <normal mean> and <normal deviation>
+//
+// Defining variables/parameters:
+// var/param <name> <ranging type> <minimum value> <maximum value> <step> <step count> <normal mean> <normal deviation>
+var theta Fixed 3.14 50.0 1.0 50 0.0 0.0
+var sin_theta Fixed 0.0 50.0 0.1 50 0.0 0.0
+var v Fixed 3.3 29.0 0.1 0 0.0 0.0
+var iL Fixed 0.76 29.0 0.1 0 0.0 0.0
+var i Fixed 0.9 1.5 0.01 50 0.0 0.0
+var t Fixed 0.0 29.0 0.1 0 0.0 0.0
+param betaL Fixed 50.0 50.0 0.1 250 0.0 0.0
+param betaC Fixed 0.5 50.0 0.1 250 0.0 0.0
+param betaM Fixed 1.0 29.0 0.1 0 0.0 0.0
+param epsilon Linear -2.0 0.0 0.01 200 0.0 0.0
+param delta Fixed 1.0 29.0 0.1 0 0.0 0.0
+param Idc Linear 0.9 1.5 0.01 200 0.0 0.0
+param Iamp Fixed 0.045 0.5 0.001 0 0.0 0.0
+param Ifreq Fixed 0.01 0.5 0.001 100 0.0 0.0
+param Idel Fixed 0.0 0.5 0.01 50 0.0 0.0
+param Idf Fixed 0.0 1.0 0.1 100 0.0 0.0
+constraint signal square
+param symmetry Fixed 0.0 29.0 0.1 0 0.0 0.0
+constraint method VariableSymmetryCD
+// Defining enumerated parameters (useful for methods):
+// enum <name> <ranging type> <minimum value> <maximum value> <step> <step count> <normal mean> <normal deviation> <enum names, no spaces>
+enum signal 1square 0sine 0triangle
+enum method 0ExplicitEuler 0SemiExplicitEuler 1ExplicitMidpoint 0ExplicitRungeKutta4 0VariableSymmetryCD
+// Defining maps:
+analysis Minimum/maximum settings 1 2
+analysis Largest Lyapunov exponent settings 0.01 1000 2 1 2 3 -1
+analysis Periodicity settings 1.0 2 20.0 10.0 10000.0 0.001 0.99 1.0
