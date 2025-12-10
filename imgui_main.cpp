@@ -2087,14 +2087,14 @@ int imgui_main(int, char**)
                                         }
                                         if (OrbitRedraw)window->redrawContinuation = true;
                                         if (window->redrawContinuation) {
-                                            if (window->continuationAmpsBack != NULL) {
-                                                delete[]window->continuationParamIndicesBack; 
-                                                delete[]window->continuationParamIndicesForward;
-                                                delete[]window->continuationAmpsBack;
-                                                delete[]window->continuationAmpsForward;
-                                                delete[]window->continuationIntervalsBack;
-                                                delete[]window->continuationIntervalsForward;
-                                            }
+                                            //if (window->continuationAmpsBack != NULL) {
+                                            //    delete[]window->continuationParamIndicesBack; 
+                                            //    delete[]window->continuationParamIndicesForward;
+                                            //    delete[]window->continuationAmpsBack;
+                                            //    delete[]window->continuationAmpsForward;
+                                            //    delete[]window->continuationIntervalsBack;
+                                            //    delete[]window->continuationParamIndicesBack;
+                                            //}
                                             numb* startingVariables = new numb[varCount];
                                             numb* newVariables = new numb[varCount];
                                             numb* parameters = new numb[parCount];
