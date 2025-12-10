@@ -57,12 +57,13 @@ public:
 
 	DeltaState deltaState;
 
-	std::vector<std::vector<int>> decayBuffer;
-	std::vector<std::vector<int>> decayTotal;
-	std::vector<std::vector<int>> decayAlive;
+	std::vector<std::vector<float>> decayBuffer;
+	std::vector<std::vector<float>> decayTotal;
+	std::vector<std::vector<float>> decayAlive;
 	bool decayIndicesAreAND; // true if AND, false if OR
 	ImVec4 plotFillColor;
 	float decayFillAlpha;
+	double decayMarkerPosition;
 	
 	ImVec2 dragLineHiresPos;
 
@@ -137,6 +138,7 @@ public:
 		decayIndicesAreAND = true;
 		decayFillAlpha = 0.75f;
 		dragLineHiresPos = ImVec2(0.0f, 0.0f);
+		decayMarkerPosition = 0.0f;
 
 		showAxis = true;
 		showAxisNames = true;
