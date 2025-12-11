@@ -1958,6 +1958,8 @@ int imgui_main(int, char**)
 
                                     numb stepH = krnl->stepType == 0 ? krnl->parameters[parCount - 1].values[attributeValueIndices[varCount + parCount - 1]] : (krnl->stepType == 1 ? krnl->variables[varCount - 1].values[attributeValueIndices[varCount - 1]] : (numb)1.0);
 
+
+
                                     // Buffer to hold peak data (amplitudes and indices)
                                     constexpr int MAX_PEAKS = 1024;
                                     numb *peakAmplitudes = new numb[MAX_PEAKS];
@@ -1966,6 +1968,133 @@ int imgui_main(int, char**)
                                     numb paramStep = axis->step;
                                     numb paramMin = axis->min;
                                     int variation = 0;
+
+                                    if (!window->lastAttributevalueindicesContinuations.empty())
+                                        for (int i = 0; i < varCount + parCount - 2; i++) {
+                                            if (i != varCount + window->OrbitXIndex) {
+                                                if (attributeValueIndices[i] != window->lastAttributevalueindicesContinuations[i]) { window->drawingContinuation = false; window->redrawContinuation = false; }
+                                            }
+                                        }
+                                    if (OrbitRedraw) { window->drawingContinuation = false; window->redrawContinuation = false; }
+                                    if (window->redrawContinuation) {
+                                        window->lastAttributevalueindicesContinuations = attributeValueIndices;
+                                        //if (window->continuationAmpsBack != NULL) {
+                                        //    delete[]window->continuationParamIndicesBack; 
+                                        //    delete[]window->continuationParamIndicesForward;
+                                        //    delete[]window->continuationAmpsBack;
+                                        //    delete[]window->continuationAmpsForward;
+                                        //    delete[]window->continuationIntervalsBack;
+                                        //    delete[]window->continuationParamIndicesBack;
+                                        //}
+                                        numb* startingVariables = new numb[varCount];
+                                        numb* newVariables = new numb[varCount];
+                                        numb* parameters = new numb[parCount];
+                                        window->continuationParamIndicesBack = new numb[MAX_PEAKS * axis->stepCount];
+                                        window->continuationParamIndicesForward = new numb[MAX_PEAKS * axis->stepCount];
+                                        window->continuationAmpsBack = new numb[MAX_PEAKS * axis->stepCount];
+                                        window->continuationAmpsForward = new numb[MAX_PEAKS * axis->stepCount];
+                                        window->continuationIntervalsBack = new numb[MAX_PEAKS * axis->stepCount];
+                                        window->continuationIntervalsForward = new numb[MAX_PEAKS * axis->stepCount];
+                                        std::vector<numb> trajectory;
+                                        for (int i = 0; i < varCount; i++) {
+                                            startingVariables[i] = attributeValueIndices[i] == 0 ? KERNEL.variables[i].min : KERNEL.variables[i].min + KERNEL.variables[i].step * attributeValueIndices[i];
+                                        }
+                                        for (int i = 0; i < parCount; i++) {
+                                            parameters[i] = attributeValueIndices[i + varCount] == 0 ? KERNEL.parameters[i].min : KERNEL.parameters[i].min + KERNEL.parameters[i].step * attributeValueIndices[i + varCount];
+                                        }
+
+                                        parameters[window->OrbitXIndex] = KERNEL.parameters[window->OrbitXIndex].min;
+                                        for (int i = 0; i < KERNEL.transientSteps; i++) { kernel_FDS(selectedKernel)(startingVariables, newVariables, parameters); startingVariables = newVariables; }
+                                        trajectory.push_back(startingVariables[xIndex]);
+
+                                        int BifDotAmount = 0;
+
+                                        for (int j = 0; j < axis->stepCount; j++) {
+                                            parameters[window->OrbitXIndex] = KERNEL.parameters[window->OrbitXIndex].min + KERNEL.parameters[window->OrbitXIndex].step * j;
+                                            for (int trajstep = 0; trajstep < variationSize / varCount; trajstep++) {
+                                                kernel_FDS(selectedKernel)(startingVariables, newVariables, parameters);
+                                                trajectory.push_back(newVariables[xIndex]);
+                                                startingVariables = newVariables;
+                                            }
+                                            int peakCount = 0;
+                                            bool firstpeakreached = false;
+                                            numb temppeakindex;
+                                            for (int trajstep = 1; trajstep < variationSize / varCount - 1 && peakCount < MAX_PEAKS; trajstep++) {
+                                                numb prev = trajectory[trajstep - 1];
+                                                numb curr = trajectory[trajstep];
+                                                numb next = trajectory[trajstep + 1];
+                                                if (curr > prev && curr > next)
+                                                {
+                                                    if (firstpeakreached == false)
+                                                    {
+                                                        firstpeakreached = true;
+                                                        temppeakindex = (float)trajstep;
+                                                    }
+                                                    else
+                                                    {
+                                                        window->continuationAmpsForward[BifDotAmount] = curr;
+                                                        window->continuationIntervalsForward[BifDotAmount] = (trajstep - temppeakindex) * stepH;
+                                                        window->continuationParamIndicesForward[BifDotAmount] = paramMin + j * paramStep;
+                                                        temppeakindex = (float)trajstep;
+                                                        peakCount++;
+                                                        BifDotAmount++;
+                                                    }
+                                                }
+                                            }
+                                            trajectory.clear();
+                                        }
+                                        window->bifDotAmountForward = BifDotAmount;
+
+
+                                        for (int i = 0; i < varCount; i++) {
+                                            startingVariables[i] = attributeValueIndices[i] == 0 ? KERNEL.variables[i].min : KERNEL.variables[i].min + KERNEL.variables[i].step * attributeValueIndices[i];
+                                        }
+
+                                        parameters[window->OrbitXIndex] = KERNEL.parameters[window->OrbitXIndex].max;
+                                        for (int i = 0; i < KERNEL.transientSteps; i++) { kernel_FDS(selectedKernel)(startingVariables, newVariables, parameters); startingVariables = newVariables; }
+                                        trajectory.push_back(startingVariables[xIndex]);
+
+                                        BifDotAmount = 0;
+                                        for (int j = axis->stepCount - 1; j >= 0; j--) {
+                                            parameters[window->OrbitXIndex] = KERNEL.parameters[window->OrbitXIndex].min + KERNEL.parameters[window->OrbitXIndex].step * j;
+                                            for (int trajstep = 0; trajstep < variationSize / varCount; trajstep++) {
+                                                kernel_FDS(selectedKernel)(startingVariables, newVariables, parameters);
+                                                trajectory.push_back(newVariables[xIndex]);
+                                                startingVariables = newVariables;
+                                            }
+                                            int peakCount = 0;
+                                            bool firstpeakreached = false;
+                                            numb temppeakindex;
+                                            for (int trajstep = 1; trajstep < variationSize / varCount - 1 && peakCount < MAX_PEAKS; trajstep++) {
+                                                numb prev = trajectory[trajstep - 1];
+                                                numb curr = trajectory[trajstep];
+                                                numb next = trajectory[trajstep + 1];
+
+                                                if (curr > prev && curr > next)
+                                                {
+                                                    if (firstpeakreached == false)
+                                                    {
+                                                        firstpeakreached = true;
+                                                        temppeakindex = (float)trajstep;
+                                                    }
+                                                    else
+                                                    {
+                                                        window->continuationAmpsBack[BifDotAmount] = curr;
+                                                        window->continuationIntervalsBack[BifDotAmount] = (trajstep - temppeakindex) * stepH;
+                                                        window->continuationParamIndicesBack[BifDotAmount] = paramMin + j * paramStep;
+                                                        temppeakindex = (float)trajstep;
+                                                        peakCount++;
+                                                        BifDotAmount++;
+                                                    }
+                                                }
+                                            }
+                                            trajectory.clear();
+                                        }
+                                        window->bifDotAmountBack = BifDotAmount;
+
+                                        window->redrawContinuation = false;
+                                    }
+
                                     if (window->OrbitType==Selected_Var_Section) {
                                         steps2Variation(&variation, &(attributeValueIndices.data()[0]), &KERNEL);
 
@@ -2005,14 +2134,46 @@ int imgui_main(int, char**)
                                                 if (peakAmplitudes[i + 1] < minY) minY = peakAmplitudes[i + 1];
                                                 if (peakAmplitudes[i + 1] > maxY) maxY = peakAmplitudes[i + 1];
                                             }
+                                            std::vector<numb> SliceForwardInt; std::vector<numb> SliceForwardPeak;
+                                            std::vector<numb> SliceBackwardInt; std::vector<numb>  SliceBackwardPeak;
+                                            int forNum = 0; int backNum = 0;
+                                            bool sectionFound = false;
+                                            if (window->drawingContinuation && window->continuationAmpsForward != NULL || window->lastAttributevalueindicesContinuations!=attributeValueIndices && window->continuationAmpsForward != NULL) {
+                                                SliceBackwardInt.clear(); SliceBackwardPeak.clear(); SliceForwardInt.clear(); SliceForwardPeak.clear();
+                                                window->lastAttributevalueindicesContinuations = attributeValueIndices;
+                                                for (int i = 0; i < window->bifDotAmountForward-1; i++) {
+                                                    if (window->continuationParamIndicesForward[i] == axis->min + attributeValueIndices[varCount+window->OrbitXIndex] * axis->step) {
+                                                        if (!sectionFound) { sectionFound = true;  }
+                                                        SliceForwardInt.push_back(window->continuationIntervalsForward[i]); SliceForwardPeak.push_back(window->continuationAmpsForward[i]);
+                                                        forNum++;
+                                                    }
+                                                }
+                                                for (int i = 0; i < window->bifDotAmountBack-1; i++) {
+                                                    if (window->continuationParamIndicesBack[i] == axis->min + attributeValueIndices[varCount + window->OrbitXIndex] * axis->step) {
+                                                        if (!sectionFound) { sectionFound = true;  }
+                                                        SliceBackwardInt.push_back(window->continuationIntervalsBack[i]); SliceBackwardPeak.push_back(window->continuationAmpsBack[i]);
+                                                        backNum++;
+                                                    }
+                                                }
+                                            }
                                             if (ImPlot::BeginPlot(("##" + plotName +  "_ChosenVariation").c_str(), window->OrbitInvertedAxes?"Peaks":"Intervals", window->OrbitInvertedAxes ? "Intervals" : "Peaks", ImVec2(-1, -1), ImPlotFlags_NoTitle, 0, 0)) {
                                                 plot = ImPlot::GetPlot(("##" + plotName +  "_ChosenVariation").c_str()); plot->is3d = false;
                                                 ImPlot::SetupAxisLimits(ImAxis_X1, minX * 0.95f, maxX * 1.05f, ImGuiCond_None);
                                                 ImPlot::SetupAxisLimits(ImAxis_Y1, minY * 0.95f, maxY * 1.05f, ImGuiCond_None);
                                                 ImPlot::SetupFinish();
                                                 ImPlot::SetNextMarkerStyle(window->markerShape, window->OrbitPointSize, window->plotColor,-1.0, window->plotColor);
-                                                if(!window->OrbitInvertedAxes)ImPlot::PlotScatter(("##" + plotName + "_ChosenVariationPlot").c_str(), peakIntervals, peakAmplitudes, peakCount - 1);
-                                                else ImPlot::PlotScatter(("##" + plotName + "_ChosenVariationPlot").c_str(), peakAmplitudes, peakIntervals, peakCount - 1);
+                                                if (!window->OrbitInvertedAxes) { 
+                                                    ImPlot::PlotScatter(window->drawingContinuation? ("Standard##" + plotName + "_ChosenVariationPlot").c_str() : ("##" + plotName + "_ChosenVariationPlot").c_str(), peakIntervals, peakAmplitudes, peakCount - 1);
+                                                    if (window->drawingContinuation && window->continuationAmpsForward!=NULL) {
+                                                        ImPlot::SetNextMarkerStyle(window->OrbDotShapeForward, window->OrbitPointSizeForward, window->OrbDotColorForward, IMPLOT_AUTO, window->OrbDotColorForward);
+                                                        ImPlot::PlotScatter(("Forward##" + plotName + "_ChosenVariationPlot").c_str(), SliceForwardInt.data(), SliceForwardPeak.data(), forNum - 1);
+                                                        ImPlot::SetNextMarkerStyle(window->OrbDotShapeBack, window->OrbitPointSizeBack, window->OrbDotColorBack, IMPLOT_AUTO, window->OrbDotColorBack);
+                                                        ImPlot::PlotScatter(("Backward##" + plotName + "_ChosenVariationPlot").c_str(), SliceBackwardInt.data(), SliceBackwardPeak.data(), backNum-1);
+                                                    }
+                                                }
+                                                else {
+                                                    ImPlot::PlotScatter(("##" + plotName + "_ChosenVariationPlot").c_str(), peakAmplitudes, peakIntervals, peakCount - 1);
+                                                }
                                                 ;
                                                 ImPlot::EndPlot();
                                             }
@@ -2071,140 +2232,6 @@ int imgui_main(int, char**)
                                             window->BifDotAmount = BifDotAmount;
                                             window->areOrbitValuesDirty = false;
                                         }
-                                        if (OrbitRedraw || window->lastAttributevalueindicesContinuations != attributeValueIndices) { window->drawingContinuation = false; window->redrawContinuation = false; }
-                                        ImGui::SameLine();
-                                        if (ImGui::Button(("Draw continuation diagram##" + windowName + "_ContinuationDiag").c_str()))
-                                        {
-                                            window->drawingContinuation = true;
-                                            window->redrawContinuation = true;
-                                        }
-                                        if (window->drawingContinuation) {
-                                            ImGui::SameLine();
-                                            if (ImGui::Button(("Cancel##" + windowName + "_CancelContinuationDiag").c_str()))
-                                            {
-                                                window->drawingContinuation = false;
-                                                window->redrawContinuation = false;
-                                            }
-                                        }
-                                        
-                                        if (window->redrawContinuation) {
-                                            window->lastAttributevalueindicesContinuations = attributeValueIndices;
-                                            //if (window->continuationAmpsBack != NULL) {
-                                            //    delete[]window->continuationParamIndicesBack; 
-                                            //    delete[]window->continuationParamIndicesForward;
-                                            //    delete[]window->continuationAmpsBack;
-                                            //    delete[]window->continuationAmpsForward;
-                                            //    delete[]window->continuationIntervalsBack;
-                                            //    delete[]window->continuationParamIndicesBack;
-                                            //}
-                                            numb* startingVariables = new numb[varCount];
-                                            numb* newVariables = new numb[varCount];
-                                            numb* parameters = new numb[parCount];
-                                            window->continuationParamIndicesBack = new numb[MAX_PEAKS * axis->stepCount];
-                                            window->continuationParamIndicesForward = new numb[MAX_PEAKS * axis->stepCount];
-                                            window->continuationAmpsBack= new numb[MAX_PEAKS * axis->stepCount];
-                                            window->continuationAmpsForward = new numb[MAX_PEAKS * axis->stepCount];
-                                            window->continuationIntervalsBack = new numb[MAX_PEAKS * axis->stepCount];
-                                            window->continuationIntervalsForward = new numb[MAX_PEAKS * axis->stepCount];
-                                            std::vector<numb> trajectory;
-                                            for (int i = 0; i < varCount; i++) {
-                                                startingVariables[i] = attributeValueIndices[i] == 0 ? KERNEL.variables[i].min : KERNEL.variables[i].min + KERNEL.variables[i].step * attributeValueIndices[i];
-                                            }
-                                            for (int i = 0; i < parCount; i++) {
-                                                parameters[i] = attributeValueIndices[i+varCount] == 0 ? KERNEL.parameters[i].min : KERNEL.parameters[i].min + KERNEL.parameters[i].step * attributeValueIndices[i+varCount];
-                                            }
-
-                                            parameters[window->OrbitXIndex] = KERNEL.parameters[window->OrbitXIndex].min;
-                                            for (int i = 0; i < KERNEL.transientSteps; i++){ finiteDifferenceScheme_(jj_rlcs)(startingVariables, newVariables, parameters); startingVariables = newVariables;}
-                                            trajectory.push_back(startingVariables[xIndex]);
-
-                                            int BifDotAmount = 0;
-
-                                            for (int j = 0; j < axis->stepCount; j++) {
-                                                parameters[window->OrbitXIndex] = KERNEL.parameters[window->OrbitXIndex].min + KERNEL.parameters[window->OrbitXIndex].step * j;
-                                                for (int trajstep = 0; trajstep < variationSize / varCount; trajstep++) {
-                                                    finiteDifferenceScheme_(jj_rlcs)(startingVariables, newVariables, parameters);
-                                                    trajectory.push_back(newVariables[xIndex]);
-                                                    startingVariables = newVariables;
-                                                }
-                                                int peakCount = 0;
-                                                bool firstpeakreached = false;
-                                                numb temppeakindex;
-                                                for (int trajstep = 1; trajstep < variationSize/varCount-1 && peakCount < MAX_PEAKS; trajstep++) {
-                                                    numb prev = trajectory[ trajstep - 1];
-                                                    numb curr = trajectory[ trajstep];
-                                                    numb next = trajectory[ trajstep +1];
-                                                    if (curr > prev && curr > next)
-                                                    {
-                                                        if (firstpeakreached == false)
-                                                        {
-                                                            firstpeakreached = true;
-                                                            temppeakindex = (float)trajstep;
-                                                        }
-                                                        else
-                                                        {
-                                                            window->continuationAmpsForward[BifDotAmount] = curr;
-                                                            window->continuationIntervalsForward[BifDotAmount] = (trajstep - temppeakindex) * stepH;
-                                                            window->continuationParamIndicesForward[BifDotAmount] = paramMin + j * paramStep;
-                                                            temppeakindex = (float)trajstep;
-                                                            peakCount++;
-                                                            BifDotAmount++;
-                                                        }
-                                                    }
-                                                }
-                                                trajectory.clear();
-                                            }
-                                            window->bifDotAmountForward = BifDotAmount;
-
-
-                                            for (int i = 0; i < varCount; i++) {
-                                                startingVariables[i] = attributeValueIndices[i] == 0 ? KERNEL.variables[i].min : KERNEL.variables[i].min + KERNEL.variables[i].step * attributeValueIndices[i];
-                                            }
-
-                                            parameters[window->OrbitXIndex] = KERNEL.parameters[window->OrbitXIndex].max;
-                                            for (int i = 0; i < KERNEL.transientSteps; i++) { finiteDifferenceScheme_(jj_rlcs)(startingVariables, newVariables, parameters); startingVariables = newVariables; }
-                                            trajectory.push_back(startingVariables[xIndex]);
-
-                                            BifDotAmount = 0;
-                                            for (int j = axis->stepCount - 1; j >=0; j--) {
-                                                parameters[window->OrbitXIndex] = KERNEL.parameters[window->OrbitXIndex].min + KERNEL.parameters[window->OrbitXIndex].step * j;
-                                                for (int trajstep = 0; trajstep < variationSize / varCount; trajstep++) {
-                                                    finiteDifferenceScheme_(jj_rlcs)(startingVariables, newVariables, parameters);
-                                                    trajectory.push_back(newVariables[xIndex]);
-                                                    startingVariables = newVariables;
-                                                }
-                                                int peakCount = 0;
-                                                bool firstpeakreached = false;
-                                                numb temppeakindex;
-                                                for (int trajstep = 1; trajstep < variationSize/varCount-1  && peakCount < MAX_PEAKS; trajstep++) {
-                                                    numb prev = trajectory[trajstep - 1];
-                                                    numb curr = trajectory[trajstep];
-                                                    numb next = trajectory[trajstep + 1];
-                                                    if (curr > prev && curr > next)
-                                                    {
-                                                        if (firstpeakreached == false)
-                                                        {
-                                                            firstpeakreached = true;
-                                                            temppeakindex = (float)trajstep;
-                                                        }
-                                                        else
-                                                        {
-                                                            window->continuationAmpsBack[BifDotAmount] = curr;
-                                                            window->continuationIntervalsBack[BifDotAmount] = (trajstep - temppeakindex) * stepH;
-                                                            window->continuationParamIndicesBack[BifDotAmount] = paramMin + j * paramStep;
-                                                            temppeakindex = (float)trajstep;
-                                                            peakCount++;
-                                                            BifDotAmount++;
-                                                        }
-                                                    }
-                                                }
-                                                trajectory.clear();
-                                            }
-                                            window->bifDotAmountBack = BifDotAmount;
-
-                                            window->redrawContinuation = false;
-                                        }
-
                                         numb minX = window->bifParamIndices[0], maxX = window->bifParamIndices[0];
                                         numb minY = window->bifAmps[0], maxY = window->bifAmps[0];
                                         numb minZ = window->bifIntervals[0]; numb maxZ = window->bifIntervals[0];
@@ -2223,7 +2250,7 @@ int imgui_main(int, char**)
                                                 ImPlot::SetupFinish();
                                                 ImPlot::SetNextMarkerStyle(window->markerShape, window->OrbitPointSize, window->plotColor, IMPLOT_AUTO, window->plotColor);
                                                 if (!window->OrbitInvertedAxes) {
-                                                    ImPlot::PlotScatter(window->drawingContinuation ? ("Normal##Peak to Parameter " + plotName).c_str() : ("##Peak to Parameter " + plotName).c_str(), window->bifParamIndices, window->bifAmps, window->BifDotAmount);
+                                                    ImPlot::PlotScatter(window->drawingContinuation ? ("Standard##Peak to Parameter " + plotName).c_str() : ("##Peak to Parameter " + plotName).c_str(), window->bifParamIndices, window->bifAmps, window->BifDotAmount);
                                                     if (window->drawingContinuation) {
                                                         ImPlot::SetNextMarkerStyle(window->OrbDotShapeForward, window->OrbitPointSizeForward, window->OrbDotColorForward, IMPLOT_AUTO, window->OrbDotColorForward);
                                                         ImPlot::PlotScatter(("Forward continuation##Peak to Parameter " + plotName).c_str(), window->continuationParamIndicesForward, window->continuationAmpsForward, window->bifDotAmountForward);
@@ -2232,7 +2259,7 @@ int imgui_main(int, char**)
                                                     }
                                                 }
                                                 else {
-                                                    ImPlot::PlotScatter(window->drawingContinuation ? ("Normal##Peak to Parameter " + plotName).c_str() :("##Peak to Parameter " + plotName).c_str(), window->bifAmps, window->bifParamIndices, window->BifDotAmount);
+                                                    ImPlot::PlotScatter(window->drawingContinuation ? ("Standard##Peak to Parameter " + plotName).c_str() :("##Peak to Parameter " + plotName).c_str(), window->bifAmps, window->bifParamIndices, window->BifDotAmount);
                                                     if (window->drawingContinuation) {
                                                         ImPlot::SetNextMarkerStyle(window->OrbDotShapeForward, window->OrbitPointSizeForward, window->OrbDotColorForward, IMPLOT_AUTO, window->OrbDotColorForward);
                                                         ImPlot::PlotScatter(("Forward continuation##Peak to Parameter " + plotName).c_str(),  window->continuationAmpsForward, window->continuationParamIndicesForward, window->bifDotAmountForward);
@@ -2281,7 +2308,7 @@ int imgui_main(int, char**)
 
                                                 ImPlot::SetNextMarkerStyle(window->markerShape, window->OrbitPointSize, window->plotColor, IMPLOT_AUTO, window->plotColor);
                                                 if (!window->OrbitInvertedAxes) {
-                                                    ImPlot::PlotScatter(window->drawingContinuation ? ("Normal##Interval to Parameter " + plotName).c_str() :("##Interval to Parameter " + plotName).c_str(), window->bifParamIndices, window->bifIntervals, window->BifDotAmount);
+                                                    ImPlot::PlotScatter(window->drawingContinuation ? ("Standard##Interval to Parameter " + plotName).c_str() :("##Interval to Parameter " + plotName).c_str(), window->bifParamIndices, window->bifIntervals, window->BifDotAmount);
                                                     if (window->drawingContinuation) {
                                                         ImPlot::SetNextMarkerStyle(window->OrbDotShapeForward, window->OrbitPointSizeForward, window->OrbDotColorForward, IMPLOT_AUTO, window->OrbDotColorForward);
                                                         ImPlot::PlotScatter(("Forward continuation##Peak to Parameter " + plotName).c_str(), window->continuationParamIndicesForward, window->continuationIntervalsForward, window->bifDotAmountForward);
@@ -2290,7 +2317,7 @@ int imgui_main(int, char**)
                                                     }
                                                 }
                                                 else {
-                                                    ImPlot::PlotScatter(window->drawingContinuation ? ("Normal##Interval to Parameter " + plotName).c_str() : ("##Interval to Parameter " + plotName).c_str(),  window->bifIntervals, window->bifParamIndices, window->BifDotAmount);
+                                                    ImPlot::PlotScatter(window->drawingContinuation ? ("Standard##Interval to Parameter " + plotName).c_str() : ("##Interval to Parameter " + plotName).c_str(),  window->bifIntervals, window->bifParamIndices, window->BifDotAmount);
                                                     if (window->drawingContinuation) {
                                                         ImPlot::SetNextMarkerStyle(window->OrbDotShapeForward, window->OrbitPointSizeForward, window->OrbDotColorForward, IMPLOT_AUTO, window->OrbDotColorForward);
                                                         ImPlot::PlotScatter(("Forward continuation##Peak to Parameter " + plotName).c_str(),  window->continuationIntervalsForward, window->continuationParamIndicesForward, window->bifDotAmountForward);
