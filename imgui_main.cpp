@@ -517,6 +517,12 @@ int imgui_main(int, char**)
 
     while (work)
     {
+        if (fontNotDefault)
+        {
+            ImFont* defaultFont = GetFont(GlobalFontSettings.family, GlobalFontSettings.size, GlobalFontSettings.isBold, GlobalFontSettings.isItalic);
+            if (defaultFont != nullptr) io.FontDefault = defaultFont;
+        }
+
         IMGUI_WORK_BEGIN;
         SetupImGuiStyle(appStyle, cudaColor, hiresColor, openmpColor, HIRES_ON, !HIRES_ON ? CPU_mode_interactive : CPU_mode_hires);
 
