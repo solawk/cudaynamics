@@ -118,7 +118,7 @@ std::string exportHeatmapCSV(const std::string& mapName,
     if (!f.is_open()) return {};
 
     // Header
-    f << nameX << "|" << nameY;
+    f << nameY << "\\" << nameX;
     for (int x = 0; x < s.xSize; ++x)
         f << ',' << (s.minX + s.stepX * (numb)x);
     f << '\n';
