@@ -33,9 +33,8 @@ cudaError_t execute(Computation* data)
 
     cudaError_t cudaStatus;
 
-    int blocks = (int)ceil((float)variations / KERNEL_TPB);
-    int threads = KERNEL_TPB;
-    data->threads_per_block = KERNEL_TPB;
+    int threads = data->threadsPerBlock;
+    int blocks = (int)ceil((float)variations / threads);
 
     // We create a dummy CUDA Computation with a Marshal to store the pointers in
     Computation* cuda_computation = nullptr;

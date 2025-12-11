@@ -26,6 +26,7 @@ bool CPU_mode_interactive = false;
 bool CPU_mode_hires = false;
 
 bool calculateDeltaDecay = true;
+int threadsPerBlock = 64;
 
 ImVec4 cudaColor = ImVec4(0.40f, 0.56f, 0.18f, 1.00f);
 ImVec4 openmpColor = ImVec4(0.03f, 0.45f, 0.49f, 1.00f);
@@ -191,6 +192,7 @@ int asyncComputation()
     bool isFirstBatch = computations[1 - bufferToFillIndex].marshal.trajectory == nullptr; // Is another buffer null, only true when computing for the first time
     computations[bufferToFillIndex].isFirst = isFirstBatch;
     computations[bufferToFillIndex].calculateDeltaDecay = calculateDeltaDecay;
+    computations[bufferToFillIndex].threadsPerBlock = threadsPerBlock;
     computations[bufferToFillIndex].marshal.kernel.CopyFrom(&KERNEL);
 
     int computationResult = compute(&(computations[bufferToFillIndex]));
@@ -237,6 +239,7 @@ int hiresAsyncComputation()
 
     computationHires.marshal.kernel.CopyFrom(&kernelHiresComputed);
     computationHires.marshal.kernel.mapWeight = 0.0f;
+    computationHires.threadsPerBlock = threadsPerBlock;
 
     lastHiresStart = std::chrono::steady_clock::now();
     lastHiresHasInfo = true;

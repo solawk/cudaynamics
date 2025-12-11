@@ -52,6 +52,9 @@ void mainWindowMenu()
             TOOLTIP("Use CPU with OpenMP instead of GPU with CUDA in Hi-Res mode");
             CPU_mode_hires = tempCPUhires_mode;
 
+            ImGui::InputInt("CUDA Threads per block", &threadsPerBlock, 1, 10, 0);
+            if (threadsPerBlock < 1) threadsPerBlock = 1;
+
             ImGui::SeparatorText("Analysis");
 
             // TODO: Re-enable this as a setting that requires recomputation

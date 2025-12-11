@@ -3,7 +3,7 @@
 
 #define name lorenz
 
-const int THREADS_PER_BLOCK_(name) = 64;
+//const int THREADS_PER_BLOCK_(name) = 64; // Threads per block are now configured in the main window Config menu
 
 __global__ void gpu_wrapper_(name)(Computation* data, uint64_t variation);
 
