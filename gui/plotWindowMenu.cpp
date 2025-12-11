@@ -55,6 +55,7 @@ void plotWindowMenu(PlotWindow* window)
 				if (!window->drawingContinuation) {
 					window->drawingContinuation = true;
 					window->redrawContinuation = true;
+					window->buttonPressed = true;
 				}
 				else {
 					window->drawingContinuation = false;
