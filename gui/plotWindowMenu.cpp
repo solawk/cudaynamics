@@ -47,6 +47,21 @@ void plotWindowMenu(PlotWindow* window)
 			}
 		}
 		if (window->type == Orbit) plotWindowMenu_OrbitPlot(window);
+		if (window->type == Orbit) {
+			ImGui::Text("   ");
+			ImGui::SameLine();
+			if (ImGui::Button(window->drawingContinuation ? ("Cancel Continuation##" +window->name+ "_ContinuationDiag").c_str() : ("Compute Continuation##" + window->name + "_ContinuationDiag").c_str()))
+			{
+				if (!window->drawingContinuation) {
+					window->drawingContinuation = true;
+					window->redrawContinuation = true;
+				}
+				else {
+					window->drawingContinuation = false;
+					window->redrawContinuation = false;
+				}
+			}
+		}
 		if (window->type == Metric) plotWindowMenu_MetricPlot(window);
 		if (window->type == VarSeries) plotWindowMenu_SeriesPlot(window);
 		if (window->type == IndSeries) plotWindowMenu_IndSeriesPlot(window);
