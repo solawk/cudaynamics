@@ -85,7 +85,7 @@ bool computeAfterShiftSelect = false;
 bool hiresComputeAfterShiftSelect = false;
 bool autofitHeatmap;
 
-bool OrbitRedraw = false;
+bool OrbitRedraw = false; bool indSeriesReset =false;
 ImGuiCustomStyle appStyle = ImGuiCustomStyle::Dark;
 
 // Temporary variables
@@ -514,12 +514,6 @@ int imgui_main(int, char**)
 
     while (work)
     {
-        if (fontNotDefault)
-        {
-            ImFont* defaultFont = GetFont(GlobalFontSettings.family, GlobalFontSettings.size, GlobalFontSettings.isBold, GlobalFontSettings.isItalic);
-            if (defaultFont != nullptr) io.FontDefault = defaultFont;
-        }
-
         IMGUI_WORK_BEGIN;
         SetupImGuiStyle(appStyle, cudaColor, hiresColor, openmpColor, HIRES_ON, !HIRES_ON ? CPU_mode_interactive : CPU_mode_hires);
 
@@ -981,7 +975,7 @@ int imgui_main(int, char**)
                 ImVec4(buttonColor.x * buttonBreathMult, buttonColor.y * buttonBreathMult, buttonColor.z * buttonBreathMult, 1.0f));
             if (ImGui::Button("= COMPUTE =") || (KERNEL.executeOnLaunch && !executedOnLaunch) || computeAfterShiftSelect)
             {
-                prepareAndCompute(false); OrbitRedraw = true;
+                prepareAndCompute(false); OrbitRedraw = true; indSeriesReset = true;
             }
             if (playBreath) ImGui::PopStyleColor();
             if (!playingParticles) computationStatus(computation0InProgress, computation1InProgress);
@@ -990,13 +984,13 @@ int imgui_main(int, char**)
         {
             if (computeAfterShiftSelect) // For shift-clicking the hires map
             {
-                prepareAndCompute(false); OrbitRedraw = true;
+                prepareAndCompute(false); OrbitRedraw = true; indSeriesReset = true;
             }
 
             // Hi-res compute button
             if (ImGui::Button("= HI-RES COMPUTE =") || hiresComputeAfterShiftSelect)
             {
-                prepareAndCompute(true); OrbitRedraw = true;
+                prepareAndCompute(true); OrbitRedraw = true; indSeriesReset = true;
             }
 
             if (ImGui::Button("Compute this variation"))
@@ -3300,6 +3294,7 @@ int imgui_main(int, char**)
                         ImGui::Text("No variables/parameters variating");
                         break;
                     }
+                    if (indSeriesReset) { window->indSeries.clear(); indSeriesReset = false; }
                     if (cmp->bufferNo != window->prevbufferNo)
                     {
                         window->prevbufferNo = cmp->bufferNo;
