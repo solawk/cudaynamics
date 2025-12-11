@@ -83,6 +83,7 @@ public:
 	int prevTotalVariation;
 	bool isAutoComputeOn;
 
+	bool buttonPressed;
 	bool redrawContinuation;
 	bool drawingContinuation;
 	numb* continuationAmpsForward;
@@ -171,6 +172,7 @@ public:
 		bifIntervals = NULL;
 		isAutoComputeOn = false;
 
+		buttonPressed = true;
 		redrawContinuation = false;
 		drawingContinuation = false;
 		continuationAmpsBack = NULL;

@@ -1976,7 +1976,7 @@ int imgui_main(int, char**)
                                             }
                                         }
                                     if (OrbitRedraw) { window->drawingContinuation = false; window->redrawContinuation = false; }
-                                    if (window->redrawContinuation) {
+                                    if (window->redrawContinuation || window->buttonPressed) {
                                         window->lastAttributevalueindicesContinuations = attributeValueIndices;
                                         //if (window->continuationAmpsBack != NULL) {
                                         //    delete[]window->continuationParamIndicesBack; 
@@ -2093,6 +2093,8 @@ int imgui_main(int, char**)
                                         window->bifDotAmountBack = BifDotAmount;
 
                                         window->redrawContinuation = false;
+                                        window->drawingContinuation = true;
+                                        window->buttonPressed = false;
                                     }
 
                                     if (window->OrbitType==Selected_Var_Section) {
