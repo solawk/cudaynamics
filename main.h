@@ -18,11 +18,13 @@
 
 #define addKernel(name)         kernels[#name] = readKernelText(#name); \
                                 kernelPrograms[#name] = kernelProgram_##name; \
-                                kernelWrappers[#name] = gpu_wrapper_##name;
+                                kernelWrappers[#name] = gpu_wrapper_##name; \
+                                kernelFDS[#name] = finiteDifferenceScheme_##name;
 #define selectKernel(name)      selectedKernel = #name;
 #define KERNEL      kernels[selectedKernel]
 #define KERNEL_PROG kernelPrograms[selectedKernel]
 #define KERNEL_GPU  kernelWrappers[selectedKernel]
+#define kernel_FDS(name)  kernelFDS[name] 
 
 #define addIndex(name, fullname, function, size)  indices[name] = Index(fullname, ANF_##function, size);
 

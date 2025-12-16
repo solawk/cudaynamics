@@ -49,6 +49,22 @@ void plotWindowMenu(PlotWindow* window)
 			}
 		}
 		if (window->type == Orbit) plotWindowMenu_OrbitPlot(window);
+		if (window->type == Orbit) {
+			ImGui::Text("   ");
+			ImGui::SameLine();
+			if (ImGui::Button(window->drawingContinuation ? ("Cancel Continuation##" + window->name + "_ContinuationDiag").c_str() : ("Compute Continuation##" + window->name + "_ContinuationDiag").c_str()))
+			{
+				if (!window->drawingContinuation) {
+					window->drawingContinuation = true;
+					window->redrawContinuation = true;
+					window->buttonPressed = true;
+				}
+				else {
+					window->drawingContinuation = false;
+					window->redrawContinuation = false;
+				}
+			}
+		}
 		if (window->type == Metric) plotWindowMenu_MetricPlot(window);
 		if (window->type == VarSeries) plotWindowMenu_SeriesPlot(window);
 		if (window->type == IndSeries) plotWindowMenu_IndSeriesPlot(window);
@@ -259,10 +275,10 @@ void plotWindowMenu_OrbitPlot(PlotWindow* window) {
 	if (ImGui::BeginMenu("Plot"))
 	{
 		std::string windowName = window->name + std::to_string(window->id);
-		
+
 		ImGui::SeparatorText("Plot Type");
 		ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.58f);
-		std::string orbitplottypes[] = { "Peaks / Parameter", "Intervals / Parameter", "Peaks / Intervals" , "Peaks / Intervals / Parameter"};
+		std::string orbitplottypes[] = { "Peaks / Parameter", "Intervals / Parameter", "Peaks / Intervals" , "Peaks / Intervals / Parameter" };
 		if (ImGui::BeginCombo(("##" + windowName + "_OrbitPlotType").c_str(), (orbitplottypes[window->OrbitType]).c_str(), 0))
 		{
 			for (int t = 0; t < OrbitPlotType_COUNT; t++)
@@ -277,9 +293,9 @@ void plotWindowMenu_OrbitPlot(PlotWindow* window) {
 		ImGui::SameLine();
 		ImGui::Text("Orbit plot type");
 
-		ImGui::SeparatorText("Point");
+		ImGui::SeparatorText("Standard Point");
 		ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.485f);
-		std::string orbitdottypes[] = { "Circle", "Square", "Diamond", "Up Triangle", "Down Triangle", "Left Triangle", "Right Triangle", "Cross", "Plus", "Asterisk"};
+		std::string orbitdottypes[] = { "Circle", "Square", "Diamond", "Up Triangle", "Down Triangle", "Left Triangle", "Right Triangle", "Cross", "Plus", "Asterisk" };
 		if (ImGui::BeginCombo(("##" + windowName + "_OrbitDotShape").c_str(), (orbitdottypes[window->markerShape]).c_str(), 0))
 		{
 			for (int t = 0; t < ImPlotMarker_COUNT; t++)
@@ -293,18 +309,56 @@ void plotWindowMenu_OrbitPlot(PlotWindow* window) {
 		}
 		ImGui::SameLine(); ImGui::Text("Point shape");
 		ImGui::ColorEdit4(("##" + windowName + "_dotColor").c_str(), (float*)(&(window->plotColor)));		ImGui::SameLine(); ImGui::Text("Point color");
-		ImGui::DragFloat("Point size", &window->OrbitPointSize, 0.1f, 0.5f, 4.0f,"%.1f");
+		ImGui::DragFloat("Point size", &window->OrbitPointSize, 0.1f, 0.5f, 4.0f, "%.1f");
+
+		ImGui::SeparatorText("Forward Point");
+		ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.485f);
+		if (ImGui::BeginCombo(("##" + windowName + "_OrbitDotShapeForward").c_str(), (orbitdottypes[window->OrbDotShapeForward]).c_str(), 0))
+		{
+			for (int t = 0; t < ImPlotMarker_COUNT; t++)
+			{
+				bool isSelected = window->OrbitType == t;
+				ImGuiSelectableFlags selectableFlags = 0;
+				if (ImGui::Selectable(orbitdottypes[t].c_str(), isSelected, selectableFlags)) window->OrbDotShapeForward = (ImPlotMarker)t;
+			}
+
+			ImGui::EndCombo();
+		}
+		ImGui::SameLine(); ImGui::Text("Point shape");
+		ImGui::ColorEdit4(("##" + windowName + "_dotColorForward").c_str(), (float*)(&(window->OrbDotColorForward)));		ImGui::SameLine(); ImGui::Text("Point color");
+		ImGui::DragFloat("Point size##Forward", &window->OrbitPointSizeForward, 0.1f, 0.5f, 4.0f, "%.1f");
+
+		ImGui::SeparatorText("Backward Point");
+		ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.485f);
+		if (ImGui::BeginCombo(("##" + windowName + "_OrbitDotShapeBAck").c_str(), (orbitdottypes[window->OrbDotShapeBack]).c_str(), 0))
+		{
+			for (int t = 0; t < ImPlotMarker_COUNT; t++)
+			{
+				bool isSelected = window->OrbitType == t;
+				ImGuiSelectableFlags selectableFlags = 0;
+				if (ImGui::Selectable(orbitdottypes[t].c_str(), isSelected, selectableFlags)) window->OrbDotShapeBack = (ImPlotMarker)t;
+			}
+
+			ImGui::EndCombo();
+		}
+		ImGui::SameLine(); ImGui::Text("Point shape");
+		ImGui::ColorEdit4(("##" + windowName + "_dotColorBack").c_str(), (float*)(&(window->OrbDotColorBack)));		ImGui::SameLine(); ImGui::Text("Point color");
+		ImGui::DragFloat("Point size##Back", &window->OrbitPointSizeBack, 0.1f, 0.5f, 4.0f, "%.1f");
 
 		ImGui::SeparatorText("Marker");
 		ImGui::Checkbox("Show parameter marker", &window->ShowOrbitParLines);
 		ImGui::ColorEdit4(("##" + windowName + "_markerColor").c_str(), (float*)(&(window->OrbitMarkerColor)));		ImGui::SameLine(); ImGui::Text("Marker color");
 		ImGui::DragFloat("Marker width", &window->OrbitMarkerWidth, 0.1f, 0.5f, 4.0f, "%.1f");
 
-		ImGui::SeparatorText("Other settings");
+
+
+		ImGui::SeparatorText("Other Settings");
 		ImGui::Checkbox("Invert axes", &window->OrbitInvertedAxes);
 		plotWindowMenu_CommonPlot(window, windowName);
 
-		ImGui::SeparatorText("Auto-compute");
+
+
+		ImGui::SeparatorText("Auto-Compute");
 		ImGui::Checkbox("Auto - compute on Shift + RMB", &window->isAutoComputeOn);
 
 		ImGui::EndMenu();

@@ -78,6 +78,7 @@ public:
 	bool isFullscreen, isFullscreenEnd;
 	ImVec2 originalPos, originalSize;
 
+	///// Orbit settings
 	int OrbitXIndex;
 	bool ShowOrbitParLines;
 	OrbitPlotType OrbitType;
@@ -94,6 +95,27 @@ public:
 	int BifDotAmount;
 	int prevTotalVariation;
 	bool isAutoComputeOn;
+
+	bool buttonPressed;
+	bool redrawContinuation;
+	bool drawingContinuation;
+	numb* continuationAmpsForward;
+	numb* continuationAmpsBack;
+	numb* continuationIntervalsBack;
+	numb* continuationIntervalsForward;
+	numb* continuationParamIndicesBack;
+	numb* continuationParamIndicesForward;
+	int bifDotAmountForward;
+	int bifDotAmountBack;
+	std::vector<int> lastAttributevalueindicesContinuations;
+
+	float OrbitPointSizeForward;
+	float OrbitPointSizeBack;
+	ImPlotMarker OrbDotShapeForward;
+	ImPlotMarker OrbDotShapeBack;
+	ImVec4 OrbDotColorForward;
+	ImVec4 OrbDotColorBack;
+	///// 
 
 	bool ShowMultAxes;
 	bool LineColorMaps;
@@ -169,6 +191,23 @@ public:
 		bifParamIndices = NULL;
 		bifIntervals = NULL;
 		isAutoComputeOn = false;
+
+		buttonPressed = false;
+		redrawContinuation = false;
+		drawingContinuation = false;
+		continuationAmpsBack = NULL;
+		continuationAmpsForward = NULL;
+		continuationIntervalsBack = NULL;
+		continuationIntervalsForward = NULL;
+		continuationParamIndicesBack = NULL;
+		continuationParamIndicesForward = NULL;
+
+		OrbitPointSizeForward = 0.5f;
+		OrbitPointSizeBack = 0.5f;
+		OrbDotShapeForward = ImPlotMarker_Circle;
+		OrbDotShapeBack = ImPlotMarker_Circle;
+		OrbDotColorForward = ImVec4(0.6f, 1.0f, 0.6f, 1.0f);
+		OrbDotColorBack = ImVec4(0.6f, 0.6f, 1.0f, 1.0f);
 
 		ShowMultAxes = false;
 		colormap = ImPlotColormap_Deep;
