@@ -43,9 +43,9 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
 	{
 		ifMETHOD(P(method), ExplicitEuler)
 		{
-			Vnext(v) = P(Vdc) + (fmodf((V(t) - P(Vdel)) > 0 ? (V(t) - P(Vdel)) : (P(Vdf) / P(Vfreq) + P(Vdel) - V(t)), 1 / P(Vfreq)) < P(Vdf) / P(Vfreq) ? P(Vamp) : 0.0f);
+			Vnext(v) = P(Vdc) + (fmodf((V(t) - P(Vdel)) > 0 ? (V(t) - P(Vdel)) : (P(Vdf) / P(Vfreq) + P(Vdel) - V(t)), 1 / P(Vfreq)) < P(Vdf) / P(Vfreq) ? P(Vamp) : -P(Vamp));
 			Vnext(i) = (Vnext(v) - (P(k1) * (V(n) / (V(x) + P(a))))) / ((P(Ron) * V(x)) + (P(Roff) * (1 - V(x))));
-			Vnext(x) = V(x) + H * (P(k2) * ((V(x) >= 0 && V(x) <= 1) ? 1 : 0) * Vnext(i));
+			Vnext(x) = V(x) + H * (P(k2) * Vnext(i));
 
 			if (Vnext(x) < 0) Vnext(x) = 0;
 			if (Vnext(x) > 1) Vnext(x) = 1;
@@ -55,9 +55,9 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
 		}
 		ifMETHOD(P(method), ExplicitMidpoint)
 		{
-			numb vmp = P(Vdc) + (fmodf((V(t) - P(Vdel)) > 0 ? (V(t) - P(Vdel)) : (P(Vdf) / P(Vfreq) + P(Vdel) - V(t)), 1 / P(Vfreq)) < P(Vdf) / P(Vfreq) ? P(Vamp) : 0.0f);
+			numb vmp = P(Vdc) + (fmodf((V(t) - P(Vdel)) > 0 ? (V(t) - P(Vdel)) : (P(Vdf) / P(Vfreq) + P(Vdel) - V(t)), 1 / P(Vfreq)) < P(Vdf) / P(Vfreq) ? P(Vamp) : -P(Vamp));
 			numb imp = (vmp - (P(k1) * (V(n) / (V(x) + P(a))))) / ((P(Ron) * V(x)) + (P(Roff) * (1 - V(x))));
-			numb xmp = V(x) + H * 0.5f * (P(k2) * ((V(x) >= 0 && V(x) <= 1) ? 1 : 0) * imp);
+			numb xmp = V(x) + H * 0.5f * (P(k2) * imp);
 
 			if (xmp < 0) xmp = 0;
 			if (xmp > 1) xmp = 1;
@@ -65,9 +65,9 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
 			numb nmp = V(n) + H * 0.5f * (P(k3) * ((V(n) >= -P(Nmax) && V(n) <= P(Nmax)) ? 1 - abs(V(n) / P(Nmax)) : 0) * imp);
 			numb tmp = V(t) + H * 0.5f;
 
-			Vnext(v) = P(Vdc) + (fmodf((tmp - P(Vdel)) > 0 ? (tmp - P(Vdel)) : (P(Vdf) / P(Vfreq) + P(Vdel) - tmp), 1 / P(Vfreq)) < P(Vdf) / P(Vfreq) ? P(Vamp) : 0.0f);
+			Vnext(v) = P(Vdc) + (fmodf((tmp - P(Vdel)) > 0 ? (tmp - P(Vdel)) : (P(Vdf) / P(Vfreq) + P(Vdel) - tmp), 1 / P(Vfreq)) < P(Vdf) / P(Vfreq) ? P(Vamp) : -P(Vamp));
 			Vnext(i) = (Vnext(v) - (P(k1) * (nmp / (xmp + P(a))))) / ((P(Ron) * xmp) + (P(Roff) * (1 - xmp)));
-			Vnext(x) = V(x) + H * (P(k2) * ((xmp >= 0 && xmp <= 1) ? 1 : 0) * Vnext(i));
+			Vnext(x) = V(x) + H * (P(k2) * Vnext(i));
 
 			if (Vnext(x) < 0) Vnext(x) = 0;
 			if (Vnext(x) > 1) Vnext(x) = 1;
@@ -77,9 +77,9 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
 		}
 		ifMETHOD(P(method), ExplicitRungeKutta4)
 		{
-			numb vmp = P(Vdc) + (fmodf((V(t) - P(Vdel)) > 0 ? (V(t) - P(Vdel)) : (P(Vdf) / P(Vfreq) + P(Vdel) - V(t)), 1 / P(Vfreq)) < P(Vdf) / P(Vfreq) ? P(Vamp) : 0.0f);
+			numb vmp = P(Vdc) + (fmodf((V(t) - P(Vdel)) > 0 ? (V(t) - P(Vdel)) : (P(Vdf) / P(Vfreq) + P(Vdel) - V(t)), 1 / P(Vfreq)) < P(Vdf) / P(Vfreq) ? P(Vamp) : -P(Vamp));
 			numb imp = (vmp - (P(k1) * (V(n) / (V(x) + P(a))))) / ((P(Ron) * V(x)) + (P(Roff) * (1 - V(x))));
-			numb kx1 = (P(k2) * ((V(x) >= 0 && V(x) <= 1) ? 1 : 0) * imp);
+			numb kx1 = (P(k2) * imp);
 			numb xmp = V(x) + H * 0.5f * kx1;
 
 			if (xmp < 0) xmp = 0;
@@ -89,9 +89,9 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
 			numb nmp = V(n) + H * 0.5f * kn1;
 			numb tmp = V(t) + H * 0.5f;
 
-			vmp = P(Vdc) + (fmodf((tmp - P(Vdel)) > 0 ? (tmp - P(Vdel)) : (P(Vdf) / P(Vfreq) + P(Vdel) - tmp), 1 / P(Vfreq)) < P(Vdf) / P(Vfreq) ? P(Vamp) : 0.0f);
+			vmp = P(Vdc) + (fmodf((tmp - P(Vdel)) > 0 ? (tmp - P(Vdel)) : (P(Vdf) / P(Vfreq) + P(Vdel) - tmp), 1 / P(Vfreq)) < P(Vdf) / P(Vfreq) ? P(Vamp) : -P(Vamp));
 			imp = (vmp - (P(k1) * (nmp / (xmp + P(a))))) / ((P(Ron) * xmp) + (P(Roff) * (1 - xmp)));
-			numb kx2 = (P(k2) * ((xmp >= 0 && xmp <= 1) ? 1 : 0) * imp);
+			numb kx2 = (P(k2) * imp);
 			xmp = V(x) + H * 0.5f * kx2;
 
 			if (xmp < 0) xmp = 0;
@@ -101,9 +101,9 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
 			nmp = V(n) + H * 0.5f * kn2;
 			tmp = V(t) + H * 0.5f;
 
-			vmp = P(Vdc) + (fmodf((tmp - P(Vdel)) > 0 ? (tmp - P(Vdel)) : (P(Vdf) / P(Vfreq) + P(Vdel) - tmp), 1 / P(Vfreq)) < P(Vdf) / P(Vfreq) ? P(Vamp) : 0.0f);
+			vmp = P(Vdc) + (fmodf((tmp - P(Vdel)) > 0 ? (tmp - P(Vdel)) : (P(Vdf) / P(Vfreq) + P(Vdel) - tmp), 1 / P(Vfreq)) < P(Vdf) / P(Vfreq) ? P(Vamp) : -P(Vamp));
 			imp = (vmp - (P(k1) * (nmp / (xmp + P(a))))) / ((P(Ron) * xmp) + (P(Roff) * (1 - xmp)));
-			numb kx3 = (P(k2) * ((xmp >= 0 && xmp <= 1) ? 1 : 0) * imp);
+			numb kx3 = (P(k2) * imp);
 			xmp = V(x) + H * kx3;
 
 			if (xmp < 0) xmp = 0;
@@ -113,9 +113,9 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
 			nmp = V(n) + H * kn3;
 			tmp = V(t) + H;
 
-			Vnext(v) = P(Vdc) + (fmodf((tmp - P(Vdel)) > 0 ? (tmp - P(Vdel)) : (P(Vdf) / P(Vfreq) + P(Vdel) - tmp), 1 / P(Vfreq)) < P(Vdf) / P(Vfreq) ? P(Vamp) : 0.0f);
+			Vnext(v) = P(Vdc) + (fmodf((tmp - P(Vdel)) > 0 ? (tmp - P(Vdel)) : (P(Vdf) / P(Vfreq) + P(Vdel) - tmp), 1 / P(Vfreq)) < P(Vdf) / P(Vfreq) ? P(Vamp) : -P(Vamp));
 			Vnext(i) = (Vnext(v) - (P(k1) * (nmp / (xmp + P(a))))) / ((P(Ron) * xmp) + (P(Roff) * (1 - xmp)));
-			numb kx4 = (P(k2) * ((xmp >= 0 && xmp <= 1) ? 1 : 0) * Vnext(i));
+			numb kx4 = (P(k2) * Vnext(i));
 			Vnext(x) = V(x) + H * (kx1 + 2 * kx2 + 2 * kx3 + kx4) / 6;
 
 			if (Vnext(x) < 0) Vnext(x) = 0;
@@ -131,9 +131,9 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
 			numb h1 = 0.5 * H - P(symmetry);
 			numb h2 = 0.5 * H + P(symmetry);
 
-			Vnext(v) = P(Vdc) + (fmodf((V(t) - P(Vdel)) > 0 ? (V(t) - P(Vdel)) : (P(Vdf) / P(Vfreq) + P(Vdel) - V(t)), 1 / P(Vfreq)) < P(Vdf) / P(Vfreq) ? P(Vamp) : 0.0f);
+			Vnext(v) = P(Vdc) + (fmodf((V(t) - P(Vdel)) > 0 ? (V(t) - P(Vdel)) : (P(Vdf) / P(Vfreq) + P(Vdel) - V(t)), 1 / P(Vfreq)) < P(Vdf) / P(Vfreq) ? P(Vamp) : -P(Vamp));
 			Vnext(i) = (Vnext(v) - (P(k1) * (V(n) / (V(x) + P(a))))) / ((P(Ron) * V(x)) + (P(Roff) * (1 - V(x))));
-			Vnext(x) = V(x) + h1 * (P(k2) * ((V(x) >= 0 && V(x) <= 1) ? 1 : 0) * Vnext(i));
+			Vnext(x) = V(x) + h1 * (P(k2) * Vnext(i));
 
 			if (Vnext(x) < 0) Vnext(x) = 0;
 			if (Vnext(x) > 1) Vnext(x) = 1;
@@ -144,12 +144,12 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
 			/////
 
 			Vnext(t) = Vnext(t) + h2;
-			Vnext(v) = P(Vdc) + (fmodf((Vnext(t) - P(Vdel)) > 0 ? (Vnext(t) - P(Vdel)) : (P(Vdf) / P(Vfreq) + P(Vdel) - Vnext(t)), 1 / P(Vfreq)) < P(Vdf) / P(Vfreq) ? P(Vamp) : 0.0f);
+			Vnext(v) = P(Vdc) + (fmodf((Vnext(t) - P(Vdel)) > 0 ? (Vnext(t) - P(Vdel)) : (P(Vdf) / P(Vfreq) + P(Vdel) - Vnext(t)), 1 / P(Vfreq)) < P(Vdf) / P(Vfreq) ? P(Vamp) : -P(Vamp));
 			Vnext(i) = (Vnext(v) - (P(k1) * (Vnext(n) / (Vnext(x) + P(a))))) / ((P(Ron) * Vnext(x)) + (P(Roff) * (1 - Vnext(x))));
 
 			Vnext(n) = Vnext(n) + h2 * (P(k3) * ((Vnext(n) >= -P(Nmax) && Vnext(n) <= P(Nmax)) ? 1 - abs(Vnext(n) / P(Nmax)) : 0) * Vnext(i));
 
-			Vnext(x) = Vnext(x) + h2 * (P(k2) * ((Vnext(x) >= 0 && Vnext(x) <= 1) ? 1 : 0) * Vnext(i));
+			Vnext(x) = Vnext(x) + h2 * (P(k2) * Vnext(i));
 
 
 			if (Vnext(x) < 0) Vnext(x) = 0;
@@ -163,7 +163,7 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
 		{
 			Vnext(v) = P(Vdc) + P(Vamp) * sinf(2.0f * 3.141592f * P(Vfreq) * (V(t) - P(Vdel)));
 			Vnext(i) = (Vnext(v) - (P(k1) * (V(n) / (V(x) + P(a))))) / ((P(Ron) * V(x)) + (P(Roff) * (1 - V(x))));
-			Vnext(x) = V(x) + H * (P(k2) * ((V(x) >= 0 && V(x) <= 1) ? 1 : 0) * Vnext(i));
+			Vnext(x) = V(x) + H * (P(k2) * Vnext(i));
 
 			if (Vnext(x) < 0) Vnext(x) = 0;
 			if (Vnext(x) > 1) Vnext(x) = 1;
@@ -175,7 +175,7 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
 		{
 			numb vmp = P(Vdc) + P(Vamp) * sinf(2.0f * 3.141592f * P(Vfreq) * (V(t) - P(Vdel)));
 			numb imp = (vmp - (P(k1) * (V(n) / (V(x) + P(a))))) / ((P(Ron) * V(x)) + (P(Roff) * (1 - V(x))));
-			numb xmp = V(x) + H * 0.5f * (P(k2) * ((V(x) >= 0 && V(x) <= 1) ? 1 : 0) * imp);
+			numb xmp = V(x) + H * 0.5f * (P(k2) * imp);
 			
 			if (xmp < 0) xmp = 0;
 			if (xmp > 1) xmp = 1;
@@ -185,7 +185,7 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
 
 			Vnext(v) = P(Vdc) + P(Vamp) * sinf(2.0f * 3.141592f * P(Vfreq) * (tmp - P(Vdel)));
 			Vnext(i) = (Vnext(v) - (P(k1) * (nmp / (xmp + P(a))))) / ((P(Ron) * xmp) + (P(Roff) * (1 - xmp)));
-			Vnext(x) = V(x) + H * (P(k2) * ((xmp >= 0 && xmp <= 1) ? 1 : 0) * Vnext(i));
+			Vnext(x) = V(x) + H * (P(k2) * Vnext(i));
 
 			if (Vnext(x) < 0) Vnext(x) = 0;
 			if (Vnext(x) > 1) Vnext(x) = 1;
@@ -197,7 +197,7 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
 		{ 
 			numb vmp = P(Vdc) + P(Vamp) * sinf(2.0f * 3.141592f * P(Vfreq) * (V(t) - P(Vdel)));
 			numb imp = (vmp - (P(k1) * (V(n) / (V(x) + P(a))))) / ((P(Ron) * V(x)) + (P(Roff) * (1 - V(x))));
-			numb kx1 = (P(k2) * ((V(x) >= 0 && V(x) <= 1) ? 1 : 0) * imp);
+			numb kx1 = (P(k2) * imp);
 			numb xmp = V(x) + H * 0.5f * kx1;
 
 			if (xmp < 0) xmp = 0;
@@ -209,7 +209,7 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
 
 			vmp = P(Vdc) + P(Vamp) * sinf(2.0f * 3.141592f * P(Vfreq) * (tmp - P(Vdel)));
 			imp = (vmp - (P(k1) * (nmp / (xmp + P(a))))) / ((P(Ron) * xmp) + (P(Roff) * (1 - xmp)));
-			numb kx2 = (P(k2) * ((xmp >= 0 && xmp <= 1) ? 1 : 0) * imp);
+			numb kx2 = (P(k2) * imp);
 			xmp = V(x) + H * 0.5f * kx2;
 
 			if (xmp < 0) xmp = 0;
@@ -221,7 +221,7 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
 
 			vmp = P(Vdc) + P(Vamp) * sinf(2.0f * 3.141592f * P(Vfreq) * (tmp - P(Vdel)));
 			imp = (vmp - (P(k1) * (nmp / (xmp + P(a))))) / ((P(Ron) * xmp) + (P(Roff) * (1 - xmp)));
-			numb kx3 = (P(k2) * ((xmp >= 0 && xmp <= 1) ? 1 : 0) * imp);
+			numb kx3 = (P(k2) * imp);
 			xmp = V(x) + H * kx3;
 
 			if (xmp < 0) xmp = 0;
@@ -233,7 +233,7 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
 
 			Vnext(v) = P(Vdc) + P(Vamp) * sinf(2.0f * 3.141592f * P(Vfreq) * (tmp - P(Vdel)));
 			Vnext(i) = (Vnext(v) - (P(k1) * (nmp / (xmp + P(a))))) / ((P(Ron) * xmp) + (P(Roff) * (1 - xmp)));
-			numb kx4 = (P(k2) * ((xmp >= 0 && xmp <= 1) ? 1 : 0) * Vnext(i));
+			numb kx4 = (P(k2) * Vnext(i));
 			Vnext(x) = V(x) + H * (kx1 + 2 * kx2 + 2 * kx3 + kx4)/6;
 
 			if (Vnext(x) < 0) Vnext(x) = 0;
@@ -251,7 +251,7 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
 
 			Vnext(v) = P(Vdc) + P(Vamp) * sinf(2.0f * 3.141592f * P(Vfreq) * (V(t) - P(Vdel)));
 			Vnext(i) = (Vnext(v) - (P(k1) * (V(n) / (V(x) + P(a))))) / ((P(Ron) * V(x)) + (P(Roff) * (1 - V(x))));
-			Vnext(x) = V(x) + h1 * (P(k2) * ((V(x) >= 0 && V(x) <= 1) ? 1 : 0) * Vnext(i));
+			Vnext(x) = V(x) + h1 * (P(k2) * Vnext(i));
 
 			if (Vnext(x) < 0) Vnext(x) = 0;
 			if (Vnext(x) > 1) Vnext(x) = 1;
@@ -267,7 +267,7 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
 
 			Vnext(n) = Vnext(n) + h2 * (P(k3) * ((Vnext(n) >= -P(Nmax) && Vnext(n) <= P(Nmax)) ? 1 - abs(Vnext(n) / P(Nmax)) : 0) * Vnext(i));
 
-			Vnext(x) = Vnext(x) + h2 * (P(k2) * ((Vnext(x) >= 0 && Vnext(x) <= 1) ? 1 : 0) * Vnext(i));
+			Vnext(x) = Vnext(x) + h2 * (P(k2) * Vnext(i));
 			
 
 			if (Vnext(x) < 0) Vnext(x) = 0;
@@ -281,7 +281,7 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
 		{		
 			Vnext(v) = P(Vdc) + P(Vamp) * ((4.0f * P(Vfreq) * (V(t) - P(Vdel)) - 2.0f * floorf((4.0f * P(Vfreq) * (V(t) - P(Vdel)) + 1.0f) / 2.0f)) * pow((-1), floorf((4.0f * P(Vfreq) * (V(t) - P(Vdel)) + 1.0f) / 2.0f)));
 			Vnext(i) = (Vnext(v) - (P(k1) * (V(n) / (V(x) + P(a))))) / ((P(Ron) * V(x)) + (P(Roff) * (1 - V(x))));
-			Vnext(x) = V(x) + H * (P(k2) * ((V(x) >= 0 && V(x) <= 1) ? 1 : 0) * Vnext(i));
+			Vnext(x) = V(x) + H * (P(k2) * Vnext(i));
 
 			if (Vnext(x) < 0) Vnext(x) = 0;
 			if (Vnext(x) > 1) Vnext(x) = 1;
@@ -293,7 +293,7 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
 		{
 			numb vmp = P(Vdc) + P(Vamp) * ((4.0f * P(Vfreq) * (V(t) - P(Vdel)) - 2.0f * floorf((4.0f * P(Vfreq) * (V(t) - P(Vdel)) + 1.0f) / 2.0f)) * pow((-1), floorf((4.0f * P(Vfreq) * (V(t) - P(Vdel)) + 1.0f) / 2.0f)));
 			numb imp = (vmp - (P(k1) * (V(n) / (V(x) + P(a))))) / ((P(Ron) * V(x)) + (P(Roff) * (1 - V(x))));
-			numb xmp = V(x) + H * 0.5f * (P(k2) * ((V(x) >= 0 && V(x) <= 1) ? 1 : 0) * imp);
+			numb xmp = V(x) + H * 0.5f * (P(k2) * imp);
 
 			if (xmp < 0) xmp = 0;
 			if (xmp > 1) xmp = 1;
@@ -303,7 +303,7 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
 
 			Vnext(v) = P(Vdc) + P(Vamp) * ((4.0f * P(Vfreq) * (tmp - P(Vdel)) - 2.0f * floorf((4.0f * P(Vfreq) * (tmp - P(Vdel)) + 1.0f) / 2.0f)) * pow((-1), floorf((4.0f * P(Vfreq) * (tmp - P(Vdel)) + 1.0f) / 2.0f)));
 			Vnext(i) = (Vnext(v) - (P(k1) * (nmp / (xmp + P(a))))) / ((P(Ron) * xmp) + (P(Roff) * (1 - xmp)));
-			Vnext(x) = V(x) + H * (P(k2) * ((xmp >= 0 && xmp <= 1) ? 1 : 0) * Vnext(i));
+			Vnext(x) = V(x) + H * (P(k2) * Vnext(i));
 
 			if (Vnext(x) < 0) Vnext(x) = 0;
 			if (Vnext(x) > 1) Vnext(x) = 1;
@@ -315,7 +315,7 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
 		{
 			numb vmp = P(Vdc) + P(Vamp) * ((4.0f * P(Vfreq) * (V(t) - P(Vdel)) - 2.0f * floorf((4.0f * P(Vfreq) * (V(t) - P(Vdel)) + 1.0f) / 2.0f)) * pow((-1), floorf((4.0f * P(Vfreq) * (V(t) - P(Vdel)) + 1.0f) / 2.0f)));
 			numb imp = (vmp - (P(k1) * (V(n) / (V(x) + P(a))))) / ((P(Ron) * V(x)) + (P(Roff) * (1 - V(x))));
-			numb kx1 = (P(k2) * ((V(x) >= 0 && V(x) <= 1) ? 1 : 0) * imp);
+			numb kx1 = (P(k2) * imp);
 			numb xmp = V(x) + H * 0.5f * kx1;
 
 			if (xmp < 0) xmp = 0;
@@ -327,7 +327,7 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
 
 			vmp = P(Vdc) + P(Vamp) * ((4.0f * P(Vfreq) * (tmp - P(Vdel)) - 2.0f * floorf((4.0f * P(Vfreq) * (tmp - P(Vdel)) + 1.0f) / 2.0f)) * pow((-1), floorf((4.0f * P(Vfreq) * (tmp - P(Vdel)) + 1.0f) / 2.0f)));
 			imp = (vmp - (P(k1) * (nmp / (xmp + P(a))))) / ((P(Ron) * xmp) + (P(Roff) * (1 - xmp)));
-			numb kx2 = (P(k2) * ((xmp >= 0 && xmp <= 1) ? 1 : 0) * imp);
+			numb kx2 = (P(k2) * imp);
 			xmp = V(x) + H * 0.5f * kx2;
 
 			if (xmp < 0) xmp = 0;
@@ -339,7 +339,7 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
 
 			vmp = P(Vdc) + P(Vamp) * ((4.0f * P(Vfreq) * (tmp - P(Vdel)) - 2.0f * floorf((4.0f * P(Vfreq) * (tmp - P(Vdel)) + 1.0f) / 2.0f)) * pow((-1), floorf((4.0f * P(Vfreq) * (tmp - P(Vdel)) + 1.0f) / 2.0f)));
 			imp = (vmp - (P(k1) * (nmp / (xmp + P(a))))) / ((P(Ron) * xmp) + (P(Roff) * (1 - xmp)));
-			numb kx3 = (P(k2) * ((xmp >= 0 && xmp <= 1) ? 1 : 0) * imp);
+			numb kx3 = (P(k2) * imp);
 			xmp = V(x) + H * kx3;
 
 			if (xmp < 0) xmp = 0;
@@ -351,7 +351,7 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
 
 			Vnext(v) = P(Vdc) + P(Vamp) * ((4.0f * P(Vfreq) * (tmp - P(Vdel)) - 2.0f * floorf((4.0f * P(Vfreq) * (tmp - P(Vdel)) + 1.0f) / 2.0f)) * pow((-1), floorf((4.0f * P(Vfreq) * (tmp - P(Vdel)) + 1.0f) / 2.0f)));
 			Vnext(i) = (Vnext(v) - (P(k1) * (nmp / (xmp + P(a))))) / ((P(Ron) * xmp) + (P(Roff) * (1 - xmp)));
-			numb kx4 = (P(k2) * ((xmp >= 0 && xmp <= 1) ? 1 : 0) * Vnext(i));
+			numb kx4 = (P(k2) * Vnext(i));
 			Vnext(x) = V(x) + H * (kx1 + 2 * kx2 + 2 * kx3 + kx4) / 6;
 
 			if (Vnext(x) < 0) Vnext(x) = 0;
@@ -369,7 +369,7 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
 
 			Vnext(v) = P(Vdc) + P(Vamp) * ((4.0f * P(Vfreq) * (V(t) - P(Vdel)) - 2.0f * floorf((4.0f * P(Vfreq) * (V(t) - P(Vdel)) + 1.0f) / 2.0f)) * pow((-1), floorf((4.0f * P(Vfreq) * (V(t) - P(Vdel)) + 1.0f) / 2.0f)));
 			Vnext(i) = (Vnext(v) - (P(k1) * (V(n) / (V(x) + P(a))))) / ((P(Ron) * V(x)) + (P(Roff) * (1 - V(x))));
-			Vnext(x) = V(x) + h1 * (P(k2) * ((V(x) >= 0 && V(x) <= 1) ? 1 : 0) * Vnext(i));
+			Vnext(x) = V(x) + h1 * (P(k2) * Vnext(i));
 
 			if (Vnext(x) < 0) Vnext(x) = 0;
 			if (Vnext(x) > 1) Vnext(x) = 1;
@@ -385,7 +385,7 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
 
 			Vnext(n) = P(Vdc) + P(Vamp) * ((4.0f * P(Vfreq) * (Vnext(t) - P(Vdel)) - 2.0f * floorf((4.0f * P(Vfreq) * (Vnext(t) - P(Vdel)) + 1.0f) / 2.0f)) * pow((-1), floorf((4.0f * P(Vfreq) * (Vnext(t) - P(Vdel)) + 1.0f) / 2.0f)));
 
-			Vnext(x) = Vnext(x) + h2 * (P(k2) * ((Vnext(x) >= 0 && Vnext(x) <= 1) ? 1 : 0) * Vnext(i));
+			Vnext(x) = Vnext(x) + h2 * (P(k2) * Vnext(i));
 
 
 			if (Vnext(x) < 0) Vnext(x) = 0;
