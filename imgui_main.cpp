@@ -471,7 +471,7 @@ int imgui_main(int, char**)
 
     PlotType plotType = VarSeries;
     int selectedPlotVars[3]; selectedPlotVars[0] = 0; for (int i = 1; i < 3; i++) selectedPlotVars[i] = -1;
-    int selectedPlotVarsOrbitVer[3]; selectedPlotVars[0] = 0; for (int i = 1; i < 3; i++) selectedPlotVarsOrbitVer[i] = -1;
+    int selectedPlotVarsOrbitVer[3]; selectedPlotVarsOrbitVer[0] = 0; for (int i = 1; i < 3; i++) selectedPlotVarsOrbitVer[i] = -1;
     std::set<int> selectedPlotVarsSet;
     std::set<int> selectedPlotMapsSetMetric;
     std::set<int> selectedPlotMapSetIndSeries;
@@ -482,7 +482,7 @@ int imgui_main(int, char**)
 
 #define RESET_GRAPH_BUILDER_SETTINGS \
     selectedPlotVars[0] = 0; for (int i = 1; i < 3; i++) selectedPlotVars[i] = -1;  \
-    selectedPlotVars[0] = 0; for (int i = 1; i < 3; i++) selectedPlotVars[i] = -1;  \
+    selectedPlotVarsOrbitVer[0] = 0; for (int i = 1; i < 3; i++) selectedPlotVarsOrbitVer[i] = -1;  \
     selectedPlotVarsSet.clear();  \
     selectedPlotMap = 0;  \
     for (int i = 0; i < 3; i++) selectedPlotMCMaps[i] = 0; \
@@ -1259,7 +1259,40 @@ int imgui_main(int, char**)
                 break;
             }
 
-            if (ImGui::Button("Create graph"))
+            // Sanity checks
+            bool noMistakes = true;
+            switch (plotType)
+            {
+            case VarSeries:
+                noMistakes = selectedPlotVarsSet.size() > 0;
+                break;
+            case IndSeries:
+                noMistakes = selectedPlotMapSetIndSeries.size() > 0;
+                break;
+            case Decay:
+                noMistakes = selectedPlotMapDecay.size() > 0;
+                break;
+            case Metric:
+                noMistakes = selectedPlotMapsSetMetric.size() > 0;
+                break;
+            case Orbit:
+                noMistakes = selectedPlotVarsOrbitVer[0] > -1;
+                break;
+            case Phase:
+                noMistakes = selectedPlotVars[0] > -1 && selectedPlotVars[1] > -1 && selectedPlotVars[2] > -1;
+                break;
+            case Phase2D:
+                noMistakes = selectedPlotVars[0] > -1 && selectedPlotVars[1] > -1;
+                break;
+            }
+
+            if (!noMistakes)
+            {
+                ImGui::PushStyleColor(ImGuiCol_Text, CUSTOM_COLOR(DisabledText));
+                PUSH_DISABLED_FRAME;
+            }
+
+            if (ImGui::Button("Create graph") && noMistakes)
             {
                 PlotWindow plotWindow = PlotWindow(uniqueIds++, "Plot_", true);
                 plotWindow.type = plotType;
@@ -1272,7 +1305,7 @@ int imgui_main(int, char**)
                 if (plotType == MCHeatmap) plotWindow.AssignVariables(selectedPlotMCMaps);
                 if (plotType == Orbit) plotWindow.AssignVariables(selectedPlotVarsOrbitVer);
                 if (plotType == Metric) plotWindow.AssignVariables(selectedPlotMapsSetMetric);
-                if (plotType == IndSeries) { plotWindow.AssignVariables(selectedPlotMapSetIndSeries); plotWindow.firstBufferNo = (computations[playedBufferIndex]).bufferNo; plotWindow.prevbufferNo = (computations[playedBufferIndex]).bufferNo;  }
+                if (plotType == IndSeries) { plotWindow.AssignVariables(selectedPlotMapSetIndSeries); plotWindow.firstBufferNo = (computations[playedBufferIndex]).bufferNo; plotWindow.prevbufferNo = (computations[playedBufferIndex]).bufferNo; }
                 if (plotType == Decay) plotWindow.AssignVariables(selectedPlotMapDecay);
 
                 int indexOfColorsLutFrom = -1;
@@ -1291,6 +1324,8 @@ int imgui_main(int, char**)
 
                 saveWindows();
             }
+
+            if (!noMistakes) POP_FRAME(4);
 
             ImGui::End();
         }
