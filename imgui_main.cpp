@@ -2696,6 +2696,8 @@ int imgui_main(int, char**)
                         heatmap->areValuesDirty = false;
                     }
 
+                    if (window->decayCalcLifetime) ImGui::Text(("Avg lifetime: " + std::to_string(window->decayLifetime)).c_str());
+
                     if (cmp->isFirst && !window->isYLog)
                     {
                         ImPlot::SetNextAxisLimits(ImAxis_Y1, 0.0, (double)cmp->marshal.totalVariations, ImPlotCond_Always);
@@ -2773,8 +2775,6 @@ int imgui_main(int, char**)
 
                                     window->decayLifetime = totalArea / cmp->marshal.totalVariations;
                                 }
-
-                                ImPlot::PlotText(("Avg lifetime: " + std::to_string(window->decayLifetime)).c_str(), window->decayMarkerPosition, 0);
                             }
 
                             ImPlot::EndPlot();
