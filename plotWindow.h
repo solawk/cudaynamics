@@ -53,6 +53,8 @@ public:
 	bool isImplot3d;
 	bool drawAllTrajectories;
 
+	bool isFrozen;
+
 	HeatmapProperties hmp;
 	HeatmapProperties hireshmp;
 
@@ -142,6 +144,7 @@ public:
 		scale = ImVec4(1.0f, 1.0f, 1.0f, 0.0f);
 
 		settingsListEnabled = false;
+		isFrozen = false;
 
 		overrideFontOnNextFrame = false;
 		overrideFontSettings = false;

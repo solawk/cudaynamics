@@ -1432,9 +1432,12 @@ int imgui_main(int, char**)
                 window->newWindow = false;
             }
 
-            FullscreenActLogic(window, &fullscreenSize);
+            //FullscreenActLogic(window, &fullscreenSize);
+
+            if (window->isFrozen) ImGui::PushStyleColor(ImGuiCol_Text, CUSTOM_COLOR(DisabledText));
             ImGui::Begin(windowName.c_str(), &(window->active), ImGuiWindowFlags_MenuBar);
-            FullscreenButtonPressLogic(window, ImGui::GetCurrentWindow());
+            if (window->isFrozen) POP_FRAME(1);
+            //FullscreenButtonPressLogic(window, ImGui::GetCurrentWindow());
 
             if (fontNotDefault && window->overrideFontSettings)
                 ImGui::PushFont(GetFont(window->localFontSettings.family, window->localFontSettings.size, window->localFontSettings.isBold, window->localFontSettings.isItalic));
@@ -3114,27 +3117,30 @@ int imgui_main(int, char**)
 
                                 if (heatmap->areValuesDirty)
                                 {
-                                    if (!isMC)
+                                    if (!window->isFrozen)
                                     {
-                                        extractMap((window->deltaState == DS_No ? cmp->marshal.maps : (window->deltaState == DS_Delta ? cmp->marshal.indecesDelta : cmp->marshal.indecesDecay))
-                                            + (index2port(cmp->marshal.kernel.analyses, mapIndex)->offset + heatmap->values.mapValueIndex) * cmp->marshal.totalVariations,
-                                            heatmap->values.valueBuffer, heatmap->indexBuffer, &(avi->data()[0]),
-                                            sizing.hmp->typeX == MDT_Parameter ? sizing.hmp->indexX + krnl->VAR_COUNT : sizing.hmp->indexX,
-                                            sizing.hmp->typeY == MDT_Parameter ? sizing.hmp->indexY + krnl->VAR_COUNT : sizing.hmp->indexY,
-                                            krnl);
-                                    }
-                                    else
-                                    {
-                                        for (int c = 0; c < 3; c++)
+                                        if (!isMC)
                                         {
-                                            if (channelMapIndex[c] == -1) continue;
-                                            if (!index2port(cmp->marshal.kernel.analyses, channelMapIndex[c])->used) continue;
-
-                                            extractMap(cmp->marshal.maps + (index2port(cmp->marshal.kernel.analyses, channelMapIndex[c])->offset + heatmap->channel[c].mapValueIndex) * cmp->marshal.totalVariations,
-                                                heatmap->channel[c].valueBuffer, heatmap->indexBuffer, &(avi->data()[0]),
+                                            extractMap((window->deltaState == DS_No ? cmp->marshal.maps : (window->deltaState == DS_Delta ? cmp->marshal.indecesDelta : cmp->marshal.indecesDecay))
+                                                + (index2port(cmp->marshal.kernel.analyses, mapIndex)->offset + heatmap->values.mapValueIndex) * cmp->marshal.totalVariations,
+                                                heatmap->values.valueBuffer, heatmap->indexBuffer, &(avi->data()[0]),
                                                 sizing.hmp->typeX == MDT_Parameter ? sizing.hmp->indexX + krnl->VAR_COUNT : sizing.hmp->indexX,
                                                 sizing.hmp->typeY == MDT_Parameter ? sizing.hmp->indexY + krnl->VAR_COUNT : sizing.hmp->indexY,
                                                 krnl);
+                                        }
+                                        else
+                                        {
+                                            for (int c = 0; c < 3; c++)
+                                            {
+                                                if (channelMapIndex[c] == -1) continue;
+                                                if (!index2port(cmp->marshal.kernel.analyses, channelMapIndex[c])->used) continue;
+
+                                                extractMap(cmp->marshal.maps + (index2port(cmp->marshal.kernel.analyses, channelMapIndex[c])->offset + heatmap->channel[c].mapValueIndex) * cmp->marshal.totalVariations,
+                                                    heatmap->channel[c].valueBuffer, heatmap->indexBuffer, &(avi->data()[0]),
+                                                    sizing.hmp->typeX == MDT_Parameter ? sizing.hmp->indexX + krnl->VAR_COUNT : sizing.hmp->indexX,
+                                                    sizing.hmp->typeY == MDT_Parameter ? sizing.hmp->indexY + krnl->VAR_COUNT : sizing.hmp->indexY,
+                                                    krnl);
+                                            }
                                         }
                                     }
 

@@ -47,6 +47,13 @@ void plotWindowMenu(PlotWindow* window)
 					//kernelHiresNew.CopyFrom(&kernelNew);
 				}
 			}
+
+			bool isFrozen = window->isFrozen;
+			if (ImGui::Checkbox(("Freeze##" + window->name + "_freezecheckbox").c_str(), &isFrozen))
+			{
+				window->isFrozen = !window->isFrozen;
+			}
+			TOOLTIP("Freeze the contents of the window and ignore new computations")
 		}
 		if (window->type == Orbit) plotWindowMenu_OrbitPlot(window);
 		if (window->type == Orbit) {
