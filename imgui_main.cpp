@@ -1624,7 +1624,7 @@ int imgui_main(int, char**)
             ImPlot3DPlot* plot3d;
             AnalysisIndex mapIndex;
             AnalysisIndex channelMapIndex[3];
-            DecaySettings* decay;
+            DecaySettings* decayOfFirstIndex;
             ImPlotColormap heatmapColorMap =  ImPlotColormap_Jet;
             ImVec4 rotationEuler;
             ImVec4 rotationEulerEditable, rotationEulerBeforeEdit;
@@ -2591,58 +2591,111 @@ int imgui_main(int, char**)
                     break;
 
                 case Decay:
+                    if (window->decay.size() == 0) for (int i = 0; i < window->variables.size(); i++) window->decay.push_back(DecaySettings());
+                    if (window->decayThresholdNames.size() == 0) for (int i = 0; i < window->variables.size(); i++) window->decayThresholdNames.push_back("Threshold");
+
+                    window->ForceDecayThresholdCount();
+
                     mapIndex    = (AnalysisIndex)window->variables[0]; // Using only the first index for previews etc., but editing all indices of the window
                     heatmap     = &window->hmp;
                     cmp         = &(computations[1 - bufferToFillIndex]);
                     krnl        = &(KERNEL);
-                    decay       = &(indices[mapIndex].decay);
+                    decayOfFirstIndex = &(window->decay[0]);
 
                     ImGui::Text("Source:"); ImGui::SameLine();
-                    if (ImGui::RadioButton(("Index##DTSIndex" + plotName).c_str(), decay->source == DTS_Index))
+                    if (ImGui::RadioButton(("Index##DTSIndex" + plotName).c_str(), decayOfFirstIndex->source == DTS_Index))
                         for (int i : window->variables) indices[(AnalysisIndex)i].decay.source = DTS_Index;
                     ImGui::SameLine();
-                    if (ImGui::RadioButton(("Delta##DTSDelta" + plotName).c_str(), decay->source == DTS_Delta))
+                    if (ImGui::RadioButton(("Delta##DTSDelta" + plotName).c_str(), decayOfFirstIndex->source == DTS_Delta))
                         for (int i : window->variables) indices[(AnalysisIndex)i].decay.source = DTS_Delta;
 
                     ImGui::Text("Mode:"); ImGui::SameLine();
-                    if (ImGui::RadioButton(("Less than##DTMLess" + plotName).c_str(), decay->mode == DTM_Less))
+                    if (ImGui::RadioButton(("Less than##DTMLess" + plotName).c_str(), decayOfFirstIndex->mode == DTM_Less))
                         for (int i : window->variables) indices[(AnalysisIndex)i].decay.mode = DTM_Less;
                     ImGui::SameLine();
-                    if (ImGui::RadioButton(("More than##DTMMore" + plotName).c_str(), decay->mode == DTM_More))
+                    if (ImGui::RadioButton(("More than##DTMMore" + plotName).c_str(), decayOfFirstIndex->mode == DTM_More))
                         for (int i : window->variables) indices[(AnalysisIndex)i].decay.mode = DTM_More;
                     ImGui::SameLine();
-                    if (ImGui::RadioButton(("Absolute value more than##DTMAbsMore" + plotName).c_str(), decay->mode == DTM_Abs_More))
+                    if (ImGui::RadioButton(("Absolute value more than##DTMAbsMore" + plotName).c_str(), decayOfFirstIndex->mode == DTM_Abs_More))
                         for (int i : window->variables) indices[(AnalysisIndex)i].decay.mode = DTM_Abs_More;
 
-                    if (decay->thresholds.size() < 2)
+                    // Threshold input
+
+                    if (ImGui::BeginCombo(("##ThresholdsTableCombo" + plotName).c_str(), "Edit thresholds"))
                     {
-                        ImGui::Text("Threshold"); ImGui::SameLine();
-                        ImGui::InputFloat(("##DT" + plotName).c_str(), &(decay->thresholds[0]));
-                    }
-                    else
-                    {
-                        ImGui::Text("Thresholds"); ImGui::SameLine();
-                        std::string previewThresholds = "";
-                        for (int t = 0; t < decay->thresholds.size(); t++) previewThresholds += std::to_string(decay->thresholds[t]) + (t < decay->thresholds.size() - 1 ? ", " : "");
-                        if (ImGui::BeginCombo(("##DTs" + plotName).c_str(), previewThresholds.c_str()))
+                        int thresholdsCount = window->decayThresholdCount;
+                        int indicesCount = (int)window->variables.size();
+
+                        ImGui::BeginDisabled(thresholdsCount < 2);
+                        ImGui::SameLine();
+                        if (ImGui::Button(("Remove threshold##minusThreshold" + plotName).c_str()))
                         {
-                            ImGui::Text("Must be in descending order");
-                            for (int t = 0; t < decay->thresholds.size(); t++)
+                            window->decayThresholdCount--; deleteDecayBuffers(*window);
+                        };
+                        ImGui::EndDisabled();
+                        ImGui::SameLine();
+                        if (ImGui::Button(("Add threshold##plusThreshold" + plotName).c_str()))
+                        {
+                            window->decayThresholdCount++;
+                            deleteDecayBuffers(*window);
+                        };
+
+                        if (ImGui::BeginTable(("##ThresholdsTable" + plotName).c_str(), 1 + indicesCount))
+                        {
+                            // Columns setup
+                            for (int c = 0; c < 1 + indicesCount; c++)
                             {
-                                ImGui::Text(("Threshold " + std::to_string(t)).c_str()); ImGui::SameLine();
-                                ImGui::InputFloat(("##DT" + std::to_string(t) + plotName).c_str(), &(decay->thresholds[t]));
+                                ImGui::TableSetupColumn(nullptr);
                             }
 
-                            ImGui::EndCombo();
+                            // Headers
+                            ImGui::TableNextRow();
+                            ImGui::TableSetColumnIndex(0);
+                            ImGui::Text("Name        ");
+                            for (int i = 0; i < indicesCount; i++)
+                            {
+                                ImGui::TableSetColumnIndex(i + 1);
+                                std::string name = indices[(AnalysisIndex)window->variables[i]].name;
+                                name.resize(16);
+                                ImGui::Text(name.c_str());
+                            }
+
+                            // Thresholds
+                            for (int t = 0; t < thresholdsCount; t++)
+                            {
+                                ImGui::TableNextRow();
+
+                                ImGui::TableSetColumnIndex(0);
+
+                                char nameBuffer[33];
+                                std::strncpy(nameBuffer, window->decayThresholdNames[t].c_str(), 32);
+                                nameBuffer[32] = '\0';
+                                ImGui::SetNextItemWidth(-1);
+                                if (ImGui::InputText(("##ThresholdName" + std::to_string(t) + plotName).c_str(), nameBuffer, 32))
+                                {
+                                    window->decayThresholdNames[t] = std::string(nameBuffer);
+                                }
+
+                                //ImGui::Text(window->decayThresholdNames[t].c_str()); // WIP create string names
+
+                                // Indeces
+                                for (int i = 0; i < indicesCount; i++)
+                                {
+                                    ImGui::TableSetColumnIndex(i + 1);
+                                    ImGui::SetNextItemWidth(-1);
+                                    ImGui::InputFloat(("##DT" + std::to_string(t) + " " + std::to_string(i) + plotName).c_str(), &(window->decay[i].thresholds[t]));
+                                }
+                            }
+
+                            ImGui::EndTable();
                         }
+                        ImGui::EndCombo();
                     }
 
-                    ImGui::BeginDisabled(decay->thresholds.size() < 2);
-                    ImGui::SameLine(); if (ImGui::Button(("-##minusThreshold" + plotName).c_str())) { decay->thresholds.pop_back(); deleteDecayBuffers(*window); };
-                    ImGui::EndDisabled();
-                    ImGui::SameLine(); if (ImGui::Button(("+##plusThreshold" + plotName).c_str())) { decay->thresholds.push_back(decay->thresholds[decay->thresholds.size() - 1]); deleteDecayBuffers(*window); };
+                    window->ForceDecayThresholdCount();
 
-                    for (int i : window->variables) indices[(AnalysisIndex)i].decay.thresholds = decay->thresholds;
+                    for (int i = 0; i < window->variables.size(); i++) 
+                        indices[(AnalysisIndex)window->variables[i]].decay.thresholds = window->decay[i].thresholds;
 
                     if (cmp->marshal.indecesDelta == nullptr)
                     {
@@ -2660,7 +2713,7 @@ int imgui_main(int, char**)
                     {
                         if (window->decayBuffer.size() == 0)
                         {
-                            for (int t = 0; t < decay->thresholds.size(); t++)
+                            for (int t = 0; t < window->decayThresholdCount; t++)
                             {
                                 window->decayBuffer.push_back(std::vector<float>{});
                                 window->decayTotal.push_back(std::vector<float>{});
@@ -2668,7 +2721,7 @@ int imgui_main(int, char**)
                             }
                         }
 
-                        for (int t = 0; t < decay->thresholds.size(); t++)
+                        for (int t = 0; t < window->decayThresholdCount; t++)
                         {
                             int decayAlive = 0, decayTotal = cmp->marshal.totalVariations;
                             window->decayBuffer[t].push_back(!KERNEL.usingTime ? (cmp->bufferNo * KERNEL.steps + KERNEL.transientSteps) : (cmp->bufferNo * KERNEL.time + KERNEL.transientTime));
@@ -2726,17 +2779,17 @@ int imgui_main(int, char**)
                             }
 
                             ImPlot::PushStyleVar(ImPlotStyleVar_FillAlpha, window->decayFillAlpha);
-                            for (int t = 0; t < decay->thresholds.size(); t++)
+                            for (int t = 0; t < window->decayThresholdCount; t++)
                             {
-                                ImPlot::SetNextFillStyle(decay->thresholds.size() > 1 ? ImPlot::GetColormapColor(t, window->colormap) : window->plotColor);
-                                ImPlot::PlotShaded(((decay->thresholds.size() > 1 ? std::to_string(decay->thresholds[t]) : "") + "##" + plotName + "_plot" + std::to_string(t)).c_str(),
+                                ImPlot::SetNextFillStyle(window->decayThresholdCount > 1 ? ImPlot::GetColormapColor(t, window->colormap) : window->plotColor);
+                                ImPlot::PlotShaded(((window->decayThresholdCount > 1 ? window->decayThresholdNames[t] : "") + "##" + plotName + "_plot" + std::to_string(t)).c_str(),
                                     &(window->decayBuffer[t][0]), &(window->decayAlive[t][0]), (int)window->decayBuffer[t].size(), (double)cmp->marshal.totalVariations);
                             }
                             ImPlot::PopStyleVar();
-                            for (int t = 0; t < decay->thresholds.size(); t++)
+                            for (int t = 0; t < window->decayThresholdCount; t++)
                             {
-                                ImPlot::SetNextLineStyle(decay->thresholds.size() > 1 ? ImPlot::GetColormapColor(t, window->colormap) : window->plotColor);
-                                ImPlot::PlotLine(((decay->thresholds.size() > 1 ? std::to_string(decay->thresholds[t]) : "") + "##" + plotName + "_plot" + std::to_string(t)).c_str(),
+                                ImPlot::SetNextLineStyle(window->decayThresholdCount > 1 ? ImPlot::GetColormapColor(t, window->colormap) : window->plotColor);
+                                ImPlot::PlotLine(((window->decayThresholdCount > 1 ? window->decayThresholdNames[t] : "") + "##" + plotName + "_plot" + std::to_string(t)).c_str(),
                                     &(window->decayBuffer[t][0]), &(window->decayAlive[t][0]), (int)window->decayBuffer[t].size());
                             }
 
@@ -2760,7 +2813,7 @@ int imgui_main(int, char**)
                                         float min1 = window->decayAlive[0][tp];
                                         float min2 = window->decayAlive[0][tp + 1];
 
-                                        for (int t = 1; t < decay->thresholds.size(); t++)
+                                        for (int t = 1; t < window->decayThresholdCount; t++)
                                         {
                                             if (min1 > window->decayAlive[t][tp]) min1 = window->decayAlive[t][tp];
                                             if (min2 > window->decayAlive[t][tp + 1]) min2 = window->decayAlive[t][tp + 1];
