@@ -97,6 +97,8 @@ void mainWindowMenu()
             ImGui::SeparatorText("Dependencies");
             ImGui::Text("Dear ImGui by Omar Cornut");
             ImGui::Text("ImPlot by Evan Pezent");
+            ImGui::Text("CUDA Toolkit 12.6.2 by NVIDIA");
+            ImGui::Text("OpenMP 2.0 standard");
 
             ImGui::EndMenu();
         }
