@@ -79,6 +79,28 @@ void mainWindowMenu()
             ImGui::EndMenu();
         }
 
+        if (ImGui::BeginMenu("About"))
+        {
+            ImGui::Text("CUDAynamics Interactive Suite");
+            ImGui::NewLine();
+
+            ImGui::SeparatorText("Developed by");
+            ImGui::Text("Alexander Khanov, Ivan Guitor,");
+            ImGui::Text("Nikita Belyaev, Ksenia Shinkar,");
+            ImGui::Text("Maksim Gozhan, Anastasia Karpenko");
+            ImGui::NewLine();
+
+            ImGui::SeparatorText("Directed by");
+            ImGui::Text("Valerii Ostrovskii");
+            ImGui::NewLine();
+
+            ImGui::SeparatorText("Frameworks used");
+            ImGui::Text("Dear ImGui by Omar Cornut");
+            ImGui::Text("ImPlot by Evan Pezent");
+
+            ImGui::EndMenu();
+        }
+
         ImGui::EndMenuBar();
     }
 }

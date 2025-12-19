@@ -1,5 +1,4 @@
-﻿#include "main.h"
-#include "kazantsev_gordleeva_matrosov.h"
+﻿#include "kazantsev_gordleeva_matrosov.h"
 
 #define name kazantsev_gordleeva_matrosov
 
