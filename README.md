@@ -8,20 +8,20 @@ When the program is launched, three windows open (as shown below): the main wind
 <p align = "center">
 <img width="400" height="500" alt="image" src="https://github.com/user-attachments/assets/c4c6a54c-1828-4eeb-b7e9-0667b475aa6d" />
 </p>
-In the first half of the main window, you can select a system from the library of systems added to CUDAynamics using the drop-down list. When selecting the Rössler system, the system state variables, simulation step, and system parameters are listed, including the symmetry parameter used in the "VariableSymmetryCD" compositional diagonal modeling method. The drop-down list also allows you to select the numerical integration methods used to derive the finite-difference schemes.
+In the first half of the main window, one can select a system from the library of systems added to CUDAynamics using the drop-down list. When selecting the Rössler system, the system state variables, simulation step, and system parameters are listed, including the symmetry parameter used in the "VariableSymmetryCD" compositional diagonal modeling method. The drop-down list also allows one to select the numerical integration methods used to derive the finite-difference schemes.
 
-The program's simulation section ("Simulation") displays the memory used by the program for the current configuration and the frame rate. Further down are the simulation settings: trajectory time series and transient time, measured in points or over time, system display type, and playback settings in phase diagrams. There's also a button for returning to the beginning of the current trajectory value buffer, a button for playing back buffers, in which phase diagrams show the system's behavior over time and as a function of parameter value changes, and a button for calculating the next buffer. When varying parameters or system state variables, you can also set their values. The "Compute" button rebuilds the system using a new configuration; it must be pressed to save changes to the initial conditions and system parameters.
+The program's simulation section ("Simulation") displays the memory used by the program for the current configuration and the frame rate. Further down are the simulation settings: trajectory time series and transient time, measured in points or over time, system display type, and playback settings in phase diagrams. There's also a button for returning to the beginning of the current trajectory value buffer, a button for playing back buffers, in which phase diagrams show the system's behavior over time and as a function of parameter value changes, and a button for calculating the next buffer. When varying parameters or system state variables, one can also set their values. The "Compute" button rebuilds the system using a new configuration; it must be pressed to save changes to the initial conditions and system parameters.
 	
-In the View and Configuration tabs, you can change the view settings (background, font, etc.) and program operation settings.
+In the View and Configuration tabs, one can change the view settings (background, font, etc.) and program operation settings.
 
 The Analysis Settings window lists all types of analysis performed in the program
 <p align = "center">
 <img width="300" height="400" alt="image" src="https://github.com/user-attachments/assets/62aae67f-47fa-4004-916a-f91e2c101975" />
 </p>
 
-In this window, you can configure the settings and parameters used in the analysis algorithms. In the Calculate indices section, you can enable or disable the calculation and storage of system characteristics found by this analysis.
+In this window, one can configure the settings and parameters used in the analysis algorithms. In the Calculate indices section, one can enable or disable the calculation and storage of system characteristics found by this analysis.
 
-In the Graph Builder window, you can select which graph to build and by which parameter, state variable, or characteristic. The Create graph button creates a separate window with the specified graph or diagram.
+In the Graph Builder window, one can select which graph to build and by which parameter, state variable, or characteristic. The Create graph button creates a separate window with the specified graph or diagram.
 
 ## Variable Time Series
 
@@ -134,7 +134,7 @@ As seen after a transient chaotic system the systems solution becomes stable.
 ## Decay Plot
 Decay plot can be used to analyze the dynamics of multiple variations of a system. This plot reurns how many variations have an index value less/more then the specified value. Using Orbit diagram to build continuation diagrams or heatmap periodicity diagram, we can see that for the chosen configuration (as seen in configuration in RGB heatmap) the "Josephson JMCRL-shunted junction" system has two attractors in the secified space one with period of 2 and the second with 4.
 
-In the "Decay Plot" window, you can set a second limit value by clicking the "+" button. In the resulting drop-down list, enter the limit values in descending order; in this case, 5 and 3 are specified, so 1 more than periodicity values for attractors. To display the values in the diagram, the program needs to read new buffers, so for the diagram to work, you must manually click the "Next buffer" button or enable buffer playback mode by clicking the "Play" button.
+In the "Decay Plot" window, one can set a second limit value by clicking the "+" button. In the resulting drop-down list, enter the limit values in descending order; in this case, 5 and 3 are specified, so 1 more than periodicity values for attractors. To display the values in the diagram, the program needs to read new buffers, so for the diagram to work, one must manually click the "Next buffer" button or enable buffer playback mode by clicking the "Play" button.
 <p align = "center">
 <img width="600" height="425" alt="image" src="https://github.com/user-attachments/assets/5cb156bb-6de8-4255-8a21-2d7a7ef628c9" />
 </p>
