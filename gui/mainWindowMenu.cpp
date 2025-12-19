@@ -94,7 +94,7 @@ void mainWindowMenu()
             ImGui::Text("Valerii Ostrovskii");
             ImGui::NewLine();
 
-            ImGui::SeparatorText("Frameworks used");
+            ImGui::SeparatorText("Dependencies");
             ImGui::Text("Dear ImGui by Omar Cornut");
             ImGui::Text("ImPlot by Evan Pezent");
 
