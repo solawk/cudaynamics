@@ -1,4 +1,4 @@
-# Software novelty
+# CUDAynamics
 CUDAynamics is designed for accelerated numerical modeling and analysis of dynamic systems, achieved through parallel computing using CUDA or, with appropriate configuration, OpenMP.
 
 The key difference between CUDAynamics and similar programs is its high interactivity: the user interacts with a single integrated environment, allowing them to select a dynamic system, set its initial conditions and parameters, and visualize the results as interconnected diagrams. The program dynamically responds to changes, instantly updating all related views without the need for relaunching, while calculations, analysis, and visualization are performed within a single application.
@@ -109,7 +109,7 @@ The heatmap plot settings are as shown:
 ## RGB Heatmap
 RGB Heatmap shows three index values for each variation, not one. Although it doesn't have all the funcionality as does the normal heatmap it can be used to make something such as an assessment of basins of attracton for a system.
 
-The following example for this is shown on the "Josephson JMCRL-shunted junction" system.
+The following example for this is shown on the "Josephson MCRL-shunted junction" system.
 <p align = "center">
 <img width="900" height="600" alt="image" src="https://github.com/user-attachments/assets/471491c7-239a-4045-9823-67497c23fc66" />
 
@@ -125,14 +125,14 @@ When selecting this diagram, add the indices to be analyzed and, in the window t
 ## Indeces time series
 Indeces time series shows the dynamics of a systems indeces. To be built the program needs to go through buffers, so to draw new point the user needs to either manually press the "Next buffer" button or turn on buffer playback via the "Play" button.
 
-The following diagram was achieved for the "Josephson JMCRL-shunted junction" system with the configuration as seen above.
+The following diagram was achieved for the "Josephson MCRL-shunted junction" system with the configuration as seen above.
 <p align = "center">
 <img width="550" height="400" alt="image" src="https://github.com/user-attachments/assets/641cfe2e-9315-421c-b017-e6d3aba2ead9" />
 </p>
 As seen after a transient chaotic system the systems solution becomes stable.
 
 ## Decay Plot
-Decay plot can be used to analyze the dynamics of multiple variations of a system. This plot reurns how many variations have an index value less/more then the specified value. Using Orbit diagram to build continuation diagrams or heatmap periodicity diagram, we can see that for the chosen configuration (as seen in configuration in RGB heatmap) the "Josephson JMCRL-shunted junction" system has two attractors in the secified space one with period of 2 and the second with 4.
+Decay plot can be used to analyze the dynamics of multiple variations of a system. This plot reurns how many variations have an index value less/more then the specified value. Using Orbit diagram to build continuation diagrams or heatmap periodicity diagram, we can see that for the chosen configuration (as seen in configuration in RGB heatmap) the "Josephson MCRL-shunted junction" system has two attractors in the secified space one with period of 2 and the second with 4.
 
 In the "Decay Plot" window, one can set a second limit value by clicking the "+" button. In the resulting drop-down list, enter the limit values in descending order; in this case, 5 and 3 are specified, so 1 more than periodicity values for attractors. To display the values in the diagram, the program needs to read new buffers, so for the diagram to work, one must manually click the "Next buffer" button or enable buffer playback mode by clicking the "Play" button.
 <p align = "center">
