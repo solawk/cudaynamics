@@ -36,8 +36,8 @@ CUDAynamics has both 2d and 3d phase diagrams, where 2d diagrams are projections
 
 Here's an example of 3d phase diagram working for the Rössler system:
 <p align = "center">
-<img width="500" height="400" alt="image" src="https://github.com/user-attachments/assets/86218622-07ab-4497-a5ca-a2ca31f0c00d" />
-<img width="500" height="400" alt="image" src="https://github.com/user-attachments/assets/1ed1fcda-dd6e-4f66-9247-9e36d4b82807" />
+<img width="500" height="475" alt="image" src="https://github.com/user-attachments/assets/86218622-07ab-4497-a5ca-a2ca31f0c00d" />
+<img width="500" height="475" alt="image" src="https://github.com/user-attachments/assets/1ed1fcda-dd6e-4f66-9247-9e36d4b82807" />
 </p>
 A more comprehensive view of the phase space as seen in the second figure can be achieved by turning on "Use ImPlot3d" in the windows "Plot" options.
 
@@ -119,7 +119,7 @@ The following example for this is shown on the "Josephson JMCRL-shunted junction
 ## Indeces diagram
 When selecting this diagram, add the indices to be analyzed and, in the window that appears, select the parameter varied in the main window from the drop-down list. Shown below a diagram of the dependence of the Largest Lyapunov Exponent ("LLE") and periodicity ("Period") for the parameter b for the system configuration shown above and parameter a = 0.2 (the multiple Y - axes can be turned off in the "Plot" submenu).
 <p align = "center">
-<img width="840" height="574" alt="image" src="https://github.com/user-attachments/assets/ffe004fa-90bf-48c7-8722-ac040f35b931" />
+<img width="600" height="450" alt="image" src="https://github.com/user-attachments/assets/ffe004fa-90bf-48c7-8722-ac040f35b931" />
 </p>
 
 ## Indeces time series
