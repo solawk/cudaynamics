@@ -142,12 +142,17 @@ As can be seen, over time the system's solutions converge to periodic regimes.
 
 
 # Credits
-Developed by: Alexander Khanov, Ivan Guitor, Nikita Belyaev, Ksenia Shinkar, Maxim Gozhan, Anastasia Karpenko
+## Developed by 
+Alexander Khanov, Ivan Guitor, Nikita Belyaev, Ksenia Shinkar, Maxim Gozhan, Anastasia Karpenko
 
-Directed by: Valerii Ostrovskii
+## Directed by 
+Valerii Ostrovskii
 
-Dependencies: 
+## Dependencies
 Dear ImGUi by Omar Cornut
+
 Implot by Evan Pezent
+
 CUDA Toolkit 12.6.2 by NVIDIA
+
 OpenMP 2.0 standard
