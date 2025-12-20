@@ -260,25 +260,24 @@ std::string exportOrbitCSV(const PlotWindow* window)
 {
     if (!window) return {};
 
-    // Активное вычисление
     const Computation& comp = computations[playedBufferIndex];
     if (!comp.ready || !comp.marshal.trajectory)
         return {};
 
-    // Проверки шагов и переменных
     const int steps = computedSteps;
     if (steps <= 0 || KERNEL.VAR_COUNT <= 0)
         return {};
 
     if (window->OrbitType == Selected_Var_Section) return {};
 
-    // Имя файла
+    Attribute* axis = &(KERNEL.parameters[window->OrbitXIndex]);
+
     const std::string systemName = safe_system_name(KERNEL);
-    const std::string path = build_export_path(systemName, "orbit", /*extra*/"", ".csv");
+
+    // Normal orbit
+    std::string path = build_export_path(systemName, "orbit", /*extra*/"", ".csv");
     std::ofstream f = open_csv(path);
     if (!f.is_open()) return {};
-
-    Attribute* axis = &(KERNEL.parameters[window->OrbitXIndex]);
 
     switch (window->OrbitType)
     {
@@ -303,6 +302,69 @@ std::string exportOrbitCSV(const PlotWindow* window)
             f << window->bifParamIndices[i] << "," << window->bifAmps[i] << "," << window->bifIntervals[i] << '\n';
         }
         break;
+    }
+
+    if (window->drawingContinuation)
+    {
+        // Forward and backward continuations
+
+        path = build_export_path(systemName, "orbit-forward", /*extra*/"", ".csv");
+        f = open_csv(path);
+        if (!f.is_open()) return {};
+
+        switch (window->OrbitType)
+        {
+        case Peak_Bifurcation:
+            f << axis->name << ",Peaks" << '\n';
+            for (int i = 0; i < window->bifDotAmountForward; ++i)
+            {
+                f << window->continuationParamIndicesForward[i] << "," << window->continuationAmpsForward[i] << '\n';
+            }
+            break;
+        case Interval_Bifurcation:
+            f << axis->name << ",Intervals" << '\n';
+            for (int i = 0; i < window->bifDotAmountForward; ++i)
+            {
+                f << window->continuationParamIndicesForward[i] << "," << window->continuationIntervalsForward[i] << '\n';
+            }
+            break;
+        case Bifurcation_3D:
+            f << axis->name << ",Peaks,Intervals" << '\n';
+            for (int i = 0; i < window->bifDotAmountForward; ++i)
+            {
+                f << window->continuationParamIndicesForward[i] << "," << window->continuationAmpsForward[i] << "," << window->continuationIntervalsForward[i] << '\n';
+            }
+            break;
+        }
+
+        path = build_export_path(systemName, "orbit-backward", /*extra*/"", ".csv");
+        f = open_csv(path);
+        if (!f.is_open()) return {};
+
+        switch (window->OrbitType)
+        {
+        case Peak_Bifurcation:
+            f << axis->name << ",Peaks" << '\n';
+            for (int i = 0; i < window->bifDotAmountBack; ++i)
+            {
+                f << window->continuationParamIndicesBack[i] << "," << window->continuationAmpsBack[i] << '\n';
+            }
+            break;
+        case Interval_Bifurcation:
+            f << axis->name << ",Intervals" << '\n';
+            for (int i = 0; i < window->bifDotAmountBack; ++i)
+            {
+                f << window->continuationParamIndicesBack[i] << "," << window->continuationIntervalsBack[i] << '\n';
+            }
+            break;
+        case Bifurcation_3D:
+            f << axis->name << ",Peaks,Intervals" << '\n';
+            for (int i = 0; i < window->bifDotAmountBack; ++i)
+            {
+                f << window->continuationParamIndicesBack[i] << "," << window->continuationAmpsBack[i] << "," << window->continuationIntervalsBack[i] << '\n';
+            }
+            break;
+        }
     }
 
     return path;
