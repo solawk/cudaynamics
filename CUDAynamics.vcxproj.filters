@@ -262,16 +262,11 @@
     <ClInclude Include="analysis\phaseVolume\phaseVolume_settings.h">
       <Filter>analysis\phaseVolume</Filter>
     </ClInclude>
+    <ClInclude Include="decaySettings_struct.h" />
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="main.cu" />
     <CudaCompile Include="systems\halvorsen\halvorsen.cu">
-      <Filter>systems</Filter>
-    </CudaCompile>
-    <CudaCompile Include="systems\chen\chen.cu">
-      <Filter>systems</Filter>
-    </CudaCompile>
-    <CudaCompile Include="systems\dadras\dadras.cu">
       <Filter>systems</Filter>
     </CudaCompile>
     <CudaCompile Include="systems\fourwing\fourwing.cu">
@@ -313,9 +308,6 @@
     <CudaCompile Include="systems\bolshakov\bolshakov.cu">
       <Filter>systems</Filter>
     </CudaCompile>
-    <CudaCompile Include="systems\lorenz83\lorenz83.cu">
-      <Filter>systems</Filter>
-    </CudaCompile>
     <CudaCompile Include="systems\izhikevich\izhikevich.cu">
       <Filter>systems</Filter>
     </CudaCompile>
@@ -354,13 +346,22 @@
     <CudaCompile Include="analysis\phaseVolume\phaseVolume.cu">
       <Filter>analysis\phaseVolume</Filter>
     </CudaCompile>
-    <CudaCompile Include="systems\kazantsev_gordleeva_matrosov\kazantsev_gordleeva_matrosov.cu">
-      <Filter>systems</Filter>
-    </CudaCompile>
     <CudaCompile Include="systems\jj_mcrls\jj_mcrls.cu">
       <Filter>systems</Filter>
     </CudaCompile>
     <CudaCompile Include="systems\jj_rcls\jj_rcls.cu">
+      <Filter>systems</Filter>
+    </CudaCompile>
+    <CudaCompile Include="systems\chen_lee\chen_lee.cu">
+      <Filter>systems</Filter>
+    </CudaCompile>
+    <CudaCompile Include="systems\dadras_momeni\dadras_momeni.cu">
+      <Filter>systems</Filter>
+    </CudaCompile>
+    <CudaCompile Include="systems\lorenz84\lorenz84.cu">
+      <Filter>systems</Filter>
+    </CudaCompile>
+    <CudaCompile Include="systems\ullah\ullah.cu">
       <Filter>systems</Filter>
     </CudaCompile>
   </ItemGroup>

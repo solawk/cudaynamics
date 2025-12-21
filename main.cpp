@@ -12,14 +12,14 @@ void common_main()
 {
     // Kernels
     addKernel(lorenz);
-    addKernel(lorenz83);
+    addKernel(lorenz84);
     addKernel(lorenzVar);
     addKernel(hindmarsh_rose);
     addKernel(izhikevich);
     addKernel(jj_mcrls);
     addKernel(jj_rcls);
-    addKernel(chen);
-    addKernel(dadras);
+    addKernel(chen_lee);
+    addKernel(dadras_momeni);
     addKernel(fourwing);
     addKernel(halvorsen);
     addKernel(langford);
@@ -38,7 +38,7 @@ void common_main()
     addKernel(hodgkin_huxley);
     addKernel(sang26);
     addKernel(pala_machaczek);
-    addKernel(kazantsev_gordleeva_matrosov);
+    addKernel(ullah);
 
     //selectKernel(kernels.begin()->first);
     selectKernel(lorenz);
