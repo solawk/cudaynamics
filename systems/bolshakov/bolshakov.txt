@@ -22,14 +22,20 @@ var S Fixed 0.0 1.0 0.1 10 0.0 0.0
 var X Fixed 0.0 1.0 0.1 10 0.0 0.0
 var Y Fixed 0.0 1.0 0.1 10 0.0 0.0
 var c Fixed 0.0 1.0 1 1 0.0 0.0
-param i Fixed 0.01 0.4 0.01 30 0.0 0.0
+var i Fixed 0.01 0.4 0.01 30 0.0 0.0
+var t Fixed 0.01 0.4 0.01 30 0.0 0.0
 param p Fixed 0.5 1.0 0.01 50 0.0 0.0
 param k Fixed 0.08 1.0 0.01 100 0.0 0.0
 param r Fixed 1.0 10.0 0.1 100 0.0 0.0
-
+param Idc Fixed 0.0 0.05 0.001 50 0.0 0.0
+param Iamp Fixed 0.045 0.5 0.001 0 0.0 0.0
+param Ifreq Fixed 0.01 0.5 0.001 100 0.0 0.0
+param Idel Fixed 0.0 0.5 0.01 50 0.0 0.0
+param Idf Fixed 0.0 1.0 0.1 100 0.0 0.0
+constraint signal square
 // Defining enumerated parameters (useful for methods):
 // enum <name> <ranging type> <minimum value> <maximum value> <step> <step count> <normal mean> <normal deviation> <enum names, no spaces>
-
+enum signal 1square 0sine 0triangle
 // Defining maps:
 // map <name> <map settings count (inside its struct)> <map settings, beginning with "n" for numbs and "i" for ints>
 map LLE 1 7 r n0.01 L i50 variableToDeflect i2 norm0 i0 norm1 i1 norm2 i2 norm3 i-1

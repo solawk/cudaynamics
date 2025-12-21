@@ -4,8 +4,9 @@
 
 namespace attributes
 {
-    enum variables { Q, S, X, Y, c };
-    enum parameters { i, p, k, r, COUNT };
+    enum variables { Q, S, X, Y, c, i, t };
+    enum parameters { p, k, r, Idc, Iamp, Ifreq, Idel, Idf, symmetry, signal, COUNT };
+    enum waveforms { square, sine, triangle };
 }
 
 __global__ void gpu_wrapper_(name)(Computation* data, uint64_t variation)
@@ -37,15 +38,48 @@ __host__ __device__ void kernelProgram_(name)(Computation* data, uint64_t variat
 
 __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* currentV, numb* nextV, numb* parameters)
 {
-    Vnext(Q) = V(Q) + V(c) * (P(i) + V(S)) - !V(c) * (P(i) + V(S));
+    ifSIGNAL(P(signal), square)
+    {
+        Vnext(i) = P(Idc) + (fmodf((V(t) - P(Idel)) > 0 ? (V(t) - P(Idel)) : (P(Idf) / P(Ifreq) + P(Idel) - V(t)), 1 / P(Ifreq)) < P(Idf) / P(Ifreq) ? P(Iamp) : 0.0f);
+        Vnext(t) = V(t) + H;
+        Vnext(Q) = V(Q) + V(c) * (Vnext(i) + V(S)) - !V(c) * (Vnext(i) + V(S));
 
-    if (Vnext(Q) < 0) Vnext(Q) = 0;
-    if (Vnext(Q) > P(r)) Vnext(Q) = P(r);
+        if (Vnext(Q) < 0) Vnext(Q) = 0;
+        if (Vnext(Q) > P(r)) Vnext(Q) = P(r);
 
-    Vnext(X) = P(p) * (Vnext(Q) + V(X));
-    Vnext(Y) = 1/P(k) * (Vnext(X) - V(Y)) + V(Y);
-    Vnext(S) = Vnext(X) - Vnext(Y);
-    Vnext(c) = (V(c) || (Vnext(Q) > 0 ? 0 : 1)) && (Vnext(Q) < P(r) ? 1 : 0);
+        Vnext(X) = P(p) * (Vnext(Q) + V(X));
+        Vnext(Y) = 1 / P(k) * (Vnext(X) - V(Y)) + V(Y);
+        Vnext(S) = Vnext(X) - Vnext(Y);
+        Vnext(c) = (V(c) || (Vnext(Q) > 0 ? 0 : 1)) && (Vnext(Q) < P(r) ? 1 : 0);
+    }
+    ifSIGNAL(P(signal), sine)
+    {
+        Vnext(i) = P(Idc) + P(Iamp) * sinf(2.0f * 3.141592f * P(Ifreq) * (V(t) - P(Idel)));
+        Vnext(t) = V(t) + H;
+        Vnext(Q) = V(Q) + V(c) * (Vnext(i) + V(S)) - !V(c) * (Vnext(i) + V(S));
+
+        if (Vnext(Q) < 0) Vnext(Q) = 0;
+        if (Vnext(Q) > P(r)) Vnext(Q) = P(r);
+
+        Vnext(X) = P(p) * (Vnext(Q) + V(X));
+        Vnext(Y) = 1 / P(k) * (Vnext(X) - V(Y)) + V(Y);
+        Vnext(S) = Vnext(X) - Vnext(Y);
+        Vnext(c) = (V(c) || (Vnext(Q) > 0 ? 0 : 1)) && (Vnext(Q) < P(r) ? 1 : 0);
+    }
+    ifSIGNAL(P(signal), triangle)
+    {
+        Vnext(i) = P(Idc) + P(Iamp) * ((4.0f * P(Ifreq) * (V(t) - P(Idel)) - 2.0f * floorf((4.0f * P(Ifreq) * (V(t) - P(Idel)) + 1.0f) / 2.0f)) * pow((-1), floorf((4.0f * P(Ifreq) * (V(t) - P(Idel)) + 1.0f) / 2.0f)));
+        Vnext(t) = V(t) + H;
+        Vnext(Q) = V(Q) + V(c) * (Vnext(i) + V(S)) - !V(c) * (Vnext(i) + V(S));
+
+        if (Vnext(Q) < 0) Vnext(Q) = 0;
+        if (Vnext(Q) > P(r)) Vnext(Q) = P(r);
+
+        Vnext(X) = P(p) * (Vnext(Q) + V(X));
+        Vnext(Y) = 1 / P(k) * (Vnext(X) - V(Y)) + V(Y);
+        Vnext(S) = Vnext(X) - Vnext(Y);
+        Vnext(c) = (V(c) || (Vnext(Q) > 0 ? 0 : 1)) && (Vnext(Q) < P(r) ? 1 : 0);
+    }
 }
 
 #undef name

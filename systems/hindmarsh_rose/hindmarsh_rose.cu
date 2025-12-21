@@ -4,8 +4,9 @@
 
 namespace attributes
 {
-    enum variables { x, y, z };
-    enum parameters { a, b, c, d, r, s, e, Iext, symmetry, method, COUNT };
+    enum variables { x, y, z, i, t };
+    enum parameters { a, b, c, d, r, s, e, Idc, Iamp, Ifreq, Idel, Idf, symmetry, signal, method, COUNT };
+    enum waveforms { square, sine, triangle };
     enum methods { ExplicitEuler, ExplicitMidpoint, ExplicitRungeKutta4, VariableSymmetryCD};
 }
 
@@ -38,73 +39,338 @@ __host__ __device__ void kernelProgram_(name)(Computation* data, uint64_t variat
 
 __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* currentV, numb* nextV, numb* parameters)
 {
-    ifMETHOD(P(method), ExplicitEuler)
+    ifSIGNAL(P(signal), square)
     {
-        Vnext(x) = V(x) + H * (V(y) - P(a) * V(x) * V(x) * V(x) + P(b) * V(x) * V(x) - V(z) + P(Iext));
-        Vnext(y) = V(y) + H * (P(c) - P(d) * V(x) * V(x) - V(y));
-        Vnext(z) = V(z) + H * (P(r) * (P(s) * (V(x) + P(e)) - V(z)));
+        ifMETHOD(P(method), ExplicitEuler)
+        {
+            /*
+            Vnext(x) = V(x) + H * (V(y) - P(a) * V(x) * V(x) * V(x) + P(b) * V(x) * V(x) - V(z) + P(Iext));
+            Vnext(y) = V(y) + H * (P(c) - P(d) * V(x) * V(x) - V(y));
+            Vnext(z) = V(z) + H * (P(r) * (P(s) * (V(x) + P(e)) - V(z)));
+            */
+            Vnext(i) = P(Idc) + (fmodf((V(t) - P(Idel)) > 0 ? (V(t) - P(Idel)) : (P(Idf) / P(Ifreq) + P(Idel) - V(t)), 1 / P(Ifreq)) < P(Idf) / P(Ifreq) ? P(Iamp) : 0.0f);
+            Vnext(t) = V(t) + H;
+            Vnext(x) = V(x) + H * (V(y) - P(a) * V(x) * V(x) * V(x) + P(b) * V(x) * V(x) - V(z) + Vnext(i));
+            Vnext(y) = V(y) + H * (P(c) - P(d) * V(x) * V(x) - V(y));
+            Vnext(z) = V(z) + H * (P(r) * (P(s) * (V(x) + P(e)) - V(z)));
+        }
+
+        ifMETHOD(P(method), ExplicitMidpoint)
+        {
+            numb imp = P(Idc) + (fmodf((V(t) - P(Idel)) > 0 ? (V(t) - P(Idel)) : (P(Idf) / P(Ifreq) + P(Idel) - V(t)), 1 / P(Ifreq)) < P(Idf) / P(Ifreq) ? P(Iamp) : 0.0f);
+            numb tmp = V(t) + H * 0.5;
+            numb xmp = V(x) + H * 0.5 * (V(y) - P(a) * V(x) * V(x) * V(x) + P(b) * V(x) * V(x) - V(z) + imp);
+            numb ymp = V(y) + H * 0.5 * (P(c) - P(d) * V(x) * V(x) - V(y));
+            numb zmp = V(z) + H * 0.5 * (P(r) * (P(s) * (V(x) + P(e)) - V(z)));
+
+            Vnext(i) = P(Idc) + (fmodf((tmp - P(Idel)) > 0 ? (tmp - P(Idel)) : (P(Idf) / P(Ifreq) + P(Idel) - tmp), 1.0f / P(Ifreq)) < P(Idf) / P(Ifreq) ? P(Iamp) : 0.0f);
+            Vnext(t) = V(t) + H;
+            Vnext(x) = V(x) + H * (ymp - P(a) * xmp * xmp * xmp + P(b) * xmp * xmp - zmp + Vnext(i));
+            Vnext(y) = V(y) + H * (P(c) - P(d) * xmp * xmp - ymp);
+            Vnext(z) = V(z) + H * (P(r) * (P(s) * (xmp + P(e)) - zmp));
+
+            /*
+            numb xmp = V(x) + H * 0.5 * (V(y) - P(a) * V(x) * V(x) * V(x) + P(b) * V(x) * V(x) - V(z) + P(Iext));
+            numb ymp = V(y) + H * 0.5 * (P(c) - P(d) * V(x) * V(x) - V(y));
+            numb zmp = V(z) + H * 0.5 * (P(r) * (P(s) * (V(x) + P(e)) - V(z)));
+            Vnext(x) = V(x) + H * (ymp - P(a) * xmp * xmp * xmp + P(b) * xmp * xmp - zmp + P(Iext));
+            Vnext(y) = V(y) + H * (P(c) - P(d) * xmp * xmp - ymp);
+            Vnext(z) = V(z) + H * (P(r) * (P(s) * (xmp + P(e)) - zmp));
+            */
+        }
+
+        ifMETHOD(P(method), ExplicitRungeKutta4)
+        {
+            numb i1 = P(Idc) + (fmodf((V(t) - P(Idel)) > 0 ? (V(t) - P(Idel)) : (P(Idf) / P(Ifreq) + P(Idel) - V(t)), 1 / P(Ifreq)) < P(Idf) / P(Ifreq) ? P(Iamp) : 0.0f);
+            numb kt1 = V(t) + 0.5f * H;
+
+            numb kx1 = V(y) - P(a) * V(x) * V(x) * V(x) + P(b) * V(x) * V(x) - V(z) + i1;
+            numb ky1 = P(c) - P(d) * V(x) * V(x) - V(y);
+            numb kz1 = P(r) * (P(s) * (V(x) + P(e)) - V(z));
+
+            numb xmp = V(x) + 0.5 * H * kx1;
+            numb ymp = V(y) + 0.5 * H * ky1;
+            numb zmp = V(z) + 0.5 * H * kz1;
+
+
+            numb i2 = P(Idc) + (fmodf((kt1 - P(Idel)) > 0 ? (kt1 - P(Idel)) : (P(Idf) / P(Ifreq) + P(Idel) - kt1), 1 / P(Ifreq)) < P(Idf) / P(Ifreq) ? P(Iamp) : 0.0f);
+            numb kx2 = ymp - P(a) * xmp * xmp * xmp + P(b) * xmp * xmp - zmp + i2;
+            numb ky2 = P(c) - P(d) * xmp * xmp - ymp;
+            numb kz2 = P(r) * (P(s) * (xmp + P(e)) - zmp);
+
+            xmp = V(x) + 0.5 * H * kx2;
+            ymp = V(y) + 0.5 * H * ky2;
+            zmp = V(z) + 0.5 * H * kz2;
+
+            numb kx3 = ymp - P(a) * xmp * xmp * xmp + P(b) * xmp * xmp - zmp + i2;
+            numb ky3 = P(c) - P(d) * xmp * xmp - ymp;
+            numb kz3 = P(r) * (P(s) * (xmp + P(e)) - zmp);
+            Vnext(t) = V(t) + H;
+
+            xmp = V(x) + H * kx3;
+            ymp = V(y) + H * ky3;
+            zmp = V(z) + H * kz3;
+
+            numb i3 = P(Idc) + (fmodf((Vnext(t) - P(Idel)) > 0 ? (Vnext(t) - P(Idel)) : (P(Idf) / P(Ifreq) + P(Idel) - Vnext(t)), 1 / P(Ifreq)) < P(Idf) / P(Ifreq) ? P(Iamp) : 0.0f);
+            numb kx4 = ymp - P(a) * xmp * xmp * xmp + P(b) * xmp * xmp - zmp + i3;
+            numb ky4 = P(c) - P(d) * xmp * xmp - ymp;
+            numb kz4 = P(r) * (P(s) * (xmp + P(e)) - zmp);
+
+            Vnext(i) = i3;
+            Vnext(x) = V(x) + H * (kx1 + 2.0 * kx2 + 2.0 * kx3 + kx4) / 6.0;
+            Vnext(y) = V(y) + H * (ky1 + 2.0 * ky2 + 2.0 * ky3 + ky4) / 6.0;
+            Vnext(z) = V(z) + H * (kz1 + 2.0 * kz2 + 2.0 * kz3 + kz4) / 6.0;
+
+            /*
+            numb kx1 = V(y) - P(a) * V(x) * V(x) * V(x) + P(b) * V(x) * V(x) - V(z) + P(Iext);
+            numb ky1 = P(c) - P(d) * V(x) * V(x) - V(y);
+            numb kz1 = P(r) * (P(s) * (V(x) + P(e)) - V(z));
+
+            numb xmp = V(x) + 0.5 * H * kx1;
+            numb ymp = V(y) + 0.5 * H * ky1;
+            numb zmp = V(z) + 0.5 * H * kz1;
+
+            numb kx2 = ymp - P(a) * xmp * xmp * xmp + P(b) * xmp * xmp - zmp + P(Iext);
+            numb ky2 = P(c) - P(d) * xmp * xmp - ymp;
+            numb kz2 = P(r) * (P(s) * (xmp + P(e)) - zmp);
+
+            xmp = V(x) + 0.5 * H * kx2;
+            ymp = V(y) + 0.5 * H * ky2;
+            zmp = V(z) + 0.5 * H * kz2;
+
+            numb kx3 = ymp - P(a) * xmp * xmp * xmp + P(b) * xmp * xmp - zmp + P(Iext);
+            numb ky3 = P(c) - P(d) * xmp * xmp - ymp;
+            numb kz3 = P(r) * (P(s) * (xmp + P(e)) - zmp);
+
+            xmp = V(x) + H * kx3;
+            ymp = V(y) + H * ky3;
+            zmp = V(z) + H * kz3;
+
+            numb kx4 = ymp - P(a) * xmp * xmp * xmp + P(b) * xmp * xmp - zmp + P(Iext);
+            numb ky4 = P(c) - P(d) * xmp * xmp - ymp;
+            numb kz4 = P(r) * (P(s) * (xmp + P(e)) - zmp);
+
+            Vnext(x) = V(x) + H * (kx1 + 2.0 * kx2 + 2.0 * kx3 + kx4) / 6.0;
+            Vnext(y) = V(y) + H * (ky1 + 2.0 * ky2 + 2.0 * ky3 + ky4) / 6.0;
+            Vnext(z) = V(z) + H * (kz1 + 2.0 * kz2 + 2.0 * kz3 + kz4) / 6.0;
+            */
+
+        }
+
+        ifMETHOD(P(method), VariableSymmetryCD)
+        {
+            numb h1 = 0.5 * H - P(symmetry);
+            numb h2 = 0.5 * H + P(symmetry);
+
+
+            Vnext(i) = P(Idc) + (fmodf((V(t) - P(Idel)) > 0 ? (V(t) - P(Idel)) : (P(Idf) / P(Ifreq) + P(Idel) - V(t)), 1 / P(Ifreq)) < P(Idf) / P(Ifreq) ? P(Iamp) : 0.0f);
+            numb xmp = V(x) + h1 * (V(y) - P(a) * V(x) * V(x) * V(x) + P(b) * V(x) * V(x) - V(z) + Vnext(i));
+            numb ymp = V(y) + h1 * (P(c) - P(d) * xmp * xmp - V(y));
+            numb zmp = V(z) + h1 * (P(r) * (P(s) * (xmp + P(e)) - V(z)));
+
+            Vnext(z) = (zmp + P(r) * P(s) * (xmp + P(e)) * h2) / (1 + P(r) * h2);
+            Vnext(y) = (ymp + (P(c) - P(d) * xmp * xmp) * h2) / (1 + h2);
+
+            Vnext(x) = xmp + h2 * (Vnext(y) - P(a) * xmp * xmp * xmp + P(b) * xmp * xmp - Vnext(z) + Vnext(i));
+            Vnext(x) = xmp + h2 * (Vnext(y) - P(a) * Vnext(x) * Vnext(x) * Vnext(x) + P(b) * Vnext(x) * Vnext(x) - Vnext(z) + Vnext(i));
+            Vnext(t) = V(t) + H;
+
+            /*
+            numb xmp = V(x) + h1 * (V(y) - P(a) * V(x) * V(x) * V(x) + P(b) * V(x) * V(x) - V(z) + P(Iext));
+            numb ymp = V(y) + h1 * (P(c) - P(d) * xmp * xmp - V(y));
+            numb zmp = V(z) + h1 * (P(r) * (P(s) * (xmp + P(e)) - V(z)));
+
+            Vnext(z) = (zmp + P(r) * P(s) * (xmp + P(e)) * h2) / (1 + P(r) * h2);
+            Vnext(y) = (ymp + (P(c) - P(d) * xmp * xmp) * h2) / (1 + h2);
+
+            Vnext(x) = xmp + h2 * (Vnext(y) - P(a) * xmp * xmp * xmp + P(b) * xmp * xmp - Vnext(z) + P(Iext));
+            Vnext(x) = xmp + h2 * (Vnext(y) - P(a) * Vnext(x) * Vnext(x) * Vnext(x) + P(b) * Vnext(x) * Vnext(x) - Vnext(z) + P(Iext));
+            */
+        }
     }
-
-    ifMETHOD(P(method), ExplicitMidpoint)
+    ifSIGNAL(P(signal), sine)
     {
-        numb xmp = V(x) + H * 0.5 * (V(y) - P(a) * V(x) * V(x) * V(x) + P(b) * V(x) * V(x) - V(z) + P(Iext));
-        numb ymp = V(y) + H * 0.5 * (P(c) - P(d) * V(x) * V(x) - V(y));
-        numb zmp = V(z) + H * 0.5 * (P(r) * (P(s) * (V(x) + P(e)) - V(z)));
+        ifMETHOD(P(method), ExplicitEuler)
+        {
+            Vnext(i) = P(Idc) + P(Iamp) * sinf(2.0f * 3.141592f * P(Ifreq) * (V(t) - P(Idel)));
+            Vnext(t) = V(t) + H;
+            Vnext(x) = V(x) + H * (V(y) - P(a) * V(x) * V(x) * V(x) + P(b) * V(x) * V(x) - V(z) + Vnext(i));
+            Vnext(y) = V(y) + H * (P(c) - P(d) * V(x) * V(x) - V(y));
+            Vnext(z) = V(z) + H * (P(r) * (P(s) * (V(x) + P(e)) - V(z)));
+        }
 
-        Vnext(x) = V(x) + H * (ymp - P(a) * xmp * xmp * xmp + P(b) * xmp * xmp - zmp + P(Iext));
-        Vnext(y) = V(y) + H * (P(c) - P(d) * xmp * xmp - ymp);
-        Vnext(z) = V(z) + H * (P(r) * (P(s) * (xmp + P(e)) - zmp));
+        ifMETHOD(P(method), ExplicitMidpoint)
+        {
+            numb imp = P(Idc) + P(Iamp) * sinf(2.0f * 3.141592f * P(Ifreq) * (V(t) - P(Idel)));
+            numb tmp = V(t) + H * 0.5;
+            numb xmp = V(x) + H * 0.5 * (V(y) - P(a) * V(x) * V(x) * V(x) + P(b) * V(x) * V(x) - V(z) + imp);
+            numb ymp = V(y) + H * 0.5 * (P(c) - P(d) * V(x) * V(x) - V(y));
+            numb zmp = V(z) + H * 0.5 * (P(r) * (P(s) * (V(x) + P(e)) - V(z)));
+
+            Vnext(i) = P(Idc) + P(Iamp) * sinf(2.0f * 3.141592f * P(Ifreq) * (tmp - P(Idel)));
+            Vnext(t) = V(t) + H;
+            Vnext(x) = V(x) + H * (ymp - P(a) * xmp * xmp * xmp + P(b) * xmp * xmp - zmp + Vnext(i));
+            Vnext(y) = V(y) + H * (P(c) - P(d) * xmp * xmp - ymp);
+            Vnext(z) = V(z) + H * (P(r) * (P(s) * (xmp + P(e)) - zmp));
+
+        }
+
+        ifMETHOD(P(method), ExplicitRungeKutta4)
+        {
+            numb i1 = P(Idc) + P(Iamp) * sinf(2.0f * 3.141592f * P(Ifreq) * (V(t) - P(Idel)));
+            numb kt1 = V(t) + 0.5f * H;
+
+            numb kx1 = V(y) - P(a) * V(x) * V(x) * V(x) + P(b) * V(x) * V(x) - V(z) + i1;
+            numb ky1 = P(c) - P(d) * V(x) * V(x) - V(y);
+            numb kz1 = P(r) * (P(s) * (V(x) + P(e)) - V(z));
+
+            numb xmp = V(x) + 0.5 * H * kx1;
+            numb ymp = V(y) + 0.5 * H * ky1;
+            numb zmp = V(z) + 0.5 * H * kz1;
+
+
+            numb i2 = P(Idc) + P(Iamp) * sinf(2.0f * 3.141592f * P(Ifreq) * (kt1 - P(Idel)));
+            numb kx2 = ymp - P(a) * xmp * xmp * xmp + P(b) * xmp * xmp - zmp + i2;
+            numb ky2 = P(c) - P(d) * xmp * xmp - ymp;
+            numb kz2 = P(r) * (P(s) * (xmp + P(e)) - zmp);
+
+            xmp = V(x) + 0.5 * H * kx2;
+            ymp = V(y) + 0.5 * H * ky2;
+            zmp = V(z) + 0.5 * H * kz2;
+
+            numb kx3 = ymp - P(a) * xmp * xmp * xmp + P(b) * xmp * xmp - zmp + i2;
+            numb ky3 = P(c) - P(d) * xmp * xmp - ymp;
+            numb kz3 = P(r) * (P(s) * (xmp + P(e)) - zmp);
+            Vnext(t) = V(t) + H;
+
+            xmp = V(x) + H * kx3;
+            ymp = V(y) + H * ky3;
+            zmp = V(z) + H * kz3;
+
+            numb i3 = P(Idc) + P(Iamp) * sinf(2.0f * 3.141592f * P(Ifreq) * (Vnext(t) - P(Idel)));
+            numb kx4 = ymp - P(a) * xmp * xmp * xmp + P(b) * xmp * xmp - zmp + i3;
+            numb ky4 = P(c) - P(d) * xmp * xmp - ymp;
+            numb kz4 = P(r) * (P(s) * (xmp + P(e)) - zmp);
+
+            Vnext(i) = i3;
+            Vnext(x) = V(x) + H * (kx1 + 2.0 * kx2 + 2.0 * kx3 + kx4) / 6.0;
+            Vnext(y) = V(y) + H * (ky1 + 2.0 * ky2 + 2.0 * ky3 + ky4) / 6.0;
+            Vnext(z) = V(z) + H * (kz1 + 2.0 * kz2 + 2.0 * kz3 + kz4) / 6.0;
+
+
+        }
+
+        ifMETHOD(P(method), VariableSymmetryCD)
+        {
+            numb h1 = 0.5 * H - P(symmetry);
+            numb h2 = 0.5 * H + P(symmetry);
+
+
+            Vnext(i) = P(Idc) + P(Iamp) * sinf(2.0f * 3.141592f * P(Ifreq) * (V(t) - P(Idel)));
+            numb xmp = V(x) + h1 * (V(y) - P(a) * V(x) * V(x) * V(x) + P(b) * V(x) * V(x) - V(z) + Vnext(i));
+            numb ymp = V(y) + h1 * (P(c) - P(d) * xmp * xmp - V(y));
+            numb zmp = V(z) + h1 * (P(r) * (P(s) * (xmp + P(e)) - V(z)));
+
+            Vnext(z) = (zmp + P(r) * P(s) * (xmp + P(e)) * h2) / (1 + P(r) * h2);
+            Vnext(y) = (ymp + (P(c) - P(d) * xmp * xmp) * h2) / (1 + h2);
+
+            Vnext(x) = xmp + h2 * (Vnext(y) - P(a) * xmp * xmp * xmp + P(b) * xmp * xmp - Vnext(z) + Vnext(i));
+            Vnext(x) = xmp + h2 * (Vnext(y) - P(a) * Vnext(x) * Vnext(x) * Vnext(x) + P(b) * Vnext(x) * Vnext(x) - Vnext(z) + Vnext(i));
+            Vnext(t) = V(t) + H;
+
+            
+        }
     }
-
-    ifMETHOD(P(method), ExplicitRungeKutta4)
+    ifSIGNAL(P(signal), triangle)
     {
-        numb kx1 = V(y) - P(a) * V(x) * V(x) * V(x) + P(b) * V(x) * V(x) - V(z) + P(Iext);
-        numb ky1 = P(c) - P(d) * V(x) * V(x) - V(y);
-        numb kz1 = P(r) * (P(s) * (V(x) + P(e)) - V(z));
+        ifMETHOD(P(method), ExplicitEuler)
+        {
+            Vnext(i) = P(Idc) + P(Iamp) * ((4.0f * P(Ifreq) * (V(t) - P(Idel)) - 2.0f * floorf((4.0f * P(Ifreq) * (V(t) - P(Idel)) + 1.0f) / 2.0f)) * pow((-1), floorf((4.0f * P(Ifreq) * (V(t) - P(Idel)) + 1.0f) / 2.0f)));
+            Vnext(t) = V(t) + H;
+            Vnext(x) = V(x) + H * (V(y) - P(a) * V(x) * V(x) * V(x) + P(b) * V(x) * V(x) - V(z) + Vnext(i));
+            Vnext(y) = V(y) + H * (P(c) - P(d) * V(x) * V(x) - V(y));
+            Vnext(z) = V(z) + H * (P(r) * (P(s) * (V(x) + P(e)) - V(z)));
+        }
 
-        numb xmp = V(x) + 0.5 * H * kx1;
-        numb ymp = V(y) + 0.5 * H * ky1;
-        numb zmp = V(z) + 0.5 * H * kz1;
+        ifMETHOD(P(method), ExplicitMidpoint)
+        {
+            numb imp = P(Idc) + P(Iamp) * ((4.0f * P(Ifreq) * (V(t) - P(Idel)) - 2.0f * floorf((4.0f * P(Ifreq) * (V(t) - P(Idel)) + 1.0f) / 2.0f)) * pow((-1), floorf((4.0f * P(Ifreq) * (V(t) - P(Idel)) + 1.0f) / 2.0f)));
+            numb tmp = V(t) + H * 0.5;
+            numb xmp = V(x) + H * 0.5 * (V(y) - P(a) * V(x) * V(x) * V(x) + P(b) * V(x) * V(x) - V(z) + imp);
+            numb ymp = V(y) + H * 0.5 * (P(c) - P(d) * V(x) * V(x) - V(y));
+            numb zmp = V(z) + H * 0.5 * (P(r) * (P(s) * (V(x) + P(e)) - V(z)));
 
-        numb kx2 = ymp - P(a) * xmp * xmp * xmp + P(b) * xmp * xmp - zmp + P(Iext);
-        numb ky2 = P(c) - P(d) * xmp * xmp - ymp;
-        numb kz2 = P(r) * (P(s) * (xmp + P(e)) - zmp);
+            Vnext(i) = P(Idc) + P(Iamp) * ((4.0f * P(Ifreq) * (tmp - P(Idel)) - 2.0f * floorf((4.0f * P(Ifreq) * (tmp - P(Idel)) + 1.0f) / 2.0f)) * pow((-1), floorf((4.0f * P(Ifreq) * (tmp - P(Idel)) + 1.0f) / 2.0f)));
+            Vnext(t) = V(t) + H;
+            Vnext(x) = V(x) + H * (ymp - P(a) * xmp * xmp * xmp + P(b) * xmp * xmp - zmp + Vnext(i));
+            Vnext(y) = V(y) + H * (P(c) - P(d) * xmp * xmp - ymp);
+            Vnext(z) = V(z) + H * (P(r) * (P(s) * (xmp + P(e)) - zmp));
 
-        xmp = V(x) + 0.5 * H * kx2;
-        ymp = V(y) + 0.5 * H * ky2;
-        zmp = V(z) + 0.5 * H * kz2;
+        }
 
-        numb kx3 = ymp - P(a) * xmp * xmp * xmp + P(b) * xmp * xmp - zmp + P(Iext);
-        numb ky3 = P(c) - P(d) * xmp * xmp - ymp;
-        numb kz3 = P(r) * (P(s) * (xmp + P(e)) - zmp);
+        ifMETHOD(P(method), ExplicitRungeKutta4)
+        {
+            numb i1 = P(Idc) + P(Iamp) * ((4.0f * P(Ifreq) * (V(t) - P(Idel)) - 2.0f * floorf((4.0f * P(Ifreq) * (V(t) - P(Idel)) + 1.0f) / 2.0f)) * pow((-1), floorf((4.0f * P(Ifreq) * (V(t) - P(Idel)) + 1.0f) / 2.0f)));
+            numb kt1 = V(t) + 0.5f * H;
 
-        xmp = V(x) + H * kx3;
-        ymp = V(y) + H * ky3;
-        zmp = V(z) + H * kz3;
+            numb kx1 = V(y) - P(a) * V(x) * V(x) * V(x) + P(b) * V(x) * V(x) - V(z) + i1;
+            numb ky1 = P(c) - P(d) * V(x) * V(x) - V(y);
+            numb kz1 = P(r) * (P(s) * (V(x) + P(e)) - V(z));
 
-        numb kx4 = ymp - P(a) * xmp * xmp * xmp + P(b) * xmp * xmp - zmp + P(Iext);
-        numb ky4 = P(c) - P(d) * xmp * xmp - ymp;
-        numb kz4 = P(r) * (P(s) * (xmp + P(e)) - zmp);
+            numb xmp = V(x) + 0.5 * H * kx1;
+            numb ymp = V(y) + 0.5 * H * ky1;
+            numb zmp = V(z) + 0.5 * H * kz1;
 
-        Vnext(x) = V(x) + H * (kx1 + 2.0 * kx2 + 2.0 * kx3 + kx4) / 6.0;
-        Vnext(y) = V(y) + H * (ky1 + 2.0 * ky2 + 2.0 * ky3 + ky4) / 6.0;
-        Vnext(z) = V(z) + H * (kz1 + 2.0 * kz2 + 2.0 * kz3 + kz4) / 6.0;
-    }
 
-    ifMETHOD(P(method), VariableSymmetryCD)
-    {
-        numb h1 = 0.5 * H - P(symmetry);
-        numb h2 = 0.5 * H + P(symmetry);
+            numb i2 = P(Idc) + P(Iamp) * ((4.0f * P(Ifreq) * (kt1 - P(Idel)) - 2.0f * floorf((4.0f * P(Ifreq) * (kt1 - P(Idel)) + 1.0f) / 2.0f)) * pow((-1), floorf((4.0f * P(Ifreq) * (kt1 - P(Idel)) + 1.0f) / 2.0f)));
+            numb kx2 = ymp - P(a) * xmp * xmp * xmp + P(b) * xmp * xmp - zmp + i2;
+            numb ky2 = P(c) - P(d) * xmp * xmp - ymp;
+            numb kz2 = P(r) * (P(s) * (xmp + P(e)) - zmp);
 
-        numb xmp = V(x) + h1 * (V(y) - P(a) * V(x) * V(x) * V(x) + P(b) * V(x) * V(x) - V(z) + P(Iext));
-        numb ymp = V(y) + h1 * (P(c) - P(d) * xmp * xmp - V(y));
-        numb zmp = V(z) + h1 * (P(r) * (P(s) * (xmp + P(e)) - V(z)));
+            xmp = V(x) + 0.5 * H * kx2;
+            ymp = V(y) + 0.5 * H * ky2;
+            zmp = V(z) + 0.5 * H * kz2;
 
-        Vnext(z) = (zmp + P(r) * P(s) * (xmp + P(e)) * h2) / (1 + P(r) * h2);
-        Vnext(y) = (ymp + (P(c) - P(d) * xmp * xmp) * h2) / (1 + h2);
+            numb kx3 = ymp - P(a) * xmp * xmp * xmp + P(b) * xmp * xmp - zmp + i2;
+            numb ky3 = P(c) - P(d) * xmp * xmp - ymp;
+            numb kz3 = P(r) * (P(s) * (xmp + P(e)) - zmp);
+            Vnext(t) = V(t) + H;
 
-        Vnext(x) = xmp + h2 * (Vnext(y) - P(a) * xmp * xmp * xmp + P(b) * xmp * xmp - Vnext(z) + P(Iext));
-        Vnext(x) = xmp + h2 * (Vnext(y) - P(a) * Vnext(x) * Vnext(x) * Vnext(x) + P(b) * Vnext(x) * Vnext(x) - Vnext(z) + P(Iext));
+            xmp = V(x) + H * kx3;
+            ymp = V(y) + H * ky3;
+            zmp = V(z) + H * kz3;
+
+            numb i3 = P(Idc) + P(Iamp) * ((4.0f * P(Ifreq) * (Vnext(t) - P(Idel)) - 2.0f * floorf((4.0f * P(Ifreq) * (Vnext(t) - P(Idel)) + 1.0f) / 2.0f)) * pow((-1), floorf((4.0f * P(Ifreq) * (Vnext(t) - P(Idel)) + 1.0f) / 2.0f)));
+            numb kx4 = ymp - P(a) * xmp * xmp * xmp + P(b) * xmp * xmp - zmp + i3;
+            numb ky4 = P(c) - P(d) * xmp * xmp - ymp;
+            numb kz4 = P(r) * (P(s) * (xmp + P(e)) - zmp);
+
+            Vnext(i) = i3;
+            Vnext(x) = V(x) + H * (kx1 + 2.0 * kx2 + 2.0 * kx3 + kx4) / 6.0;
+            Vnext(y) = V(y) + H * (ky1 + 2.0 * ky2 + 2.0 * ky3 + ky4) / 6.0;
+            Vnext(z) = V(z) + H * (kz1 + 2.0 * kz2 + 2.0 * kz3 + kz4) / 6.0;
+
+        }
+
+        ifMETHOD(P(method), VariableSymmetryCD)
+        {
+            numb h1 = 0.5 * H - P(symmetry);
+            numb h2 = 0.5 * H + P(symmetry);
+
+
+            Vnext(i) = P(Idc) + P(Iamp) * ((4.0f * P(Ifreq) * (V(t) - P(Idel)) - 2.0f * floorf((4.0f * P(Ifreq) * (V(t) - P(Idel)) + 1.0f) / 2.0f)) * pow((-1), floorf((4.0f * P(Ifreq) * (V(t) - P(Idel)) + 1.0f) / 2.0f)));
+            numb xmp = V(x) + h1 * (V(y) - P(a) * V(x) * V(x) * V(x) + P(b) * V(x) * V(x) - V(z) + Vnext(i));
+            numb ymp = V(y) + h1 * (P(c) - P(d) * xmp * xmp - V(y));
+            numb zmp = V(z) + h1 * (P(r) * (P(s) * (xmp + P(e)) - V(z)));
+
+            Vnext(z) = (zmp + P(r) * P(s) * (xmp + P(e)) * h2) / (1 + P(r) * h2);
+            Vnext(y) = (ymp + (P(c) - P(d) * xmp * xmp) * h2) / (1 + h2);
+
+            Vnext(x) = xmp + h2 * (Vnext(y) - P(a) * xmp * xmp * xmp + P(b) * xmp * xmp - Vnext(z) + Vnext(i));
+            Vnext(x) = xmp + h2 * (Vnext(y) - P(a) * Vnext(x) * Vnext(x) * Vnext(x) + P(b) * Vnext(x) * Vnext(x) - Vnext(z) + Vnext(i));
+            Vnext(t) = V(t) + H;
+
+        }
     }
 }
 

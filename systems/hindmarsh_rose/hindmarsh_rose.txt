@@ -20,6 +20,8 @@ Execute on launch: yes
 var x Fixed 0.0 3.0 1.0 50 0.0 0.0
 var y Fixed 0.0 2.5 0.1 50 0.0 0.0
 var z Fixed 0.0 1.5 0.1 0 0.0 0.0
+var i Fixed 0.0 29.0 0.1 0 0.0 0.0
+var t Fixed 0.0 29.0 0.1 0 0.0 0.0
 param a Fixed 1.0 2.0 0.1 0 0.0 0.0
 param b Linear 2.4 3.2 0.01 150 0.0 0.0
 param c Fixed 1.0 2.0 0.1 0 0.0 0.0
@@ -27,10 +29,16 @@ param d Fixed 5.0 10.0 0.1 0 0.0 0.0
 param r Fixed 0.01 0.1 0.01 0 0.0 0.0
 param s Fixed 4.0 5.0 0.01 0 0.0 0.0
 param e Fixed 1.56 2.0 0.01 0 0.0 0.0
-param Iext Linear 2.0 4.4 0.01 150 0.0 0.0
+param Idc Fixed 0.0 0.05 0.001 50 0.0 0.0
+param Iamp Fixed 0.045 0.5 0.001 0 0.0 0.0
+param Ifreq Fixed 0.01 0.5 0.001 100 0.0 0.0
+param Idel Fixed 0.0 0.5 0.01 50 0.0 0.0
+param Idf Fixed 0.0 1.0 0.1 100 0.0 0.0
+constraint signal square
 param symmetry Fixed 0.0 1.0 0.01 100 0.0 0.0
 // Defining enumerated parameters (useful for methods):
 // enum <name> <ranging type> <minimum value> <maximum value> <step> <step count> <normal mean> <normal deviation> <enum names, no spaces>
+enum signal 1square 0sine 0triangle
 enum method 0ExplicitEuler 1ExplicitMidpoint 0ExplicitRungeKutta4 0VariableSymmetryCD
 //
 // Defining maps:
