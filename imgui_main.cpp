@@ -2523,7 +2523,7 @@ int imgui_main(int, char**)
                                 //ImPlot::SetNextLineStyle(window->markerColor, window->markerWidth);
                                 
                                 if (!window->ShowMultAxes) 
-                                    ImPlot::SetupAxes(window->typeX == MDT_Variable ? krnl->variables[window->indexX].name.c_str() : krnl->parameters[window->indexX].name.c_str(), "Indices"); 
+                                    ImPlot::SetupAxes(window->typeX == MDT_Variable ? krnl->variables[window->indexX].name.c_str() : krnl->parameters[window->indexX].name.c_str(), "Index"); 
                                 else
                                 {
                                     ImPlot::SetupAxis(ImAxis_X1, window->typeX == MDT_Variable ? krnl->variables[window->indexX].name.c_str() : krnl->parameters[window->indexX].name.c_str(), 0);
@@ -3527,7 +3527,7 @@ int imgui_main(int, char**)
                         {
                             plot = ImPlot::GetPlot(plotName.c_str());
                             plot->is3d = false;
-                            if (!window->ShowMultAxes) ImPlot::SetupAxes(KERNEL.usingTime ? "Time" : "Steps", "Indices", toAutofitTimeSeries ? ImPlotAxisFlags_AutoFit : 0, 0);
+                            if (!window->ShowMultAxes) ImPlot::SetupAxes(KERNEL.usingTime ? "Time" : "Steps", "Index", toAutofitTimeSeries ? ImPlotAxisFlags_AutoFit : 0, 0);
                             else
                             {
                                 ImPlot::SetupAxis(ImAxis_X1, KERNEL.usingTime ? "Time" : "Steps", toAutofitTimeSeries ? ImPlotAxisFlags_AutoFit : 0);
