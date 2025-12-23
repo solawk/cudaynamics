@@ -19,6 +19,7 @@ int uniqueIds = 0; // Unique window IDs
 bool spoilerVars = true;
 bool spoilerStep = true;
 bool spoilerParams = true;
+bool ContinuationRed = false;
 
 bool preciseNumbDrags = false;
 
@@ -975,7 +976,7 @@ int imgui_main(int, char**)
         bool computation0InProgress = !computations[0].ready && computations[0].marshal.trajectory != nullptr;
         bool computation1InProgress = !computations[1].ready && computations[1].marshal.trajectory != nullptr;
         bool computationHiresInProgress = !computationHires.ready && computationHires.marshal.variableInits != nullptr;
-        if (autoLoadNewParams || playingParticles || computation0InProgress || computation1InProgress || computationHiresInProgress)OrbitRedraw = true; else OrbitRedraw = false;
+        if ( playingParticles || computation0InProgress || computation1InProgress || computationHiresInProgress)OrbitRedraw = true; else OrbitRedraw = false;
 
         if (!HIRES_ON)
         {
@@ -1028,7 +1029,7 @@ int imgui_main(int, char**)
         }
 
         ImGui::End();
-
+        
         // Graph Builder
 
         if (/*graphBuilderWindowEnabled*/ 1)
@@ -2077,6 +2078,7 @@ int imgui_main(int, char**)
                             numb paramStep = axis->step;
                             numb paramMin = axis->min;
                             int variation = 0;
+                            if (OrbitRedraw) { window->drawingContinuation = false; window->redrawContinuation = false; }
 
                             if (!window->lastAttributevalueindicesContinuations.empty())
                                 for (int i = 0; i < varCount + parCount - 2; i++) {
@@ -2084,7 +2086,7 @@ int imgui_main(int, char**)
                                         if (attributeValueIndices[i] != window->lastAttributevalueindicesContinuations[i]) { window->drawingContinuation = false; window->redrawContinuation = false; }
                                     }
                                 }
-                            if (OrbitRedraw) { window->drawingContinuation = false; window->redrawContinuation = false; }
+                            
                             if (window->redrawContinuation || window->buttonPressed) {
                                 window->lastAttributevalueindicesContinuations = attributeValueIndices;
                                 //if (window->continuationAmpsBack != NULL) {
