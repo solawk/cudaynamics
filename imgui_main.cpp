@@ -26,7 +26,7 @@ bool CPU_mode_interactive = false;
 bool CPU_mode_hires = false;
 
 bool calculateDeltaDecay = true;
-int threadsPerBlock = 64;
+int threadsPerBlock = 32;
 
 ImVec4 cudaColor = ImVec4(0.40f, 0.56f, 0.18f, 1.00f);
 ImVec4 openmpColor = ImVec4(0.03f, 0.45f, 0.49f, 1.00f);
