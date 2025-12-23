@@ -158,7 +158,7 @@ void plotWindowMenu_File(PlotWindow* window)
 			}
 			}
 
-			// ≈диный блок уведомлени¤ о результате 
+			// Single notification block for success
 			if (attempted) {
 				if (!savedPath.empty()) {
 					std::string msg = "CSV saved to:\n" + savedPath;
