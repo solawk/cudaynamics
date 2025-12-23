@@ -25,10 +25,10 @@ namespace {
         return ts;
     }
 
-    // Создаёт директорию export/ и собирает путь. extra может быть пустым.
+    // Creates export/ directory and builds path. extra may be empty.
     std::string build_export_path(std::string_view systemName,
-        std::string_view artifactName,   // например: "timeSeries" или имя карты
-        std::string_view extra,          // например: суффикс или пусто
+        std::string_view artifactName,   // example: "timeSeries" or map name
+        std::string_view extra,          // example: suffix or left empty
         std::string_view ext = ".csv") {
         std::filesystem::create_directories("export");
         std::string base = "export/";
@@ -56,7 +56,7 @@ namespace {
         return f;
     }
 
-    // Имя оси для heatmap
+    // axis names for heatmap
     std::string axis_name(const Kernel& k, MapDimensionType t, int idx) {
         switch (t) {
         case MapDimensionType::MDT_Variable:
@@ -70,7 +70,7 @@ namespace {
         }
     }
 
-    // Унифицированное имя системы
+    // Unification of system name
     std::string safe_system_name(const Kernel& k) {
         return make_safe(k.name.empty() ? std::string("System") : k.name);
     }
@@ -142,17 +142,17 @@ std::string exportTimeSeriesCSV(const PlotWindow* window)
 {
     if (!window) return {};
 
-    // Активное вычисление
+    // active computation
     const Computation& comp = computations[playedBufferIndex];
     if (!comp.ready || !comp.marshal.trajectory)
         return {};
 
-    // Проверки шагов и переменных
+    // Checking step and variable
     const int steps = computedSteps;
     if (steps <= 0 || KERNEL.VAR_COUNT <= 0)
         return {};
 
-    // Индекс вариации
+    // variation index
     int variation = 0;
     if (!attributeValueIndices.empty())
         steps2Variation(&variation, attributeValueIndices.data(), &KERNEL);
@@ -160,19 +160,19 @@ std::string exportTimeSeriesCSV(const PlotWindow* window)
     const unsigned long long varStride = comp.marshal.variationSize;
     const numb* base = comp.marshal.trajectory + varStride * (unsigned long long)variation;
 
-    // Имя файла
+    // file name
     const std::string systemName = safe_system_name(KERNEL);
     const std::string path = build_export_path(systemName, "timeSeries", /*extra*/"", ".csv");
     std::ofstream f = open_csv(path);
     if (!f.is_open()) return {};
 
-    // Ось X
+    // X axis
     const bool useTime = KERNEL.usingTime;
     const numb stepSize = getStepSize(KERNEL);
     const double start = (double)(bufferNo * KERNEL.steps + KERNEL.transientSteps) *
         (useTime ? (double)stepSize : 1.0);
 
-    // === Заголовок ===
+    // === Title ===
     f << (useTime ? "time" : "step");
     for (int v : window->variables) {
         if (v >= 0 && v < KERNEL.VAR_COUNT)
@@ -182,7 +182,7 @@ std::string exportTimeSeriesCSV(const PlotWindow* window)
     }
     f << '\n';
 
-    // === Данные ===
+    // === Data ===
     const int rows = steps + 1;
     for (int i = 0; i < rows; ++i) {
         const double x = start + (useTime ? i * (double)stepSize : i);
@@ -206,23 +206,23 @@ std::string exportDecayCSV(const PlotWindow* window)
 {
     if (!window) return {};
 
-    // Активное вычисление
+    // Active computation
     const Computation& comp = computations[playedBufferIndex];
     if (!comp.ready || !comp.marshal.trajectory)
         return {};
 
-    // Проверки шагов и переменных
+    // Checks steps and variable
     const int steps = computedSteps;
     if (steps <= 0 || KERNEL.VAR_COUNT <= 0)
         return {};
 
-    // Имя файла
+    // file name
     const std::string systemName = safe_system_name(KERNEL);
     const std::string path = build_export_path(systemName, "decay", /*extra*/"", ".csv");
     std::ofstream f = open_csv(path);
     if (!f.is_open()) return {};
 
-    // Ось X
+    // X axis
     const bool useTime = KERNEL.usingTime;
 
     // === Заголовок ===
