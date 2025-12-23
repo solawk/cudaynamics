@@ -35,17 +35,17 @@ ImFont* GetFont(int familyIndex, int targetSize, bool bold, bool italic)
     return f;
 }
 
-// Рисует поле ввода размера шрифта в стиле Word
+// Draws input field as Word
 void FontSizeSelector(int* currentSize, const std::vector<int>& sizes)
 {
-    // 1. Поле ввода (Input)
+    // 1. Input field
     ImGui::SetNextItemWidth(50);
     ImGui::InputInt("##FontSizeInput", currentSize, 0, 0);
 
-    // 2. Кнопка выпадающего списка (Combo), приклеенная справа
-    ImGui::SameLine(0, 0); // Убираем отступ между элементами
+    // 2. Combobox (list)
+    ImGui::SameLine(0, 0); // Remove indentation betwenn lines
 
-    // ImGuiComboFlags_NoPreview означает, что мы рисуем только стрелочку, без текста внутри
+    // ImGuiComboFlags_NoPreview means we just draw the arrow, without inside text
     if (ImGui::BeginCombo("##FontSizeCombo", "", ImGuiComboFlags_NoPreview | ImGuiComboFlags_PopupAlignLeft))
     {
         for (int sz : sizes)
