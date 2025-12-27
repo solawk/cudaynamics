@@ -9,4 +9,4 @@
 /*__device__ void variation2Steps(int* variation, int* steps, Kernel* kernel);*/
 
 // Steps to variation
-void steps2Variation(int* variation, int* steps, Kernel* kernel);
+void steps2Variation(uint64_t* variation, int* steps, Kernel* kernel);

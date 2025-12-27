@@ -13,7 +13,7 @@ void extractMap(numb* src, numb* dst, int* indeces, int* steps, int axisXattr, i
 
 	int* localSteps = new int[kernel->VAR_COUNT + kernel->PARAM_COUNT];
 	memcpy(localSteps, steps, sizeof(int) * (kernel->VAR_COUNT + kernel->PARAM_COUNT));
-	int variation;
+	uint64_t variation;
 
 	for (int y = 0; y < yCount; y++)
 		for (int x = 0; x < xCount; x++)

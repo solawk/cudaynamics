@@ -6,7 +6,7 @@ extern int computedSteps;
 extern int bufferNo;
 extern std::vector<int> attributeValueIndices;
 extern numb getStepSize(Kernel& kernel);
-extern void steps2Variation(int* variationIndex, int* avi, Kernel* kernel);
+extern void steps2Variation(uint64_t* variationIndex, int* avi, Kernel* kernel);
 
 namespace {
     std::string make_safe(std::string s) {
@@ -153,7 +153,7 @@ std::string exportTimeSeriesCSV(const PlotWindow* window)
         return {};
 
     // variation index
-    int variation = 0;
+    uint64_t variation = 0;
     if (!attributeValueIndices.empty())
         steps2Variation(&variation, attributeValueIndices.data(), &KERNEL);
 

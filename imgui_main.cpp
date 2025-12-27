@@ -91,10 +91,10 @@ bool OrbitRedraw = false; bool indSeriesReset =false;
 ImGuiCustomStyle appStyle = ImGuiCustomStyle::Dark;
 
 // Temporary variables
-int variation = 0;
-int prevVariation = 0;
-int variationHires = 0;
-int prevVariationHires = 0;
+uint64_t variation = 0;
+uint64_t prevVariation = 0;
+uint64_t variationHires = 0;
+uint64_t prevVariationHires = 0;
 int stride = 1;
 float frameTime; // In seconds
 float timeElapsed = 0.0f; // Total time elapsed, in seconds
@@ -2068,8 +2068,6 @@ int imgui_main(int, char**)
 
                             numb stepH = krnl->stepType == 0 ? krnl->parameters[parCount - 1].values[attributeValueIndices[varCount + parCount - 1]] : (krnl->stepType == 1 ? krnl->variables[varCount - 1].values[attributeValueIndices[varCount - 1]] : (numb)1.0);
 
-
-
                             // Buffer to hold peak data (amplitudes and indices)
                             constexpr int MAX_PEAKS = 1024;
                             numb* peakAmplitudes = new numb[MAX_PEAKS];
@@ -2077,7 +2075,7 @@ int imgui_main(int, char**)
 
                             numb paramStep = axis->step;
                             numb paramMin = axis->min;
-                            int variation = 0;
+                            uint64_t variation = 0;
                             if (OrbitRedraw) { window->drawingContinuation = false; window->redrawContinuation = false; }
 
                             if (!window->lastAttributevalueindicesContinuations.empty())
@@ -2517,7 +2515,7 @@ int imgui_main(int, char**)
                             //int xSize;
                             
                             HeatmapProperties* hmp = nullptr;
-                            int variation=0;
+                            uint64_t variation=0;
                             if (ImPlot::BeginPlot(("##Metric_Plot" + plotName).c_str(), ImVec2(-1, -1), ImPlotFlags_NoTitle)) {
                                 
                                 plot = ImPlot::GetPlot(("##Metric_Plot" + plotName).c_str());
@@ -2800,8 +2798,8 @@ int imgui_main(int, char**)
                     Kernel* krnl = isHires ? &kernelHiresComputed : &(KERNEL);
                     Computation* cmp = isHires ? &computationHires : &(computations[playedBufferIndex]);
                     std::vector<int>* avi = isHires ? &attributeValueIndicesHires : &attributeValueIndices;
-                    int* var = isHires ? &variationHires : &variation;
-                    int* prevVar = isHires ? &prevVariationHires : &prevVariation;
+                    uint64_t* var = isHires ? &variationHires : &variation;
+                    uint64_t* prevVar = isHires ? &prevVariationHires : &prevVariation;
 
                     bool showLegend = heatmap->showLegend;
 
@@ -3510,7 +3508,7 @@ int imgui_main(int, char**)
                         window->prevbufferNo = cmp->bufferNo;
                         for (int ind = 0; ind < window->variableCount; ind++)
                         {
-                            int variation;
+                            uint64_t variation;
                             steps2Variation(&variation, &(attributeValueIndices.data()[0]), &KERNEL);
                             mapIndex = (AnalysisIndex)window->variables[ind];
                             numb* MapSlice = cmp->marshal.maps + index2port(cmp->marshal.kernel.analyses, mapIndex)->offset * cmp->marshal.totalVariations;
