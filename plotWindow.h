@@ -60,9 +60,15 @@ public:
 
 	DeltaState deltaState;
 
+	// Outer layer is per threshold, inner layer is per index
 	std::vector<std::vector<float>> decayBuffer;
 	std::vector<std::vector<float>> decayTotal;
 	std::vector<std::vector<float>> decayAlive;
+	int decayThresholdCount;
+	std::vector<DecaySettings> decay; // Per index
+	// Index 0 is the OG, all shared settings are stored in that one
+	std::vector<std::string> decayThresholdNames;
+
 	bool decayIndicesAreAND; // true if AND, false if OR
 	ImVec4 plotFillColor;
 	float decayFillAlpha;
@@ -166,6 +172,7 @@ public:
 		isImplot3d = false;
 		drawAllTrajectories = false;
 
+		decayThresholdCount = 1;
 		deltaState = DS_No;
 		decayIndicesAreAND = true;
 		decayFillAlpha = 0.75f;
@@ -226,6 +233,15 @@ public:
 	bool isTheHiresWindow(AnalysisIndex _hiresIndex)
 	{
 		return variables[0] == _hiresIndex;
+	}
+
+	void ForceDecayThresholdCount()
+	{
+		for (int i = 0; i < decay.size(); i++)
+		{
+			decay[i].thresholds.resize(decayThresholdCount, 0.0f);
+			decayThresholdNames.resize(decayThresholdCount, "Threshold");
+		}
 	}
 
 	void AssignVariables(int* variablesArray)
