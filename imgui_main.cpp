@@ -2846,20 +2846,26 @@ int imgui_main(int, char**)
                     bool isMC = window->type == MCHeatmap;
                     mapIndex = (AnalysisIndex)window->variables[0];
                     if (isMC) for (int ch = 0; ch < 3; ch++) channelMapIndex[ch] = (AnalysisIndex)window->variables[ch];
-                    bool isHires = window->isTheHiresWindow(hiresIndex);
+                    bool isHires = window->isTheHiresWindow(hiresIndex) || window->isFrozenAsHires;
                     HeatmapProperties* heatmap = isHires ? &window->hireshmp : &window->hmp;
                     Kernel* krnl = isHires ? &kernelHiresComputed : &(KERNEL);
                     Computation* cmp = isHires ? &computationHires : &(computations[playedBufferIndex]);
                     std::vector<int>* avi = isHires ? &attributeValueIndicesHires : &attributeValueIndices;
                     uint64_t* var = isHires ? &variationHires : &variation;
                     uint64_t* prevVar = isHires ? &prevVariationHires : &prevVariation;
+                    bool hiresFrozenAndAvailable = window->isFrozenAsHires && window->hmp.values.valueBuffer != nullptr;
 
                     bool showLegend = heatmap->showLegend;
 
+                    //if (isHires) ImGui::Text("Is Hi-Res"); else ImGui::Text("Is NOT Hi-Res");
+                    //if (window->isFrozenAsHires) ImGui::Text("Frozen as Hi-Res");
+                    //if (window->hmp.values.valueBuffer != nullptr) ImGui::Text("ValueBuffer non-nullptr");
+
                     if (!isMC)
                     {
-                        if (!indices[mapIndex].enabled) { ImGui::Text(("Index " + indices[mapIndex].name + " has been disabled").c_str()); break; }
-                        if (!index2port(cmp->marshal.kernel.analyses, mapIndex)->used) { ImGui::Text(("Index " + indices[mapIndex].name + " has not been computed").c_str()); break; }
+                        if (!indices[mapIndex].enabled && !hiresFrozenAndAvailable) { ImGui::Text(("Index " + indices[mapIndex].name + " has been disabled").c_str()); break; }
+                        if (!index2port(cmp->marshal.kernel.analyses, mapIndex)->used && !hiresFrozenAndAvailable) { ImGui::Text(("Index " + indices[mapIndex].name + " has not been computed").c_str()); break; }
+
                         if (window->deltaState == DS_Delta && !cmp->marshal.indecesDeltaExists) { ImGui::Text("Delta not computed yet"); break; }
                         if (window->deltaState == DS_Delta && cmp->bufferNo < 2) { ImGui::Text("Delta not ready yet"); break; }
                         if (window->deltaState == DS_Decay && !cmp->marshal.indecesDeltaExists) { ImGui::Text("Decay not computed yet"); break; }
@@ -2910,7 +2916,7 @@ int imgui_main(int, char**)
                             plot->is3d = false;
                             plot->isHeatmapSelectionModeOn = heatmap->isHeatmapSelectionModeOn;
 
-                            if (cmp->ready)
+                            if (cmp->ready || hiresFrozenAndAvailable)
                             {
                                 sizing.loadPointers(krnl, heatmap);
                                 sizing.initValues();

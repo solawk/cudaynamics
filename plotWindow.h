@@ -54,6 +54,7 @@ public:
 	bool drawAllTrajectories;
 
 	bool isFrozen;
+	bool isFrozenAsHires;
 
 	HeatmapProperties hmp;
 	HeatmapProperties hireshmp;
@@ -150,7 +151,7 @@ public:
 		scale = ImVec4(1.0f, 1.0f, 1.0f, 0.0f);
 
 		settingsListEnabled = false;
-		isFrozen = false;
+		isFrozen = isFrozenAsHires = false;
 
 		overrideFontOnNextFrame = false;
 		overrideFontSettings = false;

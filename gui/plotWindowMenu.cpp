@@ -33,7 +33,10 @@ void plotWindowMenu(PlotWindow* window)
 			ImGui::Text("   ");
 			ImGui::SameLine();
 
-			bool isHires = window->isTheHiresWindow(hiresIndex);
+			bool isFrozen = window->isFrozen;
+			bool isHires = !isFrozen ? window->isTheHiresWindow(hiresIndex) : window->isFrozenAsHires;
+
+			if (isFrozen) ImGui::BeginDisabled();
 			if (ImGui::Checkbox(("Hi-Res Mode##" + window->name + "_hirescheckbox").c_str(), &isHires))
 			{
 				if (window->isTheHiresWindow(hiresIndex))
@@ -47,11 +50,16 @@ void plotWindowMenu(PlotWindow* window)
 					//kernelHiresNew.CopyFrom(&kernelNew);
 				}
 			}
+			if (isFrozen) ImGui::EndDisabled();
 
-			bool isFrozen = window->isFrozen;
 			if (ImGui::Checkbox(("Freeze##" + window->name + "_freezecheckbox").c_str(), &isFrozen))
 			{
 				window->isFrozen = !window->isFrozen;
+
+				if (window->isTheHiresWindow(hiresIndex) && window->isFrozen) 
+					window->isFrozenAsHires = true;
+				else 
+					window->isFrozenAsHires = false;
 			}
 			TOOLTIP("Freeze the contents of the window and ignore new computations")
 		}
