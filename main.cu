@@ -60,7 +60,7 @@ cudaError_t execute(Computation* data)
     CUDA_MALLOC(&cuda_variables, variations * CUDA_kernel.VAR_COUNT * sizeof(numb), "cudaMalloc vars failed!");
     CUDA_MALLOC(&cuda_parameters, variations * CUDA_kernel.PARAM_COUNT * sizeof(numb), "cudaMalloc params failed!");
     CUDA_MALLOC(&cuda_stepIndices, variations * CUDA_ATTR_COUNT * sizeof(int), "cudaMalloc indices failed!");
-    if (totalMapValues > 0 && variations > 1) CUDA_MALLOC(&cuda_maps, variations * totalMapValues * sizeof(numb), "cudaMalloc maps failed!");
+    if (totalMapValues > 0) CUDA_MALLOC(&cuda_maps, variations * totalMapValues * sizeof(numb), "cudaMalloc maps failed!");
 
 #if (PRINT_TIME)    
     tp[2] = std::chrono::steady_clock::now();
@@ -73,7 +73,7 @@ cudaError_t execute(Computation* data)
     CUDA_MEMCPY(&(cuda_computation->marshal.variableInits), &cuda_variables, cudaMemcpyHostToDevice, sizeof(numb*), "cudaMemcpy variable address failed!");
     CUDA_MEMCPY(&(cuda_computation->marshal.parameterVariations), &cuda_parameters, cudaMemcpyHostToDevice, sizeof(numb*), "cudaMemcpy parameter address failed!");
     CUDA_MEMCPY(&(cuda_computation->marshal.stepIndices), &cuda_stepIndices, cudaMemcpyHostToDevice, sizeof(int*), "cudaMemcpy indices address failed!");
-    if (totalMapValues > 0 && variations > 1) CUDA_MEMCPY(&(cuda_computation->marshal.maps), &cuda_maps, cudaMemcpyHostToDevice, sizeof(numb*), "cudaMemcpy maps address failed!");
+    if (totalMapValues > 0) CUDA_MEMCPY(&(cuda_computation->marshal.maps), &cuda_maps, cudaMemcpyHostToDevice, sizeof(numb*), "cudaMemcpy maps address failed!");
 
 #if (PRINT_TIME)    
     tp[3] = std::chrono::steady_clock::now();
@@ -85,7 +85,7 @@ cudaError_t execute(Computation* data)
     CUDA_MEMCPY(cuda_parameters, CUDA_marshal.parameterVariations, cudaMemcpyHostToDevice, variations * CUDA_kernel.PARAM_COUNT * sizeof(numb), "cudaMemcpy params failed!");
     CUDA_MEMCPY(cuda_stepIndices, CUDA_marshal.stepIndices, cudaMemcpyHostToDevice, variations * CUDA_ATTR_COUNT * sizeof(int), "cudaMemcpy indices failed!");
     // We don't need to account for multiple maps since we only calculate one at once
-    if (variations > 1) CUDA_MEMCPY(cuda_maps, CUDA_marshal.maps + (!data->isHires ? 0 : data->startVariationInCurrentExecute),
+    CUDA_MEMCPY(cuda_maps, CUDA_marshal.maps + (!data->isHires ? 0 : data->startVariationInCurrentExecute),
         cudaMemcpyHostToDevice, variations * totalMapValues * sizeof(numb), "cudaMemcpy maps failed!");
 
 #if (PRINT_TIME)    
@@ -114,7 +114,7 @@ cudaError_t execute(Computation* data)
         // Only copying back the end state in hi-res mode
         CUDA_MEMCPY(CUDA_marshal.variableInits, cuda_variables, cudaMemcpyDeviceToHost, variations * CUDA_kernel.VAR_COUNT * sizeof(numb), "cudaMemcpy vars back failed!");
     }
-    if (variations > 1) CUDA_MEMCPY(CUDA_marshal.maps + (!data->isHires ? 0 : data->startVariationInCurrentExecute), cuda_maps,
+    CUDA_MEMCPY(CUDA_marshal.maps + (!data->isHires ? 0 : data->startVariationInCurrentExecute), cuda_maps,
         cudaMemcpyDeviceToHost, variations * totalMapValues * sizeof(numb), "cudaMemcpy maps back failed!");
 
 #if (PRINT_TIME)    
@@ -374,10 +374,6 @@ void setupAnFuncs(Computation* data)
         index2port(CUDA_kernel.analyses, (AnalysisIndex)data->mapIndex)->used = true;
     }
 
-    if (CUDA_marshal.totalVariations == 1)
-        for (auto& indexPair : indices)
-            index2port(CUDA_kernel.analyses, indexPair.first)->used = false;
-
     CUDA_kernel.analyses.Used2ToCompute();
 
     int offset = 0;
@@ -393,7 +389,7 @@ void setupAnFuncs(Computation* data)
     CUDA_marshal.totalMapValuesPerVariation = offset;
 
     // Initialize buffer
-    if (CUDA_marshal.totalVariations > 1 && CUDA_marshal.maps == nullptr)
+    if (CUDA_marshal.maps == nullptr)
     {
         CUDA_marshal.maps = new numb[CUDA_marshal.totalVariations * CUDA_marshal.totalMapValuesPerVariation];
 
