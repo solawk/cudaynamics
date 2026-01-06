@@ -9,7 +9,7 @@ extern int uniqueIds;
 
 void saveWindows()
 {
-    std::ofstream configFileStream((KERNEL.name + ".config").c_str(), std::ios::out);
+    std::ofstream configFileStream(("./configs/" + KERNEL.name + ".config").c_str(), std::ios::out);
 
     for (PlotWindow w : plotWindows)
     {
@@ -22,7 +22,7 @@ void saveWindows()
 
 void loadWindows()
 {
-    std::ifstream configFileStream((KERNEL.name + ".config").c_str(), std::ios::in);
+    std::ifstream configFileStream(("./configs/" + KERNEL.name + ".config").c_str(), std::ios::in);
 
     for (std::string line; getline(configFileStream, line); )
     {
