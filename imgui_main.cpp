@@ -21,17 +21,7 @@ bool spoilerStep = true;
 bool spoilerParams = true;
 bool ContinuationRed = false;
 
-bool preciseNumbDrags = false;
-
-bool CPU_mode_interactive = false;
-bool CPU_mode_hires = false;
-
-bool calculateDeltaDecay = true;
-int threadsPerBlock = 32;
-
-ImVec4 cudaColor = ImVec4(0.40f, 0.56f, 0.18f, 1.00f);
-ImVec4 openmpColor = ImVec4(0.03f, 0.45f, 0.49f, 1.00f);
-ImVec4 hiresColor = ImVec4(0.50f, 0.10f, 0.30f, 1.00f);
+ApplicationSettings applicationSettings;
 
 Computation computations[2];
 Computation computationHires;
@@ -69,7 +59,6 @@ float particleSpeed = 5000.0f; // Steps per second
 float particlePhase = 0.0f; // Animation frame cooldown
 int particleStep = 0; // Current step of the computations to show
 bool continuousComputingEnabled = true; // Continuously compute next batch of steps via double buffering
-float dragChangeSpeed = 1.0f;
 int bufferNo = 0;
 
 bool lastHiresHasInfo = false;
@@ -87,8 +76,7 @@ bool computeAfterShiftSelect = false;
 bool hiresComputeAfterShiftSelect = false;
 bool autofitHeatmap;
 
-bool OrbitRedraw = false; bool indSeriesReset =false;
-ImGuiCustomStyle appStyle = ImGuiCustomStyle::Dark;
+bool OrbitRedraw = false; bool indSeriesReset = false;
 
 // Temporary variables
 uint64_t variation = 0;
@@ -192,8 +180,8 @@ int asyncComputation()
 
     bool isFirstBatch = computations[1 - bufferToFillIndex].marshal.trajectory == nullptr; // Is another buffer null, only true when computing for the first time
     computations[bufferToFillIndex].isFirst = isFirstBatch;
-    computations[bufferToFillIndex].calculateDeltaDecay = calculateDeltaDecay;
-    computations[bufferToFillIndex].threadsPerBlock = threadsPerBlock;
+    computations[bufferToFillIndex].calculateDeltaDecay = applicationSettings.calculateDeltaDecay;
+    computations[bufferToFillIndex].threadsPerBlock = applicationSettings.threadsPerBlock;
     computations[bufferToFillIndex].marshal.kernel.CopyFrom(&KERNEL);
 
     int computationResult = compute(&(computations[bufferToFillIndex]));
@@ -240,7 +228,7 @@ int hiresAsyncComputation()
 
     computationHires.marshal.kernel.CopyFrom(&kernelHiresComputed);
     computationHires.marshal.kernel.mapWeight = 0.0f;
-    computationHires.threadsPerBlock = threadsPerBlock;
+    computationHires.threadsPerBlock = applicationSettings.threadsPerBlock;
 
     lastHiresStart = std::chrono::steady_clock::now();
     lastHiresHasInfo = true;
@@ -366,8 +354,8 @@ void prepareAndCompute(bool hires)
     
     if (hires) computationHires.Clear();
 
-    computations[0].isGPU = computations[1].isGPU = !CPU_mode_interactive;
-    computationHires.isGPU = !CPU_mode_hires;
+    computations[0].isGPU = computations[1].isGPU = !applicationSettings.CPU_mode_interactive;
+    computationHires.isGPU = !applicationSettings.CPU_mode_hires;
     executedOnLaunch = true;
     computeAfterShiftSelect = false;
     bufferNo = 0;
@@ -525,7 +513,8 @@ int imgui_main(int, char**)
         }
 
         IMGUI_WORK_BEGIN;
-        SetupImGuiStyle(appStyle, cudaColor, hiresColor, openmpColor, HIRES_ON, !HIRES_ON ? CPU_mode_interactive : CPU_mode_hires);
+        SetupImGuiStyle(applicationSettings.appStyle, applicationSettings.cudaColor, applicationSettings.hiresColor, applicationSettings.openmpColor, 
+            HIRES_ON, !HIRES_ON ? applicationSettings.CPU_mode_interactive : applicationSettings.CPU_mode_hires);
 
         if (fontNotDefault) ImGui::PushFont(GetFont(GlobalFontSettings.family, GlobalFontSettings.size, GlobalFontSettings.isBold, GlobalFontSettings.isItalic));
 

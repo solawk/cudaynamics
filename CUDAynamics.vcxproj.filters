@@ -263,6 +263,9 @@
       <Filter>analysis\phaseVolume</Filter>
     </ClInclude>
     <ClInclude Include="decaySettings_struct.h" />
+    <ClInclude Include="gui\applicationSettings_struct.h">
+      <Filter>gui</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="main.cu" />

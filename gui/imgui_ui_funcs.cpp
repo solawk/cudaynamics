@@ -6,15 +6,14 @@ extern bool popStyle;
 extern bool playingParticles;
 extern AnalysisIndex hiresIndex;
 extern bool autoLoadNewParams;
-extern float dragChangeSpeed;
 extern ImGuiSliderFlags dragFlag;
 extern bool thisChanged;
 extern bool anyChanged;
 extern int maxNameLength;
 extern Kernel kernelNew;
 extern Kernel kernelHiresNew;
-extern bool preciseNumbDrags;
 extern float attributeTableWidths[3];
+extern ApplicationSettings applicationSettings;
 
 #define ATTR_BEGIN  /*ImGui::SameLine();*/ popStyle = false; \
 	if (hiresIndex == IND_NONE) { if (isChanged && !autoLoadNewParams) { PUSH_UNSAVED_FRAME; popStyle = true; } } \
@@ -48,7 +47,7 @@ void listAttrNumb(Attribute* attr, numb* field, std::string name, std::string in
 	ATTR_BEGIN;
 	//ImGui::PushItemWidth(200.0f);
 	float var = (float)(*field);
-	ImGui::DragFloat(("##" + name + attr->name).c_str(), &var, dragChangeSpeed, 0.0f, 0.0f, (inner + (!preciseNumbDrags ? "%f" : "%.12f")).c_str(), dragFlag);
+	ImGui::DragFloat(("##" + name + attr->name).c_str(), &var, applicationSettings.dragChangeSpeed, 0.0f, 0.0f, (inner + (!applicationSettings.preciseNumbDrags ? "%f" : "%.12f")).c_str(), dragFlag);
 	(*field) = (numb)var;
 	ATTR_END;
 }
@@ -57,7 +56,7 @@ void listAttrInt(Attribute* attr, int* field, std::string name, std::string inne
 {
 	ATTR_BEGIN;
 	//ImGui::PushItemWidth(200.0f);
-	ImGui::DragInt(("##" + name + attr->name).c_str(), field, dragChangeSpeed, 0, 0, (inner + "%i").c_str(), dragFlag);
+	ImGui::DragInt(("##" + name + attr->name).c_str(), field, applicationSettings.dragChangeSpeed, 0, 0, (inner + "%i").c_str(), dragFlag);
 	if (*field < minimum) *field = minimum;
 	ATTR_END;
 }

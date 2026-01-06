@@ -38,6 +38,7 @@
 #include "gui/styles.h"
 #include "gui/mainWindowMenu.h"
 #include "gui/colormapMarkerSettings_struct.h"
+#include "gui/applicationSettings_struct.h"
 
 bool CreateDeviceD3D(HWND hWnd);
 void CleanupDeviceD3D();
@@ -53,17 +54,10 @@ void listEnum(int i);
 void heatmapRangingSelection(PlotWindow* window, ImPlotPlot* plot, HeatmapSizing* sizing, bool isHires);
 void hiresShiftClickCompute();
 
-extern ImGuiCustomStyle appStyle;
-extern float dragChangeSpeed;
-extern bool preciseNumbDrags;
-extern bool CPU_mode_interactive;
-extern bool CPU_mode_hires;
-extern bool calculateDeltaDecay;
-extern int threadsPerBlock;
+extern ApplicationSettings applicationSettings;
+
 extern Kernel kernelNew;
-extern ImVec4 cudaColor;
-extern ImVec4 openmpColor;
-extern ImVec4 hiresColor;
+
 
 #define DONT_CLOSE_ON_CLICK_PUSH	ImGui::PushItemFlag(ImGuiItemFlags_AutoClosePopups, false);
 #define DONT_CLOSE_ON_CLICK_POP		ImGui::PopItemFlag();

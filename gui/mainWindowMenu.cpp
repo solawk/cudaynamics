@@ -7,17 +7,17 @@ void mainWindowMenu()
         if (ImGui::BeginMenu("View"))
         {
             ImGui::SeparatorText("Appearance");
-            bool isDark = appStyle == ImGuiCustomStyle::Dark;
+            bool isDark = applicationSettings.appStyle == ImGuiCustomStyle::Dark;
             if (ImGui::Checkbox("Dark theme", &isDark))
             {
-                if (isDark) appStyle = ImGuiCustomStyle::Dark;
-                else appStyle = ImGuiCustomStyle::Light;
+                if (isDark) applicationSettings.appStyle = ImGuiCustomStyle::Dark;
+                else applicationSettings.appStyle = ImGuiCustomStyle::Light;
                 //SetupImGuiStyle(appStyle);
             }
 
-            ImGui::ColorEdit4("##cudaColorPicker", (float*)(&cudaColor)); ImGui::SameLine(); ImGui::Text("CUDA mode color");
-            ImGui::ColorEdit4("##openmpColorPicker", (float*)(&openmpColor)); ImGui::SameLine(); ImGui::Text("OpenMP mode color");
-            ImGui::ColorEdit4("##hiresColorPicker", (float*)(&hiresColor)); ImGui::SameLine(); ImGui::Text("Hi-Res mode color");
+            ImGui::ColorEdit4("##cudaColorPicker", (float*)(&applicationSettings.cudaColor)); ImGui::SameLine(); ImGui::Text("CUDA mode color");
+            ImGui::ColorEdit4("##openmpColorPicker", (float*)(&applicationSettings.openmpColor)); ImGui::SameLine(); ImGui::Text("OpenMP mode color");
+            ImGui::ColorEdit4("##hiresColorPicker", (float*)(&applicationSettings.hiresColor)); ImGui::SameLine(); ImGui::Text("Hi-Res mode color");
 
             ImGui::SeparatorText("Font");
             FontMenu(nullptr);
@@ -25,13 +25,13 @@ void mainWindowMenu()
             ImGui::SeparatorText("Attributes");
 
             ImGui::SetNextItemWidth(150.0f);
-            ImGui::InputFloat("Value drag speed", &(dragChangeSpeed));
+            ImGui::InputFloat("Value drag speed", &(applicationSettings.dragChangeSpeed));
             TOOLTIP("Drag speed of attribute values, allows for precise automatic parameter setting");
 
-            bool tempPreciseNumbDrags = preciseNumbDrags;
+            bool tempPreciseNumbDrags = applicationSettings.preciseNumbDrags;
             if (ImGui::Checkbox("Precise numb values", &tempPreciseNumbDrags))
             {
-                preciseNumbDrags = tempPreciseNumbDrags;
+                applicationSettings.preciseNumbDrags = tempPreciseNumbDrags;
             }
             TOOLTIP("Enable 12-digit fraction for attribute values");
 
@@ -42,18 +42,18 @@ void mainWindowMenu()
         {
             ImGui::SeparatorText("CUDA/OpenMP");
 
-            bool tempCPUinter_mode = CPU_mode_interactive;
+            bool tempCPUinter_mode = applicationSettings.CPU_mode_interactive;
             ImGui::Checkbox("Use OpenMP in interactive mode", &tempCPUinter_mode);
             TOOLTIP("Use CPU with OpenMP instead of GPU with CUDA in non-Hi-Res mode");
-            CPU_mode_interactive = tempCPUinter_mode;
+            applicationSettings.CPU_mode_interactive = tempCPUinter_mode;
 
-            bool tempCPUhires_mode = CPU_mode_hires;
+            bool tempCPUhires_mode = applicationSettings.CPU_mode_hires;
             ImGui::Checkbox("Use OpenMP in Hi-Res mode", &tempCPUhires_mode);
             TOOLTIP("Use CPU with OpenMP instead of GPU with CUDA in Hi-Res mode");
-            CPU_mode_hires = tempCPUhires_mode;
+            applicationSettings.CPU_mode_hires = tempCPUhires_mode;
 
-            ImGui::InputInt("CUDA Threads per block", &threadsPerBlock, 1, 10, 0);
-            if (threadsPerBlock < 1) threadsPerBlock = 1;
+            ImGui::InputInt("CUDA Threads per block", &applicationSettings.threadsPerBlock, 1, 10, 0);
+            if (applicationSettings.threadsPerBlock < 1) applicationSettings.threadsPerBlock = 1;
 
             ImGui::SeparatorText("Analysis");
 
@@ -71,10 +71,10 @@ void mainWindowMenu()
             TOOLTIP("1.0 to create new map each buffer, 0.0 to continuously calculate the average, 0.0-1.0 defines the weight of each new map");
             //if (popStyle) POP_FRAME(3);
 
-            bool tempCalcDeltaDecay = calculateDeltaDecay;
+            bool tempCalcDeltaDecay = applicationSettings.calculateDeltaDecay;
             ImGui::Checkbox("Calculate delta and decay", &tempCalcDeltaDecay);
             TOOLTIP("Calculate index delta and decay maps");
-            calculateDeltaDecay = tempCalcDeltaDecay;
+            applicationSettings.calculateDeltaDecay = tempCalcDeltaDecay;
 
             ImGui::EndMenu();
         }
