@@ -362,9 +362,8 @@ MigrationBackup/
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
 
-lorentz.txt
 imguiCopy
-
 *.config
 *.ini
 export
+applicationSettings.json

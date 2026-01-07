@@ -78,6 +78,9 @@
     <ClCompile Include="gui\styles.cpp">
       <Filter>gui</Filter>
     </ClCompile>
+    <ClCompile Include="json\json.cpp">
+      <Filter>json</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="imgui">
@@ -115,6 +118,9 @@
     </Filter>
     <Filter Include="analysis\phaseVolume">
       <UniqueIdentifier>{af5f75cf-386a-483e-8f1c-342ef4f060e0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="json">
+      <UniqueIdentifier>{9532fce9-e3ab-44d9-8809-6ebbc306a8de}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -265,6 +271,9 @@
     <ClInclude Include="decaySettings_struct.h" />
     <ClInclude Include="gui\applicationSettings_struct.h">
       <Filter>gui</Filter>
+    </ClInclude>
+    <ClInclude Include="json\json.h">
+      <Filter>json</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

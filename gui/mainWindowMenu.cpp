@@ -27,11 +27,13 @@ void mainWindowMenu()
             ImGui::SetNextItemWidth(150.0f);
             ImGui::InputFloat("Value drag speed", &(applicationSettings.dragChangeSpeed));
             TOOLTIP("Drag speed of attribute values, allows for precise automatic parameter setting");
+            if (ImGui::IsItemDeactivatedAfterEdit()) { applicationSettings.Save(); };
 
             bool tempPreciseNumbDrags = applicationSettings.preciseNumbDrags;
             if (ImGui::Checkbox("Precise numb values", &tempPreciseNumbDrags))
             {
                 applicationSettings.preciseNumbDrags = tempPreciseNumbDrags;
+                applicationSettings.Save();
             }
             TOOLTIP("Enable 12-digit fraction for attribute values");
 
@@ -54,6 +56,7 @@ void mainWindowMenu()
 
             ImGui::InputInt("CUDA Threads per block", &applicationSettings.threadsPerBlock, 1, 10, 0);
             if (applicationSettings.threadsPerBlock < 1) applicationSettings.threadsPerBlock = 1;
+            if (ImGui::IsItemDeactivatedAfterEdit()) { applicationSettings.Save(); };
 
             ImGui::SeparatorText("Analysis");
 

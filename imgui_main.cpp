@@ -491,6 +491,9 @@ int imgui_main(int, char**)
 
     try { loadWindows(); }
     catch (std::exception e) { printf(e.what()); }
+
+    applicationSettings.Load();
+
     setVaryingAttributesToHeatmaps(plotWindows, KERNEL);
 
     fullscreenSize = ImVec2((float)GetSystemMetrics(SM_CXSCREEN), (float)GetSystemMetrics(SM_CYSCREEN));
@@ -3639,6 +3642,7 @@ int imgui_main(int, char**)
     }
 
     saveWindows();
+    applicationSettings.Save();
 
     // Cleanup
     ImGui_ImplDX11_Shutdown();

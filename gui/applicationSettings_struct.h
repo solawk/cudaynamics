@@ -3,35 +3,114 @@
 #include "imgui/backends/imgui_impl_win32.h"
 #include "imgui/backends/imgui_impl_dx11.h"
 #include "customStylesEnum.h"
+#include "../json/json.h"
+#include <fstream>
+#include <string>
 
 struct ApplicationSettings
 {
+	// TODO: Add font settings
+
+	static const bool preciseNumbDrags_default = false;
+	static const bool CPU_mode_interactive_default = false;
+	static const bool CPU_mode_hires_default = false;
+	static const bool calculateDeltaDecay_default = true;
+	static const int threadsPerBlock_default = 32;
+	float dragChangeSpeed_default;
+	ImVec4 cudaColor_default;
+	ImVec4 openmpColor_default;
+	ImVec4 hiresColor_default;
+	static const ImGuiCustomStyle appStyle_default = ImGuiCustomStyle::Dark;
+
 	bool preciseNumbDrags;
 	bool CPU_mode_interactive, CPU_mode_hires;
 	bool calculateDeltaDecay;
 	int threadsPerBlock;
 	float dragChangeSpeed;
-
 	ImVec4 cudaColor, openmpColor, hiresColor;
-
 	ImGuiCustomStyle appStyle;
 
 	ApplicationSettings()
 	{
-		preciseNumbDrags = false;
+		dragChangeSpeed_default = 1.0f;
+		cudaColor_default = ImVec4(0.40f, 0.56f, 0.18f, 1.00f);
+		openmpColor_default = ImVec4(0.03f, 0.45f, 0.49f, 1.00f);
+		hiresColor_default = ImVec4(0.50f, 0.10f, 0.30f, 1.00f);
 
-		CPU_mode_interactive = false;
-		CPU_mode_hires = false;
+		preciseNumbDrags = preciseNumbDrags_default;
+		CPU_mode_interactive = CPU_mode_interactive_default;
+		CPU_mode_hires = CPU_mode_hires_default;
+		calculateDeltaDecay = calculateDeltaDecay_default;
+		threadsPerBlock = threadsPerBlock_default;
+		dragChangeSpeed = dragChangeSpeed_default;
+		cudaColor = cudaColor_default;
+		openmpColor = openmpColor_default;
+		hiresColor = hiresColor_default;
+		appStyle = appStyle_default;
+	}
 
-		calculateDeltaDecay = true;
-		threadsPerBlock = 32;
+	void Save()
+	{
+		json::jobject settings;
+		settings["preciseNumbDrags"].set_boolean(preciseNumbDrags);
+		settings["CPU_mode_interactive"].set_boolean(CPU_mode_interactive);
+		settings["CPU_mode_hires"].set_boolean(CPU_mode_hires);
+		settings["calculateDeltaDecay"].set_boolean(calculateDeltaDecay);
+		settings["threadsPerBlock"] = threadsPerBlock;
+		settings["dragChangeSpeed"] = dragChangeSpeed;
+		settings["cudaColor"] = std::vector<float>{ cudaColor.x, cudaColor.y, cudaColor.z, cudaColor.w };
+		settings["openmpColor"] = std::vector<float>{ openmpColor.x, openmpColor.y, openmpColor.z, openmpColor.w };
+		settings["hiresColor"] = std::vector<float>{ hiresColor.x, hiresColor.y, hiresColor.z, hiresColor.w };
+		settings["appStyle"] = (int)appStyle;
+		std::string exportedJSON = settings.pretty();
+		std::ofstream fs("applicationSettings.json", std::ios::out);
+		fs << exportedJSON;
+		fs.close();
+	}
 
-		dragChangeSpeed = 1.0f;
+	void Load()
+	{
+		std::ifstream fs("applicationSettings.json", std::ios::in);
 
-		cudaColor = ImVec4(0.40f, 0.56f, 0.18f, 1.00f);
-		openmpColor = ImVec4(0.03f, 0.45f, 0.49f, 1.00f);
-		hiresColor = ImVec4(0.50f, 0.10f, 0.30f, 1.00f);
+		if (!fs.is_open()) return;
 
-		appStyle = ImGuiCustomStyle::Dark;
+		std::string content;
+		for (std::string line; getline(fs, line); )
+		{
+			content += line + '\n';
+		}
+
+		fs.close();
+
+		json::jobject settings = json::jobject::parse(content);
+
+		preciseNumbDrags = settings.has_key("preciseNumbDrags") ? settings["preciseNumbDrags"].is_true() : preciseNumbDrags_default;
+		CPU_mode_interactive = settings.has_key("CPU_mode_interactive") ? settings["CPU_mode_interactive"].is_true() : CPU_mode_interactive_default;
+		CPU_mode_hires = settings.has_key("CPU_mode_hires") ? settings["CPU_mode_hires"].is_true() : CPU_mode_hires_default;
+		calculateDeltaDecay = settings.has_key("calculateDeltaDecay") ? settings["calculateDeltaDecay"].is_true() : calculateDeltaDecay_default;
+		threadsPerBlock = settings.has_key("threadsPerBlock") ? (int)settings["threadsPerBlock"] : threadsPerBlock_default;
+		dragChangeSpeed = settings.has_key("dragChangeSpeed") ? (float)settings["dragChangeSpeed"] : dragChangeSpeed_default;
+		appStyle = settings.has_key("appStyle") ? (ImGuiCustomStyle)(int)settings["appStyle"] : appStyle_default;
+
+		cudaColor = settings.has_key("cudaColor") ?
+			ImVec4(((std::vector<float>)settings["cudaColor"])[0], 
+				((std::vector<float>)settings["cudaColor"])[1], 
+				((std::vector<float>)settings["cudaColor"])[2], 
+				((std::vector<float>)settings["cudaColor"])[3])
+			: cudaColor_default;
+
+		openmpColor = settings.has_key("openmpColor") ?
+			ImVec4(((std::vector<float>)settings["openmpColor"])[0],
+				((std::vector<float>)settings["openmpColor"])[1],
+				((std::vector<float>)settings["openmpColor"])[2],
+				((std::vector<float>)settings["openmpColor"])[3])
+			: openmpColor_default;
+
+		hiresColor = settings.has_key("hiresColor") ?
+			ImVec4(((std::vector<float>)settings["hiresColor"])[0],
+				((std::vector<float>)settings["hiresColor"])[1],
+				((std::vector<float>)settings["hiresColor"])[2],
+				((std::vector<float>)settings["hiresColor"])[3])
+			: hiresColor_default;
 	}
 };
