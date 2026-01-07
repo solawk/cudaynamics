@@ -492,6 +492,7 @@ int imgui_main(int, char**)
     try { loadWindows(); }
     catch (std::exception e) { printf(e.what()); }
 
+    applicationSettings.globalFontSettings = &GlobalFontSettings;
     applicationSettings.Load();
 
     setVaryingAttributesToHeatmaps(plotWindows, KERNEL);

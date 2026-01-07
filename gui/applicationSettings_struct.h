@@ -6,11 +6,10 @@
 #include "../json/json.h"
 #include <fstream>
 #include <string>
+#include "../fontSettings_struct.h"
 
 struct ApplicationSettings
 {
-	// TODO: Add font settings
-
 	static const bool preciseNumbDrags_default = false;
 	static const bool CPU_mode_interactive_default = false;
 	static const bool CPU_mode_hires_default = false;
@@ -29,6 +28,7 @@ struct ApplicationSettings
 	float dragChangeSpeed;
 	ImVec4 cudaColor, openmpColor, hiresColor;
 	ImGuiCustomStyle appStyle;
+	FontSettings* globalFontSettings;
 
 	ApplicationSettings()
 	{
@@ -47,6 +47,8 @@ struct ApplicationSettings
 		openmpColor = openmpColor_default;
 		hiresColor = hiresColor_default;
 		appStyle = appStyle_default;
+
+		globalFontSettings = nullptr;
 	}
 
 	void Save()
@@ -62,6 +64,13 @@ struct ApplicationSettings
 		settings["openmpColor"] = std::vector<float>{ openmpColor.x, openmpColor.y, openmpColor.z, openmpColor.w };
 		settings["hiresColor"] = std::vector<float>{ hiresColor.x, hiresColor.y, hiresColor.z, hiresColor.w };
 		settings["appStyle"] = (int)appStyle;
+		if (globalFontSettings)
+		{
+			settings["globalFontSize"] = globalFontSettings->size;
+			settings["globalFontFamily"] = globalFontSettings->family;
+			settings["globalFontIsBold"].set_boolean(globalFontSettings->isBold);
+			settings["globalFontIsItalic"].set_boolean(globalFontSettings->isItalic);
+		}
 		std::string exportedJSON = settings.pretty();
 		std::ofstream fs("applicationSettings.json", std::ios::out);
 		fs << exportedJSON;
@@ -112,5 +121,13 @@ struct ApplicationSettings
 				((std::vector<float>)settings["hiresColor"])[2],
 				((std::vector<float>)settings["hiresColor"])[3])
 			: hiresColor_default;
+
+		if (globalFontSettings)
+		{
+			if (settings.has_key("globalFontSize")) globalFontSettings->size = (int)settings["globalFontSize"];
+			if (settings.has_key("globalFontFamily")) globalFontSettings->family = (int)settings["globalFontFamily"];
+			if (settings.has_key("globalFontIsBold")) globalFontSettings->isBold = settings["globalFontIsBold"].is_true();
+			if (settings.has_key("globalFontIsItalic")) globalFontSettings->isItalic = settings["globalFontIsItalic"].is_true();
+		}
 	}
 };
