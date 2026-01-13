@@ -3,8 +3,6 @@
 
 #define name hodgkin_huxley
 
-const int THREADS_PER_BLOCK_(name) = 64;
-
 __global__ void gpu_wrapper_(name)(Computation* data, uint64_t variation);
 
 __host__ __device__ void kernelProgram_(name)(Computation* data, uint64_t variation);

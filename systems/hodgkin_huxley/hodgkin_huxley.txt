@@ -17,9 +17,9 @@ Execute on launch: yes
 //
 // Defining variables/parameters:
 // var/param <name> <ranging type> <minimum value> <maximum value> <step> <step count> <normal mean> <normal deviation>
-var n Fixed 0.317 1.0 0.01 100 0.0 0.0
-var m Fixed 0.052 0.1 0.001 100 0.0 0.0
-var h Fixed 0.596 1.0 0.01 100 0.0 0.0
+var n Fixed 0.31 1.0 0.01 100 0.0 0.0
+var m Fixed 0.05 0.1 0.001 100 0.0 0.0
+var h Fixed 0.59 1.0 0.01 100 0.0 0.0
 var v Fixed 0.0 0.0 0.1 100 0.0 0.0
 var i Fixed 0.0 29.0 0.1 0 0.0 0.0
 var t Fixed 0.0 29.0 0.1 0 0.0 0.0
@@ -27,21 +27,21 @@ param G_Na Fixed 120.0 150.0 1.0 100 0.0 0.0
 param G_leak Fixed 0.3 1.0 0.01 100 0.0 0.0
 param G_K Fixed 36.0 80.0 1.0 100 0.0 0.0
 param E_Na Fixed 115.0 150.0 1.0 100 0.0 0.0
-param E_leak Fixed 10.0 20.0 1.0 100 0.0 0.0
+param E_leak Fixed 10.6 20.0 1.0 100 0.0 0.0
 param E_K Fixed -12.0 -5.0 1.0 100 0.0 0.0
 param C Fixed 1.0 50.0 0.1 250 0.0 0.0
 param Idc Fixed 0.0 0.05 0.001 50 0.0 0.0
 param Iamp Fixed 2.1 2.5 0.001 0 0.0 0.0
 param Ifreq Linear 0.01 0.1 0.001 100 0.0 0.0
 param Idel Fixed 0.0 0.5 0.01 50 0.0 0.0
-param Idf Linear 0.2 1.0 0.1 100 0.0 0.0
+param Idf Linear 0.1 1.0 0.1 100 0.0 0.0
 constraint signal square
 param symmetry Fixed 0.0 1.0 0.01 100 0.0 0.0
 constraint method VariableSymmetryCD
 // Defining enumerated parameters (useful for methods):
 // enum <name> <ranging type> <minimum value> <maximum value> <step> <step count> <normal mean> <normal deviation> <enum names, no spaces>
 enum signal 1square 0sine 0triangle
-enum method 1ExplicitEuler 0ExplicitMidpoint 0ExplicitRungeKutta4 0VariableSymmetryCD
+enum method 1ExplicitEuler 0ExplicitMidpoint 0ExplicitRungeKutta4 0VariableSymmetryCD 0ExplicitDormandPrince8
 //
 // Defining settings for analysis functions:
 // analysis <name from "anfunc_names.cpp"> settings <values, must exactly match the settings struct>
