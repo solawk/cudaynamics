@@ -345,7 +345,7 @@ void prepareAndCompute(bool hires)
 {
     bool comp0inProgress = !computations[0].ready && computations[0].marshal.trajectory != nullptr;
     bool comp1inProgress = !computations[1].ready && computations[1].marshal.trajectory != nullptr;
-    bool compHiresinProgress = !computationHires.ready && computationHires.marshal.trajectory != nullptr;
+    bool compHiresinProgress = !computationHires.ready && computationHires.marshal.variableInits != nullptr;
     if (comp0inProgress || comp1inProgress || compHiresinProgress)
     {
         printf("Preventing computing too fast!\n");
@@ -537,6 +537,7 @@ int imgui_main(int, char**)
         mainWindowMenu();
 
         // Selecting kernel
+        if (computations[0].IsInProgress() || computations[1].IsInProgress() || computationHires.IsInProgress()) ImGui::BeginDisabled();
         if (ImGui::BeginCombo("##selectingKernel", KERNEL.name.c_str()))
         {
             for (auto k : kernels)
@@ -558,6 +559,7 @@ int imgui_main(int, char**)
 
             ImGui::EndCombo();
         }
+        if (computations[0].IsInProgress() || computations[1].IsInProgress() || computationHires.IsInProgress()) ImGui::EndDisabled();
 
         // Parameters & Variables
 
