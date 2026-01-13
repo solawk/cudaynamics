@@ -532,10 +532,7 @@ int imgui_main(int, char**)
         // MAIN WINDOW
 
         style.WindowMenuButtonPosition = ImGuiDir_Left;
-
-        //FullscreenActLogic(&mainWindow, &fullscreenSize);
         ImGui::Begin("CUDAynamics", &work, ImGuiWindowFlags_MenuBar);
-        //FullscreenButtonPressLogic(&mainWindow, ImGui::GetCurrentWindow());
 
         mainWindowMenu();
 
@@ -629,8 +626,6 @@ int imgui_main(int, char**)
                 }
                 ImGui::EndTable();
             }
-
-            
 
             // Parameter auto-loading
             bool tempAutoLoadNewParams = autoLoadNewParams;
@@ -786,13 +781,6 @@ int imgui_main(int, char**)
         ImGui::NewLine();
         if (!HIRES_ON)
         {
-            //enabledParticles = true;
-            /*bool tempParticlesMode = enabledParticles;
-            if (ImGui::Checkbox("Orbits/Particles", &(tempParticlesMode)))
-            {
-                enabledParticles = !enabledParticles;
-            }*/
-
             if (ImGui::RadioButton("Orbits", !enabledParticles))    enabledParticles = false;
             ImGui::SameLine();
             if (ImGui::RadioButton("Particles", enabledParticles))  enabledParticles = true;
@@ -804,21 +792,18 @@ int imgui_main(int, char**)
             if (particleSpeed < 0.0f) particleSpeed = 0.0f;
             ImGui::PopItemWidth();
 
+            ImGui::SameLine();
             if (computations[playedBufferIndex].timeElapsed > 0.0f)
             {
                 float buffersPerSecond = 1000.0f / computations[playedBufferIndex].timeElapsed;
                 int stepsPerSecond = (int)(computedSteps * buffersPerSecond);
-
-                ImGui::SameLine();
                 ImGui::Text(("(max " + std::to_string(stepsPerSecond) + " before stalling)").c_str());
-                TOOLTIP("Predicted speed that allows for seamless playback");
             }
             else
             {
-                ImGui::SameLine();
                 ImGui::Text("(pending)");
-                TOOLTIP("Predicted speed that allows for seamless playback");
             }
+            TOOLTIP("Predicted speed that allows for seamless playback");
 
             ImGui::PushItemWidth(200.0f);
             ImGui::DragInt("##Animation step", &(particleStep), 1.0f, 0, KERNEL.steps);
@@ -826,10 +811,7 @@ int imgui_main(int, char**)
             ImGui::SameLine();
             ImGui::Text(("Animation step" + (continuousComputingEnabled ? " (total step " + std::to_string(bufferNo * KERNEL.steps + particleStep) + ")" : "")).c_str());
 
-            if (ImGui::Button("Reset to step 0"))
-            {
-                particleStep = 0;
-            }
+            if (ImGui::Button("Reset to step 0")) particleStep = 0;
 
             if (anyChanged)
             {
@@ -964,12 +946,8 @@ int imgui_main(int, char**)
         // COMMON
         // default button color is 0.137 0.271 0.427
         bool playBreath = noComputedData || (anyChanged && (!playingParticles || !enabledParticles));
-        
 
-        bool computation0InProgress = !computations[0].ready && computations[0].marshal.trajectory != nullptr;
-        bool computation1InProgress = !computations[1].ready && computations[1].marshal.trajectory != nullptr;
-        bool computationHiresInProgress = !computationHires.ready && computationHires.marshal.variableInits != nullptr;
-        if ( playingParticles || computation0InProgress || computation1InProgress || computationHiresInProgress)OrbitRedraw = true; else OrbitRedraw = false;
+        OrbitRedraw = playingParticles || computations[0].IsInProgress() || computations[1].IsInProgress() || computationHires.IsInProgress();
 
         if (!HIRES_ON)
         {
@@ -981,7 +959,7 @@ int imgui_main(int, char**)
                 prepareAndCompute(false); OrbitRedraw = true; indSeriesReset = true;
             }
             if (playBreath) ImGui::PopStyleColor();
-            if (!playingParticles) computationStatus(computation0InProgress, computation1InProgress);
+            if (!playingParticles) computationStatus(computations[0].IsInProgress(), computations[1].IsInProgress());
         }     
         else
         {
@@ -1001,7 +979,7 @@ int imgui_main(int, char**)
                 hiresShiftClickCompute();
             }
         }
-        if (computationHiresInProgress)
+        if (computationHires.IsInProgress())
         {
             float progressPercentage = (computationHires.variationsFinished * 100.0f) / computationHires.marshal.totalVariations;
             ImGui::Text((std::to_string(computationHires.variationsFinished) + "/" + std::to_string(computationHires.marshal.totalVariations) + " computed (" +
@@ -1025,360 +1003,350 @@ int imgui_main(int, char**)
         
         // Graph Builder
 
-        if (/*graphBuilderWindowEnabled*/ 1)
-        {
-            FullscreenActLogic(&graphBuilderWindow, &fullscreenSize);
-            ImGui::Begin("Graph Builder", /*&graphBuilderWindowEnabled*/nullptr);
-            FullscreenButtonPressLogic(&graphBuilderWindow, ImGui::GetCurrentWindow());
+        ImGui::Begin("Graph Builder", nullptr);
 
-            // Type
-            ImGui::Text("Plot type ");
-            ImGui::SameLine();
-            ImGui::PushItemWidth(250.0f);
-            if (ImGui::BeginCombo("##Plot type", (plottypes[plotType]).c_str()))
+        // Type
+        ImGui::Text("Plot type ");
+        ImGui::SameLine();
+        ImGui::PushItemWidth(250.0f);
+        if (ImGui::BeginCombo("##Plot type", (plottypes[plotType]).c_str()))
+        {
+            for (int t = 0; t < PlotType_COUNT; t++)
             {
-                for (int t = 0; t < PlotType_COUNT; t++)
+                bool isSelected = plotType == t;
+                ImGuiSelectableFlags selectableFlags = 0;
+                if (ImGui::Selectable(plottypes[t].c_str(), isSelected, selectableFlags))
                 {
-                    bool isSelected = plotType == t;
+                    plotType = (PlotType)t;
+                    RESET_GRAPH_BUILDER_SETTINGS;
+                }
+            }
+
+            ImGui::EndCombo();
+        }
+        ImGui::PopItemWidth();
+
+        std::string variablexyz[] = { "x", "y", "z" };
+        int indicesSize;
+
+        switch (plotType)
+        {
+        case VarSeries:
+
+            // Variable adding combo
+
+            ImGui::Text("Add variable");
+            ImGui::SameLine();
+            if (ImGui::BeginCombo("##Add variable combo", " ", ImGuiComboFlags_NoPreview))
+            {
+                for (int v = 0; v < KERNEL.VAR_COUNT; v++)
+                {
+                    bool isSelected = selectedPlotVarsSet.find(v) != selectedPlotVarsSet.end();
                     ImGuiSelectableFlags selectableFlags = 0;
-                    if (ImGui::Selectable(plottypes[t].c_str(), isSelected, selectableFlags))
-                    {
-                        plotType = (PlotType)t;
-                        RESET_GRAPH_BUILDER_SETTINGS;
-                    }
+
+                    if (isSelected) selectableFlags = ImGuiSelectableFlags_Disabled;
+                    if (ImGui::Selectable(KERNEL.variables[v].name.c_str())) selectedPlotVarsSet.insert(v);
                 }
 
                 ImGui::EndCombo();
             }
-            ImGui::PopItemWidth();
 
-            std::string variablexyz[] = { "x", "y", "z" };
-            int indicesSize;
+            // Variable list
 
-            switch (plotType)
+            for (const int v : selectedPlotVarsSet)
             {
-            case VarSeries:
-
-                // Variable adding combo
-
-                ImGui::Text("Add variable");
+                if (ImGui::Button(("x##" + std::to_string(v)).c_str()))
+                {
+                    selectedPlotVarsSet.erase(v);
+                    break;
+                }
                 ImGui::SameLine();
-                if (ImGui::BeginCombo("##Add variable combo", " ", ImGuiComboFlags_NoPreview))
+                ImGui::Text(("- " + KERNEL.variables[v].name).c_str());
+            }
+
+            break;
+
+        case Phase:
+        case Phase2D:
+            ImGui::PushItemWidth(150.0f);
+            for (int sv = 0; sv < (plotType == Phase ? 3 : 2); sv++)
+            {
+                ImGui::Text(("Variable " + variablexyz[sv]).c_str());
+                ImGui::SameLine();
+                if (ImGui::BeginCombo(("##Plot builder var " + std::to_string(sv + 1)).c_str(), selectedPlotVars[sv] > -1 ? KERNEL.variables[selectedPlotVars[sv]].name.c_str() : "-"))
+                {
+                    for (int v = (sv > 0 ? -1 : 0); v < KERNEL.VAR_COUNT; v++)
+                    {
+                        bool isSelected = selectedPlotVars[sv] == v;
+                        ImGuiSelectableFlags selectableFlags = 0;
+
+                        if (v == -1)
+                        {
+                            if (sv == 0 && (selectedPlotVars[1] > -1 || selectedPlotVars[2] > -1)) selectableFlags = ImGuiSelectableFlags_Disabled;
+                            if (sv == 1 && (selectedPlotVars[2] > -1)) selectableFlags = ImGuiSelectableFlags_Disabled;
+                            if (ImGui::Selectable("-", isSelected, selectableFlags)) selectedPlotVars[sv] = -1;
+                        }
+                        else
+                        {
+                            if (sv == 1 && selectedPlotVars[0] == -1) selectableFlags = ImGuiSelectableFlags_Disabled;
+                            if (sv == 2 && selectedPlotVars[1] == -1) selectableFlags = ImGuiSelectableFlags_Disabled;
+                            if (v == selectedPlotVars[(sv + 1) % 3] || v == selectedPlotVars[(sv + 2) % 3]) selectableFlags = ImGuiSelectableFlags_Disabled;
+                            if (ImGui::Selectable(v > -1 ? KERNEL.variables[v].name.c_str() : "-", isSelected, selectableFlags)) selectedPlotVars[sv] = v;
+                        }
+                    }
+                    ImGui::EndCombo();
+                }
+            }
+            ImGui::PopItemWidth();
+            break;
+
+        case Orbit:
+            ImGui::PushItemWidth(150.0f);
+            for (int sv = 0; sv < 1; sv++)
+            {
+                ImGui::Text("Variable ");
+                ImGui::SameLine();
+                if (ImGui::BeginCombo(("##Plot builder var " + std::to_string(sv + 1)).c_str(), selectedPlotVarsOrbitVer[sv] > -1 ? KERNEL.variables[selectedPlotVarsOrbitVer[sv]].name.c_str() : "-"))
                 {
                     for (int v = 0; v < KERNEL.VAR_COUNT; v++)
                     {
-                        bool isSelected = selectedPlotVarsSet.find(v) != selectedPlotVarsSet.end();
+                        bool isSelected = selectedPlotVarsOrbitVer[sv] == v;
                         ImGuiSelectableFlags selectableFlags = 0;
+                        if (ImGui::Selectable(v > -1 ? KERNEL.variables[v].name.c_str() : "-", isSelected, selectableFlags)) selectedPlotVarsOrbitVer[sv] = v;
 
-                        if (isSelected) selectableFlags = ImGuiSelectableFlags_Disabled;
-                        if (ImGui::Selectable(KERNEL.variables[v].name.c_str())) selectedPlotVarsSet.insert(v);
                     }
-
                     ImGui::EndCombo();
                 }
+            }
+            ImGui::PopItemWidth();
+            break;
 
-                // Variable list
+        case Heatmap:
+            if (selectedPlotMap >= indices.size()) selectedPlotMap = 0;
 
-                for (const int v : selectedPlotVarsSet)
-                {
-                    if (ImGui::Button(("x##" + std::to_string(v)).c_str()))
-                    {
-                        selectedPlotVarsSet.erase(v);
-                        break;
-                    }
-                    ImGui::SameLine();
-                    ImGui::Text(("- " + KERNEL.variables[v].name).c_str());
-                }
+            ImGui::Text("Index");
+            ImGui::SameLine();
+            mapSelectionCombo("##Plot builder map index selection", selectedPlotMap, false);
+            break;
+        case MCHeatmap:
+            break;
 
-                break;
+        case Decay:
+            // Index adding combo
 
-            case Phase:
-            case Phase2D:
-                ImGui::PushItemWidth(150.0f);
-                for (int sv = 0; sv < (plotType == Phase ? 3 : 2); sv++)
-                {
-                    ImGui::Text(("Variable " + variablexyz[sv]).c_str());
-                    ImGui::SameLine();
-                    if (ImGui::BeginCombo(("##Plot builder var " + std::to_string(sv + 1)).c_str(), selectedPlotVars[sv] > -1 ? KERNEL.variables[selectedPlotVars[sv]].name.c_str() : "-"))
-                    {
-                        for (int v = (sv > 0 ? -1 : 0); v < KERNEL.VAR_COUNT; v++)
-                        {
-                            bool isSelected = selectedPlotVars[sv] == v;
-                            ImGuiSelectableFlags selectableFlags = 0;
-
-                            if (v == -1)
-                            {
-                                if (sv == 0 && (selectedPlotVars[1] > -1 || selectedPlotVars[2] > -1)) selectableFlags = ImGuiSelectableFlags_Disabled;
-                                if (sv == 1 && (selectedPlotVars[2] > -1)) selectableFlags = ImGuiSelectableFlags_Disabled;
-                                if (ImGui::Selectable("-", isSelected, selectableFlags)) selectedPlotVars[sv] = -1;
-                            }
-                            else
-                            {
-                                if (sv == 1 && selectedPlotVars[0] == -1) selectableFlags = ImGuiSelectableFlags_Disabled;
-                                if (sv == 2 && selectedPlotVars[1] == -1) selectableFlags = ImGuiSelectableFlags_Disabled;
-                                if (v == selectedPlotVars[(sv + 1) % 3] || v == selectedPlotVars[(sv + 2) % 3]) selectableFlags = ImGuiSelectableFlags_Disabled;
-                                if (ImGui::Selectable(v > -1 ? KERNEL.variables[v].name.c_str() : "-", isSelected, selectableFlags)) selectedPlotVars[sv] = v;
-                            }
-                        }
-                        ImGui::EndCombo();
-                    }
-                }
-                ImGui::PopItemWidth();
-                break;
-
-            case Orbit:
-                ImGui::PushItemWidth(150.0f);
-                for (int sv = 0; sv < 1; sv++)
-                {
-                    ImGui::Text("Variable ");
-                    ImGui::SameLine();
-                    if (ImGui::BeginCombo(("##Plot builder var " + std::to_string(sv + 1)).c_str(), selectedPlotVarsOrbitVer[sv] > -1 ? KERNEL.variables[selectedPlotVarsOrbitVer[sv]].name.c_str() : "-"))
-                    {
-                        for (int v = 0 ; v < KERNEL.VAR_COUNT; v++)
-                        {
-                            bool isSelected = selectedPlotVarsOrbitVer[sv] == v;
-                            ImGuiSelectableFlags selectableFlags = 0;
-                            if (ImGui::Selectable(v > -1 ? KERNEL.variables[v].name.c_str() : "-", isSelected, selectableFlags)) selectedPlotVarsOrbitVer[sv] = v;
-                            
-                        }
-                        ImGui::EndCombo();
-                    }
-                }
-                ImGui::PopItemWidth();
-                break;
-
-            case Heatmap:
-                if (selectedPlotMap >= indices.size()) selectedPlotMap = 0;
-
-                ImGui::Text("Index");
-                ImGui::SameLine();
-                mapSelectionCombo("##Plot builder map index selection", selectedPlotMap, false);
-                break;
-            case MCHeatmap:
-                break;
-
-            case Decay:
-                // Index adding combo
-
-                ImGui::Text("Add index");
-                ImGui::SameLine();
-                if (ImGui::BeginCombo("##Add index combo", " ", ImGuiComboFlags_NoPreview))
-                {
-                    for (int i = 0; i < (int)indices.size(); i++)
-                    {
-                        bool isSelected = selectedPlotMapDecay.find(i) != selectedPlotMapDecay.end();
-                        ImGuiSelectableFlags selectableFlags = 0;
-
-                        if (isSelected) selectableFlags = ImGuiSelectableFlags_Disabled;
-                        if (ImGui::Selectable(indices[(AnalysisIndex)i].name.c_str())) selectedPlotMapDecay.insert(i);
-                    }
-
-                    ImGui::EndCombo();
-                }
-
-                // Index list
-
-                for (const int i : selectedPlotMapDecay)
-                {
-                    if (ImGui::Button(("x##" + std::to_string(i)).c_str()))
-                    {
-                        selectedPlotMapDecay.erase(i);
-                        break;
-                    }
-                    ImGui::SameLine();
-                    ImGui::Text(("- " + indices[(AnalysisIndex)i].name).c_str());
-                }
-
-                break;
-
-            case Metric:
-                ImGui::Text("Add indices");
-                ImGui::SameLine();
-
-                indicesSize = (int)indices.size();
-                if (ImGui::BeginCombo("##Add index combo", "", ImGuiComboFlags_NoPreview))
-                {
-                    for (int i = 0; i < indicesSize; i++)
-                    {
-                        bool isSelected = selectedPlotMapsSetMetric.find(i) != selectedPlotMapsSetMetric.end();
-                        if (ImGui::Selectable(indices[(AnalysisIndex)i].name.c_str(), isSelected, isSelected ? ImGuiSelectableFlags_Disabled : 0)) selectedPlotMapsSetMetric.insert(i);
-                    }
-
-                    ImGui::EndCombo();
-                }
-
-                // List with removal buttons
-
-                for (const int i : selectedPlotMapsSetMetric)
-                {
-                    if (ImGui::Button(("x##" + std::to_string(i)).c_str()))
-                    {
-                        selectedPlotMapsSetMetric.erase(i);
-                        break;
-                    }
-                    ImGui::SameLine();
-                    ImGui::Text(("- " + indices[(AnalysisIndex)i].name).c_str());
-                }
-                break;
-            case IndSeries:
+            ImGui::Text("Add index");
+            ImGui::SameLine();
+            if (ImGui::BeginCombo("##Add index combo", " ", ImGuiComboFlags_NoPreview))
             {
-                ImGui::Text("Add indeces");
+                for (int i = 0; i < (int)indices.size(); i++)
+                {
+                    bool isSelected = selectedPlotMapDecay.find(i) != selectedPlotMapDecay.end();
+                    ImGuiSelectableFlags selectableFlags = 0;
+
+                    if (isSelected) selectableFlags = ImGuiSelectableFlags_Disabled;
+                    if (ImGui::Selectable(indices[(AnalysisIndex)i].name.c_str())) selectedPlotMapDecay.insert(i);
+                }
+
+                ImGui::EndCombo();
+            }
+
+            // Index list
+
+            for (const int i : selectedPlotMapDecay)
+            {
+                if (ImGui::Button(("x##" + std::to_string(i)).c_str()))
+                {
+                    selectedPlotMapDecay.erase(i);
+                    break;
+                }
                 ImGui::SameLine();
+                ImGui::Text(("- " + indices[(AnalysisIndex)i].name).c_str());
+            }
 
-                indicesSize = (int)indices.size();
-                if (ImGui::BeginCombo("##Add index combo", "", ImGuiComboFlags_NoPreview))
+            break;
+
+        case Metric:
+            ImGui::Text("Add indices");
+            ImGui::SameLine();
+
+            indicesSize = (int)indices.size();
+            if (ImGui::BeginCombo("##Add index combo", "", ImGuiComboFlags_NoPreview))
+            {
+                for (int i = 0; i < indicesSize; i++)
                 {
-                    for (int i = 0; i < indicesSize; i++)
-                    {
-                        bool isSelected = selectedPlotMapSetIndSeries.find(i) != selectedPlotMapSetIndSeries.end();
-                        if (ImGui::Selectable(indices[(AnalysisIndex)i].name.c_str(), isSelected, isSelected ? ImGuiSelectableFlags_Disabled : 0)) selectedPlotMapSetIndSeries.insert(i);
-                    }
-
-                    ImGui::EndCombo();
+                    bool isSelected = selectedPlotMapsSetMetric.find(i) != selectedPlotMapsSetMetric.end();
+                    if (ImGui::Selectable(indices[(AnalysisIndex)i].name.c_str(), isSelected, isSelected ? ImGuiSelectableFlags_Disabled : 0)) selectedPlotMapsSetMetric.insert(i);
                 }
 
-                // List with removal buttons
+                ImGui::EndCombo();
+            }
 
-                for (const int i : selectedPlotMapSetIndSeries)
+            // List with removal buttons
+
+            for (const int i : selectedPlotMapsSetMetric)
+            {
+                if (ImGui::Button(("x##" + std::to_string(i)).c_str()))
                 {
-                    if (ImGui::Button(("x##" + std::to_string(i)).c_str()))
-                    {
-                        selectedPlotMapSetIndSeries.erase(i);
-                        break;
-                    }
-                    ImGui::SameLine();
-                    ImGui::Text(("- " + indices[(AnalysisIndex)i].name).c_str());
+                    selectedPlotMapsSetMetric.erase(i);
+                    break;
                 }
+                ImGui::SameLine();
+                ImGui::Text(("- " + indices[(AnalysisIndex)i].name).c_str());
             }
-                break;
-            }
+            break;
+        case IndSeries:
+        {
+            ImGui::Text("Add indeces");
+            ImGui::SameLine();
 
-            // Sanity checks
-            bool noMistakes = true;
-            switch (plotType)
+            indicesSize = (int)indices.size();
+            if (ImGui::BeginCombo("##Add index combo", "", ImGuiComboFlags_NoPreview))
             {
-            case VarSeries:
-                noMistakes = selectedPlotVarsSet.size() > 0;
-                break;
-            case IndSeries:
-                noMistakes = selectedPlotMapSetIndSeries.size() > 0;
-                break;
-            case Decay:
-                noMistakes = selectedPlotMapDecay.size() > 0;
-                break;
-            case Metric:
-                noMistakes = selectedPlotMapsSetMetric.size() > 0;
-                break;
-            case Orbit:
-                noMistakes = selectedPlotVarsOrbitVer[0] > -1;
-                break;
-            case Phase:
-                noMistakes = selectedPlotVars[0] > -1 && selectedPlotVars[1] > -1 && selectedPlotVars[2] > -1;
-                break;
-            case Phase2D:
-                noMistakes = selectedPlotVars[0] > -1 && selectedPlotVars[1] > -1;
-                break;
-            }
-
-            if (!noMistakes)
-            {
-                ImGui::PushStyleColor(ImGuiCol_Text, CUSTOM_COLOR(DisabledText));
-                PUSH_DISABLED_FRAME;
-            }
-
-            if (ImGui::Button("Create graph") && noMistakes)
-            {
-                PlotWindow plotWindow = PlotWindow(uniqueIds++, "Plot_", true);
-                plotWindow.type = plotType;
-                plotWindow.newWindow = true;
-
-                if (plotType == VarSeries) plotWindow.AssignVariables(selectedPlotVarsSet);
-                if (plotType == Phase) plotWindow.AssignVariables(selectedPlotVars);
-                if (plotType == Phase2D) plotWindow.AssignVariables(selectedPlotVars);
-                if (plotType == Heatmap) plotWindow.AssignVariables(selectedPlotMap);
-                if (plotType == MCHeatmap) plotWindow.AssignVariables(selectedPlotMCMaps);
-                if (plotType == Orbit) plotWindow.AssignVariables(selectedPlotVarsOrbitVer);
-                if (plotType == Metric) plotWindow.AssignVariables(selectedPlotMapsSetMetric);
-                if (plotType == IndSeries) { plotWindow.AssignVariables(selectedPlotMapSetIndSeries); plotWindow.firstBufferNo = (computations[playedBufferIndex]).bufferNo; plotWindow.prevbufferNo = (computations[playedBufferIndex]).bufferNo; }
-                if (plotType == Decay) plotWindow.AssignVariables(selectedPlotMapDecay);
-
-                int indexOfColorsLutFrom = -1;
-                if (colorsLUTfrom != nullptr)
+                for (int i = 0; i < indicesSize; i++)
                 {
-                    for (int i = 0; i < plotWindows.size() && indexOfColorsLutFrom == -1; i++)
-                    {
-                        if (&(plotWindows[i]) == colorsLUTfrom) indexOfColorsLutFrom = i;
-                    }
+                    bool isSelected = selectedPlotMapSetIndSeries.find(i) != selectedPlotMapSetIndSeries.end();
+                    if (ImGui::Selectable(indices[(AnalysisIndex)i].name.c_str(), isSelected, isSelected ? ImGuiSelectableFlags_Disabled : 0)) selectedPlotMapSetIndSeries.insert(i);
                 }
 
-                setVaryingAttributesToOneWindow(plotWindow, KERNEL);
-                plotWindows.push_back(plotWindow);
-
-                if (indexOfColorsLutFrom != -1) colorsLUTfrom = &(plotWindows[indexOfColorsLutFrom]);
-
-                saveWindows();
+                ImGui::EndCombo();
             }
 
-            if (!noMistakes) POP_FRAME(4);
+            // List with removal buttons
 
-            ImGui::End();
+            for (const int i : selectedPlotMapSetIndSeries)
+            {
+                if (ImGui::Button(("x##" + std::to_string(i)).c_str()))
+                {
+                    selectedPlotMapSetIndSeries.erase(i);
+                    break;
+                }
+                ImGui::SameLine();
+                ImGui::Text(("- " + indices[(AnalysisIndex)i].name).c_str());
+            }
         }
+        break;
+        }
+
+        // Sanity checks
+        bool noMistakes = true;
+        switch (plotType)
+        {
+        case VarSeries:
+            noMistakes = selectedPlotVarsSet.size() > 0;
+            break;
+        case IndSeries:
+            noMistakes = selectedPlotMapSetIndSeries.size() > 0;
+            break;
+        case Decay:
+            noMistakes = selectedPlotMapDecay.size() > 0;
+            break;
+        case Metric:
+            noMistakes = selectedPlotMapsSetMetric.size() > 0;
+            break;
+        case Orbit:
+            noMistakes = selectedPlotVarsOrbitVer[0] > -1;
+            break;
+        case Phase:
+            noMistakes = selectedPlotVars[0] > -1 && selectedPlotVars[1] > -1 && selectedPlotVars[2] > -1;
+            break;
+        case Phase2D:
+            noMistakes = selectedPlotVars[0] > -1 && selectedPlotVars[1] > -1;
+            break;
+        }
+
+        if (!noMistakes)
+        {
+            ImGui::PushStyleColor(ImGuiCol_Text, CUSTOM_COLOR(DisabledText));
+            PUSH_DISABLED_FRAME;
+        }
+
+        if (ImGui::Button("Create graph") && noMistakes)
+        {
+            PlotWindow plotWindow = PlotWindow(uniqueIds++, "Plot_", true);
+            plotWindow.type = plotType;
+            plotWindow.newWindow = true;
+
+            if (plotType == VarSeries) plotWindow.AssignVariables(selectedPlotVarsSet);
+            if (plotType == Phase) plotWindow.AssignVariables(selectedPlotVars);
+            if (plotType == Phase2D) plotWindow.AssignVariables(selectedPlotVars);
+            if (plotType == Heatmap) plotWindow.AssignVariables(selectedPlotMap);
+            if (plotType == MCHeatmap) plotWindow.AssignVariables(selectedPlotMCMaps);
+            if (plotType == Orbit) plotWindow.AssignVariables(selectedPlotVarsOrbitVer);
+            if (plotType == Metric) plotWindow.AssignVariables(selectedPlotMapsSetMetric);
+            if (plotType == IndSeries) { plotWindow.AssignVariables(selectedPlotMapSetIndSeries); plotWindow.firstBufferNo = (computations[playedBufferIndex]).bufferNo; plotWindow.prevbufferNo = (computations[playedBufferIndex]).bufferNo; }
+            if (plotType == Decay) plotWindow.AssignVariables(selectedPlotMapDecay);
+
+            int indexOfColorsLutFrom = -1;
+            if (colorsLUTfrom != nullptr)
+            {
+                for (int i = 0; i < plotWindows.size() && indexOfColorsLutFrom == -1; i++)
+                {
+                    if (&(plotWindows[i]) == colorsLUTfrom) indexOfColorsLutFrom = i;
+                }
+            }
+
+            setVaryingAttributesToOneWindow(plotWindow, KERNEL);
+            plotWindows.push_back(plotWindow);
+
+            if (indexOfColorsLutFrom != -1) colorsLUTfrom = &(plotWindows[indexOfColorsLutFrom]);
+
+            saveWindows();
+        }
+
+        if (!noMistakes) POP_FRAME(4);
+
+        ImGui::End();
 
         // Map settings window
 
-        if (1)
+        ImGui::Begin("Analysis Settings", nullptr);
+
+        Kernel* krn = HIRES_ON ? &kernelHiresNew : &kernelNew; // Workaround for Win11
+
+        for (int anfunc = 0; anfunc < (int)AnalysisFunction::COUNT; anfunc++)
         {
-            FullscreenActLogic(&mapSettingsWindow, &fullscreenSize);
-            ImGui::Begin("Analysis Settings", nullptr);
-            FullscreenButtonPressLogic(&mapSettingsWindow, ImGui::GetCurrentWindow());
-
-            Kernel* krn = HIRES_ON ? &kernelHiresNew : &kernelNew; // Workaround for Win11
-
-            for (int anfunc = 0; anfunc < (int)AnalysisFunction::COUNT; anfunc++)
+            if (hiresIndex != IND_NONE && indices[hiresIndex].function == (AnalysisFunction)anfunc) AddBackgroundToElement(ImGui::GetStyleColorVec4(ImGuiCol_HeaderActive), false);
+            if (ImGui::TreeNode(std::string(AnFuncNames[anfunc] + std::string("##AnFunc") + std::to_string(anfunc)).c_str()))
             {
-                if (hiresIndex != IND_NONE && indices[hiresIndex].function == (AnalysisFunction)anfunc) AddBackgroundToElement(ImGui::GetStyleColorVec4(ImGuiCol_HeaderActive), false);
-                if (ImGui::TreeNode(std::string(AnFuncNames[anfunc] + std::string("##AnFunc") + std::to_string(anfunc)).c_str()))
+                switch ((AnalysisFunction)anfunc)
                 {
-                    switch ((AnalysisFunction)anfunc)
-                    {
-                    case AnalysisFunction::ANF_MINMAX:
-                        krn->analyses.MINMAX.DisplaySettings(krn->variables);
-                        break;
-                    case AnalysisFunction::ANF_LLE:
-                        krn->analyses.LLE.DisplaySettings(krn->variables);
-                        break;
-                    case AnalysisFunction::ANF_PERIOD:
-                        krn->analyses.PERIOD.DisplaySettings(krn->variables);
-                        break;
-                    case AnalysisFunction::ANF_PV:
-                        krn->analyses.PV.DisplaySettings(krn->variables);
-                        break;
-                    }
-
-                    std::vector<AnalysisIndex> anfuncIndices = anfunc2indices((AnalysisFunction)anfunc);
-                    ImGui::Text("Calculate indices:");
-                    for (AnalysisIndex index : anfuncIndices)
-                    {
-                        bool indexEnabled = indices[index].enabled;
-                        bool hiresEnabled = hiresIndex == index;
-                        if (hiresIndex != IND_NONE) ImGui::BeginDisabled();
-                        if (hiresIndex == IND_NONE)
-                            ImGui::Checkbox(("##IndexEnabled" + indices[index].name).c_str(), &indexEnabled);
-                        else
-                            ImGui::Checkbox(("##HiresIndexEnabled" + indices[index].name).c_str(), &hiresEnabled);
-                        indices[index].enabled = indexEnabled;
-
-                        ImGui::SameLine();
-                        ImGui::Text(indices[index].name.c_str());
-                        if (hiresIndex != IND_NONE) ImGui::EndDisabled();
-                    }
-
-                    ImGui::TreePop();
+                case AnalysisFunction::ANF_MINMAX:
+                    krn->analyses.MINMAX.DisplaySettings(krn->variables);
+                    break;
+                case AnalysisFunction::ANF_LLE:
+                    krn->analyses.LLE.DisplaySettings(krn->variables);
+                    break;
+                case AnalysisFunction::ANF_PERIOD:
+                    krn->analyses.PERIOD.DisplaySettings(krn->variables);
+                    break;
+                case AnalysisFunction::ANF_PV:
+                    krn->analyses.PV.DisplaySettings(krn->variables);
+                    break;
                 }
-            }
 
-            ImGui::End();
+                std::vector<AnalysisIndex> anfuncIndices = anfunc2indices((AnalysisFunction)anfunc);
+                ImGui::Text("Calculate indices:");
+                for (AnalysisIndex index : anfuncIndices)
+                {
+                    bool indexEnabled = indices[index].enabled;
+                    bool hiresEnabled = hiresIndex == index;
+                    if (hiresIndex != IND_NONE) ImGui::BeginDisabled();
+                    if (hiresIndex == IND_NONE)
+                        ImGui::Checkbox(("##IndexEnabled" + indices[index].name).c_str(), &indexEnabled);
+                    else
+                        ImGui::Checkbox(("##HiresIndexEnabled" + indices[index].name).c_str(), &hiresEnabled);
+                    indices[index].enabled = indexEnabled;
+
+                    ImGui::SameLine();
+                    ImGui::Text(indices[index].name.c_str());
+                    if (hiresIndex != IND_NONE) ImGui::EndDisabled();
+                }
+
+                ImGui::TreePop();
+            }
         }
+
+        ImGui::End();
 
         bool toAutofit = autofitAfterComputing;
         autofitAfterComputing = false;
@@ -1398,7 +1366,7 @@ int imgui_main(int, char**)
             }
 
             style.WindowMenuButtonPosition = ImGuiDir_None;
-            std::string windowName = "Plot "/*plottypes[window->type]*/ + std::to_string(window->id) + "##" + window->name + std::to_string(window->id);
+            std::string windowName = "Plot " + std::to_string(window->id) + "##" + window->name + std::to_string(window->id);
             std::string plotName = windowName + "_plot";
 
             if (window->newWindow)
@@ -1426,12 +1394,11 @@ int imgui_main(int, char**)
                 window->newWindow = false;
             }
 
-            //FullscreenActLogic(window, &fullscreenSize);
-
+            FullscreenActLogic(window, &fullscreenSize);
             if (window->isFrozen) ImGui::PushStyleColor(ImGuiCol_Text, CUSTOM_COLOR(DisabledText));
             ImGui::Begin(windowName.c_str(), &(window->active), ImGuiWindowFlags_MenuBar);
             if (window->isFrozen) POP_FRAME(1);
-            //FullscreenButtonPressLogic(window, ImGui::GetCurrentWindow());
+            FullscreenButtonPressLogic(window, ImGui::GetCurrentWindow());
 
             if (fontNotDefault && window->overrideFontSettings)
                 ImGui::PushFont(GetFont(window->localFontSettings.family, window->localFontSettings.size, window->localFontSettings.isBold, window->localFontSettings.isItalic));
@@ -1448,13 +1415,10 @@ int imgui_main(int, char**)
                 bool isHires = window->isTheHiresWindow(hiresIndex);
                 HeatmapProperties* heatmap = isHires ? &window->hireshmp : &window->hmp;
                 Kernel* krnl = isHires ? &kernelHiresComputed : &(KERNEL);
-                //MapData* mapData = nullptr;
                 Port* port;
                 bool isSingleValue = true;
                 if (window->type == Heatmap)
                 {
-                    //mapData = &(krnl->mapDatas[mapIndex]);
-                    //isSingleValue = mapData->valueCount == 1;
                     port = index2port(krnl->analyses, mapIndex);
                 }
 

@@ -44,4 +44,9 @@ public:
 		isFirst = false;
 		bufferNo = -1;
 	}
+
+	bool IsInProgress()
+	{
+		return !ready && (!isHires ? marshal.trajectory != nullptr : marshal.variableInits != nullptr);
+	}
 };
