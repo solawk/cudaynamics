@@ -473,9 +473,12 @@ int imgui_main(int, char**)
     selectedPlotVars[0] = 0; for (int i = 1; i < 3; i++) selectedPlotVars[i] = -1;  \
     selectedPlotVarsOrbitVer[0] = 0; for (int i = 1; i < 3; i++) selectedPlotVarsOrbitVer[i] = -1;  \
     selectedPlotVarsSet.clear();  \
+    selectedPlotMapsSetMetric.clear();  \
+    selectedPlotMapSetIndSeries.clear();  \
     selectedPlotMap = 0;  \
     for (int i = 0; i < 3; i++) selectedPlotMCMaps[i] = 0; \
-    selectedPlotMapMetric = 0;
+    selectedPlotMapMetric = 0; \
+    selectedPlotMapDecay.clear();
 
     computations[0].marshal.trajectory = computations[1].marshal.trajectory = nullptr;
     computations[0].marshal.parameterVariations = computations[1].marshal.parameterVariations = nullptr;
@@ -547,6 +550,7 @@ int imgui_main(int, char**)
                 if (ImGui::Selectable(k.second.name.c_str(), isSelected, selectableFlags))
                 {
                     saveWindows();
+                    RESET_GRAPH_BUILDER_SETTINGS;
 
                     selectedKernel = k.first;
                     initializeKernel(true);
