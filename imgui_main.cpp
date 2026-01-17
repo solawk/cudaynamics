@@ -2891,7 +2891,7 @@ int imgui_main(int, char**)
                                     heatmap->initClickedLocation = false;
                                 }
 
-                                if (1)
+                                if (!window->isFrozen)
                                 {
                                     if (heatmap->showActualDiapasons)
                                     {
@@ -3092,7 +3092,7 @@ int imgui_main(int, char**)
                                 // Drawing
 
                                 int mapSize = sizing.xSize * sizing.ySize;
-                                if (heatmap->lastBufferSize != mapSize)
+                                if (heatmap->lastBufferSize != mapSize && !window->isFrozen)
                                 {
                                     if (!isMC)
                                     {
@@ -3170,7 +3170,7 @@ int imgui_main(int, char**)
                                     heatmap->isHeatmapDirty = true;
                                 }
 
-                                if (!isMC && !heatmap->values.areHeatmapLimitsDefined)
+                                if (!isMC && !heatmap->values.areHeatmapLimitsDefined && heatmap->values.valueBuffer != nullptr)
                                 {
                                     if (!heatmap->ignoreNextLimitsRecalculation)
                                         getMinMax(heatmap->values.valueBuffer, sizing.xSize * sizing.ySize, &heatmap->values.heatmapMin, &heatmap->values.heatmapMax);
@@ -3181,7 +3181,7 @@ int imgui_main(int, char**)
                                 if (isMC)
                                 {
                                     for (int ch = 0; ch < 3; ch++)
-                                        if (!heatmap->channel[ch].areHeatmapLimitsDefined && window->variables[ch] > -1)
+                                        if (!heatmap->channel[ch].areHeatmapLimitsDefined && window->variables[ch] > -1 && heatmap->channel[ch].valueBuffer != nullptr)
                                         {
                                             if (!heatmap->ignoreNextLimitsRecalculation)
                                                 getMinMax(heatmap->channel[ch].valueBuffer, sizing.xSize * sizing.ySize, &heatmap->channel[ch].heatmapMin, &heatmap->channel[ch].heatmapMax);
@@ -3195,7 +3195,7 @@ int imgui_main(int, char**)
                                 if (*var != *prevVar) heatmap->isHeatmapDirty = true;
 
                                 // Image init
-                                if (heatmap->isHeatmapDirty)
+                                if (heatmap->isHeatmapDirty && !window->isFrozen)
                                 {
                                     if (!isMC)
                                         MapToImg(heatmap->values.valueBuffer, &(heatmap->pixelBuffer), sizing.xSize, sizing.ySize, heatmap->values.heatmapMin, heatmap->values.heatmapMax, heatmap->colormap);
@@ -3239,7 +3239,8 @@ int imgui_main(int, char**)
                                     from, to, ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f), ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
 
                                 // If shift-clicked inside of plot object in correct window
-                                bool plotDragShiftClicked = ImGui::IsMouseDown(0) && ImGui::IsKeyPressed(ImGuiMod_Shift) && ImGui::IsMouseHoveringRect(plot->PlotRect.Min, plot->PlotRect.Max) && plot->ContextLocked;
+                                bool plotDragShiftClicked = ImGui::IsMouseDown(0) && ImGui::IsKeyPressed(ImGuiMod_Shift) 
+                                    && ImGui::IsMouseHoveringRect(plot->PlotRect.Min, plot->PlotRect.Max) && plot->ContextLocked && !isHires;
                                 if (plotDragShiftClicked) {
                                     //values
                                     if (heatmap->showActualDiapasons) {
