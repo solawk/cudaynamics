@@ -677,6 +677,19 @@ int imgui_main(int, char**)
 
         ImGui::SeparatorText("Simulation");
 
+        // Hi-res info and disabling in the main window
+        if (HIRES_ON)
+        {
+            std::string indexName = indices[hiresIndex].name;
+            ImGui::AlignTextToFramePadding();
+            ImGui::Text(("Hi-Res Mode enabled for " + indexName + " ").c_str());
+            ImGui::SameLine();
+            if (ImGui::Button("Disable Hi-Res Mode"))
+            {
+                hiresIndex = IND_NONE;
+            }
+        }
+
         int tempTotalVariations = 1;
         for (int v = 0; v < KERNEL.VAR_COUNT; v++)      if (kernelNew.variables[v].TrueStepCount() > 1)      tempTotalVariations *= kernelNew.variables[v].stepCount;
         for (int p = 0; p < KERNEL.PARAM_COUNT; p++)    if (kernelNew.parameters[p].TrueStepCount() > 1)    tempTotalVariations *= kernelNew.parameters[p].stepCount;
