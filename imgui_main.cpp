@@ -690,15 +690,18 @@ int imgui_main(int, char**)
             }
         }
 
-        int tempTotalVariations = 1;
-        for (int v = 0; v < KERNEL.VAR_COUNT; v++)      if (kernelNew.variables[v].TrueStepCount() > 1)      tempTotalVariations *= kernelNew.variables[v].stepCount;
-        for (int p = 0; p < KERNEL.PARAM_COUNT; p++)    if (kernelNew.parameters[p].TrueStepCount() > 1)    tempTotalVariations *= kernelNew.parameters[p].stepCount;
-        unsigned long long tempTotalVariationsLL = tempTotalVariations;
-        unsigned long long varCountLL = KERNEL.VAR_COUNT;
-        unsigned long long stepsNewLL = kernelNew.steps + 1;
-        unsigned long long singleBufferNumberCount = ((tempTotalVariationsLL * varCountLL) * stepsNewLL);
-        unsigned long long singleBufferNumbSize = singleBufferNumberCount * sizeof(numb);
-        ImGui::Text(("Single trajectory memory: " + memoryString(singleBufferNumbSize) + " (" + std::to_string(singleBufferNumbSize) + " bytes)").c_str());
+        if (!HIRES_ON)
+        {
+            int tempTotalVariations = 1;
+            for (int v = 0; v < KERNEL.VAR_COUNT; v++)      if (KERNELNEWCURRENT.variables[v].TrueStepCount() > 1)     tempTotalVariations *= KERNELNEWCURRENT.variables[v].stepCount;
+            for (int p = 0; p < KERNEL.PARAM_COUNT; p++)    if (KERNELNEWCURRENT.parameters[p].TrueStepCount() > 1)    tempTotalVariations *= KERNELNEWCURRENT.parameters[p].stepCount;
+            unsigned long long tempTotalVariationsLL = tempTotalVariations;
+            unsigned long long varCountLL = KERNEL.VAR_COUNT;
+            unsigned long long stepsNewLL = KERNELNEWCURRENT.steps + 1;
+            unsigned long long singleBufferNumberCount = ((tempTotalVariationsLL * varCountLL) * stepsNewLL);
+            unsigned long long singleBufferNumbSize = singleBufferNumberCount * sizeof(numb);
+            ImGui::Text(("Buffer memory: " + memoryString(singleBufferNumbSize) + " (" + std::to_string(singleBufferNumbSize) + " bytes)").c_str());
+        }
 
         frameTime = 1.0f / io.Framerate; ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
 
