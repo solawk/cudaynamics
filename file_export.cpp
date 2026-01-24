@@ -236,18 +236,18 @@ std::string exportDecayCSV(const PlotWindow* window)
     f << ",total" << '\n';
 
     // === Данные ===
-    const int rows = (int)window->decayBuffer[0].size();
+    const int rows = (int)window->decay.buffer[0].size();
     for (int i = 0; i < rows; ++i) 
     {
-        const double x = window->decayBuffer[0][i];
+        const double x = window->decay.buffer[0][i];
         f << x;
 
         for (int t = 0; t < thresholdCount; t++)
         {
-            f << ',' << window->decayAlive[t][i];
+            f << ',' << window->decay.alive[t][i];
         }
 
-        f << ',' << window->decayTotal[0][i] << '\n';
+        f << ',' << window->decay.total[0][i] << '\n';
     }
 
     return path;
@@ -268,9 +268,9 @@ std::string exportOrbitCSV(const PlotWindow* window)
     if (steps <= 0 || KERNEL.VAR_COUNT <= 0)
         return {};
 
-    if (window->OrbitType == Selected_Var_Section) return {};
+    if (window->orbit.type == OPT_Selected_Var_Section) return {};
 
-    Attribute* axis = &(KERNEL.parameters[window->OrbitXIndex]);
+    Attribute* axis = &(KERNEL.parameters[window->orbit.xIndex]);
 
     const std::string systemName = safe_system_name(KERNEL);
 
@@ -279,32 +279,32 @@ std::string exportOrbitCSV(const PlotWindow* window)
     std::ofstream f = open_csv(path);
     if (!f.is_open()) return {};
 
-    switch (window->OrbitType)
+    switch (window->orbit.type)
     {
-    case Peak_Bifurcation:
+    case OPT_Peak_Bifurcation:
         f << axis->name << ",Peaks" << '\n';
-        for (int i = 0; i < window->BifDotAmount; ++i)
+        for (int i = 0; i < window->orbit.bifDotAmount; ++i)
         {
-            f << window->bifParamIndices[i] << "," << window->bifAmps[i] << '\n';
+            f << window->orbit.bifParamIndices[i] << "," << window->orbit.bifAmps[i] << '\n';
         }
         break;
-    case Interval_Bifurcation:
+    case OPT_Interval_Bifurcation:
         f << axis->name << ",Intervals" << '\n';
-        for (int i = 0; i < window->BifDotAmount; ++i)
+        for (int i = 0; i < window->orbit.bifDotAmount; ++i)
         {
-            f << window->bifParamIndices[i] << "," << window->bifIntervals[i] << '\n';
+            f << window->orbit.bifParamIndices[i] << "," << window->orbit.bifIntervals[i] << '\n';
         }
         break;
-    case Bifurcation_3D:
+    case OPT_Bifurcation_3D:
         f << axis->name << ",Peaks,Intervals" << '\n';
-        for (int i = 0; i < window->BifDotAmount; ++i)
+        for (int i = 0; i < window->orbit.bifDotAmount; ++i)
         {
-            f << window->bifParamIndices[i] << "," << window->bifAmps[i] << "," << window->bifIntervals[i] << '\n';
+            f << window->orbit.bifParamIndices[i] << "," << window->orbit.bifAmps[i] << "," << window->orbit.bifIntervals[i] << '\n';
         }
         break;
     }
 
-    if (window->drawingContinuation)
+    if (window->orbit.drawingContinuation)
     {
         // Forward and backward continuations
 
@@ -312,27 +312,27 @@ std::string exportOrbitCSV(const PlotWindow* window)
         f = open_csv(path);
         if (!f.is_open()) return {};
 
-        switch (window->OrbitType)
+        switch (window->orbit.type)
         {
-        case Peak_Bifurcation:
+        case OPT_Peak_Bifurcation:
             f << axis->name << ",Peaks" << '\n';
-            for (int i = 0; i < window->bifDotAmountForward; ++i)
+            for (int i = 0; i < window->orbit.bifDotAmountForward; ++i)
             {
-                f << window->continuationParamIndicesForward[i] << "," << window->continuationAmpsForward[i] << '\n';
+                f << window->orbit.continuationParamIndicesForward[i] << "," << window->orbit.continuationAmpsForward[i] << '\n';
             }
             break;
-        case Interval_Bifurcation:
+        case OPT_Interval_Bifurcation:
             f << axis->name << ",Intervals" << '\n';
-            for (int i = 0; i < window->bifDotAmountForward; ++i)
+            for (int i = 0; i < window->orbit.bifDotAmountForward; ++i)
             {
-                f << window->continuationParamIndicesForward[i] << "," << window->continuationIntervalsForward[i] << '\n';
+                f << window->orbit.continuationParamIndicesForward[i] << "," << window->orbit.continuationIntervalsForward[i] << '\n';
             }
             break;
-        case Bifurcation_3D:
+        case OPT_Bifurcation_3D:
             f << axis->name << ",Peaks,Intervals" << '\n';
-            for (int i = 0; i < window->bifDotAmountForward; ++i)
+            for (int i = 0; i < window->orbit.bifDotAmountForward; ++i)
             {
-                f << window->continuationParamIndicesForward[i] << "," << window->continuationAmpsForward[i] << "," << window->continuationIntervalsForward[i] << '\n';
+                f << window->orbit.continuationParamIndicesForward[i] << "," << window->orbit.continuationAmpsForward[i] << "," << window->orbit.continuationIntervalsForward[i] << '\n';
             }
             break;
         }
@@ -341,27 +341,27 @@ std::string exportOrbitCSV(const PlotWindow* window)
         f = open_csv(path);
         if (!f.is_open()) return {};
 
-        switch (window->OrbitType)
+        switch (window->orbit.type)
         {
-        case Peak_Bifurcation:
+        case OPT_Peak_Bifurcation:
             f << axis->name << ",Peaks" << '\n';
-            for (int i = 0; i < window->bifDotAmountBack; ++i)
+            for (int i = 0; i < window->orbit.bifDotAmountBack; ++i)
             {
-                f << window->continuationParamIndicesBack[i] << "," << window->continuationAmpsBack[i] << '\n';
+                f << window->orbit.continuationParamIndicesBack[i] << "," << window->orbit.continuationAmpsBack[i] << '\n';
             }
             break;
-        case Interval_Bifurcation:
+        case OPT_Interval_Bifurcation:
             f << axis->name << ",Intervals" << '\n';
-            for (int i = 0; i < window->bifDotAmountBack; ++i)
+            for (int i = 0; i < window->orbit.bifDotAmountBack; ++i)
             {
-                f << window->continuationParamIndicesBack[i] << "," << window->continuationIntervalsBack[i] << '\n';
+                f << window->orbit.continuationParamIndicesBack[i] << "," << window->orbit.continuationIntervalsBack[i] << '\n';
             }
             break;
-        case Bifurcation_3D:
+        case OPT_Bifurcation_3D:
             f << axis->name << ",Peaks,Intervals" << '\n';
-            for (int i = 0; i < window->bifDotAmountBack; ++i)
+            for (int i = 0; i < window->orbit.bifDotAmountBack; ++i)
             {
-                f << window->continuationParamIndicesBack[i] << "," << window->continuationAmpsBack[i] << "," << window->continuationIntervalsBack[i] << '\n';
+                f << window->orbit.continuationParamIndicesBack[i] << "," << window->orbit.continuationAmpsBack[i] << "," << window->orbit.continuationIntervalsBack[i] << '\n';
             }
             break;
         }

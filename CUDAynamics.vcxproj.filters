@@ -275,6 +275,9 @@
     <ClInclude Include="json\json.h">
       <Filter>json</Filter>
     </ClInclude>
+    <ClInclude Include="plots\decay.h" />
+    <ClInclude Include="plots\trs.h" />
+    <ClInclude Include="plots\orbit.h" />
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="main.cu" />

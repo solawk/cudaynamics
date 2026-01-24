@@ -67,16 +67,16 @@ void plotWindowMenu(PlotWindow* window)
 		if (window->type == Orbit) {
 			ImGui::Text("   ");
 			ImGui::SameLine();
-			if (ImGui::Button(window->drawingContinuation ? ("Cancel Continuation##" + window->name + "_ContinuationDiag").c_str() : ("Compute Continuation##" + window->name + "_ContinuationDiag").c_str()))
+			if (ImGui::Button(window->orbit.drawingContinuation ? ("Cancel Continuation##" + window->name + "_ContinuationDiag").c_str() : ("Compute Continuation##" + window->name + "_ContinuationDiag").c_str()))
 			{
-				if (!window->drawingContinuation) {
-					window->drawingContinuation = true;
-					window->redrawContinuation = true;
-					window->buttonPressed = true;
+				if (!window->orbit.drawingContinuation) {
+					window->orbit.drawingContinuation = true;
+					window->orbit.redrawContinuation = true;
+					window->orbit.continuationButtonPressed = true;
 				}
 				else {
-					window->drawingContinuation = false;
-					window->redrawContinuation = false;
+					window->orbit.drawingContinuation = false;
+					window->orbit.redrawContinuation = false;
 				}
 			}
 		}
@@ -222,8 +222,8 @@ void plotWindowMenu_DecayPlot(PlotWindow* window)
 
 		plotWindowMenu_CommonPlot(window, windowName);
 
-		ImGui::ColorEdit4(("##" + windowName + "_plotFillColor").c_str(), (float*)(&(window->plotFillColor)));	ImGui::SameLine(); ImGui::Text("Bottom fill color");
-		ImGui::DragFloat(("##" + windowName + "_decayFillAlpha").c_str(), &(window->decayFillAlpha), 0.1f, 0.0f, 1.0f);		ImGui::SameLine(); ImGui::Text("Fill alpha");
+		ImGui::ColorEdit4(("##" + windowName + "_plotFillColor").c_str(), (float*)(&(window->decay.plotFillColor)));	ImGui::SameLine(); ImGui::Text("Bottom fill color");
+		ImGui::DragFloat(("##" + windowName + "_decayFillAlpha").c_str(), &(window->decay.fillAlpha), 0.1f, 0.0f, 1.0f);		ImGui::SameLine(); ImGui::Text("Fill alpha");
 
 		bool tempYLog = window->isYLog; if (ImGui::Checkbox(("##" + windowName + "YLog").c_str(), &tempYLog))
 		{
@@ -232,17 +232,17 @@ void plotWindowMenu_DecayPlot(PlotWindow* window)
 		}
 		ImGui::SameLine(); ImGui::Text("Y Log Scale");
 
-		bool tempAND = window->decayIndicesAreAND; if (ImGui::Checkbox(("##" + windowName + "AND").c_str(), &tempAND))
+		bool tempAND = window->decay.indicesAreAND; if (ImGui::Checkbox(("##" + windowName + "AND").c_str(), &tempAND))
 		{
-			window->decayIndicesAreAND = !window->decayIndicesAreAND;
+			window->decay.indicesAreAND = !window->decay.indicesAreAND;
 		}
 		ImGui::SameLine(); ImGui::Text("Alive AND");
 		TOOLTIP("Trajectory alive only if alive in all indices. False if it needs to be alive at least in one index")
 
-		bool tempCalcLifetime = window->decayCalcLifetime; if (ImGui::Checkbox(("##" + windowName + "lifetime").c_str(), &tempCalcLifetime))
+		bool tempCalcLifetime = window->decay.calcLifetime; if (ImGui::Checkbox(("##" + windowName + "lifetime").c_str(), &tempCalcLifetime))
 		{
-			window->decayCalcLifetime = !window->decayCalcLifetime;
-			window->decayLifetime = 0.0f;
+			window->decay.calcLifetime = !window->decay.calcLifetime;
+			window->decay.lifetime = 0.0f;
 		}
 		ImGui::SameLine(); ImGui::Text("Calculate lifetime");
 		TOOLTIP("Calculate average lifetime before the marker")
@@ -294,13 +294,13 @@ void plotWindowMenu_OrbitPlot(PlotWindow* window) {
 		ImGui::SeparatorText("Plot Type");
 		ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.58f);
 		std::string orbitplottypes[] = { "Peaks / Parameter", "Intervals / Parameter", "Peaks / Intervals" , "Peaks / Intervals / Parameter" };
-		if (ImGui::BeginCombo(("##" + windowName + "_OrbitPlotType").c_str(), (orbitplottypes[window->OrbitType]).c_str(), 0))
+		if (ImGui::BeginCombo(("##" + windowName + "_OrbitPlotType").c_str(), (orbitplottypes[window->orbit.type]).c_str(), 0))
 		{
-			for (int t = 0; t < OrbitPlotType_COUNT; t++)
+			for (int t = 0; t < OPT_COUNT; t++)
 			{
-				bool isSelected = window->OrbitType == t;
+				bool isSelected = window->orbit.type == t;
 				ImGuiSelectableFlags selectableFlags = 0;
-				if (ImGui::Selectable(orbitplottypes[t].c_str(), isSelected, selectableFlags)) window->OrbitType = (OrbitPlotType)t;
+				if (ImGui::Selectable(orbitplottypes[t].c_str(), isSelected, selectableFlags)) window->orbit.type = (OrbitPlotType)t;
 			}
 
 			ImGui::EndCombo();
@@ -315,7 +315,7 @@ void plotWindowMenu_OrbitPlot(PlotWindow* window) {
 		{
 			for (int t = 0; t < ImPlotMarker_COUNT; t++)
 			{
-				bool isSelected = window->OrbitType == t;
+				bool isSelected = window->orbit.type == t;
 				ImGuiSelectableFlags selectableFlags = 0;
 				if (ImGui::Selectable(orbitdottypes[t].c_str(), isSelected, selectableFlags)) window->markerShape = (ImPlotMarker)t;
 			}
@@ -324,57 +324,57 @@ void plotWindowMenu_OrbitPlot(PlotWindow* window) {
 		}
 		ImGui::SameLine(); ImGui::Text("Point shape");
 		ImGui::ColorEdit4(("##" + windowName + "_dotColor").c_str(), (float*)(&(window->plotColor)));		ImGui::SameLine(); ImGui::Text("Point color");
-		ImGui::DragFloat("Point size", &window->OrbitPointSize, 0.1f, 0.5f, 4.0f, "%.1f");
+		ImGui::DragFloat("Point size", &window->orbit.pointSize, 0.1f, 0.5f, 4.0f, "%.1f");
 
 		ImGui::SeparatorText("Forward Point");
 		ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.485f);
-		if (ImGui::BeginCombo(("##" + windowName + "_OrbitDotShapeForward").c_str(), (orbitdottypes[window->OrbDotShapeForward]).c_str(), 0))
+		if (ImGui::BeginCombo(("##" + windowName + "_OrbitDotShapeForward").c_str(), (orbitdottypes[window->orbit.dotShapeForward]).c_str(), 0))
 		{
 			for (int t = 0; t < ImPlotMarker_COUNT; t++)
 			{
-				bool isSelected = window->OrbitType == t;
+				bool isSelected = window->orbit.type == t;
 				ImGuiSelectableFlags selectableFlags = 0;
-				if (ImGui::Selectable(orbitdottypes[t].c_str(), isSelected, selectableFlags)) window->OrbDotShapeForward = (ImPlotMarker)t;
+				if (ImGui::Selectable(orbitdottypes[t].c_str(), isSelected, selectableFlags)) window->orbit.dotShapeForward = (ImPlotMarker)t;
 			}
 
 			ImGui::EndCombo();
 		}
 		ImGui::SameLine(); ImGui::Text("Point shape");
-		ImGui::ColorEdit4(("##" + windowName + "_dotColorForward").c_str(), (float*)(&(window->OrbDotColorForward)));		ImGui::SameLine(); ImGui::Text("Point color");
-		ImGui::DragFloat("Point size##Forward", &window->OrbitPointSizeForward, 0.1f, 0.5f, 4.0f, "%.1f");
+		ImGui::ColorEdit4(("##" + windowName + "_dotColorForward").c_str(), (float*)(&(window->orbit.dotColorForward)));		ImGui::SameLine(); ImGui::Text("Point color");
+		ImGui::DragFloat("Point size##Forward", &window->orbit.pointSizeForward, 0.1f, 0.5f, 4.0f, "%.1f");
 
 		ImGui::SeparatorText("Backward Point");
 		ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.485f);
-		if (ImGui::BeginCombo(("##" + windowName + "_OrbitDotShapeBAck").c_str(), (orbitdottypes[window->OrbDotShapeBack]).c_str(), 0))
+		if (ImGui::BeginCombo(("##" + windowName + "_OrbitDotShapeBAck").c_str(), (orbitdottypes[window->orbit.dotShapeBack]).c_str(), 0))
 		{
 			for (int t = 0; t < ImPlotMarker_COUNT; t++)
 			{
-				bool isSelected = window->OrbitType == t;
+				bool isSelected = window->orbit.type == t;
 				ImGuiSelectableFlags selectableFlags = 0;
-				if (ImGui::Selectable(orbitdottypes[t].c_str(), isSelected, selectableFlags)) window->OrbDotShapeBack = (ImPlotMarker)t;
+				if (ImGui::Selectable(orbitdottypes[t].c_str(), isSelected, selectableFlags)) window->orbit.dotShapeBack = (ImPlotMarker)t;
 			}
 
 			ImGui::EndCombo();
 		}
 		ImGui::SameLine(); ImGui::Text("Point shape");
-		ImGui::ColorEdit4(("##" + windowName + "_dotColorBack").c_str(), (float*)(&(window->OrbDotColorBack)));		ImGui::SameLine(); ImGui::Text("Point color");
-		ImGui::DragFloat("Point size##Back", &window->OrbitPointSizeBack, 0.1f, 0.5f, 4.0f, "%.1f");
+		ImGui::ColorEdit4(("##" + windowName + "_dotColorBack").c_str(), (float*)(&(window->orbit.dotColorBack)));		ImGui::SameLine(); ImGui::Text("Point color");
+		ImGui::DragFloat("Point size##Back", &window->orbit.pointSizeBack, 0.1f, 0.5f, 4.0f, "%.1f");
 
 		ImGui::SeparatorText("Marker");
-		ImGui::Checkbox("Show parameter marker", &window->ShowOrbitParLines);
-		ImGui::ColorEdit4(("##" + windowName + "_markerColor").c_str(), (float*)(&(window->OrbitMarkerColor)));		ImGui::SameLine(); ImGui::Text("Marker color");
-		ImGui::DragFloat("Marker width", &window->OrbitMarkerWidth, 0.1f, 0.5f, 4.0f, "%.1f");
+		ImGui::Checkbox("Show parameter marker", &window->orbit.showParLines);
+		ImGui::ColorEdit4(("##" + windowName + "_markerColor").c_str(), (float*)(&(window->orbit.markerColor)));		ImGui::SameLine(); ImGui::Text("Marker color");
+		ImGui::DragFloat("Marker width", &window->orbit.markerWidth, 0.1f, 0.5f, 4.0f, "%.1f");
 
 
 
 		ImGui::SeparatorText("Other Settings");
-		ImGui::Checkbox("Invert axes", &window->OrbitInvertedAxes);
+		ImGui::Checkbox("Invert axes", &window->orbit.invertedAxes);
 		plotWindowMenu_CommonPlot(window, windowName);
 
 
 
 		ImGui::SeparatorText("Auto-Compute");
-		ImGui::Checkbox("Auto - compute on Shift + RMB", &window->isAutoComputeOn);
+		ImGui::Checkbox("Auto - compute on Shift + RMB", &window->orbit.isAutoComputeOn);
 
 		ImGui::EndMenu();
 	}
@@ -537,12 +537,12 @@ void plotWindowMenu_MetricPlot(PlotWindow*window) {
 		ImGui::DragFloat("Line width", &window->markerWidth, 0.1f, 0.5f, 4.0f, "%.1f");
 
 		ImGui::SeparatorText("Marker");
-		ImGui::Checkbox("Show parameter marker", &window->ShowOrbitParLines);
-		ImGui::ColorEdit4(("##" + windowName + "_markerColor").c_str(), (float*)(&(window->OrbitMarkerColor)));		ImGui::SameLine(); ImGui::Text("Marker color");
-		ImGui::DragFloat("Marker width", &window->OrbitMarkerWidth, 0.1f, 0.5f, 4.0f, "%.1f");	
+		ImGui::Checkbox("Show parameter marker", &window->orbit.showParLines);
+		ImGui::ColorEdit4(("##" + windowName + "_markerColor").c_str(), (float*)(&(window->orbit.markerColor)));		ImGui::SameLine(); ImGui::Text("Marker color");
+		ImGui::DragFloat("Marker width", &window->orbit.markerWidth, 0.1f, 0.5f, 4.0f, "%.1f");
 
 		ImGui::SeparatorText("Auto-compute");
-		ImGui::Checkbox("Auto - compute on Shift + RMB", &window->isAutoComputeOn);
+		ImGui::Checkbox("Auto - compute on Shift + RMB", &window->orbit.isAutoComputeOn);
 
 		ImGui::EndMenu();
 	}

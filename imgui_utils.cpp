@@ -384,15 +384,15 @@ std::string padString(std::string str, int length)
 
 void addDeltaQuatRotation(PlotWindow* window, float deltax, float deltay)
 {
-	quaternion::Quaternion<float> quat(window->quatRot.w, window->quatRot.x, window->quatRot.y, window->quatRot.z);
+	quaternion::Quaternion<float> quat(window->trs.quatRot.w, window->trs.quatRot.x, window->trs.quatRot.y, window->trs.quatRot.z);
 	quaternion::Quaternion<float> quatY(cosf(deltax * 0.5f * DEG2RAD), 0.0f, sinf(deltax * 0.5f * DEG2RAD), 0.0f);
 	quaternion::Quaternion<float> quatX(cosf(deltay * 0.5f * DEG2RAD), sinf(deltay * 0.5f * DEG2RAD), 0.0f, 0.0f);
 	quat = quatY * quatX * quat;
 	quat = quaternion::normalize(quat);
-	window->quatRot.w = quat.a();
-	window->quatRot.x = quat.b();
-	window->quatRot.y = quat.c();
-	window->quatRot.z = quat.d();
+	window->trs.quatRot.w = quat.a();
+	window->trs.quatRot.x = quat.b();
+	window->trs.quatRot.y = quat.c();
+	window->trs.quatRot.z = quat.d();
 }
 
 int getVariationGroup(colorLUT* lut, int variation)

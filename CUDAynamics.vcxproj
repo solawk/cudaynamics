@@ -229,6 +229,9 @@
     <ClInclude Include="marshal_struct.h" />
     <ClInclude Include="numb.h" />
     <ClInclude Include="objects.h" />
+    <ClInclude Include="plots\decay.h" />
+    <ClInclude Include="plots\orbit.h" />
+    <ClInclude Include="plots\trs.h" />
     <ClInclude Include="plotWindow.h" />
     <ClInclude Include="port.h" />
     <ClInclude Include="quaternion.h" />

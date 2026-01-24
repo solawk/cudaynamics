@@ -4,13 +4,15 @@
 #include <set>
 #include "heatmapProperties.hpp"
 #include "fontSettings_struct.h"
+#include "plots/decay.h"
+#include "plots/trs.h"
+#include "plots/orbit.h"
 #include "index.h"
 
 // Maximum amount of variables and parameters in the plot
 #define MAX_VARS_PARAMS 32
 
 enum PlotType { VarSeries, Phase, Phase2D, Orbit, Heatmap, MCHeatmap, Metric, IndSeries, Decay, PlotType_COUNT };
-enum OrbitPlotType {  Peak_Bifurcation, Interval_Bifurcation, Selected_Var_Section, Bifurcation_3D, OrbitPlotType_COUNT};
 enum DeltaState { DS_No, DS_Delta, DS_Decay };
 
 struct PlotWindow
@@ -25,11 +27,7 @@ public:
 	std::vector<int> variables; // or map
 
 	// Plot rotation
-	ImVec4 offset;
-	ImVec4 scale;
-	ImVec4 quatRot;
-	ImVec4 autorotate; // euler angles
-	ImVec2 deltarotation; // euler angles
+	TRS trs;
 
 	// Plot settings
 	bool settingsListEnabled;
@@ -61,21 +59,7 @@ public:
 
 	DeltaState deltaState;
 
-	// Outer layer is per threshold, inner layer is per index
-	std::vector<std::vector<float>> decayBuffer;
-	std::vector<std::vector<float>> decayTotal;
-	std::vector<std::vector<float>> decayAlive;
-	int decayThresholdCount;
-	std::vector<DecaySettings> decay; // Per index
-	// Index 0 is the OG, all shared settings are stored in that one
-	std::vector<std::string> decayThresholdNames;
-
-	bool decayIndicesAreAND; // true if AND, false if OR
-	ImVec4 plotFillColor;
-	float decayFillAlpha;
-	double decayMarkerPosition;
-	bool decayCalcLifetime;
-	float decayLifetime;
+	DecayProperties decay;
 	
 	ImVec2 dragLineHiresPos;
 
@@ -88,42 +72,7 @@ public:
 	ImVec2 originalPos, originalSize;
 
 	///// Orbit settings
-	int OrbitXIndex;
-	bool ShowOrbitParLines;
-	OrbitPlotType OrbitType;
-	float OrbitPointSize;
-	float OrbitMarkerWidth;
-	ImVec4 OrbitMarkerColor;
-	bool OrbitInvertedAxes;
-
-	bool areOrbitValuesDirty;
-	numb* bifAmps;
-	numb* bifParamIndices;
-	numb* bifIntervals;
-	std::vector<int> lastAttributeValueIndices;
-	int BifDotAmount;
-	int prevTotalVariation;
-	bool isAutoComputeOn;
-
-	bool buttonPressed;
-	bool redrawContinuation;
-	bool drawingContinuation;
-	numb* continuationAmpsForward;
-	numb* continuationAmpsBack;
-	numb* continuationIntervalsBack;
-	numb* continuationIntervalsForward;
-	numb* continuationParamIndicesBack;
-	numb* continuationParamIndicesForward;
-	int bifDotAmountForward;
-	int bifDotAmountBack;
-	std::vector<int> lastAttributevalueindicesContinuations;
-
-	float OrbitPointSizeForward;
-	float OrbitPointSizeBack;
-	ImPlotMarker OrbDotShapeForward;
-	ImPlotMarker OrbDotShapeBack;
-	ImVec4 OrbDotColorForward;
-	ImVec4 OrbDotColorBack;
+	OrbitProperties orbit;
 	///// 
 
 	bool ShowMultAxes;
@@ -144,12 +93,6 @@ public:
 		newWindow = false;
 		name = _name;
 
-		quatRot = ImVec4(1.0f, 0.0f, 0.0f, 0.0f);
-		autorotate = ImVec4(0.0f, 0.0f, 0.0f, 0.0f);
-
-		offset = ImVec4(0.0f, 0.0f, 0.0f, 0.0f);
-		scale = ImVec4(1.0f, 1.0f, 1.0f, 0.0f);
-
 		settingsListEnabled = false;
 		isFrozen = isFrozenAsHires = false;
 
@@ -162,7 +105,6 @@ public:
 		markerColor = ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
 
 		plotColor = ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
-		plotFillColor = ImVec4(1.0f, 1.0f, 1.0f, 0.0f);
 
 		markerShape = ImPlotMarker_Circle;
 
@@ -172,15 +114,9 @@ public:
 		whiteBg = false;
 		isImplot3d = false;
 		drawAllTrajectories = false;
-
-		decayThresholdCount = 1;
+		
 		deltaState = DS_No;
-		decayIndicesAreAND = true;
-		decayFillAlpha = 0.75f;
 		dragLineHiresPos = ImVec2(0.0f, 0.0f);
-		decayMarkerPosition = 0.0f;
-		decayCalcLifetime = true;
-		decayLifetime = 0.0f;
 
 		showAxis = true;
 		showAxisNames = true;
@@ -189,36 +125,6 @@ public:
 
 		isFullscreen = isFullscreenEnd = false;
 		originalPos = originalSize = ImVec2(0.0f, 0.0f);
-
-		OrbitXIndex = 0;
-		ShowOrbitParLines = true;
-		OrbitType = Peak_Bifurcation;
-		OrbitPointSize = 0.5f;
-		OrbitMarkerColor = ImVec4(1.0f, 0.0f, 0.0f, 0.5f);
-		OrbitMarkerWidth = 1;
-		OrbitInvertedAxes = false;
-		areOrbitValuesDirty = true;
-		bifAmps = NULL;
-		bifParamIndices = NULL;
-		bifIntervals = NULL;
-		isAutoComputeOn = false;
-
-		buttonPressed = false;
-		redrawContinuation = false;
-		drawingContinuation = false;
-		continuationAmpsBack = NULL;
-		continuationAmpsForward = NULL;
-		continuationIntervalsBack = NULL;
-		continuationIntervalsForward = NULL;
-		continuationParamIndicesBack = NULL;
-		continuationParamIndicesForward = NULL;
-
-		OrbitPointSizeForward = 0.5f;
-		OrbitPointSizeBack = 0.5f;
-		OrbDotShapeForward = ImPlotMarker_Circle;
-		OrbDotShapeBack = ImPlotMarker_Circle;
-		OrbDotColorForward = ImVec4(0.6f, 1.0f, 0.6f, 1.0f);
-		OrbDotColorBack = ImVec4(0.6f, 0.6f, 1.0f, 1.0f);
 
 		ShowMultAxes = false;
 		colormap = ImPlotColormap_Deep;
@@ -234,15 +140,6 @@ public:
 	bool isTheHiresWindow(AnalysisIndex _hiresIndex)
 	{
 		return variables[0] == _hiresIndex;
-	}
-
-	void ForceDecayThresholdCount()
-	{
-		for (int i = 0; i < decay.size(); i++)
-		{
-			decay[i].thresholds.resize(decayThresholdCount, 0.0f);
-			decayThresholdNames.resize(decayThresholdCount, "Threshold");
-		}
 	}
 
 	void AssignVariables(int* variablesArray)
@@ -282,10 +179,10 @@ public:
 		exportString += " " + std::to_string((int)type);
 		exportString += " " + std::to_string((int)isImplot3d);
 
-		exportString += " " + std::to_string(quatRot.x) + " " + std::to_string(quatRot.y) + " " + std::to_string(quatRot.z) + " " + std::to_string(quatRot.w);
-		exportString += " " + std::to_string(autorotate.x) + " " + std::to_string(autorotate.y) + " " + std::to_string(autorotate.z);
-		exportString += " " + std::to_string(offset.x) + " " + std::to_string(offset.y) + " " + std::to_string(offset.z);
-		exportString += " " + std::to_string(scale.x) + " " + std::to_string(scale.y) + " " + std::to_string(scale.z);
+		exportString += " " + std::to_string(trs.quatRot.x) + " " + std::to_string(trs.quatRot.y) + " " + std::to_string(trs.quatRot.z) + " " + std::to_string(trs.quatRot.w);
+		exportString += " " + std::to_string(trs.autorotate.x) + " " + std::to_string(trs.autorotate.y) + " " + std::to_string(trs.autorotate.z);
+		exportString += " " + std::to_string(trs.offset.x) + " " + std::to_string(trs.offset.y) + " " + std::to_string(trs.offset.z);
+		exportString += " " + std::to_string(trs.scale.x) + " " + std::to_string(trs.scale.y) + " " + std::to_string(trs.scale.z);
 		exportString += " " + std::to_string((int)showAxis) + " " + std::to_string((int)showAxisNames) + " " + std::to_string((int)showRuler) + " " + std::to_string((int)showGrid);
 
 		exportString += " " + std::to_string(variableCount);
@@ -320,22 +217,22 @@ public:
 		type = (PlotType)atoi(data[d++].c_str());
 		isImplot3d = (bool)atoi(data[d++].c_str());
 
-		quatRot.x = (float)atof(data[d++].c_str());
-		quatRot.y = (float)atof(data[d++].c_str());
-		quatRot.z = (float)atof(data[d++].c_str());
-		quatRot.w = (float)atof(data[d++].c_str());
+		trs.quatRot.x = (float)atof(data[d++].c_str());
+		trs.quatRot.y = (float)atof(data[d++].c_str());
+		trs.quatRot.z = (float)atof(data[d++].c_str());
+		trs.quatRot.w = (float)atof(data[d++].c_str());
 
-		autorotate.x = (float)atof(data[d++].c_str());
-		autorotate.y = (float)atof(data[d++].c_str());
-		autorotate.z = (float)atof(data[d++].c_str());
+		trs.autorotate.x = (float)atof(data[d++].c_str());
+		trs.autorotate.y = (float)atof(data[d++].c_str());
+		trs.autorotate.z = (float)atof(data[d++].c_str());
 
-		offset.x = (float)atof(data[d++].c_str());
-		offset.y = (float)atof(data[d++].c_str());
-		offset.z = (float)atof(data[d++].c_str());
+		trs.offset.x = (float)atof(data[d++].c_str());
+		trs.offset.y = (float)atof(data[d++].c_str());
+		trs.offset.z = (float)atof(data[d++].c_str());
 
-		scale.x = (float)atof(data[d++].c_str());
-		scale.y = (float)atof(data[d++].c_str());
-		scale.z = (float)atof(data[d++].c_str());
+		trs.scale.x = (float)atof(data[d++].c_str());
+		trs.scale.y = (float)atof(data[d++].c_str());
+		trs.scale.z = (float)atof(data[d++].c_str());
 
 		showAxis = (bool)atoi(data[d++].c_str());
 		showAxisNames = (bool)atoi(data[d++].c_str());
