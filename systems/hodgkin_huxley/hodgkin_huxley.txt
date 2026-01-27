@@ -47,3 +47,5 @@ enum method 1ExplicitEuler 0SemiExplicitEuler 0ImplicitEuler 0ExplicitMidpoint 0
 // analysis <name from "anfunc_names.cpp"> settings <values, must exactly match the settings struct>
 analysis Minimum/maximum settings 3 3
 analysis Largest Lyapunov exponent settings 0.01 50 3 0 1 2 3
+analysis Periodicity settings 1.0 3 15.0 5.0 10000.0 0.001 1.0 -inf
+analysis Phase volume settings 1000 0 1 2 3
