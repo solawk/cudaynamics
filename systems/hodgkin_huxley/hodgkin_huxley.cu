@@ -7,7 +7,7 @@ namespace attributes
 	enum variables { n, m, h, v, i, t };
 	enum parameters { G_Na, G_leak, G_K, E_Na, E_leak, E_K, C, Idc, Iamp, Ifreq, Idel, Idf, symmetry, signal, method, COUNT };
 	enum waveforms { square, sine, triangle };
-	enum methods { ExplicitEuler, ExplicitMidpoint, ExplicitRungeKutta4, VariableSymmetryCD, ExplicitDormandPrince8 };
+	enum methods { ExplicitEuler, SemiExplicitEuler, ImplicitEuler, ExplicitMidpoint, ImplicitMidpoint, ExplicitRungeKutta4, ExplicitDormandPrince8, VariableSymmetryCD };
 }
 
 __global__ void gpu_wrapper_(name)(Computation* data, uint64_t variation)
@@ -64,6 +64,56 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
 			Vnext(v) = V(v) + H * ((Vnext(i) - I_K - I_Na - I_L) / P(C));
 		}
 
+
+		ifMETHOD(P(method), SemiExplicitEuler)
+		{
+			Vnext(t) = V(t) + H;
+			Vnext(i) = P(Idc) + (fmodf((V(t) - P(Idel)) > 0 ? (V(t) - P(Idel)) : (P(Idf) / P(Ifreq) + P(Idel) - V(t)), 1 / P(Ifreq)) < P(Idf) / P(Ifreq) ? P(Iamp) : 0.0f);
+
+			numb alpha_n = 0.01 * ((10 - V(v)) / (exp((10 - V(v)) / 10) - 1));
+			numb beta_n = 0.125 * exp(-V(v) / 80);
+			numb alpha_m = 0.1 * ((25 - V(v)) / (exp((25 - V(v)) / 10) - 1));
+			numb beta_m = 4 * exp(-V(v) / 18);
+			numb alpha_h = 0.07 * exp(-V(v) / 20);
+			numb beta_h = 1 / (exp((30 - V(v)) / 10) + 1);
+
+			Vnext(n) = V(n) + H * (alpha_n * (1 - V(n)) - beta_n * V(n));
+			Vnext(m) = V(m) + H * (alpha_m * (1 - V(m)) - beta_m * V(m));
+			Vnext(h) = V(h) + H * (alpha_h * (1 - V(h)) - beta_h * V(h));
+
+			numb I_Na = (Vnext(m) * Vnext(m) * Vnext(m)) * P(G_Na) * Vnext(h) * (V(v) - P(E_Na));
+			numb I_K = (Vnext(n) * Vnext(n) * Vnext(n) * Vnext(n)) * P(G_K) * (V(v) - P(E_K));
+			numb I_L = P(G_leak) * (V(v) - P(E_leak));
+
+			Vnext(v) = V(v) + H * ((Vnext(i) - I_K - I_Na - I_L) / P(C));
+		}
+
+
+		ifMETHOD(P(method), ImplicitEuler)
+		{
+			Vnext(i) = P(Idc) + (fmodf((V(t) - P(Idel)) > 0 ? (V(t) - P(Idel)) : (P(Idf) / P(Ifreq) + P(Idel) - V(t)), 1 / P(Ifreq)) < P(Idf) / P(Ifreq) ? P(Iamp) : 0.0f);
+			Vnext(t) = V(t) + H;
+
+			numb alpha_n = 0.01 * ((10 - V(v)) / (exp((10 - V(v)) / 10) - 1));
+			numb beta_n = 0.125 * exp(-V(v) / 80);
+			numb alpha_m = 0.1 * ((25 - V(v)) / (exp((25 - V(v)) / 10) - 1));
+			numb beta_m = 4 * exp(-V(v) / 18);
+			numb alpha_h = 0.07 * exp(-V(v) / 20);
+			numb beta_h = 1 / (exp((30 - V(v)) / 10) + 1);
+
+			Vnext(n) = (V(n) + H * alpha_n) / (1 + H * (alpha_n + beta_n));
+			Vnext(m) = (V(m) + H * alpha_m) / (1 + H * (alpha_m + beta_m));
+			Vnext(h) = (V(h) + H * alpha_h) / (1 + H * (alpha_h + beta_h));
+
+			numb I_Na = (V(m) * V(m) * V(m)) * P(G_Na) * V(h) * (V(v) - P(E_Na));
+			numb I_K = (V(n) * V(n) * V(n) * V(n)) * P(G_K) * (V(v) - P(E_K));
+			numb I_L = P(G_leak) * (V(v) - P(E_leak));
+
+			Vnext(v) = V(v) + H * ((Vnext(i) - I_K - I_Na - I_L) / P(C));
+		}
+
+
+
 		ifMETHOD(P(method), ExplicitMidpoint)
 		{
 			numb imp = P(Idc) + (fmodf((V(t) - P(Idel)) > 0 ? (V(t) - P(Idel)) : (P(Idf) / P(Ifreq) + P(Idel) - V(t)), 1 / P(Ifreq)) < P(Idf) / P(Ifreq) ? P(Iamp) : 0.0f);
@@ -99,6 +149,49 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
 			Vnext(n) = V(n) + H * (alpha_n * (1 - nmp) - beta_n * nmp);
 			Vnext(m) = V(m) + H * (alpha_m * (1 - mmp) - beta_m * mmp);
 			Vnext(h) = V(h) + H * (alpha_h * (1 - hmp) - beta_h * hmp);
+
+			I_Na = (mmp * mmp * mmp) * P(G_Na) * hmp * (vmp - P(E_Na));
+			I_K = (nmp * nmp * nmp * nmp) * P(G_K) * (vmp - P(E_K));
+			I_L = P(G_leak) * (vmp - P(E_leak));
+
+			Vnext(v) = V(v) + H * ((Vnext(i) - I_K - I_Na - I_L) / P(C));
+		}
+
+		ifMETHOD(P(method), ImplicitMidpoint)
+		{
+			numb imp = P(Idc) + (fmodf((V(t) - P(Idel)) > 0 ? (V(t) - P(Idel)) : (P(Idf) / P(Ifreq) + P(Idel) - V(t)), 1 / P(Ifreq)) < P(Idf) / P(Ifreq) ? P(Iamp) : 0.0f);
+			numb tmp = V(t) + H * 0.5;
+
+			numb alpha_n = 0.01 * ((10 - V(v)) / (exp((10 - V(v)) / 10) - 1));
+			numb beta_n = 0.125 * exp(-V(v) / 80);
+			numb alpha_m = 0.1 * ((25 - V(v)) / (exp((25 - V(v)) / 10) - 1));
+			numb beta_m = 4 * exp(-V(v) / 18);
+			numb alpha_h = 0.07 * exp(-V(v) / 20);
+			numb beta_h = 1 / (exp((30 - V(v)) / 10) + 1);
+
+			numb nmp = (V(n) + H * 0.5 * alpha_n) / (1 + H * 0.5 * (alpha_n + beta_n));
+			numb mmp = (V(m) + H * 0.5 * alpha_m) / (1 + H * 0.5 * (alpha_m + beta_m));
+			numb hmp = (V(h) + H * 0.5 * alpha_h) / (1 + H * 0.5 * (alpha_h + beta_h));
+
+			numb I_Na = (V(m) * V(m) * V(m)) * P(G_Na) * V(h) * (V(v) - P(E_Na));
+			numb I_K = (V(n) * V(n) * V(n) * V(n)) * P(G_K) * (V(v) - P(E_K));
+			numb I_L = P(G_leak) * (V(v) - P(E_leak));
+
+			numb vmp = V(v) + H * 0.5 * ((imp - I_K - I_Na - I_L) / P(C));
+
+			Vnext(i) = P(Idc) + (fmodf((tmp - P(Idel)) > 0 ? (tmp - P(Idel)) : (P(Idf) / P(Ifreq) + P(Idel) - tmp), 1 / P(Ifreq)) < P(Idf) / P(Ifreq) ? P(Iamp) : 0.0f);
+			Vnext(t) = V(t) + H;
+
+			alpha_n = 0.01 * ((10 - vmp) / (exp((10 - vmp) / 10) - 1));
+			beta_n = 0.125 * exp(-vmp / 80);
+			alpha_m = 0.1 * ((25 - vmp) / (exp((25 - vmp) / 10) - 1));
+			beta_m = 4 * exp(-vmp / 18);
+			alpha_h = 0.07 * exp(-vmp / 20);
+			beta_h = 1 / (exp((30 - vmp) / 10) + 1);
+
+			Vnext(n) = (V(n) + H * alpha_n) / (1 + H * (alpha_n + beta_n));
+			Vnext(m) = (V(m) + H * alpha_m) / (1 + H * (alpha_m + beta_m));
+			Vnext(h) = (V(h) + H * alpha_h) / (1 + H * (alpha_h + beta_h));
 
 			I_Na = (mmp * mmp * mmp) * P(G_Na) * hmp * (vmp - P(E_Na));
 			I_K = (nmp * nmp * nmp * nmp) * P(G_K) * (vmp - P(E_K));
@@ -205,50 +298,6 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
 			Vnext(m) = V(m) + H * (km1 + 2.0f * km2 + 2.0f * km3 + km4) / 6.0f;
 			Vnext(h) = V(h) + H * (kh1 + 2.0f * kh2 + 2.0f * kh3 + kh4) / 6.0f;
 			Vnext(v) = V(v) + H * (kv1 + 2.0f * kv2 + 2.0f * kv3 + kv4) / 6.0f;
-		}
-
-		ifMETHOD(P(method), VariableSymmetryCD)
-		{
-			numb h1 = 0.5 * H - P(symmetry);
-			numb h2 = 0.5 * H + P(symmetry);
-
-			numb tmp = V(t) + h1;
-			Vnext(i) = P(Idc) + (fmodf((tmp - P(Idel)) > 0 ? (tmp - P(Idel)) : (P(Idf) / P(Ifreq) + P(Idel) - tmp), 1 / P(Ifreq)) < P(Idf) / P(Ifreq) ? P(Iamp) : 0.0f);
-
-			numb alpha_n = 0.01 * ((10 - V(v)) / (exp((10 - V(v)) / 10) - 1));
-			numb beta_n = 0.125 * exp(-V(v) / 80);
-			numb alpha_m = 0.1 * ((25 - V(v)) / (exp((25 - V(v)) / 10) - 1));
-			numb beta_m = 4 * exp(-V(v) / 18);
-			numb alpha_h = 0.07 * exp(-V(v) / 20);
-			numb beta_h = 1 / (exp((30 - V(v)) / 10) + 1);
-
-			numb nmp = V(n) + h1 * (alpha_n * (1 - V(n)) - beta_n * V(n));
-			numb mmp = V(m) + h1 * (alpha_m * (1 - V(m)) - beta_m * V(m));
-			numb hmp = V(h) + h1 * (alpha_h * (1 - V(h)) - beta_h * V(h));
-
-			numb I_Na = (mmp * mmp * mmp) * P(G_Na) * hmp * (V(v) - P(E_Na));
-			numb I_K = (nmp * nmp * nmp * nmp) * P(G_K) * (V(v) - P(E_K));
-			numb I_L = P(G_leak) * (V(v) - P(E_leak));
-
-			numb vmp = V(v) + h1 * ((Vnext(i) - I_K - I_Na - I_L) / P(C));
-
-			I_L = P(G_leak) * (vmp - P(E_leak));
-			I_K = (nmp * nmp * nmp * nmp) * P(G_K) * (vmp - P(E_K));
-			I_Na = (mmp * mmp * mmp) * P(G_Na) * hmp * (vmp - P(E_Na));
-
-			Vnext(v) = vmp + h2 * ((Vnext(i) - I_K - I_Na - I_L) / P(C));
-
-			alpha_h = 0.07 * exp(-Vnext(v) / 20);
-			beta_h = 1 / (exp((30 - Vnext(v)) / 10) + 1);
-			alpha_m = 0.1 * ((25 - Vnext(v)) / (exp((25 - Vnext(v)) / 10) - 1));
-			beta_m = 4 * exp(-Vnext(v) / 18);
-			alpha_n = 0.01 * ((10 - Vnext(v)) / (exp((10 - Vnext(v)) / 10) - 1));
-			beta_n = 0.125 * exp(-Vnext(v) / 80);
-
-			Vnext(h) = (hmp + h2 * alpha_h) / (1 + h2 * (alpha_h + beta_h));
-			Vnext(m) = (mmp + h2 * alpha_m) / (1 + h2 * (alpha_m + beta_m));
-			Vnext(n) = (nmp + h2 * alpha_n) / (1 + h2 * (alpha_n + beta_n));
-			Vnext(t) = V(t) + H;
 		}
 
 		ifMETHOD(P(method), ExplicitDormandPrince8)
@@ -597,9 +646,53 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
 
 			Vnext(n) = V(n) + H * (B[0][0] * kn1 + B[0][1] * kn2 + B[0][2] * kn3 + B[0][3] * kn4 + B[0][4] * kn5 + B[0][5] * kn6 + B[0][6] * kn7 + B[0][7] * kn8 + B[0][8] * kn9 + B[0][9] * knA0 + B[0][10] * knA1 + B[0][11] * knA2 + B[0][12] * knA3);
 			Vnext(m) = V(m) + H * (B[0][0] * km1 + B[0][1] * km2 + B[0][2] * km3 + B[0][3] * km4 + B[0][4] * km5 + B[0][5] * km6 + B[0][6] * km7 + B[0][7] * km8 + B[0][8] * km9 + B[0][9] * kmA0 + B[0][10] * kmA1 + B[0][11] * kmA2 + B[0][12] * kmA3);
-			Vnext(h) = V(h) + H * (B[0][0] * kh1 + B[0][1] * kh2 + B[0][2] * kh3 + B[0][3] * kh4 + B[0][4] * kh5 + B[0][5] * kh6 + B[0][6] * kh7 + B[0][7] * kh8 + B[0][8] * kh9 + B[0][9] * khA0 + B[0][10] * khA1 + B[0][11] * khA2 + B[0][12] * kh3);
+			Vnext(h) = V(h) + H * (B[0][0] * kh1 + B[0][1] * kh2 + B[0][2] * kh3 + B[0][3] * kh4 + B[0][4] * kh5 + B[0][5] * kh6 + B[0][6] * kh7 + B[0][7] * kh8 + B[0][8] * kh9 + B[0][9] * khA0 + B[0][10] * khA1 + B[0][11] * khA2 + B[0][12] * khA3);
 			Vnext(v) = V(v) + H * (B[0][0] * kv1 + B[0][1] * kv2 + B[0][2] * kv3 + B[0][3] * kv4 + B[0][4] * kv5 + B[0][5] * kv6 + B[0][6] * kv7 + B[0][7] * kv8 + B[0][8] * kv9 + B[0][9] * kvA0 + B[0][10] * kvA1 + B[0][11] * kvA2 + B[0][12] * kvA3);
 			Vnext(t) = V(t) + H * (B[0][0] + B[0][1] + B[0][2] + B[0][3] + B[0][4] + B[0][5] + B[0][6] + B[0][7] + B[0][8] + B[0][9] + B[0][10] + B[0][11] + B[0][12]);
+		}
+
+		ifMETHOD(P(method), VariableSymmetryCD)
+		{
+			numb h1 = 0.5 * H - P(symmetry);
+			numb h2 = 0.5 * H + P(symmetry);
+
+			numb tmp = V(t) + h1;
+			Vnext(i) = P(Idc) + (fmodf((tmp - P(Idel)) > 0 ? (tmp - P(Idel)) : (P(Idf) / P(Ifreq) + P(Idel) - tmp), 1 / P(Ifreq)) < P(Idf) / P(Ifreq) ? P(Iamp) : 0.0f);
+
+			numb alpha_n = 0.01 * ((10 - V(v)) / (exp((10 - V(v)) / 10) - 1));
+			numb beta_n = 0.125 * exp(-V(v) / 80);
+			numb alpha_m = 0.1 * ((25 - V(v)) / (exp((25 - V(v)) / 10) - 1));
+			numb beta_m = 4 * exp(-V(v) / 18);
+			numb alpha_h = 0.07 * exp(-V(v) / 20);
+			numb beta_h = 1 / (exp((30 - V(v)) / 10) + 1);
+
+			numb nmp = V(n) + h1 * (alpha_n * (1 - V(n)) - beta_n * V(n));
+			numb mmp = V(m) + h1 * (alpha_m * (1 - V(m)) - beta_m * V(m));
+			numb hmp = V(h) + h1 * (alpha_h * (1 - V(h)) - beta_h * V(h));
+
+			numb I_Na = (mmp * mmp * mmp) * P(G_Na) * hmp * (V(v) - P(E_Na));
+			numb I_K = (nmp * nmp * nmp * nmp) * P(G_K) * (V(v) - P(E_K));
+			numb I_L = P(G_leak) * (V(v) - P(E_leak));
+
+			numb vmp = V(v) + h1 * ((Vnext(i) - I_K - I_Na - I_L) / P(C));
+
+			I_L = P(G_leak) * (vmp - P(E_leak));
+			I_K = (nmp * nmp * nmp * nmp) * P(G_K) * (vmp - P(E_K));
+			I_Na = (mmp * mmp * mmp) * P(G_Na) * hmp * (vmp - P(E_Na));
+
+			Vnext(v) = vmp + h2 * ((Vnext(i) - I_K - I_Na - I_L) / P(C));
+
+			alpha_h = 0.07 * exp(-Vnext(v) / 20);
+			beta_h = 1 / (exp((30 - Vnext(v)) / 10) + 1);
+			alpha_m = 0.1 * ((25 - Vnext(v)) / (exp((25 - Vnext(v)) / 10) - 1));
+			beta_m = 4 * exp(-Vnext(v) / 18);
+			alpha_n = 0.01 * ((10 - Vnext(v)) / (exp((10 - Vnext(v)) / 10) - 1));
+			beta_n = 0.125 * exp(-Vnext(v) / 80);
+
+			Vnext(h) = (hmp + h2 * alpha_h) / (1 + h2 * (alpha_h + beta_h));
+			Vnext(m) = (mmp + h2 * alpha_m) / (1 + h2 * (alpha_m + beta_m));
+			Vnext(n) = (nmp + h2 * alpha_n) / (1 + h2 * (alpha_n + beta_n));
+			Vnext(t) = V(t) + H;
 		}
 	}
 
@@ -620,6 +713,53 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
 			Vnext(n) = V(n) + H * (alpha_n * (1 - V(n)) - beta_n * V(n));
 			Vnext(m) = V(m) + H * (alpha_m * (1 - V(m)) - beta_m * V(m));
 			Vnext(h) = V(h) + H * (alpha_h * (1 - V(h)) - beta_h * V(h));
+
+			numb I_Na = (V(m) * V(m) * V(m)) * P(G_Na) * V(h) * (V(v) - P(E_Na));
+			numb I_K = (V(n) * V(n) * V(n) * V(n)) * P(G_K) * (V(v) - P(E_K));
+			numb I_L = P(G_leak) * (V(v) - P(E_leak));
+
+			Vnext(v) = V(v) + H * ((Vnext(i) - I_K - I_Na - I_L) / P(C));
+		}
+
+		ifMETHOD(P(method), SemiExplicitEuler)
+		{
+			Vnext(t) = V(t) + H;
+			Vnext(i) = P(Idc) + P(Iamp) * sinf(2.0f * 3.141592f * P(Ifreq) * (V(t) - P(Idel)));
+
+			numb alpha_n = 0.01 * ((10 - V(v)) / (exp((10 - V(v)) / 10) - 1));
+			numb beta_n = 0.125 * exp(-V(v) / 80);
+			numb alpha_m = 0.1 * ((25 - V(v)) / (exp((25 - V(v)) / 10) - 1));
+			numb beta_m = 4 * exp(-V(v) / 18);
+			numb alpha_h = 0.07 * exp(-V(v) / 20);
+			numb beta_h = 1 / (exp((30 - V(v)) / 10) + 1);
+
+			Vnext(n) = V(n) + H * (alpha_n * (1 - V(n)) - beta_n * V(n));
+			Vnext(m) = V(m) + H * (alpha_m * (1 - V(m)) - beta_m * V(m));
+			Vnext(h) = V(h) + H * (alpha_h * (1 - V(h)) - beta_h * V(h));
+
+			numb I_Na = (Vnext(m) * Vnext(m) * Vnext(m)) * P(G_Na) * Vnext(h) * (V(v) - P(E_Na));
+			numb I_K = (Vnext(n) * Vnext(n) * Vnext(n) * Vnext(n)) * P(G_K) * (V(v) - P(E_K));
+			numb I_L = P(G_leak) * (V(v) - P(E_leak));
+
+			Vnext(v) = V(v) + H * ((Vnext(i) - I_K - I_Na - I_L) / P(C));
+		}
+
+
+		ifMETHOD(P(method), ImplicitEuler)
+		{
+			Vnext(i) = P(Idc) + P(Iamp) * sinf(2.0f * 3.141592f * P(Ifreq) * (V(t) - P(Idel)));
+			Vnext(t) = V(t) + H;
+
+			numb alpha_n = 0.01 * ((10 - V(v)) / (exp((10 - V(v)) / 10) - 1));
+			numb beta_n = 0.125 * exp(-V(v) / 80);
+			numb alpha_m = 0.1 * ((25 - V(v)) / (exp((25 - V(v)) / 10) - 1));
+			numb beta_m = 4 * exp(-V(v) / 18);
+			numb alpha_h = 0.07 * exp(-V(v) / 20);
+			numb beta_h = 1 / (exp((30 - V(v)) / 10) + 1);
+
+			Vnext(n) = (V(n) + H * alpha_n) / (1 + H * (alpha_n + beta_n));
+			Vnext(m) = (V(m) + H * alpha_m) / (1 + H * (alpha_m + beta_m));
+			Vnext(h) = (V(h) + H * alpha_h) / (1 + H * (alpha_h + beta_h));
 
 			numb I_Na = (V(m) * V(m) * V(m)) * P(G_Na) * V(h) * (V(v) - P(E_Na));
 			numb I_K = (V(n) * V(n) * V(n) * V(n)) * P(G_K) * (V(v) - P(E_K));
@@ -663,6 +803,49 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
 			Vnext(n) = V(n) + H * (alpha_n * (1 - nmp) - beta_n * nmp);
 			Vnext(m) = V(m) + H * (alpha_m * (1 - mmp) - beta_m * mmp);
 			Vnext(h) = V(h) + H * (alpha_h * (1 - hmp) - beta_h * hmp);
+
+			I_Na = (mmp * mmp * mmp) * P(G_Na) * hmp * (vmp - P(E_Na));
+			I_K = (nmp * nmp * nmp * nmp) * P(G_K) * (vmp - P(E_K));
+			I_L = P(G_leak) * (vmp - P(E_leak));
+
+			Vnext(v) = V(v) + H * ((Vnext(i) - I_K - I_Na - I_L) / P(C));
+		}
+
+		ifMETHOD(P(method), ImplicitMidpoint)
+		{
+			numb imp = P(Idc) + P(Iamp) * sinf(2.0f * 3.141592f * P(Ifreq) * (V(t) - P(Idel)));
+			numb tmp = V(t) + H * 0.5;
+
+			numb alpha_n = 0.01 * ((10 - V(v)) / (exp((10 - V(v)) / 10) - 1));
+			numb beta_n = 0.125 * exp(-V(v) / 80);
+			numb alpha_m = 0.1 * ((25 - V(v)) / (exp((25 - V(v)) / 10) - 1));
+			numb beta_m = 4 * exp(-V(v) / 18);
+			numb alpha_h = 0.07 * exp(-V(v) / 20);
+			numb beta_h = 1 / (exp((30 - V(v)) / 10) + 1);
+
+			numb nmp = (V(n) + H * 0.5 * alpha_n) / (1 + H * 0.5 * (alpha_n + beta_n));
+			numb mmp = (V(m) + H * 0.5 * alpha_m) / (1 + H * 0.5 * (alpha_m + beta_m));
+			numb hmp = (V(h) + H * 0.5 * alpha_h) / (1 + H * 0.5 * (alpha_h + beta_h));
+
+			numb I_Na = (V(m) * V(m) * V(m)) * P(G_Na) * V(h) * (V(v) - P(E_Na));
+			numb I_K = (V(n) * V(n) * V(n) * V(n)) * P(G_K) * (V(v) - P(E_K));
+			numb I_L = P(G_leak) * (V(v) - P(E_leak));
+
+			numb vmp = V(v) + H * 0.5 * ((imp - I_K - I_Na - I_L) / P(C));
+
+			Vnext(i) = P(Idc) + P(Iamp) * sinf(2.0f * 3.141592f * P(Ifreq) * (tmp - P(Idel)));
+			Vnext(t) = V(t) + H;
+
+			alpha_n = 0.01 * ((10 - vmp) / (exp((10 - vmp) / 10) - 1));
+			beta_n = 0.125 * exp(-vmp / 80);
+			alpha_m = 0.1 * ((25 - vmp) / (exp((25 - vmp) / 10) - 1));
+			beta_m = 4 * exp(-vmp / 18);
+			alpha_h = 0.07 * exp(-vmp / 20);
+			beta_h = 1 / (exp((30 - vmp) / 10) + 1);
+
+			Vnext(n) = (V(n) + H * alpha_n) / (1 + H * (alpha_n + beta_n));
+			Vnext(m) = (V(m) + H * alpha_m) / (1 + H * (alpha_m + beta_m));
+			Vnext(h) = (V(h) + H * alpha_h) / (1 + H * (alpha_h + beta_h));
 
 			I_Na = (mmp * mmp * mmp) * P(G_Na) * hmp * (vmp - P(E_Na));
 			I_K = (nmp * nmp * nmp * nmp) * P(G_K) * (vmp - P(E_K));
@@ -770,50 +953,6 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
 			Vnext(v) = V(v) + H * (kv1 + 2.0f * kv2 + 2.0f * kv3 + kv4) / 6.0f;
 		}
 
-		ifMETHOD(P(method), VariableSymmetryCD)
-		{
-			numb h1 = 0.5 * H - P(symmetry);
-			numb h2 = 0.5 * H + P(symmetry);
-
-			numb tmp = V(t) + h1;
-			Vnext(i) = P(Idc) + P(Iamp) * sinf(2.0f * 3.141592f * P(Ifreq) * (tmp - P(Idel)));
-
-			numb alpha_n = 0.01 * ((10 - V(v)) / (exp((10 - V(v)) / 10) - 1));
-			numb beta_n = 0.125 * exp(-V(v) / 80);
-			numb alpha_m = 0.1 * ((25 - V(v)) / (exp((25 - V(v)) / 10) - 1));
-			numb beta_m = 4 * exp(-V(v) / 18);
-			numb alpha_h = 0.07 * exp(-V(v) / 20);
-			numb beta_h = 1 / (exp((30 - V(v)) / 10) + 1);
-
-			numb nmp = V(n) + h1 * (alpha_n * (1 - V(n)) - beta_n * V(n));
-			numb mmp = V(m) + h1 * (alpha_m * (1 - V(m)) - beta_m * V(m));
-			numb hmp = V(h) + h1 * (alpha_h * (1 - V(h)) - beta_h * V(h));
-
-			numb I_Na = (mmp * mmp * mmp) * P(G_Na) * hmp * (V(v) - P(E_Na));
-			numb I_K = (nmp * nmp * nmp * nmp) * P(G_K) * (V(v) - P(E_K));
-			numb I_L = P(G_leak) * (V(v) - P(E_leak));
-
-			numb vmp = V(v) + h1 * ((Vnext(i) - I_K - I_Na - I_L) / P(C));
-
-			I_L = P(G_leak) * (vmp - P(E_leak));
-			I_K = (nmp * nmp * nmp * nmp) * P(G_K) * (vmp - P(E_K));
-			I_Na = (mmp * mmp * mmp) * P(G_Na) * hmp * (vmp - P(E_Na));
-
-			Vnext(v) = vmp + h2 * ((Vnext(i) - I_K - I_Na - I_L) / P(C));
-
-			alpha_h = 0.07 * exp(-Vnext(v) / 20);
-			beta_h = 1 / (exp((30 - Vnext(v)) / 10) + 1);
-			alpha_m = 0.1 * ((25 - Vnext(v)) / (exp((25 - Vnext(v)) / 10) - 1));
-			beta_m = 4 * exp(-Vnext(v) / 18);
-			alpha_n = 0.01 * ((10 - Vnext(v)) / (exp((10 - Vnext(v)) / 10) - 1));
-			beta_n = 0.125 * exp(-Vnext(v) / 80);
-
-			Vnext(h) = (hmp + h2 * alpha_h) / (1 + h2 * (alpha_h + beta_h));
-			Vnext(m) = (mmp + h2 * alpha_m) / (1 + h2 * (alpha_m + beta_m));
-			Vnext(n) = (nmp + h2 * alpha_n) / (1 + h2 * (alpha_n + beta_n));
-			Vnext(t) = V(t) + H;
-		}
-
 		ifMETHOD(P(method), ExplicitDormandPrince8)
 		{
 			numb M[13][12] = { {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
@@ -1160,9 +1299,53 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
 
 			Vnext(n) = V(n) + H * (B[0][0] * kn1 + B[0][1] * kn2 + B[0][2] * kn3 + B[0][3] * kn4 + B[0][4] * kn5 + B[0][5] * kn6 + B[0][6] * kn7 + B[0][7] * kn8 + B[0][8] * kn9 + B[0][9] * knA0 + B[0][10] * knA1 + B[0][11] * knA2 + B[0][12] * knA3);
 			Vnext(m) = V(m) + H * (B[0][0] * km1 + B[0][1] * km2 + B[0][2] * km3 + B[0][3] * km4 + B[0][4] * km5 + B[0][5] * km6 + B[0][6] * km7 + B[0][7] * km8 + B[0][8] * km9 + B[0][9] * kmA0 + B[0][10] * kmA1 + B[0][11] * kmA2 + B[0][12] * kmA3);
-			Vnext(h) = V(h) + H * (B[0][0] * kh1 + B[0][1] * kh2 + B[0][2] * kh3 + B[0][3] * kh4 + B[0][4] * kh5 + B[0][5] * kh6 + B[0][6] * kh7 + B[0][7] * kh8 + B[0][8] * kh9 + B[0][9] * khA0 + B[0][10] * khA1 + B[0][11] * khA2 + B[0][12] * kh3);
+			Vnext(h) = V(h) + H * (B[0][0] * kh1 + B[0][1] * kh2 + B[0][2] * kh3 + B[0][3] * kh4 + B[0][4] * kh5 + B[0][5] * kh6 + B[0][6] * kh7 + B[0][7] * kh8 + B[0][8] * kh9 + B[0][9] * khA0 + B[0][10] * khA1 + B[0][11] * khA2 + B[0][12] * khA3);
 			Vnext(v) = V(v) + H * (B[0][0] * kv1 + B[0][1] * kv2 + B[0][2] * kv3 + B[0][3] * kv4 + B[0][4] * kv5 + B[0][5] * kv6 + B[0][6] * kv7 + B[0][7] * kv8 + B[0][8] * kv9 + B[0][9] * kvA0 + B[0][10] * kvA1 + B[0][11] * kvA2 + B[0][12] * kvA3);
 			Vnext(t) = V(t) + H * (B[0][0] + B[0][1] + B[0][2] + B[0][3] + B[0][4] + B[0][5] + B[0][6] + B[0][7] + B[0][8] + B[0][9] + B[0][10] + B[0][11] + B[0][12]);
+		}
+
+		ifMETHOD(P(method), VariableSymmetryCD)
+		{
+			numb h1 = 0.5 * H - P(symmetry);
+			numb h2 = 0.5 * H + P(symmetry);
+
+			numb tmp = V(t) + h1;
+			Vnext(i) = P(Idc) + P(Iamp) * sinf(2.0f * 3.141592f * P(Ifreq) * (tmp - P(Idel)));
+
+			numb alpha_n = 0.01 * ((10 - V(v)) / (exp((10 - V(v)) / 10) - 1));
+			numb beta_n = 0.125 * exp(-V(v) / 80);
+			numb alpha_m = 0.1 * ((25 - V(v)) / (exp((25 - V(v)) / 10) - 1));
+			numb beta_m = 4 * exp(-V(v) / 18);
+			numb alpha_h = 0.07 * exp(-V(v) / 20);
+			numb beta_h = 1 / (exp((30 - V(v)) / 10) + 1);
+
+			numb nmp = V(n) + h1 * (alpha_n * (1 - V(n)) - beta_n * V(n));
+			numb mmp = V(m) + h1 * (alpha_m * (1 - V(m)) - beta_m * V(m));
+			numb hmp = V(h) + h1 * (alpha_h * (1 - V(h)) - beta_h * V(h));
+
+			numb I_Na = (mmp * mmp * mmp) * P(G_Na) * hmp * (V(v) - P(E_Na));
+			numb I_K = (nmp * nmp * nmp * nmp) * P(G_K) * (V(v) - P(E_K));
+			numb I_L = P(G_leak) * (V(v) - P(E_leak));
+
+			numb vmp = V(v) + h1 * ((Vnext(i) - I_K - I_Na - I_L) / P(C));
+
+			I_L = P(G_leak) * (vmp - P(E_leak));
+			I_K = (nmp * nmp * nmp * nmp) * P(G_K) * (vmp - P(E_K));
+			I_Na = (mmp * mmp * mmp) * P(G_Na) * hmp * (vmp - P(E_Na));
+
+			Vnext(v) = vmp + h2 * ((Vnext(i) - I_K - I_Na - I_L) / P(C));
+
+			alpha_h = 0.07 * exp(-Vnext(v) / 20);
+			beta_h = 1 / (exp((30 - Vnext(v)) / 10) + 1);
+			alpha_m = 0.1 * ((25 - Vnext(v)) / (exp((25 - Vnext(v)) / 10) - 1));
+			beta_m = 4 * exp(-Vnext(v) / 18);
+			alpha_n = 0.01 * ((10 - Vnext(v)) / (exp((10 - Vnext(v)) / 10) - 1));
+			beta_n = 0.125 * exp(-Vnext(v) / 80);
+
+			Vnext(h) = (hmp + h2 * alpha_h) / (1 + h2 * (alpha_h + beta_h));
+			Vnext(m) = (mmp + h2 * alpha_m) / (1 + h2 * (alpha_m + beta_m));
+			Vnext(n) = (nmp + h2 * alpha_n) / (1 + h2 * (alpha_n + beta_n));
+			Vnext(t) = V(t) + H;
 		}
 	}
 
@@ -1189,6 +1372,55 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
 
 			Vnext(v) = V(v) + H * ((Vnext(i) - I_K - I_Na - I_L) / P(C));
 		}
+
+
+		ifMETHOD(P(method), SemiExplicitEuler)
+		{
+			Vnext(t) = V(t) + H;
+			Vnext(i) = P(Idc) + P(Iamp) * ((4.0f * P(Ifreq) * (V(t) - P(Idel)) - 2.0f * floorf((4.0f * P(Ifreq) * (V(t) - P(Idel)) + 1.0f) / 2.0f)) * pow((-1), floorf((4.0f * P(Ifreq) * (V(t) - P(Idel)) + 1.0f) / 2.0f)));
+
+			numb alpha_n = 0.01 * ((10 - V(v)) / (exp((10 - V(v)) / 10) - 1));
+			numb beta_n = 0.125 * exp(-V(v) / 80);
+			numb alpha_m = 0.1 * ((25 - V(v)) / (exp((25 - V(v)) / 10) - 1));
+			numb beta_m = 4 * exp(-V(v) / 18);
+			numb alpha_h = 0.07 * exp(-V(v) / 20);
+			numb beta_h = 1 / (exp((30 - V(v)) / 10) + 1);
+
+			Vnext(n) = V(n) + H * (alpha_n * (1 - V(n)) - beta_n * V(n));
+			Vnext(m) = V(m) + H * (alpha_m * (1 - V(m)) - beta_m * V(m));
+			Vnext(h) = V(h) + H * (alpha_h * (1 - V(h)) - beta_h * V(h));
+
+			numb I_Na = (Vnext(m) * Vnext(m) * Vnext(m)) * P(G_Na) * Vnext(h) * (V(v) - P(E_Na));
+			numb I_K = (Vnext(n) * Vnext(n) * Vnext(n) * Vnext(n)) * P(G_K) * (V(v) - P(E_K));
+			numb I_L = P(G_leak) * (V(v) - P(E_leak));
+
+			Vnext(v) = V(v) + H * ((Vnext(i) - I_K - I_Na - I_L) / P(C));
+		}
+
+
+		ifMETHOD(P(method), ImplicitEuler)
+		{
+			Vnext(i) = P(Idc) + P(Iamp) * ((4.0f * P(Ifreq) * (V(t) - P(Idel)) - 2.0f * floorf((4.0f * P(Ifreq) * (V(t) - P(Idel)) + 1.0f) / 2.0f)) * pow((-1), floorf((4.0f * P(Ifreq) * (V(t) - P(Idel)) + 1.0f) / 2.0f)));
+			Vnext(t) = V(t) + H;
+
+			numb alpha_n = 0.01 * ((10 - V(v)) / (exp((10 - V(v)) / 10) - 1));
+			numb beta_n = 0.125 * exp(-V(v) / 80);
+			numb alpha_m = 0.1 * ((25 - V(v)) / (exp((25 - V(v)) / 10) - 1));
+			numb beta_m = 4 * exp(-V(v) / 18);
+			numb alpha_h = 0.07 * exp(-V(v) / 20);
+			numb beta_h = 1 / (exp((30 - V(v)) / 10) + 1);
+
+			Vnext(n) = (V(n) + H * alpha_n) / (1 + H * (alpha_n + beta_n));
+			Vnext(m) = (V(m) + H * alpha_m) / (1 + H * (alpha_m + beta_m));
+			Vnext(h) = (V(h) + H * alpha_h) / (1 + H * (alpha_h + beta_h));
+
+			numb I_Na = (V(m) * V(m) * V(m)) * P(G_Na) * V(h) * (V(v) - P(E_Na));
+			numb I_K = (V(n) * V(n) * V(n) * V(n)) * P(G_K) * (V(v) - P(E_K));
+			numb I_L = P(G_leak) * (V(v) - P(E_leak));
+
+			Vnext(v) = V(v) + H * ((Vnext(i) - I_K - I_Na - I_L) / P(C));
+		}
+
 
 		ifMETHOD(P(method), ExplicitMidpoint)
 		{
@@ -1232,6 +1464,51 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
 
 			Vnext(v) = V(v) + H * ((Vnext(i) - I_K - I_Na - I_L) / P(C));
 		}
+
+
+		ifMETHOD(P(method), ImplicitMidpoint)
+		{
+			numb imp = P(Idc) + P(Iamp) * ((4.0f * P(Ifreq) * (V(t) - P(Idel)) - 2.0f * floorf((4.0f * P(Ifreq) * (V(t) - P(Idel)) + 1.0f) / 2.0f)) * pow((-1), floorf((4.0f * P(Ifreq) * (V(t) - P(Idel)) + 1.0f) / 2.0f)));
+			numb tmp = V(t) + H * 0.5;
+
+			numb alpha_n = 0.01 * ((10 - V(v)) / (exp((10 - V(v)) / 10) - 1));
+			numb beta_n = 0.125 * exp(-V(v) / 80);
+			numb alpha_m = 0.1 * ((25 - V(v)) / (exp((25 - V(v)) / 10) - 1));
+			numb beta_m = 4 * exp(-V(v) / 18);
+			numb alpha_h = 0.07 * exp(-V(v) / 20);
+			numb beta_h = 1 / (exp((30 - V(v)) / 10) + 1);
+
+			numb nmp = (V(n) + H * 0.5 * alpha_n) / (1 + H * 0.5 * (alpha_n + beta_n));
+			numb mmp = (V(m) + H * 0.5 * alpha_m) / (1 + H * 0.5 * (alpha_m + beta_m));
+			numb hmp = (V(h) + H * 0.5 * alpha_h) / (1 + H * 0.5 * (alpha_h + beta_h));
+
+			numb I_Na = (V(m) * V(m) * V(m)) * P(G_Na) * V(h) * (V(v) - P(E_Na));
+			numb I_K = (V(n) * V(n) * V(n) * V(n)) * P(G_K) * (V(v) - P(E_K));
+			numb I_L = P(G_leak) * (V(v) - P(E_leak));
+
+			numb vmp = V(v) + H * 0.5 * ((imp - I_K - I_Na - I_L) / P(C));
+
+			Vnext(i) = P(Idc) + P(Iamp) * ((4.0f * P(Ifreq) * (tmp - P(Idel)) - 2.0f * floorf((4.0f * P(Ifreq) * (tmp - P(Idel)) + 1.0f) / 2.0f)) * pow((-1), floorf((4.0f * P(Ifreq) * (tmp - P(Idel)) + 1.0f) / 2.0f)));
+			Vnext(t) = V(t) + H;
+
+			alpha_n = 0.01 * ((10 - vmp) / (exp((10 - vmp) / 10) - 1));
+			beta_n = 0.125 * exp(-vmp / 80);
+			alpha_m = 0.1 * ((25 - vmp) / (exp((25 - vmp) / 10) - 1));
+			beta_m = 4 * exp(-vmp / 18);
+			alpha_h = 0.07 * exp(-vmp / 20);
+			beta_h = 1 / (exp((30 - vmp) / 10) + 1);
+
+			Vnext(n) = (V(n) + H * alpha_n) / (1 + H * (alpha_n + beta_n));
+			Vnext(m) = (V(m) + H * alpha_m) / (1 + H * (alpha_m + beta_m));
+			Vnext(h) = (V(h) + H * alpha_h) / (1 + H * (alpha_h + beta_h));
+
+			I_Na = (mmp * mmp * mmp) * P(G_Na) * hmp * (vmp - P(E_Na));
+			I_K = (nmp * nmp * nmp * nmp) * P(G_K) * (vmp - P(E_K));
+			I_L = P(G_leak) * (vmp - P(E_leak));
+
+			Vnext(v) = V(v) + H * ((Vnext(i) - I_K - I_Na - I_L) / P(C));
+		}
+
 
 		ifMETHOD(P(method), ExplicitRungeKutta4)
 		{
@@ -1330,50 +1607,6 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
 			Vnext(h) = V(h) + H * (kh1 + 2.0f * kh2 + 2.0f * kh3 + kh4) / 6.0f;
 			Vnext(v) = V(v) + H * (kv1 + 2.0f * kv2 + 2.0f * kv3 + kv4) / 6.0f;
 
-		}
-
-		ifMETHOD(P(method), VariableSymmetryCD)
-		{
-			numb h1 = 0.5 * H - P(symmetry);
-			numb h2 = 0.5 * H + P(symmetry);
-
-			numb tmp = V(t) + h1;
-			Vnext(i) = P(Idc) + P(Iamp) * ((4.0f * P(Ifreq) * (tmp - P(Idel)) - 2.0f * floorf((4.0f * P(Ifreq) * (tmp - P(Idel)) + 1.0f) / 2.0f)) * pow((-1), floorf((4.0f * P(Ifreq) * (tmp - P(Idel)) + 1.0f) / 2.0f)));
-
-			numb alpha_n = 0.01 * ((10 - V(v)) / (exp((10 - V(v)) / 10) - 1));
-			numb beta_n = 0.125 * exp(-V(v) / 80);
-			numb alpha_m = 0.1 * ((25 - V(v)) / (exp((25 - V(v)) / 10) - 1));
-			numb beta_m = 4 * exp(-V(v) / 18);
-			numb alpha_h = 0.07 * exp(-V(v) / 20);
-			numb beta_h = 1 / (exp((30 - V(v)) / 10) + 1);
-
-			numb nmp = V(n) + h1 * (alpha_n * (1 - V(n)) - beta_n * V(n));
-			numb mmp = V(m) + h1 * (alpha_m * (1 - V(m)) - beta_m * V(m));
-			numb hmp = V(h) + h1 * (alpha_h * (1 - V(h)) - beta_h * V(h));
-
-			numb I_Na = (mmp * mmp * mmp) * P(G_Na) * hmp * (V(v) - P(E_Na));
-			numb I_K = (nmp * nmp * nmp * nmp) * P(G_K) * (V(v) - P(E_K));
-			numb I_L = P(G_leak) * (V(v) - P(E_leak));
-
-			numb vmp = V(v) + h1 * ((Vnext(i) - I_K - I_Na - I_L) / P(C));
-
-			I_L = P(G_leak) * (vmp - P(E_leak));
-			I_K = (nmp * nmp * nmp * nmp) * P(G_K) * (vmp - P(E_K));
-			I_Na = (mmp * mmp * mmp) * P(G_Na) * hmp * (vmp - P(E_Na));
-
-			Vnext(v) = vmp + h2 * ((Vnext(i) - I_K - I_Na - I_L) / P(C));
-
-			alpha_h = 0.07 * exp(-Vnext(v) / 20);
-			beta_h = 1 / (exp((30 - Vnext(v)) / 10) + 1);
-			alpha_m = 0.1 * ((25 - Vnext(v)) / (exp((25 - Vnext(v)) / 10) - 1));
-			beta_m = 4 * exp(-Vnext(v) / 18);
-			alpha_n = 0.01 * ((10 - Vnext(v)) / (exp((10 - Vnext(v)) / 10) - 1));
-			beta_n = 0.125 * exp(-Vnext(v) / 80);
-
-			Vnext(h) = (hmp + h2 * alpha_h) / (1 + h2 * (alpha_h + beta_h));
-			Vnext(m) = (mmp + h2 * alpha_m) / (1 + h2 * (alpha_m + beta_m));
-			Vnext(n) = (nmp + h2 * alpha_n) / (1 + h2 * (alpha_n + beta_n));
-			Vnext(t) = V(t) + H;
 		}
 
 		ifMETHOD(P(method), ExplicitDormandPrince8)
@@ -1722,9 +1955,53 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
 
 			Vnext(n) = V(n) + H * (B[0][0] * kn1 + B[0][1] * kn2 + B[0][2] * kn3 + B[0][3] * kn4 + B[0][4] * kn5 + B[0][5] * kn6 + B[0][6] * kn7 + B[0][7] * kn8 + B[0][8] * kn9 + B[0][9] * knA0 + B[0][10] * knA1 + B[0][11] * knA2 + B[0][12] * knA3);
 			Vnext(m) = V(m) + H * (B[0][0] * km1 + B[0][1] * km2 + B[0][2] * km3 + B[0][3] * km4 + B[0][4] * km5 + B[0][5] * km6 + B[0][6] * km7 + B[0][7] * km8 + B[0][8] * km9 + B[0][9] * kmA0 + B[0][10] * kmA1 + B[0][11] * kmA2 + B[0][12] * kmA3);
-			Vnext(h) = V(h) + H * (B[0][0] * kh1 + B[0][1] * kh2 + B[0][2] * kh3 + B[0][3] * kh4 + B[0][4] * kh5 + B[0][5] * kh6 + B[0][6] * kh7 + B[0][7] * kh8 + B[0][8] * kh9 + B[0][9] * khA0 + B[0][10] * khA1 + B[0][11] * khA2 + B[0][12] * kh3);
+			Vnext(h) = V(h) + H * (B[0][0] * kh1 + B[0][1] * kh2 + B[0][2] * kh3 + B[0][3] * kh4 + B[0][4] * kh5 + B[0][5] * kh6 + B[0][6] * kh7 + B[0][7] * kh8 + B[0][8] * kh9 + B[0][9] * khA0 + B[0][10] * khA1 + B[0][11] * khA2 + B[0][12] * khA3);
 			Vnext(v) = V(v) + H * (B[0][0] * kv1 + B[0][1] * kv2 + B[0][2] * kv3 + B[0][3] * kv4 + B[0][4] * kv5 + B[0][5] * kv6 + B[0][6] * kv7 + B[0][7] * kv8 + B[0][8] * kv9 + B[0][9] * kvA0 + B[0][10] * kvA1 + B[0][11] * kvA2 + B[0][12] * kvA3);
 			Vnext(t) = V(t) + H * (B[0][0] + B[0][1] + B[0][2] + B[0][3] + B[0][4] + B[0][5] + B[0][6] + B[0][7] + B[0][8] + B[0][9] + B[0][10] + B[0][11] + B[0][12]);
+		}
+
+		ifMETHOD(P(method), VariableSymmetryCD)
+		{
+			numb h1 = 0.5 * H - P(symmetry);
+			numb h2 = 0.5 * H + P(symmetry);
+
+			numb tmp = V(t) + h1;
+			Vnext(i) = P(Idc) + P(Iamp) * ((4.0f * P(Ifreq) * (tmp - P(Idel)) - 2.0f * floorf((4.0f * P(Ifreq) * (tmp - P(Idel)) + 1.0f) / 2.0f)) * pow((-1), floorf((4.0f * P(Ifreq) * (tmp - P(Idel)) + 1.0f) / 2.0f)));
+
+			numb alpha_n = 0.01 * ((10 - V(v)) / (exp((10 - V(v)) / 10) - 1));
+			numb beta_n = 0.125 * exp(-V(v) / 80);
+			numb alpha_m = 0.1 * ((25 - V(v)) / (exp((25 - V(v)) / 10) - 1));
+			numb beta_m = 4 * exp(-V(v) / 18);
+			numb alpha_h = 0.07 * exp(-V(v) / 20);
+			numb beta_h = 1 / (exp((30 - V(v)) / 10) + 1);
+
+			numb nmp = V(n) + h1 * (alpha_n * (1 - V(n)) - beta_n * V(n));
+			numb mmp = V(m) + h1 * (alpha_m * (1 - V(m)) - beta_m * V(m));
+			numb hmp = V(h) + h1 * (alpha_h * (1 - V(h)) - beta_h * V(h));
+
+			numb I_Na = (mmp * mmp * mmp) * P(G_Na) * hmp * (V(v) - P(E_Na));
+			numb I_K = (nmp * nmp * nmp * nmp) * P(G_K) * (V(v) - P(E_K));
+			numb I_L = P(G_leak) * (V(v) - P(E_leak));
+
+			numb vmp = V(v) + h1 * ((Vnext(i) - I_K - I_Na - I_L) / P(C));
+
+			I_L = P(G_leak) * (vmp - P(E_leak));
+			I_K = (nmp * nmp * nmp * nmp) * P(G_K) * (vmp - P(E_K));
+			I_Na = (mmp * mmp * mmp) * P(G_Na) * hmp * (vmp - P(E_Na));
+
+			Vnext(v) = vmp + h2 * ((Vnext(i) - I_K - I_Na - I_L) / P(C));
+
+			alpha_h = 0.07 * exp(-Vnext(v) / 20);
+			beta_h = 1 / (exp((30 - Vnext(v)) / 10) + 1);
+			alpha_m = 0.1 * ((25 - Vnext(v)) / (exp((25 - Vnext(v)) / 10) - 1));
+			beta_m = 4 * exp(-Vnext(v) / 18);
+			alpha_n = 0.01 * ((10 - Vnext(v)) / (exp((10 - Vnext(v)) / 10) - 1));
+			beta_n = 0.125 * exp(-Vnext(v) / 80);
+
+			Vnext(h) = (hmp + h2 * alpha_h) / (1 + h2 * (alpha_h + beta_h));
+			Vnext(m) = (mmp + h2 * alpha_m) / (1 + h2 * (alpha_m + beta_m));
+			Vnext(n) = (nmp + h2 * alpha_n) / (1 + h2 * (alpha_n + beta_n));
+			Vnext(t) = V(t) + H;
 		}
 	}
 }

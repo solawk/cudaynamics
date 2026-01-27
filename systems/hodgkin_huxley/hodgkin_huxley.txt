@@ -41,7 +41,7 @@ constraint method VariableSymmetryCD
 // Defining enumerated parameters (useful for methods):
 // enum <name> <ranging type> <minimum value> <maximum value> <step> <step count> <normal mean> <normal deviation> <enum names, no spaces>
 enum signal 1square 0sine 0triangle
-enum method 1ExplicitEuler 0ExplicitMidpoint 0ExplicitRungeKutta4 0VariableSymmetryCD 0ExplicitDormandPrince8
+enum method 1ExplicitEuler 0SemiExplicitEuler 0ImplicitEuler 0ExplicitMidpoint 0ImplicitMidpoint 0ExplicitRungeKutta4 0ExplicitDormandPrince8 0VariableSymmetryCD
 //
 // Defining settings for analysis functions:
 // analysis <name from "anfunc_names.cpp"> settings <values, must exactly match the settings struct>
