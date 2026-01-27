@@ -162,6 +162,9 @@ Kernel readKernelText(std::string name)
 						case ANF_PERIOD:
 							if (!kernel.analyses.PERIOD.setup(settingsVector)) printf("Wrong settings count for PERIOD in %s\n", kernel.name.c_str());
 							break;
+						case ANF_PV:
+							if (!kernel.analyses.PV.setup(settingsVector)) printf("Wrong settings count for PV in %s\n", kernel.name.c_str());
+							break;
 						}
 					}
 			}
