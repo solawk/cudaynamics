@@ -1,5 +1,6 @@
 #pragma once
 #include <vector>
+#include <map>
 #include <string>
 #include <fstream>
 #include <ctime>
@@ -12,3 +13,5 @@
 Kernel readKernelText(std::string name);
 
 std::string timeAsString();
+
+std::map<std::string, std::string> launchOptions(int argc, char** argv);

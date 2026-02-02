@@ -59,7 +59,7 @@ void common_main()
     imgui_main(0, 0);
 }
 
-int main()
+int main(int argc, char** argv)
 {
     common_main();
 

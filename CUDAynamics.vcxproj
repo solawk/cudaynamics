@@ -148,6 +148,7 @@
     <ClCompile Include="implot\implot_items.cpp" />
     <ClCompile Include="index2port.cpp" />
     <ClCompile Include="indices_map.cpp" />
+    <ClCompile Include="jsonRW.cpp" />
     <ClCompile Include="json\json.cpp" />
     <ClCompile Include="kernel_map.cpp" />
     <ClCompile Include="main.cpp" />
@@ -218,6 +219,7 @@
     <ClInclude Include="index.h" />
     <ClInclude Include="index2port.h" />
     <ClInclude Include="indices_map.h" />
+    <ClInclude Include="jsonRW.h" />
     <ClInclude Include="json\json.h" />
     <ClInclude Include="kernels_common.h" />
     <ClInclude Include="kernel_map.h" />

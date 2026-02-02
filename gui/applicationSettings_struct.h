@@ -7,6 +7,7 @@
 #include <fstream>
 #include <string>
 #include "../fontSettings_struct.h"
+#include "../jsonRW.h"
 
 struct ApplicationSettings
 {
@@ -75,27 +76,14 @@ struct ApplicationSettings
 			settings["globalFontIsBold"].set_boolean(globalFontSettings->isBold);
 			settings["globalFontIsItalic"].set_boolean(globalFontSettings->isItalic);
 		}
-		std::string exportedJSON = settings.pretty();
-		std::ofstream fs("applicationSettings.json", std::ios::out);
-		fs << exportedJSON;
-		fs.close();
+
+		JSONWrite(settings, "applicationSettings.json");
 	}
 
 	void Load()
 	{
-		std::ifstream fs("applicationSettings.json", std::ios::in);
-
-		if (!fs.is_open()) return;
-
-		std::string content;
-		for (std::string line; getline(fs, line); )
-		{
-			content += line + '\n';
-		}
-
-		fs.close();
-
-		json::jobject settings = json::jobject::parse(content);
+		json::jobject settings;
+		if (!JSONRead("applicationSettings.json", &settings)) return;
 
 		preciseNumbDrags = settings.has_key("preciseNumbDrags") ? settings["preciseNumbDrags"].is_true() : preciseNumbDrags_default;
 		CPU_mode_interactive = settings.has_key("CPU_mode_interactive") ? settings["CPU_mode_interactive"].is_true() : CPU_mode_interactive_default;

@@ -81,6 +81,7 @@
     <ClCompile Include="json\json.cpp">
       <Filter>json</Filter>
     </ClCompile>
+    <ClCompile Include="jsonRW.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="imgui">
@@ -278,6 +279,7 @@
     <ClInclude Include="plots\decay.h" />
     <ClInclude Include="plots\trs.h" />
     <ClInclude Include="plots\orbit.h" />
+    <ClInclude Include="jsonRW.h" />
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="main.cu" />
