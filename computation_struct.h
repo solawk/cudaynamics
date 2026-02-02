@@ -22,7 +22,6 @@ public:
 	// Hi-res gizmos
 	bool isHires; // True only for the hi-res computation
 	int mapIndex; // Index of the map to be computed with hi-res
-	unsigned long long variationsPerParallelization; // How many variations are launched in parallel during hi-res computation (in one execute)
 	unsigned long long variationsInCurrentExecute; // Current variations count, can be less at the end of hi-res computation
 	unsigned long long startVariationInCurrentExecute; // Index of the first variation in the execute
 	int buffersPerVariation = 1; // How many times is one variation repeated (steps * buffersPerVariation equals total steps per variation)

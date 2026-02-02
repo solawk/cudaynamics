@@ -174,7 +174,7 @@ int compute(Computation* data)
     unsigned long long variationSize = CUDA_kernel.VAR_COUNT * (CUDA_kernel.steps + 1); // All steps for the current parameter/variable value combination
     CUDA_marshal.variationSize = (int)variationSize;
 
-    unsigned long long variationsInBuffers = !data->isHires ? variations : min(data->variationsPerParallelization, variations);
+    unsigned long long variationsInBuffers = !data->isHires ? variations : min((unsigned long long)applicationSettings.varPerParallelization, variations);
     
     if (CUDA_marshal.trajectory == nullptr && !data->isHires)
     {
@@ -234,9 +234,9 @@ int compute(Computation* data)
         data->bufferNo = 0;
         data->otherMarshal = &(CUDA_marshal); // We trick it into thinking its own trajectory is the previous trajectory when copying the variable values (ouroboros moment)
 
-        for (unsigned long long v = 0; v < variations; v += data->variationsPerParallelization)
+        for (unsigned long long v = 0; v < variations; v += (unsigned long long)applicationSettings.varPerParallelization)
         {
-            unsigned long long variationsCurrent = min(variations - v, data->variationsPerParallelization);
+            unsigned long long variationsCurrent = min(variations - v, (unsigned long long)applicationSettings.varPerParallelization);
             data->variationsInCurrentExecute = variationsCurrent;
             data->startVariationInCurrentExecute = v;
 

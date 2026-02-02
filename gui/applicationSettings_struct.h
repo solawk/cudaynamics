@@ -15,6 +15,7 @@ struct ApplicationSettings
 	static const bool CPU_mode_hires_default = false;
 	static const bool calculateDeltaDecay_default = true;
 	static const int threadsPerBlock_default = 32;
+	static const int varPerParallelization_default = 1000000;
 	float dragChangeSpeed_default;
 	ImVec4 cudaColor_default;
 	ImVec4 openmpColor_default;
@@ -25,6 +26,7 @@ struct ApplicationSettings
 	bool CPU_mode_interactive, CPU_mode_hires;
 	bool calculateDeltaDecay;
 	int threadsPerBlock;
+	int varPerParallelization;
 	float dragChangeSpeed;
 	ImVec4 cudaColor, openmpColor, hiresColor;
 	ImGuiCustomStyle appStyle;
@@ -42,6 +44,7 @@ struct ApplicationSettings
 		CPU_mode_hires = CPU_mode_hires_default;
 		calculateDeltaDecay = calculateDeltaDecay_default;
 		threadsPerBlock = threadsPerBlock_default;
+		varPerParallelization = varPerParallelization_default;
 		dragChangeSpeed = dragChangeSpeed_default;
 		cudaColor = cudaColor_default;
 		openmpColor = openmpColor_default;
@@ -59,6 +62,7 @@ struct ApplicationSettings
 		settings["CPU_mode_hires"].set_boolean(CPU_mode_hires);
 		settings["calculateDeltaDecay"].set_boolean(calculateDeltaDecay);
 		settings["threadsPerBlock"] = threadsPerBlock;
+		settings["varPerParallelization"] = varPerParallelization;
 		settings["dragChangeSpeed"] = dragChangeSpeed;
 		settings["cudaColor"] = std::vector<float>{ cudaColor.x, cudaColor.y, cudaColor.z, cudaColor.w };
 		settings["openmpColor"] = std::vector<float>{ openmpColor.x, openmpColor.y, openmpColor.z, openmpColor.w };
@@ -98,6 +102,7 @@ struct ApplicationSettings
 		CPU_mode_hires = settings.has_key("CPU_mode_hires") ? settings["CPU_mode_hires"].is_true() : CPU_mode_hires_default;
 		calculateDeltaDecay = settings.has_key("calculateDeltaDecay") ? settings["calculateDeltaDecay"].is_true() : calculateDeltaDecay_default;
 		threadsPerBlock = settings.has_key("threadsPerBlock") ? (int)settings["threadsPerBlock"] : threadsPerBlock_default;
+		varPerParallelization = settings.has_key("varPerParallelization") ? (int)settings["varPerParallelization"] : varPerParallelization_default;
 		dragChangeSpeed = settings.has_key("dragChangeSpeed") ? (float)settings["dragChangeSpeed"] : dragChangeSpeed_default;
 		appStyle = settings.has_key("appStyle") ? (ImGuiCustomStyle)(int)settings["appStyle"] : appStyle_default;
 

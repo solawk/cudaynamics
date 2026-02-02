@@ -13,8 +13,9 @@
 #include "abstractSettings_struct.h"
 #include "kernel_map.h"
 #include "indices_map.h"
+#include "gui/applicationSettings_struct.h"
 
-//extern std::map<AnalysisIndex, Index> indices;
+extern ApplicationSettings applicationSettings;
 
 #define addKernel(name)         kernels[#name] = readKernelText(#name); \
                                 kernelPrograms[#name] = kernelProgram_##name; \

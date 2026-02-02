@@ -481,7 +481,6 @@ int imgui_main(int, char**)
     computations[1].index = 1;
     computations[0].otherMarshal = &(computations[1].marshal);
     computations[1].otherMarshal = &(computations[0].marshal);
-    computationHires.variationsPerParallelization = 1000000;
     
     initializeKernel(false);
 
@@ -703,9 +702,9 @@ int imgui_main(int, char**)
         // Hi-res variations per computation
         if (HIRES_ON)
         {
-            int vpp = (int)computationHires.variationsPerParallelization;
+            int vpp = applicationSettings.varPerParallelization;
             ImGui::InputInt("Variations per computation", &vpp, 1, 10, 0);
-            computationHires.variationsPerParallelization = (unsigned long long)vpp;
+            applicationSettings.varPerParallelization = vpp;
             TOOLTIP("Variations per each division of the heatmap");
         }
 
