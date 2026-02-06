@@ -17,10 +17,10 @@ Execute on launch: yes
 //
 // Defining variables/parameters:
 // var/param <name> <ranging type> <minimum value> <maximum value> <step> <step count> <normal mean> <normal deviation>
+var v Fixed 0.0 0.0 0.1 100 0.0 0.0
 var n Fixed 0.31 1.0 0.01 100 0.0 0.0
 var m Fixed 0.05 0.1 0.001 100 0.0 0.0
 var h Fixed 0.59 1.0 0.01 100 0.0 0.0
-var v Fixed 0.0 0.0 0.1 100 0.0 0.0
 var i Fixed 0.0 29.0 0.1 0 0.0 0.0
 var t Fixed 0.0 29.0 0.1 0 0.0 0.0
 param G_Na Fixed 120.0 150.0 1.0 100 0.0 0.0
@@ -45,5 +45,5 @@ enum method 1ExplicitEuler 0SemiExplicitEuler 0ImplicitEuler 0ExplicitMidpoint 0
 //
 // Defining settings for analysis functions:
 // analysis <name from "anfunc_names.cpp"> settings <values, must exactly match the settings struct>
-analysis Minimum/maximum settings 3 3
-analysis Largest Lyapunov exponent settings 0.01 50 3 0 1 2 3
+analysis Minimum/maximum settings 0 0
+analysis Largest Lyapunov exponent settings 0.01 50 0 0 1 2 3
