@@ -39,6 +39,7 @@
 #include "gui/mainWindowMenu.h"
 #include "gui/colormapMarkerSettings_struct.h"
 #include "gui/applicationSettings_struct.h"
+#include "computations.h"
 
 bool CreateDeviceD3D(HWND hWnd);
 void CleanupDeviceD3D();

@@ -10,8 +10,8 @@
 #include "anfuncs.h"
 #include "anfunc_names.h"
 
+RangingType rangingTypeFromString(std::string str);
+
 Kernel readKernelText(std::string name);
 
 std::string timeAsString();
-
-std::map<std::string, std::string> launchOptions(int argc, char** argv);

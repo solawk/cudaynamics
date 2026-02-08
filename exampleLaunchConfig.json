@@ -1,0 +1,43 @@
+{
+	"system": "lorenz",
+	"index": "Minimum variable value",
+	"steps": 2000,
+	"transient": 0,
+	"variables": [
+	{
+		"name": "x",
+		"ranging": "Fixed",
+		"min": 10.0
+	},
+	{
+		"name": "y",
+		"ranging": "Fixed",
+		"min": 10.0
+	}
+	],
+	"parameters": [
+	{
+		"name": "sigma",
+		"ranging": "Linear",
+		"min": 10.0,
+		"max": 50.0,
+		"stepCount": 1000
+	},
+	{
+		"name": "rho",
+		"ranging": "Linear",
+		"min": 28.0,
+		"max": 50.0,
+		"stepCount": 1000
+	}
+	],
+	"analysis": [
+	{
+		"name": "Minimum/maximum",
+		"settings":
+		[
+		"1", "2"
+		]
+	}
+	]
+}

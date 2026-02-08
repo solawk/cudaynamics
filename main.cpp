@@ -56,11 +56,45 @@ void common_main()
     addIndex(IND_MXMINT, "Maximum interval", PERIOD, 1);
     addIndex(IND_PV, "Phase volume", PV, 1);
 
-    imgui_main(0, 0);
+    // Initialization
+    computationsInit();
+
+    // "One shot" is launching the suite with a config file to perform a single hi-res computation, export it and return
+    if (!launchedAsOneShot)
+    {
+        imgui_main(0, 0);
+    }
+    else
+    {
+        launchOneShotComputation();
+
+        hiresComputationSetup();
+        KERNEL.PrepareAttributes();
+        KERNEL.AssessMapAttributes();
+        computationHires.marshal.kernel.CopyFrom(&KERNEL);
+        printf("Starting!\n");
+        int computationResult = compute(&computationHires);
+        computationHires.ready = true;
+        if (computationResult > 0)
+        {
+            printf("FAIL: Computation has failed\n");
+            return;
+        }
+        printf("Computed successfully\n");
+
+        exportHires();
+        printf("SUCCESS: Exported succesfully\n");
+    }
 }
 
 int main(int argc, char** argv)
 {
+    if (!readLaunchOptions(argc, argv))
+    {
+        printf("FAIL: Couldn't read launch options, aborting...\n");
+        return -1;
+    }
+
     common_main();
 
     return 0;

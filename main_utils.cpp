@@ -148,7 +148,7 @@ Kernel readKernelText(std::string name)
 				std::string anSetName = "";
 				for (int i = 1; i <= nameEnd; i++) anSetName += str[i] + (i != nameEnd ? " " : "");
 
-				for (int anfunc = 0; anfunc < (int)AnalysisFunction::COUNT; anfunc++)
+				for (int anfunc = 0; anfunc < (int)AnalysisFunction::ANF_COUNT; anfunc++)
 					if (anSetName == AnFuncNames[anfunc])
 					{
 						switch ((AnalysisFunction)anfunc)
@@ -246,17 +246,4 @@ std::string timeAsString()
 
 	std::string time = mday + mon + "_" + hour + min + sec;
 	return time;
-}
-
-std::map<std::string, std::string> launchOptions(int argc, char** argv)
-{
-	std::map<std::string, std::string> options;
-
-	for (int i = 0; i < argc; i += 2)
-	{
-		if (i == argc - 1) break; // Flag present but no option
-		options[argv[i]] = argv[i + 1];
-	}
-
-	return options;
 }

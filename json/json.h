@@ -877,6 +877,24 @@ namespace json
 				const std::vector<std::string> values = json::parsing::parse_array(value);
 				return const_value(values[index]);
 			}
+
+			int array_size() const
+			{
+				const char* value = this->ref().c_str();
+				if (json::jtype::peek(*value) != json::jtype::jarray)
+					throw std::invalid_argument("Input is not an array");
+				const std::vector<std::string> values = json::parsing::parse_array(value);
+				return (int)values.size();
+			}
+
+			std::vector<std::string> array_as_vector() const
+			{
+				const char* value = this->ref().c_str();
+				if (json::jtype::peek(*value) != json::jtype::jarray)
+					throw std::invalid_argument("Input is not an array");
+				const std::vector<std::string> values = json::parsing::parse_array(value);
+				return values;
+			}
 		};
 
 		/*! \brief A proxy that allows modification of the value

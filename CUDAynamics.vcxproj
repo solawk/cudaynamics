@@ -155,6 +155,8 @@
     <ClCompile Include="main_utils.cpp" />
     <ClCompile Include="map_utils.cpp" />
     <ClCompile Include="splitString.cpp" />
+    <ClCompile Include="computations.cpp" />
+    <ClCompile Include="standalone\standalone_utils.cpp" />
     <ClCompile Include="variationSteps.cu" />
   </ItemGroup>
   <ItemGroup>
@@ -239,6 +241,8 @@
     <ClInclude Include="quaternion.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="splitString.h" />
+    <ClInclude Include="computations.h" />
+    <ClInclude Include="standalone\standalone_utils.h" />
     <ClInclude Include="systemsHeaders.h" />
     <ClInclude Include="variationSteps.h" />
   </ItemGroup>

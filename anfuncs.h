@@ -8,5 +8,5 @@ enum AnalysisFunction
 	ANF_PERIOD,
 	ANF_PV,
 
-	COUNT
+	ANF_COUNT
 };

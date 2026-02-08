@@ -82,6 +82,8 @@
       <Filter>json</Filter>
     </ClCompile>
     <ClCompile Include="jsonRW.cpp" />
+    <ClCompile Include="standalone\standalone_utils.cpp" />
+    <ClCompile Include="computations.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="imgui">
@@ -280,6 +282,8 @@
     <ClInclude Include="plots\trs.h" />
     <ClInclude Include="plots\orbit.h" />
     <ClInclude Include="jsonRW.h" />
+    <ClInclude Include="standalone\standalone_utils.h" />
+    <ClInclude Include="computations.h" />
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="main.cu" />

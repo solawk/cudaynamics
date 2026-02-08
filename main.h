@@ -14,6 +14,7 @@
 #include "kernel_map.h"
 #include "indices_map.h"
 #include "gui/applicationSettings_struct.h"
+#include "standalone/standalone_utils.h"
 
 extern ApplicationSettings applicationSettings;
 
@@ -22,7 +23,6 @@ extern ApplicationSettings applicationSettings;
                                 kernelWrappers[#name] = gpu_wrapper_##name; \
                                 kernelFDS[#name] = finiteDifferenceScheme_##name;
 #define selectKernel(name)      selectedKernel = #name;
-#define KERNEL      kernels[selectedKernel]
 #define KERNEL_PROG kernelPrograms[selectedKernel]
 #define KERNEL_GPU  kernelWrappers[selectedKernel]
 #define kernel_FDS(name)  kernelFDS[name] 

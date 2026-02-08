@@ -23,8 +23,6 @@ bool ContinuationRed = false;
 
 ApplicationSettings applicationSettings;
 
-Computation computations[2];
-Computation computationHires;
 int playedBufferIndex = 0; // Buffer currently shown
 int bufferToFillIndex = 0; // Buffer to send computations to
 std::vector<int> attributeValueIndices; // Currently selected indices of ranging attributes
@@ -35,7 +33,7 @@ bool autoLoadNewParams = false;
 Kernel kernelNew, kernelHiresNew; // Front-end for the kernels in the GUI
 Kernel kernelHiresComputed; // Hi-res computation kernel buffer which has been sent to computation
 
-AnalysisIndex hiresIndex = IND_NONE;
+//AnalysisIndex hiresIndex = IND_NONE;
 
 numb* dataBuffer = nullptr; // One variation local buffer
 numb* particleBuffer = nullptr; // One step local buffer
@@ -121,7 +119,6 @@ void deleteBuffers(bool deleteHires)
     }
     else
         computationHires.Clear();
-
     playedBufferIndex = 0;
     bufferToFillIndex = 0;
 
@@ -215,26 +212,26 @@ void hiresComputing();
 
 int hiresAsyncComputation()
 {
-    computationHires.ready = false;
-    computationHires.isFirst = true;
-    computationHires.mapIndex = hiresIndex;
+    kernelHiresComputed.CopyFrom(&kernelHiresNew);
+    kernelHiresComputed.PrepareAttributes();
+    kernelHiresComputed.AssessMapAttributes();
 
+    hiresComputationSetup();
     computationHires.marshal.kernel.CopyFrom(&kernelHiresComputed);
-    computationHires.marshal.kernel.mapWeight = 0.0f;
     computationHires.threadsPerBlock = applicationSettings.threadsPerBlock;
 
     lastHiresStart = std::chrono::steady_clock::now();
     lastHiresHasInfo = true;
     lastHiresStopped = false;
     int computationResult = compute(&computationHires);
+    computationHires.ready = true;
     lastHiresEnd = std::chrono::steady_clock::now();
     lastHiresStopped = true;
 
-    autofitAfterComputing = true;
     //resetTempBuffers(&computationHires);
-    initAVI(true);
 
-    computationHires.ready = true;
+    autofitAfterComputing = true;
+    initAVI(true);
 
     for (int i = 0; i < plotWindows.size(); i++)
     {
@@ -254,11 +251,8 @@ void hiresComputing()
     //hiresAsyncComputation();
 }
 
-void terminateBuffers()
+void terminateUIBuffers()
 {
-    if (computations[0].future.valid()) computations[0].future.wait();
-    if (computations[1].future.valid()) computations[1].future.wait();
-    if (computationHires.future.valid()) computationHires.future.wait();
     deleteBuffers(false);
     if (dataBuffer != nullptr)      { delete[] dataBuffer;      dataBuffer = nullptr; }
     if (particleBuffer != nullptr)  { delete[] particleBuffer;  particleBuffer = nullptr; }
@@ -277,9 +271,9 @@ void unloadPlotWindows()
     }
 }
 
-void initializeKernel(bool needTerminate)
+void initializeKernel(bool needTerminate) // needTerminate is obsolete
 {
-    if (needTerminate) terminateBuffers();
+    terminateUIBuffers();
 
     unloadPlotWindows();
     plotWindows.clear();
@@ -291,11 +285,6 @@ void initializeKernel(bool needTerminate)
     kernelHiresComputed.CopyFrom(&KERNEL);
     kernelNew.mapWeight = kernelHiresNew.mapWeight = kernelHiresComputed.mapWeight = 1.0f;
 
-    computations[0].Clear();
-    computations[1].Clear();
-    computationHires.Clear();
-
-    hiresIndex = IND_NONE;
 
     initAVI(false);
     initAVI(true);
@@ -371,10 +360,6 @@ void prepareAndCompute(bool hires)
     }
     else
     {
-        kernelHiresComputed.CopyFrom(&kernelHiresNew);
-        kernelHiresComputed.PrepareAttributes();
-        kernelHiresComputed.AssessMapAttributes();
-
         hiresComputing();
     }
 
@@ -473,15 +458,7 @@ int imgui_main(int, char**)
     selectedPlotMapMetric = 0; \
     selectedPlotMapDecay.clear();
 
-    computations[0].marshal.trajectory = computations[1].marshal.trajectory = nullptr;
-    computations[0].marshal.parameterVariations = computations[1].marshal.parameterVariations = nullptr;
-    computations[0].isHires = computations[1].isHires = false;
-    computationHires.isHires = true;
-    computations[0].index = 0;
-    computations[1].index = 1;
-    computations[0].otherMarshal = &(computations[1].marshal);
-    computations[1].otherMarshal = &(computations[0].marshal);
-    
+    prepareKernel();
     initializeKernel(false);
 
     try { loadWindows(); }
@@ -545,6 +522,7 @@ int imgui_main(int, char**)
                     RESET_GRAPH_BUILDER_SETTINGS;
 
                     selectedKernel = k.first;
+                    prepareKernel();
                     initializeKernel(true);
                     playingParticles = false;
 
@@ -1317,7 +1295,7 @@ int imgui_main(int, char**)
 
         Kernel* krn = HIRES_ON ? &kernelHiresNew : &kernelNew; // Workaround for Win11
 
-        for (int anfunc = 0; anfunc < (int)AnalysisFunction::COUNT; anfunc++)
+        for (int anfunc = 0; anfunc < (int)AnalysisFunction::ANF_COUNT; anfunc++)
         {
             if (hiresIndex != IND_NONE && indices[hiresIndex].function == (AnalysisFunction)anfunc) AddBackgroundToElement(ImGui::GetStyleColorVec4(ImGuiCol_HeaderActive), false);
             if (ImGui::TreeNode(std::string(AnFuncNames[anfunc] + std::string("##AnFunc") + std::to_string(anfunc)).c_str()))
@@ -3639,7 +3617,8 @@ int imgui_main(int, char**)
     ::DestroyWindow(hwnd);
     ::UnregisterClassW(wc.lpszClassName, wc.hInstance);
 
-    terminateBuffers();
+    terminateComputationBuffers(false);
+    terminateUIBuffers();
     unloadPlotWindows();
 
     return 0;
