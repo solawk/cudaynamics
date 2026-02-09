@@ -47,9 +47,9 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
 
     ifMETHOD(P(method), ExplicitMidpoint)
     {
-        numb xmp = V(x) + H * 0.5f * (-(V(y) + V(z)));
-        numb ymp = V(y) + H * 0.5f * (V(x) + P(a) * V(y));
-        numb zmp = V(z) + H * 0.5f * (P(b) + V(z) * (V(x) - P(c)));
+        numb xmp = V(x) + H * (numb)0.5 * (-(V(y) + V(z)));
+        numb ymp = V(y) + H * (numb)0.5 * (V(x) + P(a) * V(y));
+        numb zmp = V(z) + H * (numb)0.5 * (P(b) + V(z) * (V(x) - P(c)));
 
         Vnext(x) = V(x) + H * (-(ymp + zmp));
         Vnext(y) = V(y) + H * (xmp + P(a) * ymp);
@@ -62,17 +62,17 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
         numb ky1 = V(x) + P(a) * V(y);
         numb kz1 = P(b) + V(z) * (V(x) - P(c));
 
-        numb xmp = V(x) + 0.5f * H * kx1;
-        numb ymp = V(y) + 0.5f * H * ky1;
-        numb zmp = V(z) + 0.5f * H * kz1;
+        numb xmp = V(x) + (numb)0.5 * H * kx1;
+        numb ymp = V(y) + (numb)0.5 * H * ky1;
+        numb zmp = V(z) + (numb)0.5 * H * kz1;
 
         numb kx2 = -(ymp + zmp);
         numb ky2 = xmp + P(a) * ymp;
         numb kz2 = P(b) + zmp * (xmp - P(c));
 
-        xmp = V(x) + 0.5f * H * kx2;
-        ymp = V(y) + 0.5f * H * ky2;
-        zmp = V(z) + 0.5f * H * kz2;
+        xmp = V(x) + (numb)0.5 * H * kx2;
+        ymp = V(y) + (numb)0.5 * H * ky2;
+        zmp = V(z) + (numb)0.5 * H * kz2;
 
         numb kx3 = -(ymp + zmp);
         numb ky3 = xmp + P(a) * ymp;
@@ -86,15 +86,15 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
         numb ky4 = xmp + P(a) * ymp;
         numb kz4 = P(b) + zmp * (xmp - P(c));
 
-        Vnext(x) = V(x) + H * (kx1 + 2.0f * kx2 + 2.0f * kx3 + kx4) / 6.0f;
-        Vnext(y) = V(y) + H * (ky1 + 2.0f * ky2 + 2.0f * ky3 + ky4) / 6.0f;
-        Vnext(z) = V(z) + H * (kz1 + 2.0f * kz2 + 2.0f * kz3 + kz4) / 6.0f;
+        Vnext(x) = V(x) + H * (kx1 + (numb)2 * kx2 + (numb)2 * kx3 + kx4) / (numb)6;
+        Vnext(y) = V(y) + H * (ky1 + (numb)2 * ky2 + (numb)2 * ky3 + ky4) / (numb)6;
+        Vnext(z) = V(z) + H * (kz1 + (numb)2 * kz2 + (numb)2 * kz3 + kz4) / (numb)6;
     }
 
     ifMETHOD(P(method), VariableSymmetryCD)
     {
-        numb h1 = 0.5f * H - P(symmetry);
-        numb h2 = 0.5f * H + P(symmetry);
+        numb h1 = (numb)0.5 * H - P(symmetry);
+        numb h2 = (numb)0.5 * H + P(symmetry);
 
         numb zmp = V(z) + h1 * (P(b) + V(z) * (V(x) - P(c)));
         numb ymp = V(y) + h1 * (V(x) + P(a) * V(y));
