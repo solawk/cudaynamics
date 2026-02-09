@@ -40,45 +40,45 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
 {
     ifSIGNAL(P(signal), square)
     {
-        Vnext(i) = P(Idc) + (fmodf((V(t) - P(Idel)) > 0 ? (V(t) - P(Idel)) : (P(Idf) / P(Ifreq) + P(Idel) - V(t)), 1 / P(Ifreq)) < P(Idf) / P(Ifreq) ? P(Iamp) : 0.0f);
+        Vnext(i) = P(Idc) + (std::fmod((V(t) - P(Idel)) > (numb)0 ? (V(t) - P(Idel)) : (P(Idf) / P(Ifreq) + P(Idel) - V(t)), (numb)1 / P(Ifreq)) < P(Idf) / P(Ifreq) ? P(Iamp) : (numb)0.0);
         Vnext(t) = V(t) + H;
         Vnext(Q) = V(Q) + V(c) * (Vnext(i) + V(S)) - !V(c) * (Vnext(i) + V(S));
 
-        if (Vnext(Q) < 0) Vnext(Q) = 0;
+        if (Vnext(Q) < (numb)0) Vnext(Q) = (numb)0;
         if (Vnext(Q) > P(r)) Vnext(Q) = P(r);
 
         Vnext(X) = P(p) * (Vnext(Q) + V(X));
-        Vnext(Y) = 1 / P(k) * (Vnext(X) - V(Y)) + V(Y);
+        Vnext(Y) = (numb)1 / P(k) * (Vnext(X) - V(Y)) + V(Y);
         Vnext(S) = Vnext(X) - Vnext(Y);
-        Vnext(c) = (V(c) || (Vnext(Q) > 0 ? 0 : 1)) && (Vnext(Q) < P(r) ? 1 : 0);
+        Vnext(c) = (V(c) || (Vnext(Q) > (numb)0 ? (numb)0 : (numb)1)) && (Vnext(Q) < P(r) ? (numb)1 : (numb)0);
     }
     ifSIGNAL(P(signal), sine)
     {
-        Vnext(i) = P(Idc) + P(Iamp) * sinf(2.0f * 3.141592f * P(Ifreq) * (V(t) - P(Idel)));
+        Vnext(i) = P(Idc) + P(Iamp) * std::sin((numb)2.0 * (numb)3.141592 * P(Ifreq) * (V(t) - P(Idel)));
         Vnext(t) = V(t) + H;
         Vnext(Q) = V(Q) + V(c) * (Vnext(i) + V(S)) - !V(c) * (Vnext(i) + V(S));
 
-        if (Vnext(Q) < 0) Vnext(Q) = 0;
+        if (Vnext(Q) < (numb)0) Vnext(Q) = (numb)0;
         if (Vnext(Q) > P(r)) Vnext(Q) = P(r);
 
         Vnext(X) = P(p) * (Vnext(Q) + V(X));
-        Vnext(Y) = 1 / P(k) * (Vnext(X) - V(Y)) + V(Y);
+        Vnext(Y) = (numb)1 / P(k) * (Vnext(X) - V(Y)) + V(Y);
         Vnext(S) = Vnext(X) - Vnext(Y);
-        Vnext(c) = (V(c) || (Vnext(Q) > 0 ? 0 : 1)) && (Vnext(Q) < P(r) ? 1 : 0);
+        Vnext(c) = (V(c) || (Vnext(Q) > (numb)0 ? (numb)0 : (numb)1)) && (Vnext(Q) < P(r) ? (numb)1 : (numb)0);
     }
     ifSIGNAL(P(signal), triangle)
     {
-        Vnext(i) = P(Idc) + P(Iamp) * ((4.0f * P(Ifreq) * (V(t) - P(Idel)) - 2.0f * floorf((4.0f * P(Ifreq) * (V(t) - P(Idel)) + 1.0f) / 2.0f)) * pow((-1), floorf((4.0f * P(Ifreq) * (V(t) - P(Idel)) + 1.0f) / 2.0f)));
+        Vnext(i) = P(Idc) + P(Iamp) * (((numb)4.0 * P(Ifreq) * (V(t) - P(Idel)) - (numb)2.0 * std::floor(((numb)4.0 * P(Ifreq) * (V(t) - P(Idel)) + (numb)1.0) / (numb)2.0)) * std::pow((numb)(-1), std::floor(((numb)4.0 * P(Ifreq) * (V(t) - P(Idel)) + (numb)1.0) / (numb)2.0)));
         Vnext(t) = V(t) + H;
         Vnext(Q) = V(Q) + V(c) * (Vnext(i) + V(S)) - !V(c) * (Vnext(i) + V(S));
 
-        if (Vnext(Q) < 0) Vnext(Q) = 0;
+        if (Vnext(Q) < (numb)0) Vnext(Q) = (numb)0;
         if (Vnext(Q) > P(r)) Vnext(Q) = P(r);
 
         Vnext(X) = P(p) * (Vnext(Q) + V(X));
-        Vnext(Y) = 1 / P(k) * (Vnext(X) - V(Y)) + V(Y);
+        Vnext(Y) = (numb)1 / P(k) * (Vnext(X) - V(Y)) + V(Y);
         Vnext(S) = Vnext(X) - Vnext(Y);
-        Vnext(c) = (V(c) || (Vnext(Q) > 0 ? 0 : 1)) && (Vnext(Q) < P(r) ? 1 : 0);
+        Vnext(c) = (V(c) || (Vnext(Q) > (numb)0 ? (numb)0 : (numb)1)) && (Vnext(Q) < P(r) ? (numb)1 : (numb)0);
     }
 }
 
