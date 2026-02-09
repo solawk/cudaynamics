@@ -40,16 +40,16 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
 {
     ifMETHOD(P(method), ExplicitEuler)
     {
-        Vnext(v) = V(v) + H * (V(v) - (V(v) * V(v) * V(v) / 3.0f) - V(w) + P(R) * P(Iext));
+        Vnext(v) = V(v) + H * (V(v) - (V(v) * V(v) * V(v) / (numb)3.0) - V(w) + P(R) * P(Iext));
         Vnext(w) = V(w) + H * ((V(v) + P(a) - P(b) * V(w)) / P(tau));
     }
     
     ifMETHOD(P(method), ExplicitMidpoint)
     {
-        numb vmp = V(v) + H * 0.5f * (V(v) - (V(v) * V(v) * V(v) / 3.0f) - V(w) + P(R) * P(Iext));
-        numb wmp = V(w) + H * 0.5f * ((V(v) + P(a) - P(b) * V(w)) / P(tau));
+        numb vmp = V(v) + H * (numb)0.5 * (V(v) - (V(v) * V(v) * V(v) / (numb)3.0) - V(w) + P(R) * P(Iext));
+        numb wmp = V(w) + H * (numb)0.5 * ((V(v) + P(a) - P(b) * V(w)) / P(tau));
 
-        Vnext(v) = V(v) + H * (vmp - (vmp * vmp * vmp / 3.0f) - wmp + P(R) * P(Iext));
+        Vnext(v) = V(v) + H * (vmp - (vmp * vmp * vmp / (numb)3.0) - wmp + P(R) * P(Iext));
         Vnext(w) = V(w) + H * ((vmp + P(a) - P(b) * wmp) / P(tau));
     }
 }
