@@ -48,9 +48,9 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
 
     ifMETHOD(P(method), ExplicitMidpoint)
     {
-        numb xmp = V(x) + 0.5 * H * (-P(alpha) * V(x) - P(beta) * V(y) - P(beta) * V(z) - V(y) * V(y));
-        numb ymp = V(y) + 0.5 * H * (-P(alpha) * V(y) - P(beta) * V(z) - P(beta) * V(x) - V(z) * V(z));
-        numb zmp = V(z) + 0.5 * H * (-P(alpha) * V(z) - P(beta) * V(x) - P(beta) * V(y) - V(x) * V(x));
+        numb xmp = V(x) + (numb)0.5 * H * (-P(alpha) * V(x) - P(beta) * V(y) - P(beta) * V(z) - V(y) * V(y));
+        numb ymp = V(y) + (numb)0.5 * H * (-P(alpha) * V(y) - P(beta) * V(z) - P(beta) * V(x) - V(z) * V(z));
+        numb zmp = V(z) + (numb)0.5 * H * (-P(alpha) * V(z) - P(beta) * V(x) - P(beta) * V(y) - V(x) * V(x));
 
         Vnext(x) = V(x) + H * (-P(alpha) * xmp - P(beta) * ymp - P(beta) * zmp - ymp * ymp);
         Vnext(y) = V(y) + H * (-P(alpha) * ymp - P(beta) * zmp - P(beta) * xmp - zmp * zmp);
@@ -64,17 +64,17 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
         numb ky1 = -P(alpha) * V(y) - P(beta) * V(z) - P(beta) * V(x) - V(z) * V(z);
         numb kz1 = -P(alpha) * V(z) - P(beta) * V(x) - P(beta) * V(y) - V(x) * V(x);
 
-        numb xmp = V(x) + 0.5 * H * kx1;
-        numb ymp = V(y) + 0.5 * H * ky1;
-        numb zmp = V(z) + 0.5 * H * kz1;
+        numb xmp = V(x) + (numb)0.5 * H * kx1;
+        numb ymp = V(y) + (numb)0.5 * H * ky1;
+        numb zmp = V(z) + (numb)0.5 * H * kz1;
 
         numb kx2 = -P(alpha) * xmp - P(beta) * ymp - P(beta) * zmp - ymp * ymp;
         numb ky2 = -P(alpha) * ymp - P(beta) * zmp - P(beta) * xmp - zmp * zmp;
         numb kz2 = -P(alpha) * zmp - P(beta) * xmp - P(beta) * ymp - xmp * xmp;
 
-        xmp = V(x) + 0.5 * H * kx2;
-        ymp = V(y) + 0.5 * H * ky2;
-        zmp = V(z) + 0.5 * H * kz2;
+        xmp = V(x) + (numb)0.5 * H * kx2;
+        ymp = V(y) + (numb)0.5 * H * ky2;
+        zmp = V(z) + (numb)0.5 * H * kz2;
 
         numb kx3 = -P(alpha) * xmp - P(beta) * ymp - P(beta) * zmp - ymp * ymp;
         numb ky3 = -P(alpha) * ymp - P(beta) * zmp - P(beta) * xmp - zmp * zmp;
@@ -88,23 +88,23 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
         numb ky4 = -P(alpha) * ymp - P(beta) * zmp - P(beta) * xmp - zmp * zmp;
         numb kz4 = -P(alpha) * zmp - P(beta) * xmp - P(beta) * ymp - xmp * xmp;
 
-        Vnext(x) = V(x) + H * (kx1 + 2 * kx2 + 2 * kx3 + kx4) / 6;
-        Vnext(y) = V(y) + H * (ky1 + 2 * ky2 + 2 * ky3 + ky4) / 6;
-        Vnext(z) = V(z) + H * (kz1 + 2 * kz2 + 2 * kz3 + kz4) / 6;
+        Vnext(x) = V(x) + H * (kx1 + (numb)2 * kx2 + (numb)2 * kx3 + kx4) / (numb)6;
+        Vnext(y) = V(y) + H * (ky1 + (numb)2 * ky2 + (numb)2 * ky3 + ky4) / (numb)6;
+        Vnext(z) = V(z) + H * (kz1 + (numb)2 * kz2 + (numb)2 * kz3 + kz4) / (numb)6;
     }
 
     ifMETHOD(P(method), VariableSymmetryCD)
     {
-        numb h1 = 0.5 * H - P(symmetry);
-        numb h2 = 0.5 * H + P(symmetry);
+        numb h1 = (numb)0.5 * H - P(symmetry);
+        numb h2 = (numb)0.5 * H + P(symmetry);
 
         numb xmp = V(x) + h1 * (-P(alpha) * V(x) - P(beta) * V(y) - P(beta) * V(z) - V(y) * V(y));
         numb ymp = V(y) + h1 * (-P(alpha) * V(y) - P(beta) * V(z) - P(beta) * xmp - V(z) * V(z));
         numb zmp = V(z) + h1 * (-P(alpha) * V(z) - P(beta) * xmp - P(beta) * ymp - xmp * xmp);
 
-        Vnext(z) = (zmp - h2 * (P(beta) * (xmp + ymp) + xmp * xmp)) / (1 + h2 * P(alpha));
-        Vnext(y) = (ymp - h2 * (P(beta) * (Vnext(z) + xmp) + Vnext(z) * Vnext(z))) / (1 + h2 * P(alpha));
-        Vnext(x) = (xmp - h2 * (P(beta) * (Vnext(y) + Vnext(z)) + Vnext(y) * Vnext(y))) / (1 + h2 * P(alpha));
+        Vnext(z) = (zmp - h2 * (P(beta) * (xmp + ymp) + xmp * xmp)) / ((numb)1 + h2 * P(alpha));
+        Vnext(y) = (ymp - h2 * (P(beta) * (Vnext(z) + xmp) + Vnext(z) * Vnext(z))) / ((numb)1 + h2 * P(alpha));
+        Vnext(x) = (xmp - h2 * (P(beta) * (Vnext(y) + Vnext(z)) + Vnext(y) * Vnext(y))) / ((numb)1 + h2 * P(alpha));
     }
 
 }
