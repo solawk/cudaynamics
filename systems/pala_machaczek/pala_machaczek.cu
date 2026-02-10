@@ -46,40 +46,40 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
     const numb C = P(C);
     const numb m = P(m);
 
-    const numb h1 = 0.5f * H;
+    const numb h1 = (numb)0.5 * H;
     const numb h2 = H;
 
-    numb kx1 = (1.0f / L) * (y - x * powf(z, m));
-    numb ky1 = (1.0f / (R * C)) * (R + 1.0f - y - R * x);
+    numb kx1 = ((numb)1.0 / L) * (y - x * exp(m * log(z)));
+    numb ky1 = ((numb)1.0 / (R * C)) * (R + (numb)1.0 - y - R * x);
     numb kz1 = x * x - z;
 
     numb xmp = x + h1 * kx1;
     numb ymp = y + h1 * ky1;
     numb zmp = z + h1 * kz1;
 
-    numb kx2 = (1.0f / L) * (ymp - xmp * powf(zmp, m));
-    numb ky2 = (1.0f / (R * C)) * (R + 1.0f - ymp - R * xmp);
+    numb kx2 = ((numb)1.0 / L) * (ymp - xmp * exp(m * log(z)));
+    numb ky2 = ((numb)1.0 / (R * C)) * (R + (numb)1.0 - ymp - R * xmp);
     numb kz2 = xmp * xmp - zmp;
 
     xmp = x + h1 * kx2;
     ymp = y + h1 * ky2;
     zmp = z + h1 * kz2;
 
-    numb kx3 = (1.0f / L) * (ymp - xmp * powf(zmp, m));
-    numb ky3 = (1.0f / (R * C)) * (R + 1.0f - ymp - R * xmp);
+    numb kx3 = ((numb)1.0 / L) * (ymp - xmp * exp(m * log(z)));
+    numb ky3 = ((numb)1.0 / (R * C)) * (R + (numb)1.0 - ymp - R * xmp);
     numb kz3 = xmp * xmp - zmp;
 
     xmp = x + h2 * kx3;
     ymp = y + h2 * ky3;
     zmp = z + h2 * kz3;
 
-    numb kx4 = (1.0f / L) * (ymp - xmp * powf(zmp, m));
-    numb ky4 = (1.0f / (R * C)) * (R + 1.0f - ymp - R * xmp);
+    numb kx4 = ((numb)1.0 / L) * (ymp - xmp * exp(m * log(z)));
+    numb ky4 = ((numb)1.0 / (R * C)) * (R + (numb)1.0 - ymp - R * xmp);
     numb kz4 = xmp * xmp - zmp;
 
-    Vnext(x) = x + h2 * (kx1 + 2.0f * kx2 + 2.0f * kx3 + kx4) / 6.0f;
-    Vnext(y) = y + h2 * (ky1 + 2.0f * ky2 + 2.0f * ky3 + ky4) / 6.0f;
-    Vnext(z) = z + h2 * (kz1 + 2.0f * kz2 + 2.0f * kz3 + kz4) / 6.0f;
+    Vnext(x) = x + h2 * (kx1 + (numb)2.0 * kx2 + (numb)2.0 * kx3 + kx4) / (numb)6.0;
+    Vnext(y) = y + h2 * (ky1 + (numb)2.0 * ky2 + (numb)2.0 * ky3 + ky4) / (numb)6.0;
+    Vnext(z) = z + h2 * (kz1 + (numb)2.0 * kz2 + (numb)2.0 * kz3 + kz4) / (numb)6.0;
 }
 
 #undef name
