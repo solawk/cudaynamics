@@ -40,7 +40,7 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
 {
     ifSIGNAL(P(signal), square)
     {
-        Vnext(i) = P(Idc) + (std::fmod((V(t) - P(Idel)) > (numb)0 ? (V(t) - P(Idel)) : (P(Idf) / P(Ifreq) + P(Idel) - V(t)), (numb)1 / P(Ifreq)) < P(Idf) / P(Ifreq) ? P(Iamp) : (numb)0.0);
+        Vnext(i) = P(Idc) + (fmod((V(t) - P(Idel)) > (numb)0 ? (V(t) - P(Idel)) : (P(Idf) / P(Ifreq) + P(Idel) - V(t)), (numb)1 / P(Ifreq)) < P(Idf) / P(Ifreq) ? P(Iamp) : (numb)0.0);
         Vnext(t) = V(t) + H;
         Vnext(Q) = V(Q) + V(c) * (Vnext(i) + V(S)) - !V(c) * (Vnext(i) + V(S));
 
@@ -54,7 +54,7 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
     }
     ifSIGNAL(P(signal), sine)
     {
-        Vnext(i) = P(Idc) + P(Iamp) * std::sin((numb)2.0 * (numb)3.141592 * P(Ifreq) * (V(t) - P(Idel)));
+        Vnext(i) = P(Idc) + P(Iamp) * sin((numb)2.0 * (numb)3.141592 * P(Ifreq) * (V(t) - P(Idel)));
         Vnext(t) = V(t) + H;
         Vnext(Q) = V(Q) + V(c) * (Vnext(i) + V(S)) - !V(c) * (Vnext(i) + V(S));
 
@@ -68,7 +68,7 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
     }
     ifSIGNAL(P(signal), triangle)
     {
-        Vnext(i) = P(Idc) + P(Iamp) * (((numb)4.0 * P(Ifreq) * (V(t) - P(Idel)) - (numb)2.0 * std::floor(((numb)4.0 * P(Ifreq) * (V(t) - P(Idel)) + (numb)1.0) / (numb)2.0)) * std::pow((numb)(-1), std::floor(((numb)4.0 * P(Ifreq) * (V(t) - P(Idel)) + (numb)1.0) / (numb)2.0)));
+        Vnext(i) = P(Idc) + P(Iamp) * (((numb)4.0 * P(Ifreq) * (V(t) - P(Idel)) - (numb)2.0 * floor(((numb)4.0 * P(Ifreq) * (V(t) - P(Idel)) + (numb)1.0) / (numb)2.0)) * pow((numb)(-1), floor(((numb)4.0 * P(Ifreq) * (V(t) - P(Idel)) + (numb)1.0) / (numb)2.0)));
         Vnext(t) = V(t) + H;
         Vnext(Q) = V(Q) + V(c) * (Vnext(i) + V(S)) - !V(c) * (Vnext(i) + V(S));
 
