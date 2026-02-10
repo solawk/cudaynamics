@@ -43,7 +43,7 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
     {
         ifMETHOD(P(method), ExplicitEuler)
         {
-            Vnext(i) = P(Idc) + (std::fmod((V(t) - P(Idel)) > (numb)0 ? (V(t) - P(Idel)) : (P(Idf) / P(Ifreq) + P(Idel) - V(t)), (numb)1 / P(Ifreq)) < P(Idf) / P(Ifreq) ? P(Iamp) : (numb)0.0);
+            Vnext(i) = P(Idc) + (fmod((V(t) - P(Idel)) > (numb)0 ? (V(t) - P(Idel)) : (P(Idf) / P(Ifreq) + P(Idel) - V(t)), (numb)1 / P(Ifreq)) < P(Idf) / P(Ifreq) ? P(Iamp) : (numb)0.0);
             Vnext(t) = V(t) + H;
             Vnext(x) = V(x) + H * (V(y) - P(a) * V(x) * V(x) * V(x) + P(b) * V(x) * V(x) - V(z) + Vnext(i));
             Vnext(y) = V(y) + H * (P(c) - P(d) * V(x) * V(x) - V(y));
@@ -52,13 +52,13 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
 
         ifMETHOD(P(method), ExplicitMidpoint)
         {
-            numb imp = P(Idc) + (std::fmod((V(t) - P(Idel)) > (numb)0 ? (V(t) - P(Idel)) : (P(Idf) / P(Ifreq) + P(Idel) - V(t)), (numb)1 / P(Ifreq)) < P(Idf) / P(Ifreq) ? P(Iamp) : (numb)0.0);
+            numb imp = P(Idc) + (fmod((V(t) - P(Idel)) > (numb)0 ? (V(t) - P(Idel)) : (P(Idf) / P(Ifreq) + P(Idel) - V(t)), (numb)1 / P(Ifreq)) < P(Idf) / P(Ifreq) ? P(Iamp) : (numb)0.0);
             numb tmp = V(t) + H * (numb)0.5;
             numb xmp = V(x) + H * (numb)0.5 * (V(y) - P(a) * V(x) * V(x) * V(x) + P(b) * V(x) * V(x) - V(z) + imp);
             numb ymp = V(y) + H * (numb)0.5 * (P(c) - P(d) * V(x) * V(x) - V(y));
             numb zmp = V(z) + H * (numb)0.5 * (P(r) * (P(s) * (V(x) + P(e)) - V(z)));
 
-            Vnext(i) = P(Idc) + (std::fmod((tmp - P(Idel)) > (numb)0 ? (tmp - P(Idel)) : (P(Idf) / P(Ifreq) + P(Idel) - tmp), (numb)1.0 / P(Ifreq)) < P(Idf) / P(Ifreq) ? P(Iamp) : (numb)0.0);
+            Vnext(i) = P(Idc) + (fmod((tmp - P(Idel)) > (numb)0 ? (tmp - P(Idel)) : (P(Idf) / P(Ifreq) + P(Idel) - tmp), (numb)1.0 / P(Ifreq)) < P(Idf) / P(Ifreq) ? P(Iamp) : (numb)0.0);
             Vnext(t) = V(t) + H;
             Vnext(x) = V(x) + H * (ymp - P(a) * xmp * xmp * xmp + P(b) * xmp * xmp - zmp + Vnext(i));
             Vnext(y) = V(y) + H * (P(c) - P(d) * xmp * xmp - ymp);
@@ -67,7 +67,7 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
 
         ifMETHOD(P(method), ExplicitRungeKutta4)
         {
-            numb i1 = P(Idc) + (std::fmod((V(t) - P(Idel)) > (numb)0 ? (V(t) - P(Idel)) : (P(Idf) / P(Ifreq) + P(Idel) - V(t)), (numb)1 / P(Ifreq)) < P(Idf) / P(Ifreq) ? P(Iamp) : (numb)0.0);
+            numb i1 = P(Idc) + (fmod((V(t) - P(Idel)) > (numb)0 ? (V(t) - P(Idel)) : (P(Idf) / P(Ifreq) + P(Idel) - V(t)), (numb)1 / P(Ifreq)) < P(Idf) / P(Ifreq) ? P(Iamp) : (numb)0.0);
             numb kt1 = V(t) + (numb)0.5 * H;
 
             numb kx1 = V(y) - P(a) * V(x) * V(x) * V(x) + P(b) * V(x) * V(x) - V(z) + i1;
@@ -79,7 +79,7 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
             numb zmp = V(z) + (numb)0.5 * H * kz1;
 
 
-            numb i2 = P(Idc) + (std::fmod((kt1 - P(Idel)) > (numb)0 ? (kt1 - P(Idel)) : (P(Idf) / P(Ifreq) + P(Idel) - kt1), (numb)1 / P(Ifreq)) < P(Idf) / P(Ifreq) ? P(Iamp) : (numb)0.0);
+            numb i2 = P(Idc) + (fmod((kt1 - P(Idel)) > (numb)0 ? (kt1 - P(Idel)) : (P(Idf) / P(Ifreq) + P(Idel) - kt1), (numb)1 / P(Ifreq)) < P(Idf) / P(Ifreq) ? P(Iamp) : (numb)0.0);
             numb kx2 = ymp - P(a) * xmp * xmp * xmp + P(b) * xmp * xmp - zmp + i2;
             numb ky2 = P(c) - P(d) * xmp * xmp - ymp;
             numb kz2 = P(r) * (P(s) * (xmp + P(e)) - zmp);
@@ -97,7 +97,7 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
             ymp = V(y) + H * ky3;
             zmp = V(z) + H * kz3;
 
-            numb i3 = P(Idc) + (std::fmod((Vnext(t) - P(Idel)) > (numb)0 ? (Vnext(t) - P(Idel)) : (P(Idf) / P(Ifreq) + P(Idel) - Vnext(t)), (numb)1 / P(Ifreq)) < P(Idf) / P(Ifreq) ? P(Iamp) : (numb)0.0);
+            numb i3 = P(Idc) + (fmod((Vnext(t) - P(Idel)) > (numb)0 ? (Vnext(t) - P(Idel)) : (P(Idf) / P(Ifreq) + P(Idel) - Vnext(t)), (numb)1 / P(Ifreq)) < P(Idf) / P(Ifreq) ? P(Iamp) : (numb)0.0);
             numb kx4 = ymp - P(a) * xmp * xmp * xmp + P(b) * xmp * xmp - zmp + i3;
             numb ky4 = P(c) - P(d) * xmp * xmp - ymp;
             numb kz4 = P(r) * (P(s) * (xmp + P(e)) - zmp);
@@ -114,7 +114,7 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
             numb h2 = (numb)0.5 * H + P(symmetry);
 
 
-            Vnext(i) = P(Idc) + (std::fmod((V(t) - P(Idel)) > (numb)0 ? (V(t) - P(Idel)) : (P(Idf) / P(Ifreq) + P(Idel) - V(t)), (numb)1 / P(Ifreq)) < P(Idf) / P(Ifreq) ? P(Iamp) : (numb)0.0);
+            Vnext(i) = P(Idc) + (fmod((V(t) - P(Idel)) > (numb)0 ? (V(t) - P(Idel)) : (P(Idf) / P(Ifreq) + P(Idel) - V(t)), (numb)1 / P(Ifreq)) < P(Idf) / P(Ifreq) ? P(Iamp) : (numb)0.0);
             numb xmp = V(x) + h1 * (V(y) - P(a) * V(x) * V(x) * V(x) + P(b) * V(x) * V(x) - V(z) + Vnext(i));
             numb ymp = V(y) + h1 * (P(c) - P(d) * xmp * xmp - V(y));
             numb zmp = V(z) + h1 * (P(r) * (P(s) * (xmp + P(e)) - V(z)));
@@ -131,7 +131,7 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
     {
         ifMETHOD(P(method), ExplicitEuler)
         {
-            Vnext(i) = P(Idc) + P(Iamp) * std::sin((numb)2.0 * (numb)3.141592 * P(Ifreq) * (V(t) - P(Idel)));
+            Vnext(i) = P(Idc) + P(Iamp) * sin((numb)2.0 * (numb)3.141592 * P(Ifreq) * (V(t) - P(Idel)));
             Vnext(t) = V(t) + H;
             Vnext(x) = V(x) + H * (V(y) - P(a) * V(x) * V(x) * V(x) + P(b) * V(x) * V(x) - V(z) + Vnext(i));
             Vnext(y) = V(y) + H * (P(c) - P(d) * V(x) * V(x) - V(y));
@@ -140,13 +140,13 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
 
         ifMETHOD(P(method), ExplicitMidpoint)
         {
-            numb imp = P(Idc) + P(Iamp) * std::sin((numb)2.0 * (numb)3.141592 * P(Ifreq) * (V(t) - P(Idel)));
+            numb imp = P(Idc) + P(Iamp) * sin((numb)2.0 * (numb)3.141592 * P(Ifreq) * (V(t) - P(Idel)));
             numb tmp = V(t) + H * (numb)0.5;
             numb xmp = V(x) + H * (numb)0.5 * (V(y) - P(a) * V(x) * V(x) * V(x) + P(b) * V(x) * V(x) - V(z) + imp);
             numb ymp = V(y) + H * (numb)0.5 * (P(c) - P(d) * V(x) * V(x) - V(y));
             numb zmp = V(z) + H * (numb)0.5 * (P(r) * (P(s) * (V(x) + P(e)) - V(z)));
 
-            Vnext(i) = P(Idc) + P(Iamp) * std::sin((numb)2.0 * (numb)3.141592 * P(Ifreq) * (tmp - P(Idel)));
+            Vnext(i) = P(Idc) + P(Iamp) * sin((numb)2.0 * (numb)3.141592 * P(Ifreq) * (tmp - P(Idel)));
             Vnext(t) = V(t) + H;
             Vnext(x) = V(x) + H * (ymp - P(a) * xmp * xmp * xmp + P(b) * xmp * xmp - zmp + Vnext(i));
             Vnext(y) = V(y) + H * (P(c) - P(d) * xmp * xmp - ymp);
@@ -155,7 +155,7 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
 
         ifMETHOD(P(method), ExplicitRungeKutta4)
         {
-            numb i1 = P(Idc) + P(Iamp) * std::sin((numb)2.0 * (numb)3.141592 * P(Ifreq) * (V(t) - P(Idel)));
+            numb i1 = P(Idc) + P(Iamp) * sin((numb)2.0 * (numb)3.141592 * P(Ifreq) * (V(t) - P(Idel)));
             numb kt1 = V(t) + (numb)0.5 * H;
 
             numb kx1 = V(y) - P(a) * V(x) * V(x) * V(x) + P(b) * V(x) * V(x) - V(z) + i1;
@@ -167,7 +167,7 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
             numb zmp = V(z) + (numb)0.5 * H * kz1;
 
 
-            numb i2 = P(Idc) + P(Iamp) * std::sin((numb)2.0 * (numb)3.141592 * P(Ifreq) * (kt1 - P(Idel)));
+            numb i2 = P(Idc) + P(Iamp) * sin((numb)2.0 * (numb)3.141592 * P(Ifreq) * (kt1 - P(Idel)));
             numb kx2 = ymp - P(a) * xmp * xmp * xmp + P(b) * xmp * xmp - zmp + i2;
             numb ky2 = P(c) - P(d) * xmp * xmp - ymp;
             numb kz2 = P(r) * (P(s) * (xmp + P(e)) - zmp);
@@ -185,7 +185,7 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
             ymp = V(y) + H * ky3;
             zmp = V(z) + H * kz3;
 
-            numb i3 = P(Idc) + P(Iamp) * std::sin((numb)2.0 * (numb)3.141592 * P(Ifreq) * (Vnext(t) - P(Idel)));
+            numb i3 = P(Idc) + P(Iamp) * sin((numb)2.0 * (numb)3.141592 * P(Ifreq) * (Vnext(t) - P(Idel)));
             numb kx4 = ymp - P(a) * xmp * xmp * xmp + P(b) * xmp * xmp - zmp + i3;
             numb ky4 = P(c) - P(d) * xmp * xmp - ymp;
             numb kz4 = P(r) * (P(s) * (xmp + P(e)) - zmp);
@@ -202,7 +202,7 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
             numb h2 = (numb)0.5 * H + P(symmetry);
 
 
-            Vnext(i) = P(Idc) + P(Iamp) * std::sin((numb)2.0 * (numb)3.141592 * P(Ifreq) * (V(t) - P(Idel)));
+            Vnext(i) = P(Idc) + P(Iamp) * sin((numb)2.0 * (numb)3.141592 * P(Ifreq) * (V(t) - P(Idel)));
             numb xmp = V(x) + h1 * (V(y) - P(a) * V(x) * V(x) * V(x) + P(b) * V(x) * V(x) - V(z) + Vnext(i));
             numb ymp = V(y) + h1 * (P(c) - P(d) * xmp * xmp - V(y));
             numb zmp = V(z) + h1 * (P(r) * (P(s) * (xmp + P(e)) - V(z)));
@@ -219,7 +219,7 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
     {
         ifMETHOD(P(method), ExplicitEuler)
         {
-            Vnext(i) = P(Idc) + P(Iamp) * (((numb)4.0 * P(Ifreq) * (V(t) - P(Idel)) - (numb)2.0 * std::floor(((numb)4.0 * P(Ifreq) * (V(t) - P(Idel)) + (numb)1.0) / (numb)2.0)) * std::pow((numb)(-1), std::floor(((numb)4.0f * P(Ifreq) * (V(t) - P(Idel)) + (numb)1.0) / (numb)2.0)));
+            Vnext(i) = P(Idc) + P(Iamp) * (((numb)4.0 * P(Ifreq) * (V(t) - P(Idel)) - (numb)2.0 * floor(((numb)4.0 * P(Ifreq) * (V(t) - P(Idel)) + (numb)1.0) / (numb)2.0)) * pow((numb)(-1), floor(((numb)4.0f * P(Ifreq) * (V(t) - P(Idel)) + (numb)1.0) / (numb)2.0)));
             Vnext(t) = V(t) + H;
             Vnext(x) = V(x) + H * (V(y) - P(a) * V(x) * V(x) * V(x) + P(b) * V(x) * V(x) - V(z) + Vnext(i));
             Vnext(y) = V(y) + H * (P(c) - P(d) * V(x) * V(x) - V(y));
@@ -228,13 +228,13 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
 
         ifMETHOD(P(method), ExplicitMidpoint)
         {
-            numb imp = P(Idc) + P(Iamp) * (((numb)4.0 * P(Ifreq) * (V(t) - P(Idel)) - (numb)2.0 * std::floor(((numb)4.0 * P(Ifreq) * (V(t) - P(Idel)) + (numb)1.0) / (numb)2.0)) * std::pow((numb)(-1), std::floor(((numb)4.0 * P(Ifreq) * (V(t) - P(Idel)) + (numb)1.0) / (numb)2.0)));
+            numb imp = P(Idc) + P(Iamp) * (((numb)4.0 * P(Ifreq) * (V(t) - P(Idel)) - (numb)2.0 * floor(((numb)4.0 * P(Ifreq) * (V(t) - P(Idel)) + (numb)1.0) / (numb)2.0)) * pow((numb)(-1), floor(((numb)4.0 * P(Ifreq) * (V(t) - P(Idel)) + (numb)1.0) / (numb)2.0)));
             numb tmp = V(t) + H * (numb)0.5;
             numb xmp = V(x) + H * (numb)0.5 * (V(y) - P(a) * V(x) * V(x) * V(x) + P(b) * V(x) * V(x) - V(z) + imp);
             numb ymp = V(y) + H * (numb)0.5 * (P(c) - P(d) * V(x) * V(x) - V(y));
             numb zmp = V(z) + H * (numb)0.5 * (P(r) * (P(s) * (V(x) + P(e)) - V(z)));
 
-            Vnext(i) = P(Idc) + P(Iamp) * (((numb)4.0 * P(Ifreq) * (tmp - P(Idel)) - (numb)2.0 * std::floor(((numb)4.0 * P(Ifreq) * (tmp - P(Idel)) + (numb)1.0) / (numb)2.0)) * std::pow((numb)(-1), std::floor(((numb)4.0 * P(Ifreq) * (tmp - P(Idel)) + (numb)1.0) / (numb)2.0)));
+            Vnext(i) = P(Idc) + P(Iamp) * (((numb)4.0 * P(Ifreq) * (tmp - P(Idel)) - (numb)2.0 * floor(((numb)4.0 * P(Ifreq) * (tmp - P(Idel)) + (numb)1.0) / (numb)2.0)) * pow((numb)(-1), floor(((numb)4.0 * P(Ifreq) * (tmp - P(Idel)) + (numb)1.0) / (numb)2.0)));
             Vnext(t) = V(t) + H;
             Vnext(x) = V(x) + H * (ymp - P(a) * xmp * xmp * xmp + P(b) * xmp * xmp - zmp + Vnext(i));
             Vnext(y) = V(y) + H * (P(c) - P(d) * xmp * xmp - ymp);
@@ -243,7 +243,7 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
 
         ifMETHOD(P(method), ExplicitRungeKutta4)
         {
-            numb i1 = P(Idc) + P(Iamp) * (((numb)4.0 * P(Ifreq) * (V(t) - P(Idel)) - (numb)2.0 * std::floor(((numb)4.0 * P(Ifreq) * (V(t) - P(Idel)) + (numb)1.0) / (numb)2.0)) * std::pow((numb)(-1), std::floor(((numb)4.0 * P(Ifreq) * (V(t) - P(Idel)) + (numb)1.0) / (numb)2.0)));
+            numb i1 = P(Idc) + P(Iamp) * (((numb)4.0 * P(Ifreq) * (V(t) - P(Idel)) - (numb)2.0 * floor(((numb)4.0 * P(Ifreq) * (V(t) - P(Idel)) + (numb)1.0) / (numb)2.0)) * pow((numb)(-1), floor(((numb)4.0 * P(Ifreq) * (V(t) - P(Idel)) + (numb)1.0) / (numb)2.0)));
             numb kt1 = V(t) + (numb)0.5 * H;
 
             numb kx1 = V(y) - P(a) * V(x) * V(x) * V(x) + P(b) * V(x) * V(x) - V(z) + i1;
@@ -255,7 +255,7 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
             numb zmp = V(z) + (numb)0.5 * H * kz1;
 
 
-            numb i2 = P(Idc) + P(Iamp) * (((numb)4.0 * P(Ifreq) * (kt1 - P(Idel)) - (numb)2.0 * std::floor(((numb)4.0 * P(Ifreq) * (kt1 - P(Idel)) + (numb)1.0) / (numb)2.0)) * std::pow((numb)(-1), std::floor(((numb)4.0 * P(Ifreq) * (kt1 - P(Idel)) + (numb)1.0) / (numb)2.0)));
+            numb i2 = P(Idc) + P(Iamp) * (((numb)4.0 * P(Ifreq) * (kt1 - P(Idel)) - (numb)2.0 * floor(((numb)4.0 * P(Ifreq) * (kt1 - P(Idel)) + (numb)1.0) / (numb)2.0)) * pow((numb)(-1), floor(((numb)4.0 * P(Ifreq) * (kt1 - P(Idel)) + (numb)1.0) / (numb)2.0)));
             numb kx2 = ymp - P(a) * xmp * xmp * xmp + P(b) * xmp * xmp - zmp + i2;
             numb ky2 = P(c) - P(d) * xmp * xmp - ymp;
             numb kz2 = P(r) * (P(s) * (xmp + P(e)) - zmp);
@@ -273,7 +273,7 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
             ymp = V(y) + H * ky3;
             zmp = V(z) + H * kz3;
 
-            numb i3 = P(Idc) + P(Iamp) * (((numb)4.0 * P(Ifreq) * (Vnext(t) - P(Idel)) - (numb)2.0 * std::floor(((numb)4.0 * P(Ifreq) * (Vnext(t) - P(Idel)) + (numb)1.0) / (numb)2.0)) * std::pow((numb)(-1), std::floor(((numb)4.0 * P(Ifreq) * (Vnext(t) - P(Idel)) + (numb)1.0) / (numb)2.0)));
+            numb i3 = P(Idc) + P(Iamp) * (((numb)4.0 * P(Ifreq) * (Vnext(t) - P(Idel)) - (numb)2.0 * floor(((numb)4.0 * P(Ifreq) * (Vnext(t) - P(Idel)) + (numb)1.0) / (numb)2.0)) * pow((numb)(-1), floor(((numb)4.0 * P(Ifreq) * (Vnext(t) - P(Idel)) + (numb)1.0) / (numb)2.0)));
             numb kx4 = ymp - P(a) * xmp * xmp * xmp + P(b) * xmp * xmp - zmp + i3;
             numb ky4 = P(c) - P(d) * xmp * xmp - ymp;
             numb kz4 = P(r) * (P(s) * (xmp + P(e)) - zmp);
@@ -290,7 +290,7 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
             numb h2 = (numb)0.5 * H + P(symmetry);
 
 
-            Vnext(i) = P(Idc) + P(Iamp) * (((numb)4.0 * P(Ifreq) * (V(t) - P(Idel)) - (numb)2.0 * std::floor(((numb)4.0 * P(Ifreq) * (V(t) - P(Idel)) + (numb)1.0) / (numb)2.0)) * std::pow((numb)(-1), std::floor(((numb)4.0 * P(Ifreq) * (V(t) - P(Idel)) + (numb)1.0) / (numb)2.0)));
+            Vnext(i) = P(Idc) + P(Iamp) * (((numb)4.0 * P(Ifreq) * (V(t) - P(Idel)) - (numb)2.0 * floor(((numb)4.0 * P(Ifreq) * (V(t) - P(Idel)) + (numb)1.0) / (numb)2.0)) * pow((numb)(-1), floor(((numb)4.0 * P(Ifreq) * (V(t) - P(Idel)) + (numb)1.0) / (numb)2.0)));
             numb xmp = V(x) + h1 * (V(y) - P(a) * V(x) * V(x) * V(x) + P(b) * V(x) * V(x) - V(z) + Vnext(i));
             numb ymp = V(y) + h1 * (P(c) - P(d) * xmp * xmp - V(y));
             numb zmp = V(z) + h1 * (P(r) * (P(s) * (xmp + P(e)) - V(z)));
