@@ -56,49 +56,49 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
 
 			Id = P(Is) * (exp((V(v) + P(Utd)) / P(Vt)) - exp(-(V(v) + P(Utd)) / P(Vt))) + (P(Ip) / P(Vp)) * (V(v) + P(Utd)) * exp(-(V(v) + P(Utd) - P(Vp)) / P(Vp)) + P(Iv) * (atan(P(D) * (V(v) + P(Utd) - P(E))) + atan(P(D) * (V(v) + P(Utd) + P(E))));
 
-			if ((-V(v) + P(Uvm)) > 0)
+			if ((-V(v) + P(Uvm)) > (numb)0.0)
 				Im = (-V(v) + P(Uvm)) * V(x) / P(Ron_p) + P(Ilk);
 			else
 				Im = (-V(v) + P(Uvm)) * V(x) / P(Ron_n) - P(Ilk);
 
-			numb imp = P(Idc) + (fmodf((V(t) - P(Idel)) > 0 ? (V(t) - P(Idel)) : (P(Idf) / P(Ifreq) + P(Idel) - V(t)), 1 / P(Ifreq)) < P(Idf) / P(Ifreq) ? P(Iamp) : 0.0f);
+			numb imp = P(Idc) + (fmod((V(t) - P(Idel)) > (numb)0.0 ? (V(t) - P(Idel)) : (P(Idf) / P(Ifreq) + P(Idel) - V(t)), (numb)1.0 / P(Ifreq)) < P(Idf) / P(Ifreq) ? P(Iamp) : (numb)0.0);
 
 			numb kv1 = (imp + Im - Id) / P(C);
-			numb kx1 = (1 / P(tau_s)) * (1 / (1 + exp(-1 / (P(Vs) * P(Vs)) * ((-V(v) + P(Uvm)) - P(Vth_p)) * ((-V(v) + P(Uvm)) - P(Vth_n))))) * ((1 - 1 / (exp((P(A) * V(x) + P(Ds))))) * (1 - V(x)) + V(x) * (1 - 1 / (exp(P(A) * (1 - V(x)))))) - (1 / P(tau_r)) * (1 - 1 / (1 + exp(-1 / (P(Vr) * P(Vr)) * ((-V(v) + P(Uvm)) - P(Vh_n)) * ((-V(v) + P(Uvm)) - P(Vh_p))))) * ((1 - 1 / (exp((P(A) * V(x))))) * (1 - V(x)) + V(x) * (1 - 1 / (exp(P(A) * (1 - V(x)) + P(Dr)))));
+			numb kx1 = ((numb)1.0 / P(tau_s)) * ((numb)1.0 / ((numb)1.0 + exp(-(numb)1.0 / (P(Vs) * P(Vs)) * ((-V(v) + P(Uvm)) - P(Vth_p)) * ((-V(v) + P(Uvm)) - P(Vth_n))))) * (((numb)1.0 - (numb)1.0 / (exp((P(A) * V(x) + P(Ds))))) * ((numb)1.0 - V(x)) + V(x) * ((numb)1.0 - (numb)1.0 / (exp(P(A) * ((numb)1.0 - V(x)))))) - ((numb)1.0 / P(tau_r)) * ((numb)1.0 - (numb)1.0 / ((numb)1.0 + exp(-(numb)1.0 / (P(Vr) * P(Vr)) * ((-V(v) + P(Uvm)) - P(Vh_n)) * ((-V(v) + P(Uvm)) - P(Vh_p))))) * (((numb)1.0 - (numb)1.0 / (exp((P(A) * V(x))))) * ((numb)1.0 - V(x)) + V(x) * ((numb)1.0 - (numb)1.0 / (exp(P(A) * ((numb)1.0 - V(x)) + P(Dr)))));
 
-			numb vmp = V(v) + 0.5f * H * kv1;
-			numb xmp = V(x) + 0.5f * H * kx1;
-			numb tmp = V(t) + 0.5f * H;
+			numb vmp = V(v) + (numb)0.5 * H * kv1;
+			numb xmp = V(x) + (numb)0.5 * H * kx1;
+			numb tmp = V(t) + (numb)0.5 * H;
 
 
 			Id = P(Is) * (exp((vmp + P(Utd)) / P(Vt)) - exp(-(vmp + P(Utd)) / P(Vt))) + (P(Ip) / P(Vp)) * (vmp + P(Utd)) * exp(-(vmp + P(Utd) - P(Vp)) / P(Vp)) + P(Iv) * (atan(P(D) * (vmp + P(Utd) - P(E))) + atan(P(D) * (vmp + P(Utd) + P(E))));
 
-			if ((-vmp + P(Uvm)) > 0)
+			if ((-vmp + P(Uvm)) > (numb)0.0)
 				Im = (-vmp + P(Uvm)) * xmp / P(Ron_p) + P(Ilk);
 			else
 				Im = (-vmp + P(Uvm)) * xmp / P(Ron_n) - P(Ilk);
 
-			imp = P(Idc) + (fmodf((tmp - P(Idel)) > 0 ? (tmp - P(Idel)) : (P(Idf) / P(Ifreq) + P(Idel) - tmp), 1 / P(Ifreq)) < P(Idf) / P(Ifreq) ? P(Iamp) : 0.0f);
+			imp = P(Idc) + (fmod((tmp - P(Idel)) > (numb)0.0 ? (tmp - P(Idel)) : (P(Idf) / P(Ifreq) + P(Idel) - tmp), (numb)1.0 / P(Ifreq)) < P(Idf) / P(Ifreq) ? P(Iamp) : (numb)0.0);
 
 			numb kv2 = (imp + Im - Id) / P(C);
-			numb kx2 = (1 / P(tau_s)) * (1 / (1 + exp(-1 / (P(Vs) * P(Vs)) * ((-vmp + P(Uvm)) - P(Vth_p)) * ((-vmp + P(Uvm)) - P(Vth_n))))) * ((1 - 1 / (exp((P(A) * xmp + P(Ds))))) * (1 - xmp) + xmp * (1 - 1 / (exp(P(A) * (1 - xmp))))) - (1 / P(tau_r)) * (1 - 1 / (1 + exp(-1 / (P(Vr) * P(Vr)) * ((-vmp + P(Uvm)) - P(Vh_n)) * ((-vmp + P(Uvm)) - P(Vh_p))))) * ((1 - 1 / (exp((P(A) * xmp)))) * (1 - xmp) + xmp * (1 - 1 / (exp(P(A) * (1 - xmp) + P(Dr)))));
+			numb kx2 = ((numb)1.0 / P(tau_s)) * ((numb)1.0 / ((numb)1.0 + exp(-(numb)1.0 / (P(Vs) * P(Vs)) * ((-vmp + P(Uvm)) - P(Vth_p)) * ((-vmp + P(Uvm)) - P(Vth_n))))) * (((numb)1.0 - (numb)1.0 / (exp((P(A) * xmp + P(Ds))))) * ((numb)1.0 - xmp) + xmp * ((numb)1.0 - (numb)1.0 / (exp(P(A) * ((numb)1.0 - xmp))))) - ((numb)1.0 / P(tau_r)) * ((numb)1.0 - (numb)1.0 / ((numb)1.0 + exp(-(numb)1.0 / (P(Vr) * P(Vr)) * ((-vmp + P(Uvm)) - P(Vh_n)) * ((-vmp + P(Uvm)) - P(Vh_p))))) * (((numb)1.0 - (numb)1.0 / (exp((P(A) * xmp)))) * ((numb)1.0 - xmp) + xmp * ((numb)1.0 - (numb)1.0 / (exp(P(A) * ((numb)1.0 - xmp) + P(Dr)))));
 
-			vmp = V(v) + 0.5f * H * kv2;
-			xmp = V(x) + 0.5f * H * kx2;
-			tmp = V(t) + 0.5f * H;
+			vmp = V(v) + (numb)0.5 * H * kv2;
+			xmp = V(x) + (numb)0.5 * H * kx2;
+			tmp = V(t) + (numb)0.5 * H;
 
 
 			Id = P(Is) * (exp((vmp + P(Utd)) / P(Vt)) - exp(-(vmp + P(Utd)) / P(Vt))) + (P(Ip) / P(Vp)) * (vmp + P(Utd)) * exp(-(vmp + P(Utd) - P(Vp)) / P(Vp)) + P(Iv) * (atan(P(D) * (vmp + P(Utd) - P(E))) + atan(P(D) * (vmp + P(Utd) + P(E))));
 
-			if ((-vmp + P(Uvm)) > 0)
+			if ((-vmp + P(Uvm)) > (numb)0.0)
 				Im = (-vmp + P(Uvm)) * xmp / P(Ron_p) + P(Ilk);
 			else
 				Im = (-vmp + P(Uvm)) * xmp / P(Ron_n) - P(Ilk);
 
-			imp = P(Idc) + (fmodf((tmp - P(Idel)) > 0 ? (tmp - P(Idel)) : (P(Idf) / P(Ifreq) + P(Idel) - tmp), 1 / P(Ifreq)) < P(Idf) / P(Ifreq) ? P(Iamp) : 0.0f);
+			imp = P(Idc) + (fmod((tmp - P(Idel)) > (numb)0.0 ? (tmp - P(Idel)) : (P(Idf) / P(Ifreq) + P(Idel) - tmp), (numb)1.0 / P(Ifreq)) < P(Idf) / P(Ifreq) ? P(Iamp) : (numb)0.0);
 
 			numb kv3 = (imp + Im - Id) / P(C);
-			numb kx3 = (1 / P(tau_s)) * (1 / (1 + exp(-1 / (P(Vs) * P(Vs)) * ((-vmp + P(Uvm)) - P(Vth_p)) * ((-vmp + P(Uvm)) - P(Vth_n))))) * ((1 - 1 / (exp((P(A) * xmp + P(Ds))))) * (1 - xmp) + xmp * (1 - 1 / (exp(P(A) * (1 - xmp))))) - (1 / P(tau_r)) * (1 - 1 / (1 + exp(-1 / (P(Vr) * P(Vr)) * ((-vmp + P(Uvm)) - P(Vh_n)) * ((-vmp + P(Uvm)) - P(Vh_p))))) * ((1 - 1 / (exp((P(A) * xmp)))) * (1 - xmp) + xmp * (1 - 1 / (exp(P(A) * (1 - xmp) + P(Dr)))));
+			numb kx3 = ((numb)1.0 / P(tau_s)) * ((numb)1.0 / ((numb)1.0 + exp(-(numb)1.0 / (P(Vs) * P(Vs)) * ((-vmp + P(Uvm)) - P(Vth_p)) * ((-vmp + P(Uvm)) - P(Vth_n))))) * (((numb)1.0 - (numb)1.0 / (exp((P(A) * xmp + P(Ds))))) * ((numb)1.0 - xmp) + xmp * ((numb)1.0 - (numb)1.0 / (exp(P(A) * ((numb)1.0 - xmp))))) - ((numb)1.0 / P(tau_r)) * ((numb)1.0 - (numb)1.0 / ((numb)1.0 + exp(-(numb)1.0 / (P(Vr) * P(Vr)) * ((-vmp + P(Uvm)) - P(Vh_n)) * ((-vmp + P(Uvm)) - P(Vh_p))))) * (((numb)1.0 - (numb)1.0 / (exp((P(A) * xmp)))) * ((numb)1.0 - xmp) + xmp * ((numb)1.0 - (numb)1.0 / (exp(P(A) * ((numb)1.0 - xmp) + P(Dr)))));
 
 			vmp = V(v) + H * kv3;
 			xmp = V(x) + H * kx3;
@@ -107,18 +107,18 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
 
 			Id = P(Is) * (exp((vmp + P(Utd)) / P(Vt)) - exp(-(vmp + P(Utd)) / P(Vt))) + (P(Ip) / P(Vp)) * (vmp + P(Utd)) * exp(-(vmp + P(Utd) - P(Vp)) / P(Vp)) + P(Iv) * (atan(P(D) * (vmp + P(Utd) - P(E))) + atan(P(D) * (vmp + P(Utd) + P(E))));
 
-			if ((-vmp + P(Uvm)) > 0)
+			if ((-vmp + P(Uvm)) > (numb)0.0)
 				Im = (-vmp + P(Uvm)) * xmp / P(Ron_p) + P(Ilk);
 			else
 				Im = (-vmp + P(Uvm)) * xmp / P(Ron_n) - P(Ilk);
 
-			Vnext(i) = P(Idc) + (fmodf((tmp - P(Idel)) > 0 ? (tmp - P(Idel)) : (P(Idf) / P(Ifreq) + P(Idel) - tmp), 1 / P(Ifreq)) < P(Idf) / P(Ifreq) ? P(Iamp) : 0.0f);
+			Vnext(i) = P(Idc) + (fmod((tmp - P(Idel)) > (numb)0.0 ? (tmp - P(Idel)) : (P(Idf) / P(Ifreq) + P(Idel) - tmp), (numb)1.0 / P(Ifreq)) < P(Idf) / P(Ifreq) ? P(Iamp) : (numb)0.0);
 
 			numb kv4 = (Vnext(i) + Im - Id) / P(C);
-			numb kx4 = (1 / P(tau_s)) * (1 / (1 + exp(-1 / (P(Vs) * P(Vs)) * ((-vmp + P(Uvm)) - P(Vth_p)) * ((-vmp + P(Uvm)) - P(Vth_n))))) * ((1 - 1 / (exp((P(A) * xmp + P(Ds))))) * (1 - xmp) + xmp * (1 - 1 / (exp(P(A) * (1 - xmp))))) - (1 / P(tau_r)) * (1 - 1 / (1 + exp(-1 / (P(Vr) * P(Vr)) * ((-vmp + P(Uvm)) - P(Vh_n)) * ((-vmp + P(Uvm)) - P(Vh_p))))) * ((1 - 1 / (exp((P(A) * xmp)))) * (1 - xmp) + xmp * (1 - 1 / (exp(P(A) * (1 - xmp) + P(Dr)))));
+			numb kx4 = ((numb)1.0 / P(tau_s)) * ((numb)1.0 / ((numb)1.0 + exp(-(numb)1.0 / (P(Vs) * P(Vs)) * ((-vmp + P(Uvm)) - P(Vth_p)) * ((-vmp + P(Uvm)) - P(Vth_n))))) * (((numb)1.0 - (numb)1.0 / (exp((P(A) * xmp + P(Ds))))) * ((numb)1.0 - xmp) + xmp * ((numb)1.0 - (numb)1.0 / (exp(P(A) * ((numb)1.0 - xmp))))) - ((numb)1.0 / P(tau_r)) * ((numb)1.0 - (numb)1.0 / ((numb)1.0 + exp(-(numb)1.0 / (P(Vr) * P(Vr)) * ((-vmp + P(Uvm)) - P(Vh_n)) * ((-vmp + P(Uvm)) - P(Vh_p))))) * (((numb)1.0 - (numb)1.0 / (exp((P(A) * xmp)))) * ((numb)1.0 - xmp) + xmp * ((numb)1.0 - (numb)1.0 / (exp(P(A) * ((numb)1.0 - xmp) + P(Dr)))));
 
-			Vnext(v) = V(v) + H * (kv1 + 2.0f * kv2 + 2.0f * kv3 + kv4) / 6.0f;
-			Vnext(x) = V(x) + H * (kx1 + 2.0f * kx2 + 2.0f * kx3 + kx4) / 6.0f;
+			Vnext(v) = V(v) + H * (kv1 + (numb)2.0 * kv2 + (numb)2.0 * kv3 + kv4) / (numb)6.0;
+			Vnext(x) = V(x) + H * (kx1 + (numb)2.0 * kx2 + (numb)2.0 * kx3 + kx4) / (numb)6.0;
 			Vnext(t) = V(t) + H;
 		}
 	}
@@ -128,49 +128,49 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
 
 			Id = P(Is) * (exp((V(v) + P(Utd)) / P(Vt)) - exp(-(V(v) + P(Utd)) / P(Vt))) + (P(Ip) / P(Vp)) * (V(v) + P(Utd)) * exp(-(V(v) + P(Utd) - P(Vp)) / P(Vp)) + P(Iv) * (atan(P(D) * (V(v) + P(Utd) - P(E))) + atan(P(D) * (V(v) + P(Utd) + P(E))));
 
-			if ((-V(v) + P(Uvm)) > 0)
+			if ((-V(v) + P(Uvm)) > (numb)0.0)
 				Im = (-V(v) + P(Uvm)) * V(x) / P(Ron_p) + P(Ilk);
 			else
 				Im = (-V(v) + P(Uvm)) * V(x) / P(Ron_n) - P(Ilk);
 
-			numb imp = P(Idc) + P(Iamp) * sinf(2.0f * 3.141592f * P(Ifreq) * (V(t) - P(Idel)));
+			numb imp = P(Idc) + P(Iamp) * sin((numb)2.0 * (numb)3.141592 * P(Ifreq) * (V(t) - P(Idel)));
 
 			numb kv1 = (imp + Im - Id) / P(C);
-			numb kx1 = (1 / P(tau_s)) * (1 / (1 + exp(-1 / (P(Vs) * P(Vs)) * ((-V(v) + P(Uvm)) - P(Vth_p)) * ((-V(v) + P(Uvm)) - P(Vth_n))))) * ((1 - 1 / (exp((P(A) * V(x) + P(Ds))))) * (1 - V(x)) + V(x) * (1 - 1 / (exp(P(A) * (1 - V(x)))))) - (1 / P(tau_r)) * (1 - 1 / (1 + exp(-1 / (P(Vr) * P(Vr)) * ((-V(v) + P(Uvm)) - P(Vh_n)) * ((-V(v) + P(Uvm)) - P(Vh_p))))) * ((1 - 1 / (exp((P(A) * V(x))))) * (1 - V(x)) + V(x) * (1 - 1 / (exp(P(A) * (1 - V(x)) + P(Dr)))));
+			numb kx1 = ((numb)1.0 / P(tau_s)) * ((numb)1.0 / ((numb)1.0 + exp(-(numb)1.0 / (P(Vs) * P(Vs)) * ((-V(v) + P(Uvm)) - P(Vth_p)) * ((-V(v) + P(Uvm)) - P(Vth_n))))) * (((numb)1.0 - (numb)1.0 / (exp((P(A) * V(x) + P(Ds))))) * ((numb)1.0 - V(x)) + V(x) * ((numb)1.0 - (numb)1.0 / (exp(P(A) * ((numb)1.0 - V(x)))))) - ((numb)1.0 / P(tau_r)) * ((numb)1.0 - (numb)1.0 / ((numb)1.0 + exp(-(numb)1.0 / (P(Vr) * P(Vr)) * ((-V(v) + P(Uvm)) - P(Vh_n)) * ((-V(v) + P(Uvm)) - P(Vh_p))))) * (((numb)1.0 - (numb)1.0 / (exp((P(A) * V(x))))) * ((numb)1.0 - V(x)) + V(x) * ((numb)1.0 - (numb)1.0 / (exp(P(A) * ((numb)1.0 - V(x)) + P(Dr)))));
 
-			numb vmp = V(v) + 0.5f * H * kv1;
-			numb xmp = V(x) + 0.5f * H * kx1;
-			numb tmp = V(t) + 0.5f * H;
+			numb vmp = V(v) + (numb)0.5 * H * kv1;
+			numb xmp = V(x) + (numb)0.5 * H * kx1;
+			numb tmp = V(t) + (numb)0.5 * H;
 
 
 			Id = P(Is) * (exp((vmp + P(Utd)) / P(Vt)) - exp(-(vmp + P(Utd)) / P(Vt))) + (P(Ip) / P(Vp)) * (vmp + P(Utd)) * exp(-(vmp + P(Utd) - P(Vp)) / P(Vp)) + P(Iv) * (atan(P(D) * (vmp + P(Utd) - P(E))) + atan(P(D) * (vmp + P(Utd) + P(E))));
 
-			if ((-vmp + P(Uvm)) > 0)
+			if ((-vmp + P(Uvm)) > (numb)0.0)
 				Im = (-vmp + P(Uvm)) * xmp / P(Ron_p) + P(Ilk);
 			else
 				Im = (-vmp + P(Uvm)) * xmp / P(Ron_n) - P(Ilk);
 
-			imp = P(Idc) + P(Iamp) * sinf(2.0f * 3.141592f * P(Ifreq) * (tmp - P(Idel)));
+			imp = P(Idc) + P(Iamp) * sin((numb)2.0 * (numb)3.141592 * P(Ifreq) * (tmp - P(Idel)));
 
 			numb kv2 = (imp + Im - Id) / P(C);
-			numb kx2 = (1 / P(tau_s)) * (1 / (1 + exp(-1 / (P(Vs) * P(Vs)) * ((-vmp + P(Uvm)) - P(Vth_p)) * ((-vmp + P(Uvm)) - P(Vth_n))))) * ((1 - 1 / (exp((P(A) * xmp + P(Ds))))) * (1 - xmp) + xmp * (1 - 1 / (exp(P(A) * (1 - xmp))))) - (1 / P(tau_r)) * (1 - 1 / (1 + exp(-1 / (P(Vr) * P(Vr)) * ((-vmp + P(Uvm)) - P(Vh_n)) * ((-vmp + P(Uvm)) - P(Vh_p))))) * ((1 - 1 / (exp((P(A) * xmp)))) * (1 - xmp) + xmp * (1 - 1 / (exp(P(A) * (1 - xmp) + P(Dr)))));
+			numb kx2 = ((numb)1.0 / P(tau_s)) * ((numb)1.0 / ((numb)1.0 + exp(-(numb)1.0 / (P(Vs) * P(Vs)) * ((-vmp + P(Uvm)) - P(Vth_p)) * ((-vmp + P(Uvm)) - P(Vth_n))))) * (((numb)1.0 - (numb)1.0 / (exp((P(A) * xmp + P(Ds))))) * ((numb)1.0 - xmp) + xmp * ((numb)1.0 - (numb)1.0 / (exp(P(A) * ((numb)1.0 - xmp))))) - ((numb)1.0 / P(tau_r)) * ((numb)1.0 - (numb)1.0 / ((numb)1.0 + exp(-(numb)1.0 / (P(Vr) * P(Vr)) * ((-vmp + P(Uvm)) - P(Vh_n)) * ((-vmp + P(Uvm)) - P(Vh_p))))) * (((numb)1.0 - (numb)1.0 / (exp((P(A) * xmp)))) * ((numb)1.0 - xmp) + xmp * ((numb)1.0 - (numb)1.0 / (exp(P(A) * ((numb)1.0 - xmp) + P(Dr)))));
 
-			vmp = V(v) + 0.5f * H * kv2;
-			xmp = V(x) + 0.5f * H * kx2;
-			tmp = V(t) + 0.5f * H;
+			vmp = V(v) + (numb)0.5 * H * kv2;
+			xmp = V(x) + (numb)0.5 * H * kx2;
+			tmp = V(t) + (numb)0.5 * H;
 
 
 			Id = P(Is) * (exp((vmp + P(Utd)) / P(Vt)) - exp(-(vmp + P(Utd)) / P(Vt))) + (P(Ip) / P(Vp)) * (vmp + P(Utd)) * exp(-(vmp + P(Utd) - P(Vp)) / P(Vp)) + P(Iv) * (atan(P(D) * (vmp + P(Utd) - P(E))) + atan(P(D) * (vmp + P(Utd) + P(E))));
 
-			if ((-vmp + P(Uvm)) > 0)
+			if ((-vmp + P(Uvm)) > (numb)0.0)
 				Im = (-vmp + P(Uvm)) * xmp / P(Ron_p) + P(Ilk);
 			else
 				Im = (-vmp + P(Uvm)) * xmp / P(Ron_n) - P(Ilk);
 
-			imp = P(Idc) + P(Iamp) * sinf(2.0f * 3.141592f * P(Ifreq) * (tmp - P(Idel)));
+			imp = P(Idc) + P(Iamp) * sin((numb)2.0 * (numb)3.141592 * P(Ifreq) * (tmp - P(Idel)));
 
 			numb kv3 = (imp + Im - Id) / P(C);
-			numb kx3 = (1 / P(tau_s)) * (1 / (1 + exp(-1 / (P(Vs) * P(Vs)) * ((-vmp + P(Uvm)) - P(Vth_p)) * ((-vmp + P(Uvm)) - P(Vth_n))))) * ((1 - 1 / (exp((P(A) * xmp + P(Ds))))) * (1 - xmp) + xmp * (1 - 1 / (exp(P(A) * (1 - xmp))))) - (1 / P(tau_r)) * (1 - 1 / (1 + exp(-1 / (P(Vr) * P(Vr)) * ((-vmp + P(Uvm)) - P(Vh_n)) * ((-vmp + P(Uvm)) - P(Vh_p))))) * ((1 - 1 / (exp((P(A) * xmp)))) * (1 - xmp) + xmp * (1 - 1 / (exp(P(A) * (1 - xmp) + P(Dr)))));
+			numb kx3 = ((numb)1.0 / P(tau_s)) * ((numb)1.0 / ((numb)1.0 + exp(-(numb)1.0 / (P(Vs) * P(Vs)) * ((-vmp + P(Uvm)) - P(Vth_p)) * ((-vmp + P(Uvm)) - P(Vth_n))))) * (((numb)1.0 - (numb)1.0 / (exp((P(A) * xmp + P(Ds))))) * ((numb)1.0 - xmp) + xmp * ((numb)1.0 - (numb)1.0 / (exp(P(A) * ((numb)1.0 - xmp))))) - ((numb)1.0 / P(tau_r)) * ((numb)1.0 - (numb)1.0 / ((numb)1.0 + exp(-(numb)1.0 / (P(Vr) * P(Vr)) * ((-vmp + P(Uvm)) - P(Vh_n)) * ((-vmp + P(Uvm)) - P(Vh_p))))) * (((numb)1.0 - (numb)1.0 / (exp((P(A) * xmp)))) * ((numb)1.0 - xmp) + xmp * ((numb)1.0 - (numb)1.0 / (exp(P(A) * ((numb)1.0 - xmp) + P(Dr)))));
 
 			vmp = V(v) + H * kv3;
 			xmp = V(x) + H * kx3;
@@ -179,18 +179,18 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
 
 			Id = P(Is) * (exp((vmp + P(Utd)) / P(Vt)) - exp(-(vmp + P(Utd)) / P(Vt))) + (P(Ip) / P(Vp)) * (vmp + P(Utd)) * exp(-(vmp + P(Utd) - P(Vp)) / P(Vp)) + P(Iv) * (atan(P(D) * (vmp + P(Utd) - P(E))) + atan(P(D) * (vmp + P(Utd) + P(E))));
 
-			if ((-vmp + P(Uvm)) > 0)
+			if ((-vmp + P(Uvm)) > (numb)0.0)
 				Im = (-vmp + P(Uvm)) * xmp / P(Ron_p) + P(Ilk);
 			else
 				Im = (-vmp + P(Uvm)) * xmp / P(Ron_n) - P(Ilk);
 
-			Vnext(i) = P(Idc) + P(Iamp) * sinf(2.0f * 3.141592f * P(Ifreq) * (tmp - P(Idel)));
+			Vnext(i) = P(Idc) + P(Iamp) * sin((numb)2.0 * (numb)3.141592 * P(Ifreq) * (tmp - P(Idel)));
 
 			numb kv4 = (Vnext(i) + Im - Id) / P(C);
-			numb kx4 = (1 / P(tau_s)) * (1 / (1 + exp(-1 / (P(Vs) * P(Vs)) * ((-vmp + P(Uvm)) - P(Vth_p)) * ((-vmp + P(Uvm)) - P(Vth_n))))) * ((1 - 1 / (exp((P(A) * xmp + P(Ds))))) * (1 - xmp) + xmp * (1 - 1 / (exp(P(A) * (1 - xmp))))) - (1 / P(tau_r)) * (1 - 1 / (1 + exp(-1 / (P(Vr) * P(Vr)) * ((-vmp + P(Uvm)) - P(Vh_n)) * ((-vmp + P(Uvm)) - P(Vh_p))))) * ((1 - 1 / (exp((P(A) * xmp)))) * (1 - xmp) + xmp * (1 - 1 / (exp(P(A) * (1 - xmp) + P(Dr)))));
+			numb kx4 = ((numb)1.0 / P(tau_s)) * ((numb)1.0 / ((numb)1.0 + exp(-(numb)1.0 / (P(Vs) * P(Vs)) * ((-vmp + P(Uvm)) - P(Vth_p)) * ((-vmp + P(Uvm)) - P(Vth_n))))) * (((numb)1.0 - (numb)1.0 / (exp((P(A) * xmp + P(Ds))))) * ((numb)1.0 - xmp) + xmp * ((numb)1.0 - (numb)1.0 / (exp(P(A) * ((numb)1.0 - xmp))))) - ((numb)1.0 / P(tau_r)) * ((numb)1.0 - (numb)1.0 / ((numb)1.0 + exp(-(numb)1.0 / (P(Vr) * P(Vr)) * ((-vmp + P(Uvm)) - P(Vh_n)) * ((-vmp + P(Uvm)) - P(Vh_p))))) * (((numb)1.0 - (numb)1.0 / (exp((P(A) * xmp)))) * ((numb)1.0 - xmp) + xmp * ((numb)1.0 - (numb)1.0 / (exp(P(A) * ((numb)1.0 - xmp) + P(Dr)))));
 
-			Vnext(v) = V(v) + H * (kv1 + 2.0f * kv2 + 2.0f * kv3 + kv4) / 6.0f;
-			Vnext(x) = V(x) + H * (kx1 + 2.0f * kx2 + 2.0f * kx3 + kx4) / 6.0f;
+			Vnext(v) = V(v) + H * (kv1 + (numb)2.0 * kv2 + (numb)2.0 * kv3 + kv4) / (numb)6.0;
+			Vnext(x) = V(x) + H * (kx1 + (numb)2.0 * kx2 + (numb)2.0 * kx3 + kx4) / (numb)6.0;
 			Vnext(t) = V(t) + H;
 		}
 	}
@@ -200,49 +200,49 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
 
 			Id = P(Is) * (exp((V(v) + P(Utd)) / P(Vt)) - exp(-(V(v) + P(Utd)) / P(Vt))) + (P(Ip) / P(Vp)) * (V(v) + P(Utd)) * exp(-(V(v) + P(Utd) - P(Vp)) / P(Vp)) + P(Iv) * (atan(P(D) * (V(v) + P(Utd) - P(E))) + atan(P(D) * (V(v) + P(Utd) + P(E))));
 
-			if ((-V(v) + P(Uvm)) > 0)
+			if ((-V(v) + P(Uvm)) > (numb)0.0)
 				Im = (-V(v) + P(Uvm)) * V(x) / P(Ron_p) + P(Ilk);
 			else
 				Im = (-V(v) + P(Uvm)) * V(x) / P(Ron_n) - P(Ilk);
 
-			numb imp = P(Idc) + P(Iamp) * ((4.0f * P(Ifreq) * (V(t) - P(Idel)) - 2.0f * floorf((4.0f * P(Ifreq) * (V(t) - P(Idel)) + 1.0f) / 2.0f)) * pow((-1), floorf((4.0f * P(Ifreq) * (V(t) - P(Idel)) + 1.0f) / 2.0f)));
+			numb imp = P(Idc) + P(Iamp) * (((numb)4.0 * P(Ifreq) * (V(t) - P(Idel)) - (numb)2.0 * floor((((numb)4.0 * P(Ifreq) * (V(t) - P(Idel)) + (numb)1.0) / (numb)2.0))) * pow((numb)-1.0, floor((((numb)4.0 * P(Ifreq) * (V(t) - P(Idel)) + (numb)1.0) / (numb)2.0))));
 
 			numb kv1 = (imp + Im - Id) / P(C);
-			numb kx1 = (1 / P(tau_s)) * (1 / (1 + exp(-1 / (P(Vs) * P(Vs)) * ((-V(v) + P(Uvm)) - P(Vth_p)) * ((-V(v) + P(Uvm)) - P(Vth_n))))) * ((1 - 1 / (exp((P(A) * V(x) + P(Ds))))) * (1 - V(x)) + V(x) * (1 - 1 / (exp(P(A) * (1 - V(x)))))) - (1 / P(tau_r)) * (1 - 1 / (1 + exp(-1 / (P(Vr) * P(Vr)) * ((-V(v) + P(Uvm)) - P(Vh_n)) * ((-V(v) + P(Uvm)) - P(Vh_p))))) * ((1 - 1 / (exp((P(A) * V(x))))) * (1 - V(x)) + V(x) * (1 - 1 / (exp(P(A) * (1 - V(x)) + P(Dr)))));
+			numb kx1 = ((numb)1.0 / P(tau_s)) * ((numb)1.0 / ((numb)1.0 + exp(-(numb)1.0 / (P(Vs) * P(Vs)) * ((-V(v) + P(Uvm)) - P(Vth_p)) * ((-V(v) + P(Uvm)) - P(Vth_n))))) * (((numb)1.0 - (numb)1.0 / (exp((P(A) * V(x) + P(Ds))))) * ((numb)1.0 - V(x)) + V(x) * ((numb)1.0 - (numb)1.0 / (exp(P(A) * ((numb)1.0 - V(x)))))) - ((numb)1.0 / P(tau_r)) * ((numb)1.0 - (numb)1.0 / ((numb)1.0 + exp(-(numb)1.0 / (P(Vr) * P(Vr)) * ((-V(v) + P(Uvm)) - P(Vh_n)) * ((-V(v) + P(Uvm)) - P(Vh_p))))) * (((numb)1.0 - (numb)1.0 / (exp((P(A) * V(x))))) * ((numb)1.0 - V(x)) + V(x) * ((numb)1.0 - (numb)1.0 / (exp(P(A) * ((numb)1.0 - V(x)) + P(Dr)))));
 
-			numb vmp = V(v) + 0.5f * H * kv1;
-			numb xmp = V(x) + 0.5f * H * kx1;
-			numb tmp = V(t) + 0.5f * H;
+			numb vmp = V(v) + (numb)0.5 * H * kv1;
+			numb xmp = V(x) + (numb)0.5 * H * kx1;
+			numb tmp = V(t) + (numb)0.5 * H;
 
 
 			Id = P(Is) * (exp((vmp + P(Utd)) / P(Vt)) - exp(-(vmp + P(Utd)) / P(Vt))) + (P(Ip) / P(Vp)) * (vmp + P(Utd)) * exp(-(vmp + P(Utd) - P(Vp)) / P(Vp)) + P(Iv) * (atan(P(D) * (vmp + P(Utd) - P(E))) + atan(P(D) * (vmp + P(Utd) + P(E))));
 
-			if ((-vmp + P(Uvm)) > 0)
+			if ((-vmp + P(Uvm)) > (numb)0.0)
 				Im = (-vmp + P(Uvm)) * xmp / P(Ron_p) + P(Ilk);
 			else
 				Im = (-vmp + P(Uvm)) * xmp / P(Ron_n) - P(Ilk);
 
-			imp = P(Idc) + P(Iamp) * ((4.0f * P(Ifreq) * (tmp - P(Idel)) - 2.0f * floorf((4.0f * P(Ifreq) * (tmp - P(Idel)) + 1.0f) / 2.0f)) * pow((-1), floorf((4.0f * P(Ifreq) * (tmp - P(Idel)) + 1.0f) / 2.0f)));
+			imp = P(Idc) + P(Iamp) * (((numb)4.0 * P(Ifreq) * (tmp - P(Idel)) - (numb)2.0 * floor((((numb)4.0 * P(Ifreq) * (tmp - P(Idel)) + (numb)1.0) / (numb)2.0))) * pow((numb)-1.0, floor((((numb)4.0 * P(Ifreq) * (tmp - P(Idel)) + (numb)1.0) / (numb)2.0))));
 
 			numb kv2 = (imp + Im - Id) / P(C);
-			numb kx2 = (1 / P(tau_s)) * (1 / (1 + exp(-1 / (P(Vs) * P(Vs)) * ((-vmp + P(Uvm)) - P(Vth_p)) * ((-vmp + P(Uvm)) - P(Vth_n))))) * ((1 - 1 / (exp((P(A) * xmp + P(Ds))))) * (1 - xmp) + xmp * (1 - 1 / (exp(P(A) * (1 - xmp))))) - (1 / P(tau_r)) * (1 - 1 / (1 + exp(-1 / (P(Vr) * P(Vr)) * ((-vmp + P(Uvm)) - P(Vh_n)) * ((-vmp + P(Uvm)) - P(Vh_p))))) * ((1 - 1 / (exp((P(A) * xmp)))) * (1 - xmp) + xmp * (1 - 1 / (exp(P(A) * (1 - xmp) + P(Dr)))));
+			numb kx2 = ((numb)1.0 / P(tau_s)) * ((numb)1.0 / ((numb)1.0 + exp(-(numb)1.0 / (P(Vs) * P(Vs)) * ((-vmp + P(Uvm)) - P(Vth_p)) * ((-vmp + P(Uvm)) - P(Vth_n))))) * (((numb)1.0 - (numb)1.0 / (exp((P(A) * xmp + P(Ds))))) * ((numb)1.0 - xmp) + xmp * ((numb)1.0 - (numb)1.0 / (exp(P(A) * ((numb)1.0 - xmp))))) - ((numb)1.0 / P(tau_r)) * ((numb)1.0 - (numb)1.0 / ((numb)1.0 + exp(-(numb)1.0 / (P(Vr) * P(Vr)) * ((-vmp + P(Uvm)) - P(Vh_n)) * ((-vmp + P(Uvm)) - P(Vh_p))))) * (((numb)1.0 - (numb)1.0 / (exp((P(A) * xmp)))) * ((numb)1.0 - xmp) + xmp * ((numb)1.0 - (numb)1.0 / (exp(P(A) * ((numb)1.0 - xmp) + P(Dr)))));
 
-			vmp = V(v) + 0.5f * H * kv2;
-			xmp = V(x) + 0.5f * H * kx2;
-			tmp = V(t) + 0.5f * H;
+			vmp = V(v) + (numb)0.5 * H * kv2;
+			xmp = V(x) + (numb)0.5 * H * kx2;
+			tmp = V(t) + (numb)0.5 * H;
 
 
 			Id = P(Is) * (exp((vmp + P(Utd)) / P(Vt)) - exp(-(vmp + P(Utd)) / P(Vt))) + (P(Ip) / P(Vp)) * (vmp + P(Utd)) * exp(-(vmp + P(Utd) - P(Vp)) / P(Vp)) + P(Iv) * (atan(P(D) * (vmp + P(Utd) - P(E))) + atan(P(D) * (vmp + P(Utd) + P(E))));
 
-			if ((-vmp + P(Uvm)) > 0)
+			if ((-vmp + P(Uvm)) > (numb)0.0)
 				Im = (-vmp + P(Uvm)) * xmp / P(Ron_p) + P(Ilk);
 			else
 				Im = (-vmp + P(Uvm)) * xmp / P(Ron_n) - P(Ilk);
 
-			imp = P(Idc) + P(Iamp) * ((4.0f * P(Ifreq) * (tmp - P(Idel)) - 2.0f * floorf((4.0f * P(Ifreq) * (tmp - P(Idel)) + 1.0f) / 2.0f)) * pow((-1), floorf((4.0f * P(Ifreq) * (tmp - P(Idel)) + 1.0f) / 2.0f)));
+			imp = P(Idc) + P(Iamp) * (((numb)4.0 * P(Ifreq) * (tmp - P(Idel)) - (numb)2.0 * floor((((numb)4.0 * P(Ifreq) * (tmp - P(Idel)) + (numb)1.0) / (numb)2.0))) * pow((numb)-1.0, floor((((numb)4.0 * P(Ifreq) * (tmp - P(Idel)) + (numb)1.0) / (numb)2.0))));
 
 			numb kv3 = (imp + Im - Id) / P(C);
-			numb kx3 = (1 / P(tau_s)) * (1 / (1 + exp(-1 / (P(Vs) * P(Vs)) * ((-vmp + P(Uvm)) - P(Vth_p)) * ((-vmp + P(Uvm)) - P(Vth_n))))) * ((1 - 1 / (exp((P(A) * xmp + P(Ds))))) * (1 - xmp) + xmp * (1 - 1 / (exp(P(A) * (1 - xmp))))) - (1 / P(tau_r)) * (1 - 1 / (1 + exp(-1 / (P(Vr) * P(Vr)) * ((-vmp + P(Uvm)) - P(Vh_n)) * ((-vmp + P(Uvm)) - P(Vh_p))))) * ((1 - 1 / (exp((P(A) * xmp)))) * (1 - xmp) + xmp * (1 - 1 / (exp(P(A) * (1 - xmp) + P(Dr)))));
+			numb kx3 = ((numb)1.0 / P(tau_s)) * ((numb)1.0 / ((numb)1.0 + exp(-(numb)1.0 / (P(Vs) * P(Vs)) * ((-vmp + P(Uvm)) - P(Vth_p)) * ((-vmp + P(Uvm)) - P(Vth_n))))) * (((numb)1.0 - (numb)1.0 / (exp((P(A) * xmp + P(Ds))))) * ((numb)1.0 - xmp) + xmp * ((numb)1.0 - (numb)1.0 / (exp(P(A) * ((numb)1.0 - xmp))))) - ((numb)1.0 / P(tau_r)) * ((numb)1.0 - (numb)1.0 / ((numb)1.0 + exp(-(numb)1.0 / (P(Vr) * P(Vr)) * ((-vmp + P(Uvm)) - P(Vh_n)) * ((-vmp + P(Uvm)) - P(Vh_p))))) * (((numb)1.0 - (numb)1.0 / (exp((P(A) * xmp)))) * ((numb)1.0 - xmp) + xmp * ((numb)1.0 - (numb)1.0 / (exp(P(A) * ((numb)1.0 - xmp) + P(Dr)))));
 
 			vmp = V(v) + H * kv3;
 			xmp = V(x) + H * kx3;
@@ -251,18 +251,18 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
 
 			Id = P(Is) * (exp((vmp + P(Utd)) / P(Vt)) - exp(-(vmp + P(Utd)) / P(Vt))) + (P(Ip) / P(Vp)) * (vmp + P(Utd)) * exp(-(vmp + P(Utd) - P(Vp)) / P(Vp)) + P(Iv) * (atan(P(D) * (vmp + P(Utd) - P(E))) + atan(P(D) * (vmp + P(Utd) + P(E))));
 
-			if ((-vmp + P(Uvm)) > 0)
+			if ((-vmp + P(Uvm)) > (numb)0.0)
 				Im = (-vmp + P(Uvm)) * xmp / P(Ron_p) + P(Ilk);
 			else
 				Im = (-vmp + P(Uvm)) * xmp / P(Ron_n) - P(Ilk);
 
-			Vnext(i) = P(Idc) + P(Iamp) * ((4.0f * P(Ifreq) * (tmp - P(Idel)) - 2.0f * floorf((4.0f * P(Ifreq) * (tmp - P(Idel)) + 1.0f) / 2.0f)) * pow((-1), floorf((4.0f * P(Ifreq) * (tmp - P(Idel)) + 1.0f) / 2.0f)));
+			Vnext(i) = P(Idc) + P(Iamp) * (((numb)4.0 * P(Ifreq) * (tmp - P(Idel)) - (numb)2.0 * floor((((numb)4.0 * P(Ifreq) * (tmp - P(Idel)) + (numb)1.0) / (numb)2.0))) * pow((numb)-1.0, floor((((numb)4.0 * P(Ifreq) * (tmp - P(Idel)) + (numb)1.0) / (numb)2.0))));
 
 			numb kv4 = (Vnext(i) + Im - Id) / P(C);
-			numb kx4 = (1 / P(tau_s)) * (1 / (1 + exp(-1 / (P(Vs) * P(Vs)) * ((-vmp + P(Uvm)) - P(Vth_p)) * ((-vmp + P(Uvm)) - P(Vth_n))))) * ((1 - 1 / (exp((P(A) * xmp + P(Ds))))) * (1 - xmp) + xmp * (1 - 1 / (exp(P(A) * (1 - xmp))))) - (1 / P(tau_r)) * (1 - 1 / (1 + exp(-1 / (P(Vr) * P(Vr)) * ((-vmp + P(Uvm)) - P(Vh_n)) * ((-vmp + P(Uvm)) - P(Vh_p))))) * ((1 - 1 / (exp((P(A) * xmp)))) * (1 - xmp) + xmp * (1 - 1 / (exp(P(A) * (1 - xmp) + P(Dr)))));
+			numb kx4 = ((numb)1.0 / P(tau_s)) * ((numb)1.0 / ((numb)1.0 + exp(-(numb)1.0 / (P(Vs) * P(Vs)) * ((-vmp + P(Uvm)) - P(Vth_p)) * ((-vmp + P(Uvm)) - P(Vth_n))))) * (((numb)1.0 - (numb)1.0 / (exp((P(A) * xmp + P(Ds))))) * ((numb)1.0 - xmp) + xmp * ((numb)1.0 - (numb)1.0 / (exp(P(A) * ((numb)1.0 - xmp))))) - ((numb)1.0 / P(tau_r)) * ((numb)1.0 - (numb)1.0 / ((numb)1.0 + exp(-(numb)1.0 / (P(Vr) * P(Vr)) * ((-vmp + P(Uvm)) - P(Vh_n)) * ((-vmp + P(Uvm)) - P(Vh_p))))) * (((numb)1.0 - (numb)1.0 / (exp((P(A) * xmp)))) * ((numb)1.0 - xmp) + xmp * ((numb)1.0 - (numb)1.0 / (exp(P(A) * ((numb)1.0 - xmp) + P(Dr)))));
 
-			Vnext(v) = V(v) + H * (kv1 + 2.0f * kv2 + 2.0f * kv3 + kv4) / 6.0f;
-			Vnext(x) = V(x) + H * (kx1 + 2.0f * kx2 + 2.0f * kx3 + kx4) / 6.0f;
+			Vnext(v) = V(v) + H * (kv1 + (numb)2.0 * kv2 + (numb)2.0 * kv3 + kv4) / (numb)6.0;
+			Vnext(x) = V(x) + H * (kx1 + (numb)2.0 * kx2 + (numb)2.0 * kx3 + kx4) / (numb)6.0;
 			Vnext(t) = V(t) + H;
 		}
 	}
