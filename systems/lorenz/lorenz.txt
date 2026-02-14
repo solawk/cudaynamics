@@ -35,5 +35,5 @@ enum method 1ExplicitEuler 0ExplicitMidpoint 0ExplicitRungeKutta4 0VariableSymme
 //
 // Defining settings for analysis functions:
 // analysis <name from "anfunc_names.cpp"> settings <values, must exactly match the settings struct>
-analysis Minimum/maximum settings 1 2
+analysis Minimum-maximum settings 1 2
 analysis Largest Lyapunov exponent settings 0.01 30 0 0 1 2 -1

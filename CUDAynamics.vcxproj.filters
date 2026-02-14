@@ -84,6 +84,11 @@
     <ClCompile Include="jsonRW.cpp" />
     <ClCompile Include="standalone\standalone_utils.cpp" />
     <ClCompile Include="computations.cpp" />
+    <ClCompile Include="configIO.cpp" />
+    <ClCompile Include="rangingTypeFromString.cpp" />
+    <ClCompile Include="rangingTypes.cpp" />
+    <ClCompile Include="gui\commonItemDialogs.cpp" />
+    <ClCompile Include="gui\hwnd.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="imgui">
@@ -284,6 +289,11 @@
     <ClInclude Include="jsonRW.h" />
     <ClInclude Include="standalone\standalone_utils.h" />
     <ClInclude Include="computations.h" />
+    <ClInclude Include="configIO.h" />
+    <ClInclude Include="rangingTypeFromString.h" />
+    <ClInclude Include="rangingTypes.h" />
+    <ClInclude Include="gui\commonItemDialogs.h" />
+    <ClInclude Include="gui\hwnd.h" />
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="main.cu" />

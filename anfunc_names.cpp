@@ -2,7 +2,7 @@
 
 const char* AnFuncNames[] =
 {
-	"Minimum/maximum",
+	"Minimum-maximum",
 	"Largest Lyapunov exponent",
 	"Periodicity",
 	"Phase volume"

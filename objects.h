@@ -1,5 +1,6 @@
 #pragma once
 #include "numb.h"
+#include <string>
 
 #define MAX_ATTRIBUTES 128
 #define MAX_MAPS 16

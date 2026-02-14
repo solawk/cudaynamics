@@ -4,6 +4,25 @@ void mainWindowMenu()
 {
 	if (ImGui::BeginMenuBar())
 	{
+        if (ImGui::BeginMenu("File"))
+        {
+            if (ImGui::MenuItem("Save system configuration (.cfg)")) 
+            {
+                JSONWrite(saveCfg(), "testCfg.cfg", true);
+            }
+
+            if (ImGui::MenuItem("Load system configuration (.cfg)"))
+            {
+                json::jobject cfg;
+                if (JSONRead("testCfg.cfg", &cfg, true))
+                {
+                    loadCfg(cfg, false);
+                }
+            }
+
+            ImGui::EndMenu();
+        }
+
         if (ImGui::BeginMenu("View"))
         {
             ImGui::SeparatorText("Appearance");
@@ -40,7 +59,7 @@ void mainWindowMenu()
             ImGui::EndMenu();
         }
 
-        if (ImGui::BeginMenu("Config"))
+        if (ImGui::BeginMenu("Settings"))
         {
             ImGui::SeparatorText("CUDA/OpenMP");
 

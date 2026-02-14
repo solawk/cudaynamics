@@ -66,7 +66,14 @@ void common_main()
     }
     else
     {
-        launchOneShotComputation();
+        kernelNew.CopyFrom(&KERNEL);
+        if (!loadCfg(launchConfig, true)) return;
+        KERNEL.CopyFrom(&kernelNew);
+        if (hiresIndex == IND_NONE)
+        {
+            printf("FAIL: No Hi-res index is selected\n");
+            return;
+        }
 
         hiresComputationSetup();
         KERNEL.PrepareAttributes();

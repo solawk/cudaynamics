@@ -60,4 +60,23 @@ struct DBSCAN_Settings : AbstractAnalysisSettingsStruct
 
         return true;
     }
+
+    json::jobject ExportSettings()
+    {
+        json::jobject j;
+        j["name"] = std::string(AnFuncNames[(int)ANF_PERIOD]);
+
+        std::vector<std::string> s;
+        s.push_back(std::to_string(eps));
+        s.push_back(std::to_string(analysedVariable));
+        s.push_back(std::to_string(CoefIntervals));
+        s.push_back(std::to_string(CoefPeaks));
+        s.push_back(std::to_string(maxAllowedValue));
+        s.push_back(std::to_string(epsFXP));
+        s.push_back(std::to_string(timeFractionFXP));
+        s.push_back(std::to_string(peakThreshold));
+        j["settings"] = s;
+
+        return j;
+    }
 };

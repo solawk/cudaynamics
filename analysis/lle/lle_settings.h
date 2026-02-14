@@ -48,4 +48,22 @@ struct LLE_Settings : AbstractAnalysisSettingsStruct
 
 		return true;
 	}
+
+	json::jobject ExportSettings()
+	{
+		json::jobject j;
+		j["name"] = std::string(AnFuncNames[(int)ANF_LLE]);
+
+		std::vector<std::string> s;
+		s.push_back(std::to_string(r));
+		s.push_back(std::to_string(L));
+		s.push_back(std::to_string(variableToDeflect));
+		s.push_back(std::to_string(normVariables[0]));
+		s.push_back(std::to_string(normVariables[1]));
+		s.push_back(std::to_string(normVariables[2]));
+		s.push_back(std::to_string(normVariables[3]));
+		j["settings"] = s;
+
+		return j;
+	}
 };

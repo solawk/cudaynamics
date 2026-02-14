@@ -4,6 +4,8 @@
 #include <string>
 #include <vector>
 #include "attribute_struct.h"
+#include "anfuncs.h"
+#include "anfunc_names.h"
 
 struct AbstractAnalysisSettingsStruct
 {

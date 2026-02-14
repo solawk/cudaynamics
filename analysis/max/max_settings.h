@@ -33,4 +33,17 @@ struct MINMAX_Settings : AbstractAnalysisSettingsStruct
 
 		return true;
 	}
+
+	json::jobject ExportSettings()
+	{
+		json::jobject j;
+		j["name"] = std::string(AnFuncNames[(int)ANF_MINMAX]);
+
+		std::vector<std::string> s;
+		s.push_back(std::to_string(minVariableIndex));
+		s.push_back(std::to_string(maxVariableIndex));
+		j["settings"] = s;
+
+		return j;
+	}
 };

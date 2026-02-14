@@ -39,4 +39,20 @@ struct PV_Settings : AbstractAnalysisSettingsStruct
 
 		return true;
 	}
+
+	json::jobject ExportSettings()
+	{
+		json::jobject j;
+		j["name"] = std::string(AnFuncNames[(int)ANF_PV]);
+
+		std::vector<std::string> s;
+		s.push_back(std::to_string(ObsSteps));
+		s.push_back(std::to_string(normVariables[0]));
+		s.push_back(std::to_string(normVariables[1]));
+		s.push_back(std::to_string(normVariables[2]));
+		s.push_back(std::to_string(normVariables[3]));
+		j["settings"] = s;
+
+		return j;
+	}
 };

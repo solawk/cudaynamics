@@ -30,6 +30,6 @@ param Rsg Fixed 0.0478 0.0 0.01 0 0.0 0.0
 param symmetry Fixed 0.0 0.0 0.01 0 0.0 0.0
 enum method 0ExplicitEuler 1SemiExplicitEuler 0ExplicitMidpoint 0ExplicitRungeKutta4 0VariableSymmetryCD
 // Defining maps:
-analysis Minimum/maximum settings 1 2
+analysis Minimum-maximum settings 1 2
 analysis Largest Lyapunov exponent settings 0.01 1000 1 1 2 3 -1
 analysis Periodicity settings 1.0 1 20.0 10.0 10000.0 0.001 0.99 1.0

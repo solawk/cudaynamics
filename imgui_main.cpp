@@ -30,8 +30,6 @@ std::vector<int> attributeValueIndicesHires; // Currently selected indices of ra
 
 bool autoLoadNewParams = false;
 //PlotWindow* hiresHeatmapWindow = nullptr;
-Kernel kernelNew, kernelHiresNew; // Front-end for the kernels in the GUI
-Kernel kernelHiresComputed; // Hi-res computation kernel buffer which has been sent to computation
 
 //AnalysisIndex hiresIndex = IND_NONE;
 
@@ -90,7 +88,6 @@ bool thisChanged;
 bool popStyle;
 ImGuiSliderFlags dragFlag;
 
-std::string rangingTypes[] = { "Fixed", "Step", "Linear", "Random", "Normal" };
 std::string rangingDescriptions[] =
 {
     "Single value",
@@ -391,17 +388,17 @@ int imgui_main(int, char**)
     ImGui_ImplWin32_EnableDpiAwareness();
     WNDCLASSEXW wc = { sizeof(wc), CS_CLASSDC, WndProc, 0L, 0L, GetModuleHandle(nullptr), LoadIcon(wc.hInstance, MAKEINTRESOURCE(IDI_ICON1)), nullptr, nullptr, nullptr, L"CUDAynamics", LoadIcon(wc.hInstance, MAKEINTRESOURCE(IDI_ICON1)) };
     ::RegisterClassExW(&wc);
-    HWND hwnd = ::CreateWindowW(wc.lpszClassName, L"CUDAynamics", WS_OVERLAPPEDWINDOW, 100, 100, 400, 100, nullptr, nullptr, wc.hInstance, nullptr);
+    guiHwnd = ::CreateWindowW(wc.lpszClassName, L"CUDAynamics", WS_OVERLAPPEDWINDOW, 100, 100, 400, 100, nullptr, nullptr, wc.hInstance, nullptr);
 
-    if (!CreateDeviceD3D(hwnd))
+    if (!CreateDeviceD3D(guiHwnd))
     {
         CleanupDeviceD3D();
         ::UnregisterClassW(wc.lpszClassName, wc.hInstance);
         return 1;
     }
 
-    ::ShowWindow(hwnd, SW_SHOWDEFAULT);
-    ::UpdateWindow(hwnd);
+    ::ShowWindow(guiHwnd, SW_SHOWDEFAULT);
+    ::UpdateWindow(guiHwnd);
 
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
@@ -424,7 +421,7 @@ int imgui_main(int, char**)
         style.Colors[ImGuiCol_WindowBg].w = 1.0f;
     }
 
-    ImGui_ImplWin32_Init(hwnd);
+    ImGui_ImplWin32_Init(guiHwnd);
     ImGui_ImplDX11_Init(g_pd3dDevice, g_pd3dDeviceContext);
 
     //io.Fonts->AddFontFromFileTTF("UbuntuMono-R.ttf", 24.0f);
@@ -3614,7 +3611,7 @@ int imgui_main(int, char**)
     ImGui::DestroyContext();
 
     CleanupDeviceD3D();
-    ::DestroyWindow(hwnd);
+    ::DestroyWindow(guiHwnd);
     ::UnregisterClassW(wc.lpszClassName, wc.hInstance);
 
     terminateComputationBuffers(false);

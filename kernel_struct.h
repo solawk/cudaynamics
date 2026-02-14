@@ -38,7 +38,6 @@ public:
 	float time;
 	float transientTime;
 	bool usingTime;
-	numb stepSize;
 
 	StepType stepType;
 
@@ -75,7 +74,6 @@ public:
 		time = kernel->time;
 		transientTime = kernel->transientTime;
 		usingTime = kernel->usingTime;
-		stepSize = kernel->stepSize;
 		executeOnLaunch = kernel->executeOnLaunch;
 		mapWeight = kernel->mapWeight;
 		stepType = kernel->stepType;
@@ -127,7 +125,6 @@ public:
 			//if (!CUDA_kernel.variables[i].DoValuesExist()) CUDA_kernel.variables[i].Generate(); TODO
 			variables[i].ClearValues();
 			variables[i].Generate(false);
-			if (variables[i].TrueStepCount() == 1) variables[i].selectedForMaps = false;
 		}
 
 		for (int i = 0; i < PARAM_COUNT; i++)
@@ -137,7 +134,6 @@ public:
 			//if (!CUDA_kernel.parameters[i].DoValuesExist()) CUDA_kernel.parameters[i].Generate();
 			parameters[i].ClearValues();
 			parameters[i].Generate(false);
-			if (parameters[i].TrueStepCount() == 1) parameters[i].selectedForMaps = false;
 		}
 	}
 
@@ -160,7 +156,6 @@ public:
 	float time;
 	float transientTime;
 	bool usingTime;
-	numb stepSize;
 
 	StepType stepType;
 
@@ -184,7 +179,6 @@ public:
 		time = kernel->time;
 		transientTime = kernel->transientTime;
 		usingTime = kernel->usingTime;
-		stepSize = kernel->stepSize;
 		mapWeight = kernel->mapWeight;
 		stepType = kernel->stepType;
 
@@ -206,7 +200,6 @@ public:
 		kernel->name = name;
 		kernel->steps = steps;
 		kernel->transientSteps = transientSteps;
-		kernel->stepSize = stepSize;
 		kernel->mapWeight = mapWeight;
 		kernel->stepType = stepType;
 

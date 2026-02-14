@@ -12,4 +12,7 @@ extern std::map<std::string, void(*)(Computation*, uint64_t)> kernelWrappers;
 extern std::map<std::string, void(*)(numb*, numb*, numb*)> kernelFDS;
 extern std::string selectedKernel;
 
+extern Kernel kernelNew, kernelHiresNew;
+extern Kernel kernelHiresComputed;
+
 #define KERNEL      kernels[selectedKernel]

@@ -1,6 +1,9 @@
 #pragma once
 #include "objects.h"
 #include <string>
+#include "json/json.h"
+#include "rangingTypeFromString.h"
+#include "rangingTypes.h"
 
 #define MAX_ENUMS 16
 
@@ -15,7 +18,6 @@ public:
 	int stepCount;
 	numb mean;
 	numb deviation;
-	bool selectedForMaps = false;
 
 	std::string enumNames[MAX_ENUMS];
 	bool enumEnabled[MAX_ENUMS];
@@ -111,5 +113,26 @@ public:
 		if (deviation != attrib->deviation)		return true;
 
 		return false;
+	}
+
+	json::jobject ExportToJSON()
+	{
+		json::jobject a;
+		a["name"] = name;
+		a["ranging"] = rangingTypes[(int)rangingType];
+		a["min"] = min;
+		a["max"] = max;
+		a["step"] = step;
+		a["stepCount"] = stepCount;
+		return a;
+	}
+
+	void ImportFromJSON(json::jobject& j)
+	{
+		if (j.has_key("ranging"))	rangingType = rangingTypeFromString((std::string)j["ranging"]);
+		if (j.has_key("min"))		min = (numb)j["min"];
+		if (j.has_key("max"))		max = (numb)j["max"];
+		if (j.has_key("step"))		step = (numb)j["step"];
+		if (j.has_key("stepCount"))	stepCount = (int)j["stepCount"];
 	}
 };

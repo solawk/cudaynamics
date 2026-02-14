@@ -77,13 +77,13 @@ struct ApplicationSettings
 			settings["globalFontIsItalic"].set_boolean(globalFontSettings->isItalic);
 		}
 
-		JSONWrite(settings, "applicationSettings.json");
+		JSONWrite(settings, "applicationSettings.json", false);
 	}
 
 	void Load()
 	{
 		json::jobject settings;
-		if (!JSONRead("applicationSettings.json", &settings)) return;
+		if (!JSONRead("applicationSettings.json", &settings, false)) return;
 
 		preciseNumbDrags = settings.has_key("preciseNumbDrags") ? settings["preciseNumbDrags"].is_true() : preciseNumbDrags_default;
 		CPU_mode_interactive = settings.has_key("CPU_mode_interactive") ? settings["CPU_mode_interactive"].is_true() : CPU_mode_interactive_default;

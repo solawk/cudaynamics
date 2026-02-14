@@ -43,6 +43,6 @@ enum signal 1square 0sine 0triangle
 enum method 1ExplicitEuler 0SemiExplicitEuler 0ImplicitEuler 0ExplicitMidpoint 0ImplicitMidpoint 0ExplicitRungeKutta4 0ExplicitDormandPrince8 0VariableSymmetryCD
 // Defining maps:
 // map <name> <map settings count (inside its struct)> <map settings, beginning with "n" for numbs and "i" for ints>
-analysis Minimum/maximum settings 0 0
+analysis Minimum-maximum settings 0 0
 analysis Largest Lyapunov exponent settings 0.01 50 0 0 1 -1 -1
 analysis Periodicity settings 1.0 0 15.0 5.0 10000.0 0.001 1.0 -inf

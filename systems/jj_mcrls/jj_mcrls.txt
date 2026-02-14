@@ -41,6 +41,6 @@ constraint method VariableSymmetryCD
 enum signal 1square 0sine 0triangle
 enum method 0ExplicitEuler 0SemiExplicitEuler 1ExplicitMidpoint 0ExplicitRungeKutta4 0VariableSymmetryCD
 // Defining maps:
-analysis Minimum/maximum settings 1 2
+analysis Minimum-maximum settings 1 2
 analysis Largest Lyapunov exponent settings 0.01 1000 2 1 2 3 -1
 analysis Periodicity settings 1.0 2 20.0 10.0 10000.0 0.001 0.99 1.0

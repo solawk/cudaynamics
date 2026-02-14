@@ -29,5 +29,5 @@ param m Fixed -0.666666667 29.0 0.1 0 0.0 0.0
 //
 // Defining settings for analysis functions:
 // analysis <name from "anfunc_names.cpp"> settings <values, must exactly match the settings struct>
-analysis Minimum/maximum settings 1 2
+analysis Minimum-maximum settings 1 2
 analysis Largest Lyapunov exponent settings 0.01 30 0 0 1 2 -1

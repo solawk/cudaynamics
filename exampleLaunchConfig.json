@@ -1,8 +1,9 @@
 {
 	"system": "lorenz",
 	"index": "Minimum variable value",
+	"usingTime": false,
 	"steps": 2000,
-	"transient": 0,
+	"transientSteps": 0,
 	"variables": [
 	{
 		"name": "x",
@@ -33,7 +34,7 @@
 	],
 	"analysis": [
 	{
-		"name": "Minimum/maximum",
+		"name": "Minimum-maximum",
 		"settings":
 		[
 		"1", "2"

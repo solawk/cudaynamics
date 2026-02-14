@@ -122,9 +122,12 @@
     <ClCompile Include="anfunc2indices.cpp" />
     <ClCompile Include="anfunc_names.cpp" />
     <ClCompile Include="benchmarking\cpu_bm.cpp" />
+    <ClCompile Include="configIO.cpp" />
     <ClCompile Include="file_export.cpp" />
     <ClCompile Include="fonts.cpp" />
+    <ClCompile Include="gui\commonItemDialogs.cpp" />
     <ClCompile Include="gui\fullscreen_funcs.cpp" />
+    <ClCompile Include="gui\hwnd.cpp" />
     <ClCompile Include="gui\imgui_ui_funcs.cpp" />
     <ClCompile Include="gui\img_loading.cpp" />
     <ClCompile Include="gui\mainWindowMenu.cpp" />
@@ -154,6 +157,8 @@
     <ClCompile Include="main.cpp" />
     <ClCompile Include="main_utils.cpp" />
     <ClCompile Include="map_utils.cpp" />
+    <ClCompile Include="rangingTypeFromString.cpp" />
+    <ClCompile Include="rangingTypes.cpp" />
     <ClCompile Include="splitString.cpp" />
     <ClCompile Include="computations.cpp" />
     <ClCompile Include="standalone\standalone_utils.cpp" />
@@ -181,6 +186,7 @@
     <ClInclude Include="benchmarking\cpu_bm.h" />
     <ClInclude Include="colorLUT_struct.h" />
     <ClInclude Include="computation_struct.h" />
+    <ClInclude Include="configIO.h" />
     <ClInclude Include="constraint.h" />
     <ClInclude Include="cuda_macros.h" />
     <ClInclude Include="decaySettings_struct.h" />
@@ -190,9 +196,11 @@
     <ClInclude Include="gpu_variation.cuh" />
     <ClInclude Include="gui\applicationSettings_struct.h" />
     <ClInclude Include="gui\colormapMarkerSettings_struct.h" />
+    <ClInclude Include="gui\commonItemDialogs.h" />
     <ClInclude Include="gui\customStylesEnum.h" />
     <ClInclude Include="gui\d3dx11tex.h" />
     <ClInclude Include="gui\fullscreen_funcs.h" />
+    <ClInclude Include="gui\hwnd.h" />
     <ClInclude Include="gui\imgui_ui_funcs.h" />
     <ClInclude Include="gui\img_loading.h" />
     <ClInclude Include="gui\mainWindowMenu.h" />
@@ -239,6 +247,8 @@
     <ClInclude Include="plotWindow.h" />
     <ClInclude Include="port.h" />
     <ClInclude Include="quaternion.h" />
+    <ClInclude Include="rangingTypeFromString.h" />
+    <ClInclude Include="rangingTypes.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="splitString.h" />
     <ClInclude Include="computations.h" />
