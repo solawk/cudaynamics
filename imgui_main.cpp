@@ -1417,7 +1417,6 @@ int imgui_main(int, char**)
                 int prevTypeY = heatmap->typeY;
                 int prevValueIndex = heatmap->values.mapValueIndex;
 
-
                 bool showMapValueInput = window->type == Heatmap && !isSingleValue;
                 int columns = showMapValueInput ? 4 : 3;
 
@@ -2661,41 +2660,7 @@ int imgui_main(int, char**)
 
                     if (heatmap->areValuesDirty)
                     {
-                        if (window->decay.buffer.size() == 0)
-                        {
-                            for (int t = 0; t < window->decay.thresholdCount; t++)
-                            {
-                                window->decay.buffer.push_back(std::vector<float>{});
-                                window->decay.total.push_back(std::vector<float>{});
-                                window->decay.alive.push_back(std::vector<float>{});
-                            }
-                        }
-
-                        for (int t = 0; t < window->decay.thresholdCount; t++)
-                        {
-                            int decayAlive = 0, decayTotal = cmp->marshal.totalVariations;
-                            window->decay.buffer[t].push_back(!KERNEL.usingTime ? (cmp->bufferNo * KERNEL.steps + KERNEL.transientSteps) : (cmp->bufferNo * KERNEL.time + KERNEL.transientTime));
-
-                            for (int i = 0; i < cmp->marshal.totalVariations; i++)
-                            {
-                                bool anyAlive = false;
-                                bool anyDead = false;
-                                for (int index : window->variables)
-                                {
-                                    numb* decay = cmp->marshal.indecesDecay + (index2port(cmp->marshal.kernel.analyses, (AnalysisIndex)index)->offset + heatmap->values.mapValueIndex) * cmp->marshal.totalVariations;
-                                    if (decay[i] < (numb)(t + 1))
-                                        anyAlive = true;
-                                    else
-                                        anyDead = true;
-                                }
-                                if (window->decay.indicesAreAND && !anyDead) decayAlive++;
-                                else if (!window->decay.indicesAreAND && anyAlive) decayAlive++;
-                            }
-
-                            window->decay.total[t].push_back(decayTotal);
-                            window->decay.alive[t].push_back(decayAlive);
-                        }
-
+                        window->decay.RecalculatePlot(cmp, window->variables, heatmap->values.mapValueIndex);
                         heatmap->areValuesDirty = false;
                     }
 
@@ -2747,37 +2712,7 @@ int imgui_main(int, char**)
                             {
                                 double prevMarkerPosition = window->decay.markerPosition;
                                 ImPlot::DragLineX(0, &(window->decay.markerPosition), window->markerColor, window->markerWidth);
-                                if (window->decay.markerPosition != prevMarkerPosition || toAutofitTimeSeries)
-                                {
-                                    int endDecayTimepointIndex = 0;
-                                    for (int tp = 1; tp < window->decay.buffer[0].size(); tp++)
-                                    {
-                                        if (window->decay.markerPosition > window->decay.buffer[0][tp]) endDecayTimepointIndex = tp;
-                                        else break;
-                                    }
-
-                                    float totalArea = 0.0f;
-
-                                    for (int tp = 0; tp < endDecayTimepointIndex; tp++)
-                                    {
-                                        float min1 = window->decay.alive[0][tp];
-                                        float min2 = window->decay.alive[0][tp + 1];
-
-                                        for (int t = 1; t < window->decay.thresholdCount; t++)
-                                        {
-                                            if (min1 > window->decay.alive[t][tp]) min1 = window->decay.alive[t][tp];
-                                            if (min2 > window->decay.alive[t][tp + 1]) min2 = window->decay.alive[t][tp + 1];
-                                        }
-
-                                        float time1 = window->decay.buffer[0][tp];
-                                        float time2 = window->decay.buffer[0][tp + 1];
-
-                                        float area = (time2 - time1) * (min1 + min2) / 2.0f;
-                                        totalArea += area;
-                                    }
-
-                                    window->decay.lifetime = totalArea / cmp->marshal.totalVariations;
-                                }
+                                if (window->decay.markerPosition != prevMarkerPosition || toAutofitTimeSeries) window->decay.RecalculateLifetime(cmp);
                             }
 
                             ImPlot::EndPlot();
