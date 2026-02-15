@@ -2892,6 +2892,11 @@ bool ImGui::DragFloat4(const char* label, float v[4], float v_speed, float v_min
     return DragScalarN(label, ImGuiDataType_Float, v, 4, v_speed, &v_min, &v_max, format, flags);
 }
 
+bool ImGui::DragDouble(const char* label, double* v, double v_speed, double v_min, double v_max, const char* format, ImGuiSliderFlags flags)
+{
+    return DragScalar(label, ImGuiDataType_Double, v, v_speed, &v_min, &v_max, format, flags);
+}
+
 // NB: You likely want to specify the ImGuiSliderFlags_AlwaysClamp when using this.
 bool ImGui::DragFloatRange2(const char* label, float* v_current_min, float* v_current_max, float v_speed, float v_min, float v_max, const char* format, const char* format_max, ImGuiSliderFlags flags)
 {

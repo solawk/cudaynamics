@@ -43,8 +43,8 @@ void listAttrNumb(Attribute* attr, numb* field, std::string name, std::string in
 {
 	ATTR_BEGIN;
 	//ImGui::PushItemWidth(200.0f);
-	float var = (float)(*field);
-	ImGui::DragFloat(("##" + name + attr->name).c_str(), &var, applicationSettings.dragChangeSpeed, 0.0f, 0.0f, (inner + (!applicationSettings.preciseNumbDrags ? "%f" : "%.12f")).c_str(), dragFlag);
+	double var = (double)(*field);
+	ImGui::DragDouble(("##" + name + attr->name).c_str(), &var, applicationSettings.dragChangeSpeed, 0.0, 0.0, (inner + (!applicationSettings.preciseNumbDrags ? "%f" : "%.12f")).c_str(), dragFlag);
 	(*field) = (numb)var;
 	ATTR_END;
 }
