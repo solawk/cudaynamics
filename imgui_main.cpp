@@ -29,9 +29,6 @@ std::vector<int> attributeValueIndices; // Currently selected indices of ranging
 std::vector<int> attributeValueIndicesHires; // Currently selected indices of ranging attributes
 
 bool autoLoadNewParams = false;
-//PlotWindow* hiresHeatmapWindow = nullptr;
-
-//AnalysisIndex hiresIndex = IND_NONE;
 
 numb* dataBuffer = nullptr; // One variation local buffer
 numb* particleBuffer = nullptr; // One step local buffer
@@ -1662,28 +1659,12 @@ int imgui_main(int, char**)
                         ImGui::DragFloat3("Scale", (float*)&window->trs.scale, 0.01f);
                     }
 
-                    if (window->trs.scale.x < 0.0f) window->trs.scale.x = 0.0f; if (window->trs.scale.y < 0.0f) window->trs.scale.y = 0.0f; if (window->trs.scale.z < 0.0f) window->trs.scale.z = 0.0f;
+                    window->trs.KeepScaleAboveZero();
 
                     if (rotationEulerBeforeEdit != rotationEulerEditable)
                     {
-                        // Rotate quaternion by euler drag
-
                         ImVec4 deltaEuler = rotationEulerEditable - rotationEulerBeforeEdit;
-
-                        quaternion::Quaternion<float> quatEditable(1.0f, 0.0f, 0.0f, 0.0f);
-                        quaternion::Quaternion<float> quatRot(window->trs.quatRot.w, window->trs.quatRot.x, window->trs.quatRot.y, window->trs.quatRot.z);
-                        quaternion::Quaternion<float> quatZ(cosf(deltaEuler.z * 0.5f * DEG2RAD), 0.0f, 0.0f, sinf(deltaEuler.z * 0.5f * DEG2RAD));
-                        quaternion::Quaternion<float> quatY(cosf(deltaEuler.y * 0.5f * DEG2RAD), 0.0f, sinf(deltaEuler.y * 0.5f * DEG2RAD), 0.0f);
-                        quaternion::Quaternion<float> quatX(cosf(deltaEuler.x * 0.5f * DEG2RAD), sinf(deltaEuler.x * 0.5f * DEG2RAD), 0.0f, 0.0f);
-
-                        if (deltaEuler.x != 0.0f) quatEditable = quatX * quatEditable;
-                        if (deltaEuler.y != 0.0f) quatEditable = quatY * quatEditable;
-                        if (deltaEuler.z != 0.0f) quatEditable = quatZ * quatEditable;
-
-                        quatEditable = quatRot * quatEditable;
-                        quatEditable = quaternion::normalize(quatEditable);
-
-                        window->trs.quatRot = ImVec4(quatEditable.b(), quatEditable.c(), quatEditable.d(), quatEditable.a());
+                        window->trs.RotateQuaternionByEulerDrag(deltaEuler);
                     }
                 }
 
@@ -2566,7 +2547,8 @@ int imgui_main(int, char**)
                         ImGui::SameLine();
                         if (ImGui::Button(("Remove threshold##minusThreshold" + plotName).c_str()))
                         {
-                            window->decay.thresholdCount--; deleteDecayBuffers(*window);
+                            window->decay.thresholdCount--;
+                            deleteDecayBuffers(*window);
                         };
                         ImGui::EndDisabled();
                         ImGui::SameLine();
@@ -2579,10 +2561,7 @@ int imgui_main(int, char**)
                         if (ImGui::BeginTable(("##ThresholdsTable" + plotName).c_str(), 1 + indicesCount))
                         {
                             // Columns setup
-                            for (int c = 0; c < 1 + indicesCount; c++)
-                            {
-                                ImGui::TableSetupColumn(nullptr);
-                            }
+                            for (int c = 0; c < 1 + indicesCount; c++) ImGui::TableSetupColumn(nullptr);
 
                             // Headers
                             ImGui::TableNextRow();
@@ -2600,19 +2579,13 @@ int imgui_main(int, char**)
                             for (int t = 0; t < thresholdsCount; t++)
                             {
                                 ImGui::TableNextRow();
-
                                 ImGui::TableSetColumnIndex(0);
 
                                 char nameBuffer[33];
                                 std::strncpy(nameBuffer, window->decay.thresholdNames[t].c_str(), 32);
                                 nameBuffer[32] = '\0';
                                 ImGui::SetNextItemWidth(-1);
-                                if (ImGui::InputText(("##ThresholdName" + std::to_string(t) + plotName).c_str(), nameBuffer, 32))
-                                {
-                                    window->decay.thresholdNames[t] = std::string(nameBuffer);
-                                }
-
-                                //ImGui::Text(window->decayThresholdNames[t].c_str()); // WIP create string names
+                                if (ImGui::InputText(("##ThresholdName" + std::to_string(t) + plotName).c_str(), nameBuffer, 32)) window->decay.thresholdNames[t] = std::string(nameBuffer);
 
                                 // Indeces
                                 for (int i = 0; i < indicesCount; i++)
@@ -2706,7 +2679,7 @@ int imgui_main(int, char**)
                 case Heatmap:
                 case MCHeatmap:
                 {
-                    bool isMC = window->type == MCHeatmap;
+                    bool isMC = window->type == MCHeatmap; // Is multi-channel (RGB)
                     mapIndex = (AnalysisIndex)window->variables[0];
                     if (isMC) for (int ch = 0; ch < 3; ch++) channelMapIndex[ch] = (AnalysisIndex)window->variables[ch];
                     bool isHires = window->isTheHiresWindow(hiresIndex) || window->isFrozenAsHires;
@@ -2717,12 +2690,7 @@ int imgui_main(int, char**)
                     uint64_t* var = isHires ? &variationHires : &variation;
                     uint64_t* prevVar = isHires ? &prevVariationHires : &prevVariation;
                     bool hiresFrozenAndAvailable = window->isFrozenAsHires && window->hmp.values.valueBuffer != nullptr;
-
                     bool showLegend = heatmap->showLegend;
-
-                    //if (isHires) ImGui::Text("Is Hi-Res"); else ImGui::Text("Is NOT Hi-Res");
-                    //if (window->isFrozenAsHires) ImGui::Text("Frozen as Hi-Res");
-                    //if (window->hmp.values.valueBuffer != nullptr) ImGui::Text("ValueBuffer non-nullptr");
 
                     if (!isMC)
                     {
@@ -2738,11 +2706,9 @@ int imgui_main(int, char**)
                     Attribute* axisX = heatmap->typeX == MDT_Variable ? &(krnl->variables[heatmap->indexX]) : &(krnl->parameters[heatmap->indexX]);
                     Attribute* axisY = heatmap->typeY == MDT_Variable ? &(krnl->variables[heatmap->indexY]) : &(krnl->parameters[heatmap->indexY]);
 
-                    bool axisXisRanging = axisX->TrueStepCount() > 1; bool axisYisRanging = axisY->TrueStepCount() > 1; bool sameAxis = axisX == axisY;
-
-                    if (!axisXisRanging) TEXT_AND_BREAK(("Axis " + axisX->name + " is fixed").c_str())
-                    if (!axisYisRanging) TEXT_AND_BREAK(("Axis " + axisY->name + " is fixed").c_str())
-                    if (sameAxis) TEXT_AND_BREAK("X and Y axis are the same")
+                    if (axisX->TrueStepCount() <= 1)    TEXT_AND_BREAK(("Axis " + axisX->name + " is fixed").c_str())
+                    if (axisY->TrueStepCount() <= 1)    TEXT_AND_BREAK(("Axis " + axisY->name + " is fixed").c_str())
+                    if (axisX == axisY)                 TEXT_AND_BREAK("X and Y axis are the same")
                     if (!window->deltaState == DS_No && !cmp->calculateDeltaDecay) TEXT_AND_BREAK("Delta and decay calculation is disabled")
 
                     if (ImGui::BeginTable((plotName + "_table").c_str(), showLegend ? 2 : 1, ImGuiTableFlags_Reorderable, ImVec2(-1, 0)))
@@ -2750,10 +2716,7 @@ int imgui_main(int, char**)
                         axisFlags = 0;
 
                         ImGui::TableSetupColumn(nullptr);
-                        if (showLegend)
-                        {
-                            ImGui::TableSetupColumn(nullptr, ImGuiTableColumnFlags_WidthFixed, 170.0f * (isMC ? 3 : 1));
-                        }
+                        if (showLegend) ImGui::TableSetupColumn(nullptr, ImGuiTableColumnFlags_WidthFixed, 170.0f * (isMC ? 3 : 1));
                         ImGui::TableNextRow();
 
                         numb min = 0.0f, max = 0.0f;
@@ -3177,17 +3140,14 @@ int imgui_main(int, char**)
                                 {
                                     if (heatmap->showHeatmapValues)
                                     {
-                                        int rows = sizing.cutHeight;
-                                        int cols = sizing.cutWidth;
-
                                         if (!isMC)
                                         {
-                                            void* cutoffHeatmap = new numb[rows * cols];
+                                            void* cutoffHeatmap = new numb[sizing.cutHeight * sizing.cutWidth];
                                             cutoff2D(heatmap->values.valueBuffer, (numb*)cutoffHeatmap,
                                                 sizing.xSize, sizing.ySize, sizing.cutMinX, sizing.cutMinY, sizing.cutMaxX, sizing.cutMaxY);
 
                                             ImPlot::PlotHeatmap(("MapLabels " + std::to_string(mapIndex) + "##" + plotName + std::to_string(0)).c_str(),
-                                                (numb*)cutoffHeatmap, rows, cols, -1234.0, 1.0, "%.3f",
+                                                (numb*)cutoffHeatmap, sizing.cutHeight, sizing.cutWidth, -1234.0, 1.0, "%.3f",
                                                 ImPlotPoint(sizing.mapX1Cut, sizing.mapY1Cut), ImPlotPoint(sizing.mapX2Cut, sizing.mapY2Cut));
 
                                             delete[] cutoffHeatmap;
@@ -3201,12 +3161,12 @@ int imgui_main(int, char**)
 
                                                 std::string mapName = indices[(AnalysisIndex)window->variables[ch]].name;
 
-                                                cutoffHeatmap = new numb[rows * cols];
+                                                cutoffHeatmap = new numb[sizing.cutHeight * sizing.cutWidth];
                                                 cutoff2D(heatmap->channel[ch].valueBuffer, (numb*)cutoffHeatmap,
                                                     sizing.xSize, sizing.ySize, sizing.cutMinX, sizing.cutMinY, sizing.cutMaxX, sizing.cutMaxY);
 
                                                 ImPlot::PlotHeatmap(("MapLabels_" + std::to_string(mapIndex) + "##" + plotName + "_ch" + std::to_string(ch)).c_str(),
-                                                    (numb*)cutoffHeatmap, rows, cols, -1234.0, 1.0,
+                                                    (numb*)cutoffHeatmap, sizing.cutHeight, sizing.cutWidth, -1234.0, 1.0,
                                                     (ch == 0 ? mapName + ": %.3f\n \n " : (ch == 1 ? " \n" + mapName + ": %.3f\n " : " \n \n" + mapName + ": %.3f")).c_str(),
                                                     ImPlotPoint(sizing.mapX1Cut, sizing.mapY1Cut), ImPlotPoint(sizing.mapX2Cut, sizing.mapY2Cut));
 

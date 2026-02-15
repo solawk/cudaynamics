@@ -13,8 +13,7 @@
 #include "quaternion.h"
 #include "plotWindow.h"
 #include "colorLUT_struct.h"
-
-const float DEG2RAD = 3.141592f / 180.0f;
+#include "plots/trs.h"
 
 std::string memoryString(unsigned long long bytes);
 std::string scaleString(float scale);
