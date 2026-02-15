@@ -1,7 +1,5 @@
 #include "imgui_ui_funcs.h"
 
-extern std::string rangingTypes[];
-extern std::string rangingDescriptions[];
 extern bool popStyle;
 extern bool playingParticles;
 extern AnalysisIndex hiresIndex;

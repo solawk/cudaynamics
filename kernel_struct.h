@@ -137,12 +137,10 @@ public:
 		}
 	}
 
-	void AssessMapAttributes()
+	numb GetStepSize()
 	{
-		/*for (int i = 0; i < MAP_COUNT; i++)
-		{
-			mapDatas[i].toCompute = mapDatas[i].userEnabled;
-		}*/
+		if (stepType == ST_Parameter) return parameters[PARAM_COUNT - 1].min;
+		return 1.0f;
 	}
 };
 

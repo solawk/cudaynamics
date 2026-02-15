@@ -1,5 +1,7 @@
 #include "ui_strings.h"
 
+std::string rangingTypes[] = { "Fixed", "Step", "Linear", "Random", "Normal", "Enum" };
+
 std::string rangingDescriptions[] =
 {
     "Single value",

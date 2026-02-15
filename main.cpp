@@ -77,7 +77,6 @@ void common_main()
 
         hiresComputationSetup();
         KERNEL.PrepareAttributes();
-        KERNEL.AssessMapAttributes();
         computationHires.marshal.kernel.CopyFrom(&KERNEL);
         printf("Starting!\n");
         int computationResult = compute(&computationHires);

@@ -3,7 +3,7 @@
 #include <string>
 #include "json/json.h"
 #include "rangingTypeFromString.h"
-#include "rangingTypes.h"
+#include "gui/ui_strings.h"
 
 #define MAX_ENUMS 16
 

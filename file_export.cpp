@@ -5,7 +5,6 @@ extern int playedBufferIndex;
 extern int computedSteps;
 extern int bufferNo;
 extern std::vector<int> attributeValueIndices;
-extern numb getStepSize(Kernel& kernel);
 extern void steps2Variation(uint64_t* variationIndex, int* avi, Kernel* kernel);
 
 namespace {
@@ -168,7 +167,7 @@ std::string exportTimeSeriesCSV(const PlotWindow* window)
 
     // X axis
     const bool useTime = KERNEL.usingTime;
-    const numb stepSize = getStepSize(KERNEL);
+    const numb stepSize = KERNEL.GetStepSize();
     const double start = (double)(bufferNo * KERNEL.steps + KERNEL.transientSteps) *
         (useTime ? (double)stepSize : 1.0);
 

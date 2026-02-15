@@ -6,6 +6,7 @@
 #include "../kernel_struct.h"
 #include "../imgui_utils.h"
 #include "../indices_map.h"
+#include "ui_strings.h"
 
 //#include "imgui_main.hpp"
 
