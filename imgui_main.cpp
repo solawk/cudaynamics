@@ -81,7 +81,6 @@ float frameTime; // In seconds
 float timeElapsed = 0.0f; // Total time elapsed, in seconds
 int maxNameLength;
 bool anyChanged;
-bool thisChanged;
 bool popStyle;
 ImGuiSliderFlags dragFlag;
 
@@ -526,7 +525,6 @@ int imgui_main(int, char**)
         for (int i = 0; i < KERNEL.VAR_COUNT; i++) if (KERNEL.variables[i].name.length() > maxNameLength) maxNameLength = (int)KERNEL.variables[i].name.length();
 
         anyChanged = false;
-        thisChanged = false;
         popStyle = false;
 
         if (spoilerVars) ImGui::SetNextItemOpen(true);
@@ -638,22 +636,15 @@ int imgui_main(int, char**)
             ImGui::AlignTextToFramePadding();
             ImGui::Text(("Hi-Res Mode enabled for " + indexName + " ").c_str());
             ImGui::SameLine();
-            if (ImGui::Button("Disable Hi-Res Mode"))
-            {
-                hiresIndex = IND_NONE;
-            }
+            if (ImGui::Button("Disable Hi-Res Mode")) hiresIndex = IND_NONE;
         }
 
         if (!HIRES_ON)
         {
-            int tempTotalVariations = 1;
+            unsigned long long tempTotalVariations = 1;
             for (int v = 0; v < KERNEL.VAR_COUNT; v++)      if (KERNELNEWCURRENT.variables[v].TrueStepCount() > 1)     tempTotalVariations *= KERNELNEWCURRENT.variables[v].stepCount;
             for (int p = 0; p < KERNEL.PARAM_COUNT; p++)    if (KERNELNEWCURRENT.parameters[p].TrueStepCount() > 1)    tempTotalVariations *= KERNELNEWCURRENT.parameters[p].stepCount;
-            unsigned long long tempTotalVariationsLL = tempTotalVariations;
-            unsigned long long varCountLL = KERNEL.VAR_COUNT;
-            unsigned long long stepsNewLL = KERNELNEWCURRENT.steps + 1;
-            unsigned long long singleBufferNumberCount = ((tempTotalVariationsLL * varCountLL) * stepsNewLL);
-            unsigned long long singleBufferNumbSize = singleBufferNumberCount * sizeof(numb);
+            unsigned long long singleBufferNumbSize = ((tempTotalVariations * KERNEL.VAR_COUNT) * (KERNELNEWCURRENT.steps + 1)) * sizeof(numb);
             ImGui::Text(("Buffer memory: " + memoryString(singleBufferNumbSize) + " (" + std::to_string(singleBufferNumbSize) + " bytes)").c_str());
         }
 
@@ -671,10 +662,7 @@ int imgui_main(int, char**)
         }
 
         // Steps
-        if (playingParticles)
-        {
-            PUSH_DISABLED_FRAME;
-        }
+        if (playingParticles) PUSH_DISABLED_FRAME
         popStyle = false;
 
         float stepSize = getStepSize(KERNELNEWCURRENT);
@@ -762,11 +750,10 @@ int imgui_main(int, char**)
             if (ImGui::RadioButton("Particles", enabledParticles))  enabledParticles = true;
 
             // PARTICLES MODE
-            ImGui::PushItemWidth(200.0f);
+            ImGui::SetNextItemWidth(200.0f);
             ImGui::DragFloat("Animation speed, steps/s", &(particleSpeed), 1.0f);
             TOOLTIP("Playback speed of the evolution in Particles mode");
             if (particleSpeed < 0.0f) particleSpeed = 0.0f;
-            ImGui::PopItemWidth();
 
             ImGui::SameLine();
             if (computations[playedBufferIndex].timeElapsed > 0.0f)
@@ -781,9 +768,8 @@ int imgui_main(int, char**)
             }
             TOOLTIP("Predicted speed that allows for seamless playback");
 
-            ImGui::PushItemWidth(200.0f);
+            ImGui::SetNextItemWidth(200.0f);
             ImGui::DragInt("##Animation step", &(particleStep), 1.0f, 0, KERNEL.steps);
-            ImGui::PopItemWidth();
             ImGui::SameLine();
             ImGui::Text(("Animation step" + (continuousComputingEnabled ? " (total step " + std::to_string(bufferNo * KERNEL.steps + particleStep) + ")" : "")).c_str());
 
@@ -861,17 +847,13 @@ int imgui_main(int, char**)
                 Attribute* attr = isVar ? &(rangingCmp->marshal.kernel.variables[i]) : &(rangingCmp->marshal.kernel.parameters[i - rangingKernel->VAR_COUNT]);
                 Attribute* kernelNewAttr = isVar ? &(rangingKernelNew->variables[i]) : &(rangingKernelNew->parameters[i - rangingKernel->VAR_COUNT]);
                 bool isEnum = attr->rangingType == RT_Enum;
-
                 if (attr->TrueStepCount() == 1) continue;
 
                 ImGui::Text(padString(attr->name, maxNameLength).c_str()); ImGui::SameLine();
                 int index = (*rangingAVI)[i];
-                ImGui::PushItemWidth(150.0f);
+                ImGui::SetNextItemWidth(150.0f);
                 ImGui::SliderInt(("##RangingNo_" + std::to_string(i)).c_str(), &index, 0, attr->stepCount - 1, "Step: %d");
-                ImGui::PopItemWidth();
                 (*rangingAVI)[i] = index;
-
-                //printf("%i - %i\n", i, index);
 
                 if (!isEnum)
                 {
@@ -981,7 +963,7 @@ int imgui_main(int, char**)
         // Type
         ImGui::Text("Plot type ");
         ImGui::SameLine();
-        ImGui::PushItemWidth(250.0f);
+        ImGui::SetNextItemWidth(250.0f);
         if (ImGui::BeginCombo("##Plot type", (plottypes[plotType]).c_str()))
         {
             for (int t = 0; t < PlotType_COUNT; t++)
@@ -997,7 +979,6 @@ int imgui_main(int, char**)
 
             ImGui::EndCombo();
         }
-        ImGui::PopItemWidth();
 
         int indicesSize;
 
@@ -1040,7 +1021,7 @@ int imgui_main(int, char**)
 
         case Phase:
         case Phase2D:
-            ImGui::PushItemWidth(150.0f);
+            ImGui::SetNextItemWidth(150.0f);
             for (int sv = 0; sv < (plotType == Phase ? 3 : 2); sv++)
             {
                 ImGui::Text(("Variable " + variablexyz[sv]).c_str());
@@ -1069,11 +1050,10 @@ int imgui_main(int, char**)
                     ImGui::EndCombo();
                 }
             }
-            ImGui::PopItemWidth();
             break;
 
         case Orbit:
-            ImGui::PushItemWidth(150.0f);
+            ImGui::SetNextItemWidth(150.0f);
             for (int sv = 0; sv < 1; sv++)
             {
                 ImGui::Text("Variable ");
@@ -1090,7 +1070,6 @@ int imgui_main(int, char**)
                     ImGui::EndCombo();
                 }
             }
-            ImGui::PopItemWidth();
             break;
 
         case Heatmap:
@@ -1519,7 +1498,7 @@ int imgui_main(int, char**)
                 Kernel* krnl =  &(KERNEL);
 
 
-                ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.485f);
+                ImGui::SetNextItemWidth(ImGui::GetWindowWidth() * 0.485f);
                 if (ImGui::BeginCombo(("##" + windowName + "_axisX").c_str(),
                     window->typeX == MDT_Variable ? krnl->variables[window->indexX].name.c_str() : krnl->parameters[window->indexX].name.c_str(), 0))
                 {
@@ -1543,8 +1522,6 @@ int imgui_main(int, char**)
 
                     ImGui::EndCombo();
                 }
-
-                ImGui::PopItemWidth();
             }
 
             // Common variables
@@ -3254,9 +3231,8 @@ int imgui_main(int, char**)
                                         ImGui::TableSetColumnIndex(ch);
                                         int prevChannel = window->variables[ch];
 
-                                        ImGui::PushItemWidth(160.0f);
+                                        ImGui::SetNextItemWidth(160.0f);
                                         mapSelectionCombo("##" + window->name + "_channel" + std::to_string(ch), window->variables[ch], true);
-                                        ImGui::PopItemWidth();
 
                                         if (window->variables[ch] != prevChannel)
                                         {
@@ -3284,9 +3260,8 @@ int imgui_main(int, char**)
                                             ImGui::TableSetColumnIndex(ch);
                                             int prevValueIndex = heatmap->channel[ch].mapValueIndex;
 
-                                            ImGui::PushItemWidth(160.0f);
+                                            ImGui::SetNextItemWidth(160.0f);
                                             mapValueSelectionCombo((AnalysisIndex)window->variables[ch], ch, window->name, heatmap);
-                                            ImGui::PopItemWidth();
 
                                             if (prevValueIndex != heatmap->channel[ch].mapValueIndex)
                                             {

@@ -7,7 +7,6 @@ extern bool playingParticles;
 extern AnalysisIndex hiresIndex;
 extern bool autoLoadNewParams;
 extern ImGuiSliderFlags dragFlag;
-extern bool thisChanged;
 extern bool anyChanged;
 extern int maxNameLength;
 extern Kernel kernelNew;
@@ -63,9 +62,7 @@ void listAttrInt(Attribute* attr, int* field, std::string name, std::string inne
 
 void listVariable(int i)
 {
-	thisChanged = false;
-	if (KERNELNEWCURRENT.variables[i].IsDifferentFrom(&(KERNEL.variables[i]))) { anyChanged = true; thisChanged = true; }
-	//if (thisChanged) varNew.recountSteps(i); // TODO
+	if (KERNELNEWCURRENT.variables[i].IsDifferentFrom(&(KERNEL.variables[i]))) anyChanged = true;
 
 	ImGui::TableNextRow();
 	ImGui::TableSetColumnIndex(0);
@@ -136,9 +133,7 @@ void listParameter(int i)
 
 	bool changeAllowed = KERNELNEWCURRENT.parameters[i].rangingType == RT_None || !playingParticles || !autoLoadNewParams;
 
-	thisChanged = false;
-	if (KERNELNEWCURRENT.parameters[i].IsDifferentFrom(&(KERNEL.parameters[i]))) { anyChanged = true; thisChanged = true; }
-	//if (thisChanged) paramNew.recountSteps(i); // TODO
+	if (KERNELNEWCURRENT.parameters[i].IsDifferentFrom(&(KERNEL.parameters[i]))) anyChanged = true;
 
 	ImGui::TableNextRow();
 	ImGui::TableSetColumnIndex(0);
@@ -222,8 +217,7 @@ void listEnum(int i)
 
 	bool changeAllowed = KERNELNEWCURRENT.parameters[i].rangingType == RT_None || !playingParticles || !autoLoadNewParams;
 
-	thisChanged = false;
-	if (KERNELNEWCURRENT.parameters[i].IsDifferentFrom(&(KERNEL.parameters[i]))) { anyChanged = true; thisChanged = true; }
+	if (KERNELNEWCURRENT.parameters[i].IsDifferentFrom(&(KERNEL.parameters[i]))) anyChanged = true;
 
 	ImGui::SetNextItemWidth(GlobalFontSettings.size * 4.0f);
 	ImGui::Text(padString(KERNEL.parameters[i].name, maxNameLength).c_str());
@@ -255,7 +249,7 @@ void listEnum(int i)
 		selectedKernelsString = selectedKernelsString.substr(0, 40) + "...";
 
 	ImGui::SameLine();
-	ImGui::PushItemWidth(GlobalFontSettings.size * 25.0f);
+	ImGui::SetNextItemWidth(GlobalFontSettings.size * 25.0f);
 	bool isChanged = false;
 	ATTR_BEGIN;
 	if (ImGui::BeginCombo(("##ENUMSELECT_" + KERNELNEWCURRENT.parameters[i].name).c_str(), selectedCount == 0 ? "None" : selectedKernelsString.c_str()))
@@ -273,7 +267,6 @@ void listEnum(int i)
 		ImGui::EndCombo();
 	}
 	ATTR_END;
-	ImGui::PopItemWidth();
 
 	ImGui::SameLine();
 	ImGui::Text((std::to_string(selectedCount) + " item" + ((selectedCount % 10 != 1 || selectedCount == 11) ? "s" : "")).c_str());
