@@ -89,6 +89,7 @@
     <ClCompile Include="rangingTypes.cpp" />
     <ClCompile Include="gui\commonItemDialogs.cpp" />
     <ClCompile Include="gui\hwnd.cpp" />
+    <ClCompile Include="gui\ui_strings.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="imgui">
@@ -294,6 +295,7 @@
     <ClInclude Include="rangingTypes.h" />
     <ClInclude Include="gui\commonItemDialogs.h" />
     <ClInclude Include="gui\hwnd.h" />
+    <ClInclude Include="gui\ui_strings.h" />
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="main.cu" />

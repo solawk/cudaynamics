@@ -88,16 +88,6 @@ bool thisChanged;
 bool popStyle;
 ImGuiSliderFlags dragFlag;
 
-std::string rangingDescriptions[] =
-{
-    "Single value",
-    "Values from 'min' to 'max' (inclusive), separated by 'step'",
-    "Specified amount of values between 'min' and 'max' (inclusive)",
-    "Uniform random distribution of values between 'min' and 'max'",
-    "Normal random distribution of values around 'mu' with standard deviation 'sigma'"
-};
-std::string plottypes[] = { "Variables time series", "3D Phase diagram", "2D Phase diagram", "Orbit diagram", "Heatmap", "RGB Heatmap", "Indices diagram", "Indices time series", "Decay plot"};
-
 bool rangingWindowEnabled = true;
 bool graphBuilderWindowEnabled = true;
 
@@ -901,10 +891,7 @@ int imgui_main(int, char**)
                         if (attr->enumEnabled[e])
                         {
                             if (selEnum == 0)
-                            {
-                                ImGui::Text(attr->enumNames[e].c_str());
-                                break;
-                            }
+                                TEXT_AND_BREAK(attr->enumNames[e].c_str())
                             else
                                 selEnum--;
                         }
@@ -1015,7 +1002,6 @@ int imgui_main(int, char**)
         }
         ImGui::PopItemWidth();
 
-        std::string variablexyz[] = { "x", "y", "z" };
         int indicesSize;
 
         switch (plotType)
@@ -2449,7 +2435,8 @@ int imgui_main(int, char**)
                         ImPlot::PopStyleColor();
 
                 }
-                    break;
+                break;
+
                 case Metric:
                     {
                     if (window->whiteBg)
@@ -2646,17 +2633,8 @@ int imgui_main(int, char**)
                     for (int i = 0; i < window->variables.size(); i++) 
                         indices[(AnalysisIndex)window->variables[i]].decay.thresholds = window->decay.settings[i].thresholds;
 
-                    if (cmp->marshal.indecesDelta == nullptr)
-                    {
-                        ImGui::Text("Decay plot delta not ready yet");
-                        break;
-                    }
-
-                    if (!cmp->calculateDeltaDecay)
-                    {
-                        ImGui::Text("Delta and decay calculation is disabled");
-                        break;
-                    }
+                    if (cmp->marshal.indecesDelta == nullptr) TEXT_AND_BREAK("Decay plot delta not ready yet")
+                    if (!cmp->calculateDeltaDecay) TEXT_AND_BREAK("Delta and decay calculation is disabled")
 
                     if (heatmap->areValuesDirty)
                     {
@@ -2748,13 +2726,13 @@ int imgui_main(int, char**)
 
                     if (!isMC)
                     {
-                        if (!indices[mapIndex].enabled && !hiresFrozenAndAvailable) { ImGui::Text(("Index " + indices[mapIndex].name + " has been disabled").c_str()); break; }
-                        if (!index2port(cmp->marshal.kernel.analyses, mapIndex)->used && !hiresFrozenAndAvailable) { ImGui::Text(("Index " + indices[mapIndex].name + " has not been computed").c_str()); break; }
+                        if (!indices[mapIndex].enabled && !hiresFrozenAndAvailable) TEXT_AND_BREAK(("Index " + indices[mapIndex].name + " has been disabled").c_str())
+                        if (!index2port(cmp->marshal.kernel.analyses, mapIndex)->used && !hiresFrozenAndAvailable) TEXT_AND_BREAK(("Index " + indices[mapIndex].name + " has not been computed").c_str())
 
-                        if (window->deltaState == DS_Delta && !cmp->marshal.indecesDeltaExists) { ImGui::Text("Delta not computed yet"); break; }
-                        if (window->deltaState == DS_Delta && cmp->bufferNo < 2) { ImGui::Text("Delta not ready yet"); break; }
-                        if (window->deltaState == DS_Decay && !cmp->marshal.indecesDeltaExists) { ImGui::Text("Decay not computed yet"); break; }
-                        if (window->deltaState == DS_Decay && cmp->bufferNo < 2) { ImGui::Text("Decay not ready yet"); break; }
+                        if (window->deltaState == DS_Delta && !cmp->marshal.indecesDeltaExists) TEXT_AND_BREAK("Delta not computed yet")
+                        if (window->deltaState == DS_Decay && !cmp->marshal.indecesDeltaExists) TEXT_AND_BREAK("Delta not computed yet")
+                        if (window->deltaState == DS_Delta && cmp->bufferNo < 2) TEXT_AND_BREAK("Delta not ready yet")
+                        if (window->deltaState == DS_Decay && cmp->bufferNo < 2) TEXT_AND_BREAK("Delta not ready yet")
                     }
 
                     Attribute* axisX = heatmap->typeX == MDT_Variable ? &(krnl->variables[heatmap->indexX]) : &(krnl->parameters[heatmap->indexX]);
@@ -2762,19 +2740,10 @@ int imgui_main(int, char**)
 
                     bool axisXisRanging = axisX->TrueStepCount() > 1; bool axisYisRanging = axisY->TrueStepCount() > 1; bool sameAxis = axisX == axisY;
 
-                    if (!axisXisRanging || !axisYisRanging || sameAxis)
-                    {
-                        if (!axisXisRanging) ImGui::Text(("Axis " + axisX->name + " is fixed").c_str());
-                        if (!axisYisRanging) ImGui::Text(("Axis " + axisY->name + " is fixed").c_str());
-                        if (sameAxis) ImGui::Text("X and Y axis are the same");
-                        break;
-                    }
-
-                    if (!window->deltaState == DS_No && !cmp->calculateDeltaDecay)
-                    {
-                        ImGui::Text("Delta and decay calculation is disabled");
-                        break;
-                    }
+                    if (!axisXisRanging) TEXT_AND_BREAK(("Axis " + axisX->name + " is fixed").c_str())
+                    if (!axisYisRanging) TEXT_AND_BREAK(("Axis " + axisY->name + " is fixed").c_str())
+                    if (sameAxis) TEXT_AND_BREAK("X and Y axis are the same")
+                    if (!window->deltaState == DS_No && !cmp->calculateDeltaDecay) TEXT_AND_BREAK("Delta and decay calculation is disabled")
 
                     if (ImGui::BeginTable((plotName + "_table").c_str(), showLegend ? 2 : 1, ImGuiTableFlags_Reorderable, ImVec2(-1, 0)))
                     {
@@ -3443,10 +3412,7 @@ int imgui_main(int, char**)
                     Computation* cmp = &(computations[playedBufferIndex]);
                     Marshal* mrsl = &cmp->marshal;
 
-                    if (!cmp->marshal.maps) {
-                        ImGui::Text("No variables/parameters variating");
-                        break;
-                    }
+                    if (!cmp->marshal.maps) TEXT_AND_BREAK("No variables/parameters ranging")
                     if (indSeriesReset) { window->indSeries.clear(); indSeriesReset = false; }
                     if (cmp->bufferNo != window->prevbufferNo)
                     {
@@ -3461,11 +3427,7 @@ int imgui_main(int, char**)
                         }
                     }
 
-                    if (window->prevbufferNo - window->firstBufferNo <= 1)
-                    {
-                        ImGui::Text("Index series not ready yet");
-                        break;
-                    }
+                    if (window->prevbufferNo - window->firstBufferNo <= 1) TEXT_AND_BREAK("Index series not ready yet")
                     else
                     {
                         if (ImPlot::BeginPlot(plotName.c_str(), "", "", ImVec2(-1, -1), ImPlotFlags_NoTitle, axisFlags, axisFlags))

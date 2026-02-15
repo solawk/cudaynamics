@@ -41,6 +41,7 @@
 #include "gui/applicationSettings_struct.h"
 #include "computations.h"
 #include "gui/hwnd.h"
+#include "gui/ui_strings.h"
 
 bool CreateDeviceD3D(HWND hWnd);
 void CleanupDeviceD3D();
@@ -63,6 +64,8 @@ extern Kernel kernelNew;
 
 #define DONT_CLOSE_ON_CLICK_PUSH	ImGui::PushItemFlag(ImGuiItemFlags_AutoClosePopups, false);
 #define DONT_CLOSE_ON_CLICK_POP		ImGui::PopItemFlag();
+
+#define TEXT_AND_BREAK(text)        { ImGui::Text(text); break; }
 
 // Kernel-related macros
 #define HIRES_ON (hiresIndex != IND_NONE)

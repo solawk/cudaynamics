@@ -134,6 +134,7 @@
     <ClCompile Include="gui\map_img.cpp" />
     <ClCompile Include="gui\plotWindowMenu.cpp" />
     <ClCompile Include="gui\styles.cpp" />
+    <ClCompile Include="gui\ui_strings.cpp" />
     <ClCompile Include="imgui\backends\imgui_impl_dx11.cpp" />
     <ClCompile Include="imgui\backends\imgui_impl_win32.cpp" />
     <ClCompile Include="imgui\imgui.cpp" />
@@ -208,6 +209,7 @@
     <ClInclude Include="gui\plotWindowMenu.h" />
     <ClInclude Include="gui\stb_image.h" />
     <ClInclude Include="gui\styles.h" />
+    <ClInclude Include="gui\ui_strings.h" />
     <ClInclude Include="gui\window_configs.h" />
     <ClInclude Include="heatmapProperties.hpp" />
     <ClInclude Include="heatmapSizing_struct.h" />
