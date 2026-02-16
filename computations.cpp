@@ -10,6 +10,7 @@ void computationsInit()
     computations[0].marshal.parameterVariations = computations[1].marshal.parameterVariations = nullptr;
     computations[0].isHires = computations[1].isHires = false;
     computationHires.isHires = true;
+    computationHires.isGPU = true;
     computations[0].index = 0;
     computations[1].index = 1;
     computations[0].otherMarshal = &(computations[1].marshal);
