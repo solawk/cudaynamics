@@ -63,6 +63,9 @@ bool loadCfg(json::jobject cfg, bool cleanStart)
     // Enable the system
     if (cleanStart) prepareKernel(); // Clean start means initializing the suite, which is not needed when loading the cfg via GUI
 
+    // Explicitly setting variationsPerParallelization
+    if (cfg.has_key("varPerParallelization")) applicationSettings.varPerParallelization = (int)cfg["varPerParallelization"];
+
     // Select analysis index
     if (cfg.has_key("index"))
     {

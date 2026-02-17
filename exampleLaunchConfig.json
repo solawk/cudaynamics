@@ -1,6 +1,7 @@
 {
 	"system": "lorenz",
 	"index": "Minimum variable value",
+	"varPerParallelization": 2500000,
 	"usingTime": false,
 	"steps": 2000,
 	"transientSteps": 0,

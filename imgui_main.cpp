@@ -21,8 +21,6 @@ bool spoilerStep = true;
 bool spoilerParams = true;
 bool ContinuationRed = false;
 
-ApplicationSettings applicationSettings;
-
 int playedBufferIndex = 0; // Buffer currently shown
 int bufferToFillIndex = 0; // Buffer to send computations to
 std::vector<int> attributeValueIndices; // Currently selected indices of ranging attributes

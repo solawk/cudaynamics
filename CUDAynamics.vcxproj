@@ -125,6 +125,7 @@
     <ClCompile Include="configIO.cpp" />
     <ClCompile Include="file_export.cpp" />
     <ClCompile Include="fonts.cpp" />
+    <ClCompile Include="gui\applicationSettings_struct.cpp" />
     <ClCompile Include="gui\commonItemDialogs.cpp" />
     <ClCompile Include="gui\fullscreen_funcs.cpp" />
     <ClCompile Include="gui\hwnd.cpp" />

@@ -89,6 +89,7 @@
     <ClCompile Include="gui\commonItemDialogs.cpp" />
     <ClCompile Include="gui\hwnd.cpp" />
     <ClCompile Include="gui\ui_strings.cpp" />
+    <ClCompile Include="gui\applicationSettings_struct.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="imgui">

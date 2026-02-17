@@ -79,14 +79,16 @@ void common_main()
         KERNEL.PrepareAttributes();
         computationHires.marshal.kernel.CopyFrom(&KERNEL);
         printf("Starting!\n");
+        std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
         int computationResult = compute(&computationHires);
+        std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
         computationHires.ready = true;
         if (computationResult > 0)
         {
             printf("FAIL: Computation has failed\n");
             return;
         }
-        printf("Computed successfully\n");
+        printf("Computed successfully in %f s\n", (float)(std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count()) / 1000.0f);
 
         exportHires();
         printf("SUCCESS: Exported succesfully\n");

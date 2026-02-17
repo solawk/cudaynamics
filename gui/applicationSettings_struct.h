@@ -124,3 +124,5 @@ struct ApplicationSettings
 		}
 	}
 };
+
+extern ApplicationSettings applicationSettings;
