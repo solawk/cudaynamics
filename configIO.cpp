@@ -1,7 +1,9 @@
 #include "configIO.h"
 
-json::jobject saveCfg()
+json::jobject saveCfg(bool saveHires, bool saveNew)
 {
+    Kernel* k = !saveHires ? (!saveNew ? &KERNEL : &kernelNew) : (!saveNew ? &kernelHiresComputed : &kernelHiresNew);
+
     // Config (.cfg to not confuse with ImGui .config) stores the dynamical system settings and (in the future) window placement (like ImGui .config does now)
     // 1. selected system
     // 2. selected hi-res index
@@ -12,30 +14,30 @@ json::jobject saveCfg()
     json::jobject cfg;
     cfg["system"] = selectedKernel; // 1
     cfg["index"] = hiresIndex != IND_NONE ? indices[hiresIndex].name : ""; // 2
-    cfg["usingTime"].set_boolean(KERNEL.usingTime); // 3
+    cfg["usingTime"].set_boolean(k->usingTime); // 3
     // 4
-    if (KERNEL.usingTime)
+    if (k->usingTime)
     {
-        cfg["time"] = KERNEL.time;
-        cfg["transientTime"] = KERNEL.transientTime;
+        cfg["time"] = k->time;
+        cfg["transientTime"] = k->transientTime;
     }
     else
     {
-        cfg["steps"] = KERNEL.steps;
-        cfg["transientSteps"] = KERNEL.transientSteps;
+        cfg["steps"] = k->steps;
+        cfg["transientSteps"] = k->transientSteps;
     }
     // 5
     std::vector<json::jobject> variables, parameters;
-    for (Attribute v : KERNEL.variables) variables.push_back(v.ExportToJSON());
-    for (Attribute p : KERNEL.parameters) parameters.push_back(p.ExportToJSON());
+    for (Attribute v : k->variables) variables.push_back(v.ExportToJSON());
+    for (Attribute p : k->parameters) parameters.push_back(p.ExportToJSON());
     cfg["variables"] = variables;
     cfg["parameters"] = parameters;
     // 6
     std::vector<json::jobject> analysis;
-    analysis.push_back(KERNEL.analyses.MINMAX.ExportSettings());
-    analysis.push_back(KERNEL.analyses.LLE.ExportSettings());
-    analysis.push_back(KERNEL.analyses.PERIOD.ExportSettings());
-    analysis.push_back(KERNEL.analyses.PV.ExportSettings());
+    analysis.push_back(k->analyses.MINMAX.ExportSettings());
+    analysis.push_back(k->analyses.LLE.ExportSettings());
+    analysis.push_back(k->analyses.PERIOD.ExportSettings());
+    analysis.push_back(k->analyses.PV.ExportSettings());
     cfg["analysis"] = analysis;
 
     return cfg;

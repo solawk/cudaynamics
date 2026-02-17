@@ -6,12 +6,19 @@ void mainWindowMenu()
 	{
         if (ImGui::BeginMenu("File"))
         {
-            if (ImGui::MenuItem("Save system configuration (.cfg)")) 
+            if (ImGui::MenuItem("Save computed system configuration")) 
             {
-                JSONWrite(saveCfg(), "testCfg.cfg", true);
+                JSONWrite(saveCfg(hiresIndex != IND_NONE, false), "testCfg.cfg", true);
             }
+            TOOLTIP("Save as it has been last computed")
 
-            if (ImGui::MenuItem("Load system configuration (.cfg)"))
+            if (ImGui::MenuItem("Save edited system configuration"))
+            {
+                JSONWrite(saveCfg(hiresIndex != IND_NONE, true), "testCfg.cfg", true);
+            }
+            TOOLTIP("Save with edited fields preserved")
+
+            if (ImGui::MenuItem("Load system configuration"))
             {
                 json::jobject cfg;
                 if (JSONRead("testCfg.cfg", &cfg, true))

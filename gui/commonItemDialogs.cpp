@@ -1,6 +1,6 @@
 #include "commonItemDialogs.h"
 
-COMDLG_FILTERSPEC fileType = { L"CUDAynamics System Configuration (.cfg)", L"*.cfg" };
+COMDLG_FILTERSPEC fileType = { L"CUDAynamics System Configuration", L"*.cfg" };
 
 bool CommonItemDialogSave(std::string& content)
 {

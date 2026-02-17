@@ -8,6 +8,6 @@
 #include "../indices_map.h"
 #include <fstream>
 
-json::jobject saveCfg();
+json::jobject saveCfg(bool saveHires, bool saveNew);
 
 bool loadCfg(json::jobject cfg, bool cleanStart);
