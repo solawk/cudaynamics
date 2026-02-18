@@ -4,7 +4,6 @@ void mainWindowMenu()
 {
 	if (ImGui::BeginMenuBar())
 	{
-        /*
         if (ImGui::BeginMenu("File"))
         {
             if (ImGui::MenuItem("Save computed system configuration")) 
@@ -33,7 +32,6 @@ void mainWindowMenu()
 
             ImGui::EndMenu();
         }
-        */
 
         if (ImGui::BeginMenu("View"))
         {
