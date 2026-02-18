@@ -43,7 +43,7 @@ json::jobject saveCfg(bool saveHires, bool saveNew)
     return cfg;
 }
 
-bool loadCfg(json::jobject cfg, bool cleanStart)
+bool loadCfg(json::jobject cfg, bool cleanStart, bool needPrints)
 {
     // Switch to system
     if (!cfg.has_key("system"))
@@ -57,7 +57,7 @@ bool loadCfg(json::jobject cfg, bool cleanStart)
         printf(("FAIL: System " + systemName + " not present, aborting...\n").c_str());
         return false;
     }
-    if (cleanStart) printf(("System " + systemName + " found\n").c_str());
+    if (needPrints) printf(("System " + systemName + " found\n").c_str());
     selectedKernel = systemName;
 
     // Enable the system
@@ -83,7 +83,7 @@ bool loadCfg(json::jobject cfg, bool cleanStart)
                 if (indices[(AnalysisIndex)i].name == indexName)
                 {
                     index = i;
-                    if (cleanStart) printf(("Index " + indexName + " found\n").c_str());
+                    if (needPrints) printf(("Index " + indexName + " found\n").c_str());
                     break;
                 }
             }
@@ -102,21 +102,31 @@ bool loadCfg(json::jobject cfg, bool cleanStart)
         return false;
     }
 
+    if (hiresIndex == IND_NONE)
+    {
+        kernelNew.CopyFrom(&KERNEL);
+    }
+    else
+    {
+        kernelHiresNew.CopyFrom(&KERNEL);
+    }
+    Kernel* k = (hiresIndex == IND_NONE ? &kernelNew : &kernelHiresNew);
+
     // Setup the system
 
     if (cfg.has_key("usingTime"))
     {
         if (cfg["usingTime"].is_true())
         {
-            kernelNew.usingTime = true;
-            kernelNew.time = (numb)cfg["time"];
-            kernelNew.transientTime = (numb)cfg["transientTime"];
+            k->usingTime = true;
+            k->time = (numb)cfg["time"];
+            k->transientTime = (numb)cfg["transientTime"];
         }
         else
         {
-            kernelNew.usingTime = false;
-            kernelNew.steps = (int)cfg["steps"];
-            kernelNew.transientSteps = (int)cfg["transientSteps"];
+            k->usingTime = false;
+            k->steps = (int)cfg["steps"];
+            k->transientSteps = (int)cfg["transientSteps"];
         }
     }
 
@@ -135,7 +145,7 @@ bool loadCfg(json::jobject cfg, bool cleanStart)
                 return false;
             }
 
-            kernelNew.variables[varIndex].ImportFromJSON(varSettings);
+            k->variables[varIndex].ImportFromJSON(varSettings);
         }
     }
     if (cfg.has_key("parameters"))
@@ -153,7 +163,7 @@ bool loadCfg(json::jobject cfg, bool cleanStart)
                 return false;
             }
 
-            kernelNew.parameters[paramIndex].ImportFromJSON(paramSettings);
+            k->parameters[paramIndex].ImportFromJSON(paramSettings);
         }
     }
     if (cfg.has_key("analysis"))
@@ -174,16 +184,16 @@ bool loadCfg(json::jobject cfg, bool cleanStart)
                     switch ((AnalysisFunction)j)
                     {
                     case AnalysisFunction::ANF_MINMAX:
-                        kernelNew.analyses.MINMAX.setup(settings);
+                        k->analyses.MINMAX.setup(settings);
                         break;
                     case AnalysisFunction::ANF_LLE:
-                        kernelNew.analyses.LLE.setup(settings);
+                        k->analyses.LLE.setup(settings);
                         break;
                     case AnalysisFunction::ANF_PERIOD:
-                        kernelNew.analyses.PERIOD.setup(settings);
+                        k->analyses.PERIOD.setup(settings);
                         break;
                     case AnalysisFunction::ANF_PV:
-                        kernelNew.analyses.PV.setup(settings);
+                        k->analyses.PV.setup(settings);
                         break;
                     }
                     break;
@@ -196,7 +206,7 @@ bool loadCfg(json::jobject cfg, bool cleanStart)
             }
         }
     }
-    if (cleanStart) printf("No setup problems occured\n");
+    if (needPrints) printf("No setup problems occured\n");
 
     return true;
 }

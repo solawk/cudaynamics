@@ -4,6 +4,7 @@ void mainWindowMenu()
 {
 	if (ImGui::BeginMenuBar())
 	{
+        /*
         if (ImGui::BeginMenu("File"))
         {
             if (ImGui::MenuItem("Save computed system configuration")) 
@@ -23,12 +24,16 @@ void mainWindowMenu()
                 json::jobject cfg;
                 if (JSONRead("testCfg.cfg", &cfg, true))
                 {
-                    loadCfg(cfg, false);
+                    bool systemChanged = (std::string)cfg["system"] != selectedKernel;
+                    if (systemChanged) switchToSystem((std::string)cfg["system"]);
+                    loadCfg(cfg, false, false);
+                    initializeKernel(false);
                 }
             }
 
             ImGui::EndMenu();
         }
+        */
 
         if (ImGui::BeginMenu("View"))
         {

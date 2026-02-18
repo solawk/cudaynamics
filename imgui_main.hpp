@@ -51,6 +51,9 @@ LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
 int imgui_main(int, char**);
 
+void switchToSystem(std::string name);
+void initializeKernel(bool copyToNewKernels);
+
 void listVariable(int i);
 void listParameter(int i);
 void listEnum(int i);

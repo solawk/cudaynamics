@@ -85,6 +85,30 @@ ImGuiSliderFlags dragFlag;
 bool rangingWindowEnabled = true;
 bool graphBuilderWindowEnabled = true;
 
+// Graph Builder settings
+
+PlotType plotType = VarSeries;
+int selectedPlotVars[3]{ 0, -1, -1 };
+int selectedPlotVarsOrbitVer[3]{ 0, -1, -1 };
+std::set<int> selectedPlotVarsSet;
+std::set<int> selectedPlotMapsSetMetric;
+std::set<int> selectedPlotMapSetIndSeries;
+int selectedPlotMap = 0;
+int selectedPlotMCMaps[3]{ 0 };
+int selectedPlotMapMetric = 0;
+std::set<int> selectedPlotMapDecay;
+
+#define RESET_GRAPH_BUILDER_SETTINGS \
+	selectedPlotVars[0] = 0; for (int i = 1; i < 3; i++) selectedPlotVars[i] = -1;  \
+	selectedPlotVarsOrbitVer[0] = 0; for (int i = 1; i < 3; i++) selectedPlotVarsOrbitVer[i] = -1;  \
+	selectedPlotVarsSet.clear();  \
+	selectedPlotMapsSetMetric.clear();  \
+	selectedPlotMapSetIndSeries.clear();  \
+	selectedPlotMap = 0;  \
+	for (int i = 0; i < 3; i++) selectedPlotMCMaps[i] = 0; \
+	selectedPlotMapMetric = 0; \
+	selectedPlotMapDecay.clear();
+
 void deleteBuffers(bool deleteHires)
 {
 	if (!deleteHires)
@@ -239,18 +263,23 @@ void unloadPlotWindows()
 	}
 }
 
-void initializeKernel(bool needTerminate) // needTerminate is obsolete
+void initializeKernel(bool copyToNewKernels)
 {
 	terminateUIBuffers();
-
-	unloadPlotWindows();
-	plotWindows.clear();
-	uniqueIds = 0;
 	colorsLUTfrom = nullptr;
 
-	kernelNew.CopyFrom(&KERNEL);
-	kernelHiresNew.CopyFrom(&KERNEL);
-	kernelHiresComputed.CopyFrom(&KERNEL);
+	if (copyToNewKernels)
+	{
+
+		unloadPlotWindows();
+		plotWindows.clear();
+		uniqueIds = 0;
+
+		kernelNew.CopyFrom(&KERNEL);
+		kernelHiresNew.CopyFrom(&KERNEL);
+		kernelHiresComputed.CopyFrom(&KERNEL);
+	}
+
 	kernelNew.mapWeight = kernelHiresNew.mapWeight = kernelHiresComputed.mapWeight = 1.0f;
 
 	initAVI(false);
@@ -349,6 +378,20 @@ void releaseHeatmap(PlotWindow* window, bool isHires)
 	}
 }
 
+void switchToSystem(std::string name)
+{
+	saveWindows();
+	RESET_GRAPH_BUILDER_SETTINGS;
+
+	selectedKernel = name;
+	prepareKernel();
+	initializeKernel(true);
+	playingParticles = false;
+
+	loadWindows();
+	setVaryingAttributesToHeatmaps(plotWindows, KERNEL);
+}
+
 // Main code
 int imgui_main(int, char**)
 {
@@ -400,30 +443,8 @@ int imgui_main(int, char**)
 	char* plotNameBuffer = new char[64]();
 	strcpy_s(plotNameBuffer, 5, "Plot");
 
-	PlotType plotType = VarSeries;
-	int selectedPlotVars[3]; selectedPlotVars[0] = 0; for (int i = 1; i < 3; i++) selectedPlotVars[i] = -1;
-	int selectedPlotVarsOrbitVer[3]; selectedPlotVarsOrbitVer[0] = 0; for (int i = 1; i < 3; i++) selectedPlotVarsOrbitVer[i] = -1;
-	std::set<int> selectedPlotVarsSet;
-	std::set<int> selectedPlotMapsSetMetric;
-	std::set<int> selectedPlotMapSetIndSeries;
-	int selectedPlotMap = 0;
-	int selectedPlotMCMaps[3]{ 0 };
-	int selectedPlotMapMetric = 0;
-	std::set<int> selectedPlotMapDecay;
-
-#define RESET_GRAPH_BUILDER_SETTINGS \
-	selectedPlotVars[0] = 0; for (int i = 1; i < 3; i++) selectedPlotVars[i] = -1;  \
-	selectedPlotVarsOrbitVer[0] = 0; for (int i = 1; i < 3; i++) selectedPlotVarsOrbitVer[i] = -1;  \
-	selectedPlotVarsSet.clear();  \
-	selectedPlotMapsSetMetric.clear();  \
-	selectedPlotMapSetIndSeries.clear();  \
-	selectedPlotMap = 0;  \
-	for (int i = 0; i < 3; i++) selectedPlotMCMaps[i] = 0; \
-	selectedPlotMapMetric = 0; \
-	selectedPlotMapDecay.clear();
-
 	prepareKernel();
-	initializeKernel(false);
+	initializeKernel(true);
 
 	try { loadWindows(); }
 	catch (std::exception e) { printf(e.what()); }
@@ -482,16 +503,7 @@ int imgui_main(int, char**)
 				ImGuiSelectableFlags selectableFlags = 0;
 				if (ImGui::Selectable(k.second.name.c_str(), isSelected, selectableFlags))
 				{
-					saveWindows();
-					RESET_GRAPH_BUILDER_SETTINGS;
-
-					selectedKernel = k.first;
-					prepareKernel();
-					initializeKernel(true);
-					playingParticles = false;
-
-					loadWindows();
-					setVaryingAttributesToHeatmaps(plotWindows, KERNEL);
+					switchToSystem(k.first);
 				}
 			}
 
@@ -1374,6 +1386,7 @@ int imgui_main(int, char**)
 
 					ImGui::TableSetColumnIndex(0);
 					ImGui::SetNextItemWidth(-1);
+
 					if (ImGui::BeginCombo(("##" + windowName + "_axisX").c_str(),
 						heatmap->typeX == MDT_Variable ? krnl->variables[heatmap->indexX].name.c_str() : krnl->parameters[heatmap->indexX].name.c_str()))
 					{
@@ -2665,10 +2678,12 @@ int imgui_main(int, char**)
 					Attribute* axisX = heatmap->typeX == MDT_Variable ? &(krnl->variables[heatmap->indexX]) : &(krnl->parameters[heatmap->indexX]);
 					Attribute* axisY = heatmap->typeY == MDT_Variable ? &(krnl->variables[heatmap->indexY]) : &(krnl->parameters[heatmap->indexY]);
 
-					if (axisX->TrueStepCount() <= 1)    TEXT_AND_BREAK(("Axis " + axisX->name + " is fixed").c_str())
-					if (axisY->TrueStepCount() <= 1)    TEXT_AND_BREAK(("Axis " + axisY->name + " is fixed").c_str())
-					if (axisX == axisY)                 TEXT_AND_BREAK("X and Y axis are the same")
-					if (!window->deltaState == DS_No && !cmp->calculateDeltaDecay) TEXT_AND_BREAK("Delta and decay calculation is disabled")
+					bool toBreak = false;
+					if (axisX->TrueStepCount() <= 1)	{ ImGui::Text(("Axis " + axisX->name + " is fixed").c_str()); toBreak = true; }
+					if (axisY->TrueStepCount() <= 1)	{ ImGui::Text(("Axis " + axisY->name + " is fixed").c_str()); toBreak = true; }
+					if (axisX == axisY)					{ ImGui::Text("X and Y axis are the same"); toBreak = true; }
+					if (!window->deltaState == DS_No && !cmp->calculateDeltaDecay) { ImGui::Text("Delta and decay calculation is disabled"); toBreak = true; }
+					if (toBreak) break;
 
 					if (ImGui::BeginTable((plotName + "_table").c_str(), showLegend ? 2 : 1, ImGuiTableFlags_Reorderable, ImVec2(-1, 0)))
 					{

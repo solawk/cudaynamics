@@ -66,8 +66,8 @@ void common_main()
     }
     else
     {
-        kernelNew.CopyFrom(&KERNEL);
-        if (!loadCfg(launchConfig, true)) return;
+        //kernelNew.CopyFrom(&KERNEL);
+        if (!loadCfg(launchConfig, true, true)) return;
         KERNEL.CopyFrom(&kernelNew);
         if (hiresIndex == IND_NONE)
         {
