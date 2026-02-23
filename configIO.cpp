@@ -43,25 +43,28 @@ json::jobject saveCfg(bool saveHires, bool saveNew)
     return cfg;
 }
 
-bool loadCfg(json::jobject cfg, bool cleanStart, bool needPrints)
+bool loadCfg(json::jobject cfg, bool switchSystem, bool cleanStart, bool needPrints)
 {
-    // Switch to system
-    if (!cfg.has_key("system"))
+    if (switchSystem)
     {
-        printf("FAIL: System name not specified, aborting...\n");
-        return false;
-    }
-    std::string systemName = (std::string)cfg["system"];
-    if (!kernels.count(systemName))
-    {
-        printf(("FAIL: System " + systemName + " not present, aborting...\n").c_str());
-        return false;
-    }
-    if (needPrints) printf(("System " + systemName + " found\n").c_str());
-    selectedKernel = systemName;
+        // Switch to system
+        if (!cfg.has_key("system"))
+        {
+            printf("FAIL: System name not specified, aborting...\n");
+            return false;
+        }
+        std::string systemName = (std::string)cfg["system"];
+        if (!kernels.count(systemName))
+        {
+            printf(("FAIL: System " + systemName + " not present, aborting...\n").c_str());
+            return false;
+        }
+        if (needPrints) printf(("System " + systemName + " found\n").c_str());
+        selectedKernel = systemName;
 
-    // Enable the system
-    if (cleanStart) prepareKernel(); // Clean start means initializing the suite, which is not needed when loading the cfg via GUI
+        // Enable the system
+        if (cleanStart) prepareKernel(); // Clean start means initializing the suite, which is not needed when loading the cfg via GUI
+    }
 
     // Explicitly setting variationsPerParallelization
     if (cfg.has_key("varPerParallelization")) applicationSettings.varPerParallelization = (int)cfg["varPerParallelization"];

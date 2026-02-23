@@ -25,8 +25,8 @@ void mainWindowMenu()
                 {
                     bool systemChanged = (std::string)cfg["system"] != selectedKernel;
                     if (systemChanged) switchToSystem((std::string)cfg["system"]);
-                    loadCfg(cfg, false, false);
-                    initializeKernel(false);
+                    loadCfg(cfg, false, false, false);
+                    //initializeKernel(false);
                 }
             }
 
