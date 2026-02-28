@@ -333,7 +333,8 @@ void prepareAndCompute(bool hires)
 	computations[0].isGPU = computations[1].isGPU = !applicationSettings.CPU_mode_interactive;
 	computationHires.isGPU = !applicationSettings.CPU_mode_hires;
 	executedOnLaunch = true;
-	computeAfterShiftSelect = false;
+	if (!hires) computeAfterShiftSelect = false;
+	else		hiresComputeAfterShiftSelect = false;
 	bufferNo = 0;
 	particleStep = 0;
 	deleteBuffers(hires);
