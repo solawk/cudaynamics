@@ -101,7 +101,7 @@ public:
 			break;
 		}
 	}
-
+	   
 	bool IsDifferentFrom(Attribute* attrib)
 	{
 		if (min != attrib->min)					return true;
@@ -111,6 +111,12 @@ public:
 		if (rangingType != attrib->rangingType) return true;
 		if (mean != attrib->mean)				return true;
 		if (deviation != attrib->deviation)		return true;
+
+		if (enumCount > 0 && enumCount == attrib->enumCount)
+		{
+			for (int i = 0; i < enumCount; i++)
+				if (enumEnabled[i] != attrib->enumEnabled[i]) return true;
+		}
 
 		return false;
 	}

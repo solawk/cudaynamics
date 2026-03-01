@@ -248,10 +248,13 @@ void listEnum(int i)
 
 	ImGui::SameLine();
 	ImGui::SetNextItemWidth(GlobalFontSettings.size * 25.0f);
-	bool isChanged = false;
+	bool isChanged = KERNELNEWCURRENT.parameters[i].IsDifferentFrom(&(KERNEL.parameters[i]));
 	ATTR_BEGIN;
+	bool enteredCombo = false;
 	if (ImGui::BeginCombo(("##ENUMSELECT_" + KERNELNEWCURRENT.parameters[i].name).c_str(), selectedCount == 0 ? "None" : selectedKernelsString.c_str()))
 	{
+		enteredCombo = true;
+		ATTR_END;
 		for (int e = 0; e < KERNELNEWCURRENT.parameters[i].enumCount; e++)
 		{
 			bool isSelected = KERNELNEWCURRENT.parameters[i].enumEnabled[e];
@@ -264,7 +267,7 @@ void listEnum(int i)
 
 		ImGui::EndCombo();
 	}
-	ATTR_END;
+	if (!enteredCombo) ATTR_END;
 
 	ImGui::SameLine();
 	ImGui::Text((std::to_string(selectedCount) + " item" + ((selectedCount % 10 != 1 || selectedCount == 11) ? "s" : "")).c_str());
