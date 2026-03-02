@@ -40,7 +40,7 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
 {
     ifMETHOD(P(method), ExplicitEuler)
     {
-        Vnext(x) = V(x) + H * (V(y) + P(a) * V(x) + P(b) * V(y) * V(z));
+        Vnext(x) = V(x) + H * (V(y) - P(a) * V(x) + P(b) * V(y) * V(z));
         Vnext(y) = V(y) + H * (P(c) * V(y) - V(x) * V(z) + V(z));
         Vnext(z) = V(z) + H * (P(d) * V(x) * V(y) - P(e) * V(z));
     }
@@ -105,5 +105,6 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
         Vnext(x) = (xmp + h2 * Vnext(y) + P(b) * Vnext(y) * Vnext(z) * h2) / ((numb)1 + P(a) * h2);
     }
 }
+
 
 #undef name
