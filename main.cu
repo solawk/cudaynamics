@@ -16,8 +16,8 @@
 cudaError_t execute(Computation* data)
 {
     // Hi-res only requires limited amount of variations
-    unsigned long long variations = !data->isHires ? CUDA_marshal.totalVariations : data->variationsInCurrentExecute;
-    unsigned long long size = CUDA_marshal.variationSize * variations;
+    uint64_t variations = !data->isHires ? CUDA_marshal.totalVariations : data->variationsInCurrentExecute;
+    uint64_t size = CUDA_marshal.variationSize * variations;
     int totalMapValues = !data->isHires ? CUDA_marshal.totalMapValuesPerVariation : 1; // We always only calculate one map in hi-res, controlled by "toCompute"s
 
     // How Hi-res is optimized:
@@ -160,7 +160,7 @@ int compute(Computation* data)
     std::chrono::steady_clock::time_point after;
 
     // Preparation
-    unsigned long long variations = 1; // Parameter/variable variations (ranging steps)
+    uint64_t variations = 1; // Parameter/variable variations (ranging steps)
 
     for (int i = 0; i < CUDA_kernel.VAR_COUNT; i++)
         if (CUDA_kernel.variables[i].TrueStepCount() > 1)
@@ -171,10 +171,10 @@ int compute(Computation* data)
             variations *= CUDA_kernel.parameters[i].stepCount;
 
     CUDA_marshal.totalVariations = (int)variations;
-    unsigned long long variationSize = CUDA_kernel.VAR_COUNT * (CUDA_kernel.steps + 1); // All steps for the current parameter/variable value combination
+    uint64_t variationSize = CUDA_kernel.VAR_COUNT * (CUDA_kernel.steps + 1); // All steps for the current parameter/variable value combination
     CUDA_marshal.variationSize = (int)variationSize;
 
-    unsigned long long variationsInBuffers = !data->isHires ? variations : min((unsigned long long)applicationSettings.varPerParallelization, variations);
+    uint64_t variationsInBuffers = !data->isHires ? variations : min((uint64_t)applicationSettings.varPerParallelization, variations);
     
     if (CUDA_marshal.trajectory == nullptr && !data->isHires)
     {
@@ -234,9 +234,9 @@ int compute(Computation* data)
         data->bufferNo = 0;
         data->otherMarshal = &(CUDA_marshal); // We trick it into thinking its own trajectory is the previous trajectory when copying the variable values (ouroboros moment)
 
-        for (unsigned long long v = 0; v < variations; v += (unsigned long long)applicationSettings.varPerParallelization)
+        for (uint64_t v = 0; v < variations; v += (uint64_t)applicationSettings.varPerParallelization)
         {
-            unsigned long long variationsCurrent = min(variations - v, (unsigned long long)applicationSettings.varPerParallelization);
+            uint64_t variationsCurrent = min(variations - v, (uint64_t)applicationSettings.varPerParallelization);
             data->variationsInCurrentExecute = variationsCurrent;
             data->startVariationInCurrentExecute = v;
 
@@ -292,13 +292,13 @@ int compute(Computation* data)
 }
 
 
-void fillAttributeBuffers(Computation* data, int* attributeStepIndices, unsigned long long startVariation, unsigned long long endVariation, bool onlyTrajectory)
+void fillAttributeBuffers(Computation* data, int* attributeStepIndices, uint64_t startVariation, uint64_t endVariation, bool onlyTrajectory)
 {
-    unsigned long long varStride = CUDA_marshal.variationSize;    // Stride between variations in "trajectory"
-    unsigned long long varInitStride = CUDA_kernel.VAR_COUNT;    // Stride between variations in "variableInits"
-    unsigned long long paramStride = CUDA_kernel.PARAM_COUNT;     // Stride between variations in "parameterVariations"
+    uint64_t varStride = CUDA_marshal.variationSize;    // Stride between variations in "trajectory"
+    uint64_t varInitStride = CUDA_kernel.VAR_COUNT;    // Stride between variations in "variableInits"
+    uint64_t paramStride = CUDA_kernel.PARAM_COUNT;     // Stride between variations in "parameterVariations"
 
-    for (unsigned long long i = 0; i < endVariation - startVariation; i++)
+    for (uint64_t i = 0; i < endVariation - startVariation; i++)
     {
         if (data->isFirst) // Meaning no previous trajectory
         {

@@ -32,7 +32,7 @@ extern ApplicationSettings applicationSettings;
 int compute(Computation*);
 
 // Fill trajectory and parameter buffers with initial values
-void fillAttributeBuffers(Computation* data, int* attributeStepIndices, unsigned long long startVariation, unsigned long long endVariation, bool onlyTrajectory);
+void fillAttributeBuffers(Computation* data, int* attributeStepIndices, uint64_t startVariation, uint64_t endVariation, bool onlyTrajectory);
 
 void setupAnFuncs(Computation*);
 

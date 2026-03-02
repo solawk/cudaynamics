@@ -156,8 +156,8 @@ std::string exportTimeSeriesCSV(const PlotWindow* window)
     if (!attributeValueIndices.empty())
         steps2Variation(&variation, attributeValueIndices.data(), &KERNEL);
 
-    const unsigned long long varStride = comp.marshal.variationSize;
-    const numb* base = comp.marshal.trajectory + varStride * (unsigned long long)variation;
+    const uint64_t varStride = comp.marshal.variationSize;
+    const numb* base = comp.marshal.trajectory + varStride * (uint64_t)variation;
 
     // file name
     const std::string systemName = safe_system_name(KERNEL);
@@ -187,7 +187,7 @@ std::string exportTimeSeriesCSV(const PlotWindow* window)
         const double x = start + (useTime ? i * (double)stepSize : i);
         f << x;
 
-        const numb* row = base + (unsigned long long)i * (unsigned long long)KERNEL.VAR_COUNT;
+        const numb* row = base + (uint64_t)i * (uint64_t)KERNEL.VAR_COUNT;
         for (int v : window->variables) {
             if (v < 0 || v >= KERNEL.VAR_COUNT) { f << ','; continue; }
             f << ',' << row[v];

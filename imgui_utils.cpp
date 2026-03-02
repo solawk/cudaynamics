@@ -1,6 +1,6 @@
 #include "imgui_utils.h"
 
-std::string memoryString(unsigned long long bytes)
+std::string memoryString(uint64_t bytes)
 {
 	if (bytes < 1024)
 	{

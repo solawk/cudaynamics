@@ -15,7 +15,7 @@
 #include "colorLUT_struct.h"
 #include "plots/trs.h"
 
-std::string memoryString(unsigned long long bytes);
+std::string memoryString(uint64_t bytes);
 std::string scaleString(float scale);
 
 void populateAxisBuffer(float* buffer, float x, float y, float z);

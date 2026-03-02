@@ -4,7 +4,7 @@
 {
     int totalAttributes = kernel->VAR_COUNT + kernel->PARAM_COUNT; for (int i = 0; i < kernel->VAR_COUNT + kernel->PARAM_COUNT; i++) steps[i] = 0;
     int localVariation = *variation;
-    for (unsigned long long i = 0; i < localVariation; i++)
+    for (uint64_t i = 0; i < localVariation; i++)
     {
         for (int j = totalAttributes - 1; j >= 0; j--)
         {

@@ -635,10 +635,10 @@ int imgui_main(int, char**)
 
 		if (!HIRES_ON)
 		{
-			unsigned long long tempTotalVariations = 1;
+			uint64_t tempTotalVariations = 1;
 			for (int v = 0; v < KERNEL.VAR_COUNT; v++)      if (KERNELNEWCURRENT.variables[v].TrueStepCount() > 1)     tempTotalVariations *= KERNELNEWCURRENT.variables[v].stepCount;
 			for (int p = 0; p < KERNEL.PARAM_COUNT; p++)    if (KERNELNEWCURRENT.parameters[p].TrueStepCount() > 1)    tempTotalVariations *= KERNELNEWCURRENT.parameters[p].stepCount;
-			unsigned long long singleBufferNumbSize = ((tempTotalVariations * KERNEL.VAR_COUNT) * (KERNELNEWCURRENT.steps + 1)) * sizeof(numb);
+			uint64_t singleBufferNumbSize = ((tempTotalVariations * KERNEL.VAR_COUNT) * (KERNELNEWCURRENT.steps + 1)) * sizeof(numb);
 			ImGui::Text(("Buffer memory: " + memoryString(singleBufferNumbSize) + " (" + std::to_string(singleBufferNumbSize) + " bytes)").c_str());
 		}
 
