@@ -11,4 +11,4 @@
 
 json::jobject saveCfg(bool saveHires, bool saveNew);
 
-bool loadCfg(json::jobject cfg, bool cleanStart, bool needPrints);
+bool loadCfg(json::jobject cfg, bool switchSystem, bool cleanStart, bool needPrints);

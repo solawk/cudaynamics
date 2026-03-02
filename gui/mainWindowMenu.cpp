@@ -4,7 +4,6 @@ void mainWindowMenu()
 {
 	if (ImGui::BeginMenuBar())
 	{
-        /*
         if (ImGui::BeginMenu("File"))
         {
             if (ImGui::MenuItem("Save computed system configuration")) 
@@ -26,14 +25,13 @@ void mainWindowMenu()
                 {
                     bool systemChanged = (std::string)cfg["system"] != selectedKernel;
                     if (systemChanged) switchToSystem((std::string)cfg["system"]);
-                    loadCfg(cfg, false, false);
-                    initializeKernel(false);
+                    loadCfg(cfg, false, false, false);
+                    //initializeKernel(false);
                 }
             }
 
             ImGui::EndMenu();
         }
-        */
 
         if (ImGui::BeginMenu("View"))
         {

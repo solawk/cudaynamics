@@ -101,7 +101,7 @@ public:
 			break;
 		}
 	}
-
+	   
 	bool IsDifferentFrom(Attribute* attrib)
 	{
 		if (min != attrib->min)					return true;
@@ -111,6 +111,12 @@ public:
 		if (rangingType != attrib->rangingType) return true;
 		if (mean != attrib->mean)				return true;
 		if (deviation != attrib->deviation)		return true;
+
+		if (enumCount > 0 && enumCount == attrib->enumCount)
+		{
+			for (int i = 0; i < enumCount; i++)
+				if (enumEnabled[i] != attrib->enumEnabled[i]) return true;
+		}
 
 		return false;
 	}
@@ -124,6 +130,14 @@ public:
 		a["max"] = max;
 		a["step"] = step;
 		a["stepCount"] = stepCount;
+
+		if (enumCount > 0)
+		{
+			std::vector<int> enumEn;
+			for (int i = 0; i < enumCount; i++) enumEn.push_back(enumEnabled[i] ? 1 : 0);
+			a["enumEnabled"] = enumEn;
+		}
+
 		return a;
 	}
 
@@ -134,5 +148,10 @@ public:
 		if (j.has_key("max"))		max = (numb)j["max"];
 		if (j.has_key("step"))		step = (numb)j["step"];
 		if (j.has_key("stepCount"))	stepCount = (int)j["stepCount"];
+		if (j.has_key("enumEnabled"))
+		{
+			int jEnums = j["enumEnabled"].array_size();
+			for (int i = 0; i < jEnums && i < MAX_ENUMS; i++) enumEnabled[i] = (int)j["enumEnabled"].array(i) > 0 ? true : false;
+		}
 	}
 };
