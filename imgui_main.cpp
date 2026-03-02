@@ -3386,7 +3386,7 @@ int imgui_main(int, char**)
 							numb stepsize = KERNEL.GetStepSize();
 							for (int i = 0; i < window->prevbufferNo - window->firstBufferNo; i++)
 							{
-								Xaxis.push_back(KERNEL.usingTime ? cmp->marshal.variationSize / krnl->VAR_COUNT * stepsize * i : cmp->marshal.variationSize / krnl->VAR_COUNT * i);
+								Xaxis.push_back(KERNEL.usingTime ? krnl->time * i + krnl->transientTime : krnl->steps * i + krnl->transientSteps );
 							}
 
 							for (int ind = 0; ind < window->variableCount; ind++)
