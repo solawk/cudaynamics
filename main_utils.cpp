@@ -76,6 +76,7 @@ Kernel readKernelText(std::string name)
 			tempAttribute.mean = (numb)atof(str[7].c_str());
 			tempAttribute.deviation = (numb)atof(str[8].c_str());
 			tempAttribute.values = nullptr;
+			tempAttribute.enumCount = 0;
 
 			tempAttribute.CalcStep();
 			tempAttribute.CalcStepCount();
@@ -99,6 +100,7 @@ Kernel readKernelText(std::string name)
 
 			tempAttribute.enumCount = (int)str.size() - 2;
 			if (tempAttribute.enumCount > MAX_ENUMS) tempAttribute.enumCount = MAX_ENUMS;
+			for (int i = 0; i < MAX_ENUMS; i++) tempAttribute.enumEnabled[i] = false;
 			for (int i = 0; i < tempAttribute.enumCount; i++)
 			{
 				tempAttribute.enumEnabled[i] = str[2 + i][0] == '1';
@@ -109,7 +111,7 @@ Kernel readKernelText(std::string name)
 			tempAttribute.CalcStep();
 			tempAttribute.CalcStepCount();
 
-			if (tempAttribute.stepCount < 2) tempAttribute.stepCount = 2;
+			//if (tempAttribute.stepCount < 2) tempAttribute.stepCount = 2;
 
 			kernel.parameters.push_back(tempAttribute);
 
@@ -201,6 +203,7 @@ Kernel readKernelText(std::string name)
 		tempAttribute.mean = (numb)atof(str[9].c_str());
 		tempAttribute.deviation = (numb)atof(str[10].c_str());
 		tempAttribute.values = nullptr;
+		tempAttribute.enumCount = 0;
 
 		tempAttribute.CalcStep();
 		tempAttribute.CalcStepCount();

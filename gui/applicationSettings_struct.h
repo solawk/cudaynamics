@@ -15,6 +15,7 @@ struct ApplicationSettings
 	static const bool CPU_mode_interactive_default = false;
 	static const bool CPU_mode_hires_default = false;
 	static const bool calculateDeltaDecay_default = true;
+	static const bool computeOnLaunch_default = true;
 	static const int threadsPerBlock_default = 32;
 	static const int varPerParallelization_default = 1000000;
 	float dragChangeSpeed_default;
@@ -26,6 +27,7 @@ struct ApplicationSettings
 	bool preciseNumbDrags;
 	bool CPU_mode_interactive, CPU_mode_hires;
 	bool calculateDeltaDecay;
+	bool computeOnLaunch;
 	int threadsPerBlock;
 	int varPerParallelization;
 	float dragChangeSpeed;
@@ -44,6 +46,7 @@ struct ApplicationSettings
 		CPU_mode_interactive = CPU_mode_interactive_default;
 		CPU_mode_hires = CPU_mode_hires_default;
 		calculateDeltaDecay = calculateDeltaDecay_default;
+		computeOnLaunch = computeOnLaunch_default;
 		threadsPerBlock = threadsPerBlock_default;
 		varPerParallelization = varPerParallelization_default;
 		dragChangeSpeed = dragChangeSpeed_default;
@@ -62,6 +65,7 @@ struct ApplicationSettings
 		settings["CPU_mode_interactive"].set_boolean(CPU_mode_interactive);
 		settings["CPU_mode_hires"].set_boolean(CPU_mode_hires);
 		settings["calculateDeltaDecay"].set_boolean(calculateDeltaDecay);
+		settings["computeOnLaunch"].set_boolean(computeOnLaunch);
 		settings["threadsPerBlock"] = threadsPerBlock;
 		settings["varPerParallelization"] = varPerParallelization;
 		settings["dragChangeSpeed"] = dragChangeSpeed;
@@ -89,6 +93,7 @@ struct ApplicationSettings
 		CPU_mode_interactive = settings.has_key("CPU_mode_interactive") ? settings["CPU_mode_interactive"].is_true() : CPU_mode_interactive_default;
 		CPU_mode_hires = settings.has_key("CPU_mode_hires") ? settings["CPU_mode_hires"].is_true() : CPU_mode_hires_default;
 		calculateDeltaDecay = settings.has_key("calculateDeltaDecay") ? settings["calculateDeltaDecay"].is_true() : calculateDeltaDecay_default;
+		computeOnLaunch = settings.has_key("computeOnLaunch") ? settings["computeOnLaunch"].is_true() : computeOnLaunch_default;
 		threadsPerBlock = settings.has_key("threadsPerBlock") ? (int)settings["threadsPerBlock"] : threadsPerBlock_default;
 		varPerParallelization = settings.has_key("varPerParallelization") ? (int)settings["varPerParallelization"] : varPerParallelization_default;
 		dragChangeSpeed = settings.has_key("dragChangeSpeed") ? (float)settings["dragChangeSpeed"] : dragChangeSpeed_default;

@@ -87,6 +87,10 @@ void mainWindowMenu()
             if (applicationSettings.threadsPerBlock < 1) applicationSettings.threadsPerBlock = 1;
             if (ImGui::IsItemDeactivatedAfterEdit()) { applicationSettings.Save(); };
 
+            ImGui::SeparatorText("Simulation");
+            ImGui::Checkbox("Compute on open", &(applicationSettings.computeOnLaunch));
+            TOOLTIP("Compute when opening a new system");
+
             ImGui::SeparatorText("Analysis");
 
             // TODO: Re-enable this as a setting that requires recomputation

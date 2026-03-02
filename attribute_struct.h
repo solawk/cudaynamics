@@ -115,7 +115,9 @@ public:
 		if (enumCount > 0 && enumCount == attrib->enumCount)
 		{
 			for (int i = 0; i < enumCount; i++)
+			{
 				if (enumEnabled[i] != attrib->enumEnabled[i]) return true;
+			}
 		}
 
 		return false;

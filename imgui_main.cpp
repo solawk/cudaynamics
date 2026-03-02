@@ -904,12 +904,13 @@ int imgui_main(int, char**)
 			ImVec4 buttonColor = ImGui::GetStyleColorVec4(ImGuiCol_Button);
 			if (playBreath) ImGui::PushStyleColor(ImGuiCol_Button, 
 				ImVec4(buttonColor.x * buttonBreathMult, buttonColor.y * buttonBreathMult, buttonColor.z * buttonBreathMult, 1.0f));
-			if (ImGui::Button("= COMPUTE =") || (KERNEL.executeOnLaunch && !executedOnLaunch) || computeAfterShiftSelect)
+			if (ImGui::Button("= COMPUTE =") || (applicationSettings.computeOnLaunch && !executedOnLaunch) || computeAfterShiftSelect)
 			{
 				prepareAndCompute(false); OrbitRedraw = true; indSeriesReset = true;
 			}
 			if (playBreath) ImGui::PopStyleColor();
 			if (!playingParticles) computationStatus(computations[0].IsInProgress(), computations[1].IsInProgress());
+			if (!applicationSettings.computeOnLaunch) executedOnLaunch = true; // Consider the check complete
 		}     
 		else
 		{
