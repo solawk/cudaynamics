@@ -67,7 +67,7 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
         numb zmp = V(z) + (numb)0.5 * H * kz1;
 
         numb kx2 = P(a) * xmp + ymp * zmp;
-        numb ky2 = P(b) * xmp + P(c) * ymp - V(x) * zmp;
+        numb ky2 = P(b) * xmp + P(c) * ymp - xmp * zmp;
         numb kz2 = -zmp - xmp * ymp;
 
         xmp = V(x) + (numb)0.5 * H * kx2;
@@ -75,7 +75,7 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
         zmp = V(z) + (numb)0.5 * H * kz2;
 
         numb kx3 = P(a) * xmp + ymp * zmp;
-        numb ky3 = P(b) * xmp + P(c) * ymp - V(x) * zmp;
+        numb ky3 = P(b) * xmp + P(c) * ymp - xmp * zmp;
         numb kz3 = -zmp - xmp * ymp;
 
         xmp = V(x) + H * kx3;
@@ -83,7 +83,7 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
         zmp = V(z) + H * kz3;
 
         numb kx4 = P(a) * xmp + ymp * zmp;
-        numb ky4 = P(b) * xmp + P(c) * ymp - V(x) * zmp;
+        numb ky4 = P(b) * xmp + P(c) * ymp - xmp * zmp;
         numb kz4 = -zmp - xmp * ymp;
 
         Vnext(x) = V(x) + H * (kx1 + (numb)2 * kx2 + (numb)2 * kx3 + kx4) / (numb)6;
@@ -105,5 +105,6 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
         Vnext(x) = (xmp + Vnext(y) * Vnext(z) * h2) / ((numb)1 - P(a) * h2);
     }
 }
+
 
 #undef name
