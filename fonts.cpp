@@ -104,10 +104,10 @@ void LoadFont(std::string name, std::string path1, std::string path2, ImGuiIO& i
             family.sizeVariants[size][s] = nullptr;
         }
 
-        family.sizeVariants[size][FS_REGULAR]       = io.Fonts->AddFontFromFileTTF((path1 + path2).c_str(), (float)size);
-        family.sizeVariants[size][FS_BOLD]          = io.Fonts->AddFontFromFileTTF((path1 + "-Bold" + path2).c_str(), (float)size);
-        family.sizeVariants[size][FS_ITALIC]        = io.Fonts->AddFontFromFileTTF((path1 + "-Italic" + path2).c_str(), (float)size);
-        family.sizeVariants[size][FS_BOLD_ITALIC]   = io.Fonts->AddFontFromFileTTF((path1 + "-BoldItalic" + path2).c_str(), (float)size);
+        family.sizeVariants[size][FS_REGULAR]       = io.Fonts->AddFontFromFileTTF((path1 + path2).c_str(), (float)size, nullptr, io.Fonts->GetGlyphRangesGreek());
+        family.sizeVariants[size][FS_BOLD]          = io.Fonts->AddFontFromFileTTF((path1 + "-Bold" + path2).c_str(), (float)size, nullptr, io.Fonts->GetGlyphRangesGreek());
+        family.sizeVariants[size][FS_ITALIC]        = io.Fonts->AddFontFromFileTTF((path1 + "-Italic" + path2).c_str(), (float)size, nullptr, io.Fonts->GetGlyphRangesGreek());
+        family.sizeVariants[size][FS_BOLD_ITALIC]   = io.Fonts->AddFontFromFileTTF((path1 + "-BoldItalic" + path2).c_str(), (float)size, nullptr, io.Fonts->GetGlyphRangesGreek());
 
         if (!family.sizeVariants[size][FS_BOLD])            family.sizeVariants[size][FS_BOLD] = family.sizeVariants[size][FS_REGULAR];
         if (!family.sizeVariants[size][FS_ITALIC])          family.sizeVariants[size][FS_ITALIC] = family.sizeVariants[size][FS_REGULAR];
