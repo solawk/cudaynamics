@@ -68,7 +68,7 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
 
         numb kx2 = P(sigma) * (-xmp + ymp) + P(kappa) * sin(ymp / P(gamma)) * sin(zmp / P(gamma));
         numb ky2 = -xmp * zmp + P(rho) * xmp - ymp + P(kappa) * sin(xmp / P(gamma)) * sin(zmp / P(gamma));
-        numb kz2 = xmp * ymp - P(betta) * zmp + P(kappa) * cos(ymp / P(gamma)) * cos(zmp / P(gamma));
+        numb kz2 = xmp * ymp - P(betta) * zmp + P(kappa) * cos(ymp / P(gamma)) * cos(xmp / P(gamma));
 
         xmp = V(x) + (numb)0.5 * H * kx2;
         ymp = V(y) + (numb)0.5 * H * ky2;
@@ -76,7 +76,7 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
 
         numb kx3 = P(sigma) * (-xmp + ymp) + P(kappa) * sin(ymp / P(gamma)) * sin(zmp / P(gamma));
         numb ky3 = -xmp * zmp + P(rho) * xmp - ymp + P(kappa) * sin(xmp / P(gamma)) * sin(zmp / P(gamma));
-        numb kz3 = xmp * ymp - P(betta) * zmp + P(kappa) * cos(ymp / P(gamma)) * cos(zmp / P(gamma));
+        numb kz3 = xmp * ymp - P(betta) * zmp + P(kappa) * cos(ymp / P(gamma)) * cos(xmp / P(gamma));
 
         xmp = V(x) + H * kx3;
         ymp = V(y) + H * ky3;
@@ -84,7 +84,7 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
 
         numb kx4 = P(sigma) * (-xmp + ymp) + P(kappa) * sin(ymp / P(gamma)) * sin(zmp / P(gamma));
         numb ky4 = -xmp * zmp + P(rho) * xmp - ymp + P(kappa) * sin(xmp / P(gamma)) * sin(zmp / P(gamma));
-        numb kz4 = xmp * ymp - P(betta) * zmp + P(kappa) * cos(ymp / P(gamma)) * cos(zmp / P(gamma));
+        numb kz4 = xmp * ymp - P(betta) * zmp + P(kappa) * cos(ymp / P(gamma)) * cos(xmp / P(gamma));
 
         Vnext(x) = V(x) + H * (kx1 + (numb)2.0 * kx2 + (numb)2.0 * kx3 + kx4) / (numb)6.0;
         Vnext(y) = V(y) + H * (ky1 + (numb)2.0 * ky2 + (numb)2.0 * ky3 + ky4) / (numb)6.0;
@@ -104,7 +104,7 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
         if (fabs(denom_z) < (numb)1e-6) denom_z = copysign((numb)1e-6, denom_z);
         Vnext(z) = (z1 + h2 * (x1 * y1 + P(kappa) * cos(y1 / P(gamma)) * cos(x1 / P(gamma)))) / denom_z;
 
-        numb denom_y = ((numb)1.0 + h2 * P(betta));
+        numb denom_y = ((numb)1.0 + h2);
         if (fabs(denom_y) < (numb)1e-6) denom_y = copysign((numb)1e-6, denom_y);
         Vnext(y) = (y1 + h2 * (-x1 * Vnext(z) + P(rho) * x1 + P(kappa) * sin(x1 / P(gamma)) * sin(Vnext(z) / P(gamma)))) / denom_y;
 

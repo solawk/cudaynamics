@@ -62,35 +62,35 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
         Vnext(z) = V(z) + H * (-zmp + sin(P(b) * xmp));
     }
 
-    /*ifMETHOD(P(method), ExplicitRungeKutta4)
+    ifMETHOD(P(method), ExplicitRungeKutta4)
     {
-        numb kx1 = P(sigma) * (V(y) - V(x));
-        numb ky1 = V(x) * (P(rho) - V(z)) - V(y);
-        numb kz1 = V(x) * V(y) - P(beta) * V(z);
+        numb kx1 = -V(y) + P(a) * V(z);
+        numb ky1 = V(x);
+        numb kz1 = -V(z) + sin(P(b) * V(x));
 
         numb xmp = V(x) + (numb)0.5 * H * kx1;
         numb ymp = V(y) + (numb)0.5 * H * ky1;
         numb zmp = V(z) + (numb)0.5 * H * kz1;
 
-        numb kx2 = P(sigma) * (ymp - xmp);
-        numb ky2 = xmp * (P(rho) - zmp) - ymp;
-        numb kz2 = xmp * ymp - P(beta) * zmp;
+        numb kx2 = -ymp + P(a) * zmp;
+        numb ky2 = xmp;
+        numb kz2 = -zmp + sin(P(b) * xmp);
 
         xmp = V(x) + (numb)0.5 * H * kx2;
         ymp = V(y) + (numb)0.5 * H * ky2;
         zmp = V(z) + (numb)0.5 * H * kz2;
 
-        numb kx3 = P(sigma) * (ymp - xmp);
-        numb ky3 = xmp * (P(rho) - zmp) - ymp;
-        numb kz3 = xmp * ymp - P(beta) * zmp;
+        numb kx3 = -ymp + P(a) * zmp;
+        numb ky3 = xmp;
+        numb kz3 = -zmp + sin(P(b) * xmp);
 
         xmp = V(x) + H * kx3;
         ymp = V(y) + H * ky3;
         zmp = V(z) + H * kz3;
 
-        numb kx4 = P(sigma) * (ymp - xmp);
-        numb ky4 = xmp * (P(rho) - zmp) - ymp;
-        numb kz4 = xmp * ymp - P(beta) * zmp;
+        numb kx4 = -ymp + P(a) * zmp;
+        numb ky4 = xmp;
+        numb kz4 = -zmp + sin(P(b) * xmp);
 
         Vnext(x) = V(x) + H * (kx1 + (numb)2.0 * kx2 + (numb)2.0 * kx3 + kx4) / (numb)6.0;
         Vnext(y) = V(y) + H * (ky1 + (numb)2.0 * ky2 + (numb)2.0 * ky3 + ky4) / (numb)6.0;
@@ -102,14 +102,14 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
         numb h1 = (numb)0.5 * H - P(symmetry);
         numb h2 = (numb)0.5 * H + P(symmetry);
 
-        numb xmp = V(x) + h1 * (P(sigma) * (V(y) - V(x)));
-        numb ymp = V(y) + h1 * (xmp * (P(rho) - V(z)) - V(y));
-        numb zmp = V(z) + h1 * (xmp * ymp - P(beta) * V(z));
+        numb xmp = V(x) + h1 * (-V(y) + P(a) * V(z));
+        numb ymp = V(y) + h1 * xmp;
+        numb zmp = V(z) + h1 * (-V(z) + sin(P(b) * xmp));
 
-        Vnext(z) = (zmp + xmp * ymp * h2) / ((numb)1.0 + P(beta) * h2);
-        Vnext(y) = (ymp + xmp * (P(rho) - Vnext(z)) * h2) / ((numb)1.0 + h2);
-        Vnext(x) = (xmp + P(sigma) * Vnext(y) * h2) / ((numb)1.0 + P(sigma) * h2);
-    }*/
+        Vnext(z) = (zmp + h2 * sin(P(b) * xmp)) / (1 + h2);
+        Vnext(y) = ymp + h2 * xmp;
+        Vnext(x) = xmp - h2 * Vnext(y) + h2 * P(a) * Vnext(z);
+    }
 }
 
 #undef name
