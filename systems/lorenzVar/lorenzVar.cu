@@ -97,19 +97,19 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
         numb h2 = (numb)0.5 * H + P(symmetry);
 
         numb x1 = V(x) + h1 * (P(sigma) * (-V(x) + V(y)) + P(kappa) * sin(V(y) / P(gamma)) * sin(V(z) / P(gamma)));
-        numb y1 = V(y) + h1 * (-V(x) * V(z) + P(rho) * V(x) - V(y) + P(kappa) * sin(V(x) / P(gamma)) * sin(V(z) / P(gamma)));
-        numb z1 = V(z) + h1 * (V(x) * V(y) - P(betta) * V(z) + P(kappa) * cos(V(y) / P(gamma)) * cos(V(x) / P(gamma)));
+        numb y1 = V(y) + h1 * (-x1 * V(z) + P(rho) * x1 - V(y) + P(kappa) * sin(x1 / P(gamma)) * sin(V(z) / P(gamma)));
+        numb z1 = V(z) + h1 * (x1 * y1 - P(betta) * V(z) + P(kappa) * cos(y1 / P(gamma)) * cos(x1 / P(gamma)));
 
         numb denom_z = ((numb)1.0 + h2 * P(betta));
-        if (fabs(denom_z) < (numb)1e-6) denom_z = copysign((numb)1e-6, denom_z);
+        if (abs(denom_z) < (numb)1e-6) denom_z = copysign((numb)1e-6, denom_z);
         Vnext(z) = (z1 + h2 * (x1 * y1 + P(kappa) * cos(y1 / P(gamma)) * cos(x1 / P(gamma)))) / denom_z;
 
         numb denom_y = ((numb)1.0 + h2);
-        if (fabs(denom_y) < (numb)1e-6) denom_y = copysign((numb)1e-6, denom_y);
+        if (abs(denom_y) < (numb)1e-6) denom_y = copysign((numb)1e-6, denom_y);
         Vnext(y) = (y1 + h2 * (-x1 * Vnext(z) + P(rho) * x1 + P(kappa) * sin(x1 / P(gamma)) * sin(Vnext(z) / P(gamma)))) / denom_y;
 
         numb denom_x = ((numb)1.0 + h2 * P(sigma));
-        if (fabs(denom_x) < (numb)1e-6) denom_x = copysign((numb)1e-6, denom_x);
+        if (abs(denom_x) < (numb)1e-6) denom_x = copysign((numb)1e-6, denom_x);
         Vnext(x) = (x1 + h2 * (P(sigma) * Vnext(y) + P(kappa) * sin(Vnext(y) / P(gamma)) * sin(Vnext(z) / P(gamma)))) / denom_x;
     }
 }
