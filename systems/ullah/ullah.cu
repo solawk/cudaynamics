@@ -91,7 +91,7 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
             j_in = P(v5) + P(v6) * pmp * pmp / (P(k2) * P(k2) + pmp * pmp);
             j_out = P(k1) * qmp;
 
-            numb kp2 = ((P(c_IP3_e) - pmp) / P(tau_IP3) + j_PLC + jmp);
+            numb kp2 = ((P(c_IP3_e) - pmp) / P(tau_IP3) + j_PLC +  Vnext(j));
             numb kq2 = j_ch - j_pump + j_leak + j_in - j_out;
             numb kz2 = P(a2) * (P(d2) * (pmp + P(d1)) / (pmp + P(d3)) * ((numb)1.0 - zmp) - zmp * qmp);
 
@@ -273,7 +273,7 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
             j_in = P(v5) + P(v6) * pmp * pmp / (P(k2) * P(k2) + pmp * pmp);
             j_out = P(k1) * qmp;
 
-            numb kp2 = ((P(c_IP3_e) - pmp) / P(tau_IP3) + j_PLC + jmp);
+            numb kp2 = ((P(c_IP3_e) - pmp) / P(tau_IP3) + j_PLC +  Vnext(j));
             numb kq2 = j_ch - j_pump + j_leak + j_in - j_out;
             numb kz2 = P(a2) * (P(d2) * (pmp + P(d1)) / (pmp + P(d3)) * ((numb)1.0 - zmp) - zmp * qmp);
 
@@ -455,7 +455,7 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
             j_in = P(v5) + P(v6) * pmp * pmp / (P(k2) * P(k2) + pmp * pmp);
             j_out = P(k1) * qmp;
 
-            numb kp2 = ((P(c_IP3_e) - pmp) / P(tau_IP3) + j_PLC + jmp);
+            numb kp2 = ((P(c_IP3_e) - pmp) / P(tau_IP3) + j_PLC +  Vnext(j));
             numb kq2 = j_ch - j_pump + j_leak + j_in - j_out;
             numb kz2 = P(a2) * (P(d2) * (pmp + P(d1)) / (pmp + P(d3)) * ((numb)1.0 - zmp) - zmp * qmp);
 
@@ -587,5 +587,6 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
         }
     }
 }
+
 
 #undef name
