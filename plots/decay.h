@@ -75,7 +75,7 @@ struct DecayProperties
 		for (int t = 0; t < thresholdCount; t++)
 		{
 			int decayAlive = 0, decayTotal = cmp->marshal.totalVariations;
-			buffer[t].push_back(!KERNEL.usingTime ? (cmp->bufferNo * KERNEL.steps + KERNEL.transientSteps) : (cmp->bufferNo * KERNEL.time + KERNEL.transientTime));
+			buffer[t].push_back(!KERNEL.usingTime ? (cmp->bufferNo * KERNEL.targetSteps + KERNEL.transientSteps) : (cmp->bufferNo * KERNEL.time + KERNEL.transientTime));
 
 			for (int i = 0; i < cmp->marshal.totalVariations; i++)
 			{

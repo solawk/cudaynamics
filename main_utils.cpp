@@ -16,6 +16,8 @@ Kernel readKernelText(std::string name)
 	bool stepLineFound = false;
 	std::string stepLine = "";
 	kernel.stepType = ST_Parameter;
+	kernel.useDecimation = false;
+	kernel.decimationCoef = 1.0f;
 
 	for (std::string line; std::getline(fileStream, line); )
 	{

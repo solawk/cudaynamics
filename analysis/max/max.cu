@@ -13,7 +13,7 @@ __host__ __device__ void MAX(Computation* data, uint64_t variation, void(* finit
     numb minValue = 0.0, maxValue = 0.0;
     numb prevMin, prevMax;
 
-    for (int s = 0; s < CUDA_kernel.steps; s++)
+    for (int s = 0; s < CUDA_kernel.targetSteps; s++)
     {
         stepStart = variationStart + s * CUDA_kernel.VAR_COUNT;
 

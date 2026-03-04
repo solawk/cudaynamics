@@ -171,7 +171,7 @@ int compute(Computation* data)
             variations *= CUDA_kernel.parameters[i].stepCount;
 
     CUDA_marshal.totalVariations = (int)variations;
-    uint64_t variationSize = CUDA_kernel.VAR_COUNT * (CUDA_kernel.steps + 1); // All steps for the current parameter/variable value combination
+    uint64_t variationSize = CUDA_kernel.VAR_COUNT * (CUDA_kernel.targetSteps + 1); // All steps for the current parameter/variable value combination
     CUDA_marshal.variationSize = (int)variationSize;
 
     uint64_t variationsInBuffers = !data->isHires ? variations : min((uint64_t)applicationSettings.varPerParallelization, variations);
@@ -324,7 +324,7 @@ void fillAttributeBuffers(Computation* data, int* attributeStepIndices, uint64_t
                     // Left side is the first step of the trajectory
                     // Right side is the last step of the previous trajectory
                     CUDA_marshal.trajectory[i * varStride + v] = CUDA_marshal.variableInits[i * varInitStride + v]
-                        = data->otherMarshal->trajectory[i * varStride + (CUDA_kernel.steps * CUDA_kernel.VAR_COUNT) + v];
+                        = data->otherMarshal->trajectory[i * varStride + (CUDA_kernel.targetSteps * CUDA_kernel.VAR_COUNT) + v];
                 }
                 else
                 {

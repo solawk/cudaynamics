@@ -168,7 +168,7 @@ std::string exportTimeSeriesCSV(const PlotWindow* window)
     // X axis
     const bool useTime = KERNEL.usingTime;
     const numb stepSize = KERNEL.GetStepSize();
-    const double start = (double)(bufferNo * KERNEL.steps + KERNEL.transientSteps) *
+    const double start = (double)(bufferNo * KERNEL.targetSteps + KERNEL.transientSteps) *
         (useTime ? (double)stepSize : 1.0);
 
     // === Title ===

@@ -18,7 +18,7 @@
 //  - When step size is fixed, step counts can be different for different variations. We either resort to allocating memory for maximum amount of steps or automatically decimate the trajectories.
 //  - When step size is variable, we can only set the maximum amount of steps, that we expect to not exhaust by a certain time. For clarity, we should export elapsed simulation time and used steps.
 // 2. Decimation should work by only recording a portion of the steps. By having a target step count we decide if we record the step or not.
-//  - We introduce local recording counters in a kernel, a float and an int. If there is no decimation, the float one incremented by 1.0 each step. Whenever floor(float counter) >= 1.0, a step is recorded.
+//  - We introduce local recording counters in a kernel, a float and an int. If there is no decimation, the float one incremented by 1.0 each step. Whenever float counter >= 1.0, a step is recorded.
 //  - If there is decimation, it is incremented by DecimatedSteps/SimulationSteps. E.g., if 400 steps are decimated into 100, we increment the float counter by 0.25 each step, recording every fourth step.
 //  - If decimation is irrational, e.g. 9 sim steps into 5: +Start, 5/9, +10/9, 15/9, +20/9, 25/9, +30/9, 35/9, +40/9, +45/9. The last step is always recorded.
 //  - 11 steps into 3: +Start, 3/11, 6/11, 9/11, +12/11, 15/11, 18/11, 21/11, +24/11, 27/11, 30/11, +33/11
@@ -38,6 +38,10 @@ public:
 	float time;
 	float transientTime;
 	bool usingTime;
+
+	bool useDecimation;
+	int targetSteps; // Taking decimation into account
+	float decimationCoef;
 
 	StepType stepType;
 
@@ -76,6 +80,11 @@ public:
 		usingTime = kernel->usingTime;
 		executeOnLaunch = kernel->executeOnLaunch;
 		mapWeight = kernel->mapWeight;
+
+		useDecimation = kernel->useDecimation;
+		targetSteps = kernel->targetSteps;
+		decimationCoef = kernel->decimationCoef;
+
 		stepType = kernel->stepType;
 
 		for (Attribute& v : variables)	v.ClearValues(); variables.clear();
@@ -155,6 +164,10 @@ public:
 	float transientTime;
 	bool usingTime;
 
+	bool useDecimation;
+	int targetSteps;
+	float decimationCoef;
+
 	StepType stepType;
 
 	Attribute variables[MAX_ATTRIBUTES];
@@ -178,6 +191,11 @@ public:
 		transientTime = kernel->transientTime;
 		usingTime = kernel->usingTime;
 		mapWeight = kernel->mapWeight;
+
+		useDecimation = kernel->useDecimation;
+		targetSteps = kernel->targetSteps;
+		decimationCoef = kernel->decimationCoef;
+
 		stepType = kernel->stepType;
 
 		for (int i = 0; i < kernel->VAR_COUNT; i++)
@@ -199,6 +217,11 @@ public:
 		kernel->steps = steps;
 		kernel->transientSteps = transientSteps;
 		kernel->mapWeight = mapWeight;
+
+		useDecimation = kernel->useDecimation;
+		targetSteps = kernel->targetSteps;
+		decimationCoef = kernel->decimationCoef;
+		
 		kernel->stepType = stepType;
 
 		for (Attribute& v : kernel->variables)	v.ClearValues(); kernel->variables.clear();

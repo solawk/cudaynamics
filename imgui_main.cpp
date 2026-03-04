@@ -130,7 +130,7 @@ void deleteBuffers(bool deleteHires)
 void resetTempBuffers(Computation* data)
 {
 	if (dataBuffer) delete[] dataBuffer;
-	dataBuffer = new numb[(CUDA_kernel.steps + 1) * KERNEL.VAR_COUNT];
+	dataBuffer = new numb[(CUDA_kernel.targetSteps + 1) * KERNEL.VAR_COUNT];
 
 	if (particleBuffer) delete[] particleBuffer;
 	particleBuffer = new numb[CUDA_marshal.totalVariations * KERNEL.VAR_COUNT];
@@ -168,7 +168,7 @@ int asyncComputation()
 	computations[bufferToFillIndex].marshal.kernel.CopyFrom(&KERNEL);
 
 	int computationResult = compute(&(computations[bufferToFillIndex]));
-	computedSteps = KERNEL.steps;
+	computedSteps = KERNEL.targetSteps;
 
 	if (isFirstBatch)
 	{
@@ -638,7 +638,7 @@ int imgui_main(int, char**)
 			uint64_t tempTotalVariations = 1;
 			for (int v = 0; v < KERNEL.VAR_COUNT; v++)      if (KERNELNEWCURRENT.variables[v].TrueStepCount() > 1)     tempTotalVariations *= KERNELNEWCURRENT.variables[v].stepCount;
 			for (int p = 0; p < KERNEL.PARAM_COUNT; p++)    if (KERNELNEWCURRENT.parameters[p].TrueStepCount() > 1)    tempTotalVariations *= KERNELNEWCURRENT.parameters[p].stepCount;
-			uint64_t singleBufferNumbSize = ((tempTotalVariations * KERNEL.VAR_COUNT) * (KERNELNEWCURRENT.steps + 1)) * sizeof(numb);
+			uint64_t singleBufferNumbSize = ((tempTotalVariations * KERNEL.VAR_COUNT) * (KERNELNEWCURRENT.targetSteps + 1)) * sizeof(numb);
 			ImGui::Text(("Buffer memory: " + memoryString(singleBufferNumbSize) + " (" + std::to_string(singleBufferNumbSize) + " bytes)").c_str());
 		}
 
@@ -734,6 +734,16 @@ int imgui_main(int, char**)
 			POP_FRAME(3);
 		}
 
+		if (!HIRES_ON)
+		{
+			ImGui::Checkbox("Use decimation", &(KERNELNEWCURRENT.useDecimation));
+			if (KERNELNEWCURRENT.useDecimation)
+				ImGui::InputFloat("Decimation", &(KERNELNEWCURRENT.decimationCoef), 1.0f, 10.0f, "%.3f", playingParticles ? ImGuiInputTextFlags_ReadOnly : 0);
+			KERNELNEWCURRENT.targetSteps = !KERNELNEWCURRENT.useDecimation ? KERNELNEWCURRENT.steps : KERNELNEWCURRENT.steps / KERNELNEWCURRENT.decimationCoef;
+		}
+		else 
+			KERNELNEWCURRENT.targetSteps = KERNELNEWCURRENT.steps;
+
 		variation = 0;
 
 		ImGui::NewLine();
@@ -763,9 +773,9 @@ int imgui_main(int, char**)
 			TOOLTIP("Predicted speed that allows for seamless playback");
 
 			ImGui::SetNextItemWidth(200.0f);
-			ImGui::DragInt("##Animation step", &(particleStep), 1.0f, 0, KERNEL.steps);
+			ImGui::DragInt("##Animation step", &(particleStep), 1.0f, 0, KERNEL.targetSteps);
 			ImGui::SameLine();
-			ImGui::Text(("Animation step" + (continuousComputingEnabled ? " (total step " + std::to_string(bufferNo * KERNEL.steps + particleStep) + ")" : "")).c_str());
+			ImGui::Text(("Animation step" + (continuousComputingEnabled ? " (total step " + std::to_string(bufferNo * KERNEL.targetSteps + particleStep) + ")" : "")).c_str());
 
 			if (ImGui::Button("Reset to step 0")) particleStep = 0;
 
@@ -802,7 +812,7 @@ int imgui_main(int, char**)
 				particlePhase -= (float)passedSteps;
 
 				particleStep += passedSteps;
-				if (particleStep > KERNEL.steps) // Reached the end of animation
+				if (particleStep > KERNEL.targetSteps) // Reached the end of animation
 				{
 					if (continuousComputingEnabled)
 					{
@@ -813,7 +823,7 @@ int imgui_main(int, char**)
 					else
 					{
 						// Stopping
-						particleStep = KERNEL.steps;
+						particleStep = KERNEL.targetSteps;
 						playingParticles = false;
 					}
 				}
@@ -1572,7 +1582,7 @@ int imgui_main(int, char**)
 
 						bool isTime = KERNEL.usingTime;
 						float stepSize = KERNEL.GetStepSize();
-						float start = !isTime ? bufferNo * KERNEL.steps + KERNEL.transientSteps : (bufferNo * KERNEL.steps + KERNEL.transientSteps) * stepSize;
+						float start = !isTime ? bufferNo * KERNEL.targetSteps + KERNEL.transientSteps : (bufferNo * KERNEL.targetSteps + KERNEL.transientSteps) * stepSize;
 						float scale = !isTime ? 1.0f : stepSize;
 
 						if (!window->ShowMultAxes) ImPlot::SetupAxes(KERNEL.usingTime ? "Time" : "Steps", "Variable");
@@ -1815,7 +1825,7 @@ int imgui_main(int, char**)
 						}
 						else if (particleBuffer != nullptr) // Particles - all variations, one certain step
 						{
-							if (particleStep > KERNEL.steps) particleStep = KERNEL.steps;
+							if (particleStep > KERNEL.targetSteps) particleStep = KERNEL.targetSteps;
 							int totalVariations = computations[playedBufferIndex].marshal.totalVariations;
 							int varCount = KERNEL.VAR_COUNT; // If you don't make this local, it increases the copying time by 30 times, tee-hee
 							uint64_t variationSize = computations[playedBufferIndex].marshal.variationSize;
@@ -3132,7 +3142,7 @@ int imgui_main(int, char**)
 							numb stepsize = KERNEL.GetStepSize();
 							for (int i = 0; i < window->prevbufferNo - window->firstBufferNo; i++)
 							{
-								Xaxis.push_back(KERNEL.usingTime ? krnl->time * i + krnl->transientTime : krnl->steps * i + krnl->transientSteps );
+								Xaxis.push_back(KERNEL.usingTime ? krnl->time * i + krnl->transientTime : krnl->targetSteps * i + krnl->transientSteps );
 							}
 
 							for (int ind = 0; ind < window->variableCount; ind++)
