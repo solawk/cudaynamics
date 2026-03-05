@@ -91,7 +91,7 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
             j_in = P(v5) + P(v6) * pmp * pmp / (P(k2) * P(k2) + pmp * pmp);
             j_out = P(k1) * qmp;
 
-            numb kp2 = ((P(c_IP3_e) - pmp) / P(tau_IP3) + j_PLC +  Vnext(j));
+            numb kp2 = ((P(c_IP3_e) - pmp) / P(tau_IP3) + j_PLC + jmp);
             numb kq2 = j_ch - j_pump + j_leak + j_in - j_out;
             numb kz2 = P(a2) * (P(d2) * (pmp + P(d1)) / (pmp + P(d3)) * ((numb)1.0 - zmp) - zmp * qmp);
 
@@ -181,16 +181,16 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
 
         ifMETHOD(P(method), VariableSymmetryCD)
         {
+
+
+
             numb h1 = (numb)0.5 * H - P(symmetry);
             numb h2 = (numb)0.5 * H + P(symmetry);
 
-            numb tmp = V(t) + h1;
-            numb jmp = P(Jdc) + (fmod((tmp - P(Jdel)) > (numb)0.0 ? (tmp - P(Jdel)) :
-                (P(Jdf) / P(Jfreq) + P(Jdel) - tmp),
+            numb jmp = P(Jdc) + (fmod((V(t) - P(Jdel)) > (numb)0.0 ? (V(t)- P(Jdel)) :
+                (P(Jdf) / P(Jfreq) + P(Jdel) - V(t)),
                 (numb)1.0 / P(Jfreq)) < P(Jdf) / P(Jfreq) ? P(Jamp) : (numb)0.0);
 
-            Vnext(j) = jmp;
-            Vnext(t) = V(t) + H;
 
             numb j_ch = (P(c1) * P(v1) * V(p) * V(p) * V(p) * V(z) * V(z) * V(z) * V(q) * V(q) * V(q) *
                 (P(c0) / P(c1) - ((numb)1.0 + (numb)1.0 / P(c1)) * V(q))) /
@@ -201,9 +201,35 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
             numb j_in = P(v5) + P(v6) * V(p) * V(p) / (P(k2) * P(k2) + V(p) * V(p));
             numb j_out = P(k1) * V(q);
 
-            numb pmp = V(p) + h1 * (((P(c_IP3_e) - V(p)) / P(tau_IP3) + j_PLC + jmp));
+            numb pmp = V(p) + h1 * ((P(c_IP3_e) - V(p)) / P(tau_IP3) + j_PLC + jmp);
+            j_ch = (P(c1) * P(v1) * pmp * pmp * pmp * V(z) * V(z) * V(z) * V(q) * V(q) * V(q) *
+                (P(c0) / P(c1) - ((numb)1.0 + (numb)1.0 / P(c1)) * V(q))) /
+                (((pmp + P(d1)) * (V(q) + P(d5))) * ((pmp + P(d1)) * (V(q) + P(d5))) * ((pmp + P(d1)) * (V(q) + P(d5))));
+            j_PLC = P(v4) * (V(q) + ((numb)1.0 - P(alpha)) * P(k4)) / (V(q) + P(k4));
+            j_leak = P(c1) * P(v2) * (P(c0) / P(c1) - ((numb)1.0 + (numb)1.0 / P(c1)) * V(q));
+            j_pump = ((P(v3) * V(q) * V(q)) / (P(k3) * P(k3) + V(q) * V(q)));
+            j_in = P(v5) + P(v6) * pmp * pmp / (P(k2) * P(k2) + pmp * pmp);
+            j_out = P(k1) * V(q);
+
             numb qmp = V(q) + h1 * (j_ch - j_pump + j_leak + j_in - j_out);
-            numb zmp = V(z) + h1 * (P(a2) * (P(d2) * (V(p) + P(d1)) / (V(p) + P(d3)) * ((numb)1.0 - V(z)) - V(z) * V(q)));
+            j_ch = (P(c1) * P(v1) * pmp * pmp * pmp * V(z) * V(z) * V(z) * qmp * qmp * qmp *
+                (P(c0) / P(c1) - ((numb)1.0 + (numb)1.0 / P(c1)) * qmp)) /
+                (((pmp + P(d1)) * (qmp + P(d5))) * ((pmp + P(d1)) * (qmp + P(d5))) * ((pmp + P(d1)) * (qmp + P(d5))));
+            j_PLC = P(v4) * (qmp + ((numb)1.0 - P(alpha)) * P(k4)) / (qmp + P(k4));
+            j_leak = P(c1) * P(v2) * (P(c0) / P(c1) - ((numb)1.0 + (numb)1.0 / P(c1)) * qmp);
+            j_pump = ((P(v3) * qmp * qmp) / (P(k3) * P(k3) + qmp * qmp));
+            j_in = P(v5) + P(v6) * pmp * pmp / (P(k2) * P(k2) + pmp * pmp);
+            j_out = P(k1) * V(q);
+
+            numb zmp = V(z) + h1 * (P(a2) * (P(d2) * (pmp + P(d1)) / (pmp + P(d3)) * ((numb)1.0 - V(z)) - V(z) * qmp));
+
+            ////
+            Vnext(t) = V(t) + H;
+
+
+            Vnext(j) = P(Jdc) + (fmod((Vnext(t) - P(Jdel)) > (numb)0.0 ? (Vnext(t) - P(Jdel)) :
+                (P(Jdf) / P(Jfreq) + P(Jdel) - Vnext(t)),
+                (numb)1.0 / P(Jfreq)) < P(Jdf) / P(Jfreq) ? P(Jamp) : (numb)0.0);
 
             j_ch = (P(c1) * P(v1) * pmp * pmp * pmp * zmp * zmp * zmp * qmp * qmp * qmp *
                 (P(c0) / P(c1) - ((numb)1.0 + (numb)1.0 / P(c1)) * qmp)) /
@@ -212,11 +238,129 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
             j_leak = P(c1) * P(v2) * (P(c0) / P(c1) - ((numb)1.0 + (numb)1.0 / P(c1)) * qmp);
             j_pump = ((P(v3) * qmp * qmp) / (P(k3) * P(k3) + qmp * qmp));
             j_in = P(v5) + P(v6) * pmp * pmp / (P(k2) * P(k2) + pmp * pmp);
-            j_out = P(k1) * qmp;
+            j_out = P(k1) * V(q);
 
-            Vnext(p) = pmp + h2 * (((P(c_IP3_e) - pmp) / P(tau_IP3) + j_PLC + jmp));
+            Vnext(z) = (zmp + (h2 * P(a2) * P(d2) * (pmp + P(d1))) / (pmp + P(d3))) / (1 + h2 * P(a2) * P(d2) * (pmp + P(d1)) / (pmp + P(d3)) + h2 * P(a2) * qmp);
+            j_ch = (P(c1) * P(v1) * pmp * pmp * pmp * Vnext(z) * Vnext(z) * Vnext(z) * qmp * qmp * qmp *
+                (P(c0) / P(c1) - ((numb)1.0 + (numb)1.0 / P(c1)) * qmp)) /
+                (((pmp + P(d1)) * (qmp + P(d5))) * ((pmp + P(d1)) * (qmp + P(d5))) * ((pmp + P(d1)) * (qmp + P(d5))));
+            j_PLC = P(v4) * (qmp + ((numb)1.0 - P(alpha)) * P(k4)) / (qmp + P(k4));
+            j_leak = P(c1) * P(v2) * (P(c0) / P(c1) - ((numb)1.0 + (numb)1.0 / P(c1)) * qmp);
+            j_pump = ((P(v3) * qmp * qmp) / (P(k3) * P(k3) + qmp * qmp));
+            j_in = P(v5) + P(v6) * pmp * pmp / (P(k2) * P(k2) + pmp * pmp);
+            j_out = P(k1) * V(q);
+
+            Vnext(z) = (zmp + (h2 * P(a2) * P(d2) * (pmp + P(d1))) / (pmp + P(d3))) / (1 + h2 * P(a2) * P(d2) * (pmp + P(d1)) / (pmp + P(d3)) + h2 * P(a2) * qmp);
+            j_ch = (P(c1) * P(v1) * pmp * pmp * pmp * Vnext(z) * Vnext(z) * Vnext(z) * qmp * qmp * qmp *
+                (P(c0) / P(c1) - ((numb)1.0 + (numb)1.0 / P(c1)) * qmp)) /
+                (((pmp + P(d1)) * (qmp + P(d5))) * ((pmp + P(d1)) * (qmp + P(d5))) * ((pmp + P(d1)) * (qmp + P(d5))));
+            j_PLC = P(v4) * (qmp + ((numb)1.0 - P(alpha)) * P(k4)) / (qmp + P(k4));
+            j_leak = P(c1) * P(v2) * (P(c0) / P(c1) - ((numb)1.0 + (numb)1.0 / P(c1)) * qmp);
+            j_pump = ((P(v3) * qmp * qmp) / (P(k3) * P(k3) + qmp * qmp));
+            j_in = P(v5) + P(v6) * pmp * pmp / (P(k2) * P(k2) + pmp * pmp);
+            j_out = P(k1) * V(q);
+
+            Vnext(z) = (zmp + (h2 * P(a2) * P(d2) * (pmp + P(d1))) / (pmp + P(d3))) / (1 + h2 * P(a2) * P(d2) * (pmp + P(d1)) / (pmp + P(d3)) + h2 * P(a2) * qmp);
+            j_ch = (P(c1) * P(v1) * pmp * pmp * pmp * Vnext(z) * Vnext(z) * Vnext(z) * qmp * qmp * qmp *
+                (P(c0) / P(c1) - ((numb)1.0 + (numb)1.0 / P(c1)) * qmp)) /
+                (((pmp + P(d1)) * (qmp + P(d5))) * ((pmp + P(d1)) * (qmp + P(d5))) * ((pmp + P(d1)) * (qmp + P(d5))));
+            j_PLC = P(v4) * (qmp + ((numb)1.0 - P(alpha)) * P(k4)) / (qmp + P(k4));
+            j_leak = P(c1) * P(v2) * (P(c0) / P(c1) - ((numb)1.0 + (numb)1.0 / P(c1)) * qmp);
+            j_pump = ((P(v3) * qmp * qmp) / (P(k3) * P(k3) + qmp * qmp));
+            j_in = P(v5) + P(v6) * pmp * pmp / (P(k2) * P(k2) + pmp * pmp);
+            j_out = P(k1) * V(q);
+
+            Vnext(z) = (zmp + (h2 * P(a2) * P(d2) * (pmp + P(d1))) / (pmp + P(d3))) / (1 + h2 * P(a2) * P(d2) * (pmp + P(d1)) / (pmp + P(d3)) + h2 * P(a2) * qmp);
+            j_ch = (P(c1) * P(v1) * pmp * pmp * pmp * Vnext(z) * Vnext(z) * Vnext(z) * qmp * qmp * qmp *
+                (P(c0) / P(c1) - ((numb)1.0 + (numb)1.0 / P(c1)) * qmp)) /
+                (((pmp + P(d1)) * (qmp + P(d5))) * ((pmp + P(d1)) * (qmp + P(d5))) * ((pmp + P(d1)) * (qmp + P(d5))));
+            j_PLC = P(v4) * (qmp + ((numb)1.0 - P(alpha)) * P(k4)) / (qmp + P(k4));
+            j_leak = P(c1) * P(v2) * (P(c0) / P(c1) - ((numb)1.0 + (numb)1.0 / P(c1)) * qmp);
+            j_pump = ((P(v3) * qmp * qmp) / (P(k3) * P(k3) + qmp * qmp));
+            j_in = P(v5) + P(v6) * pmp * pmp / (P(k2) * P(k2) + pmp * pmp);
+            j_out = P(k1) * V(q);
+
+
             Vnext(q) = qmp + h2 * (j_ch - j_pump + j_leak + j_in - j_out);
-            Vnext(z) = zmp + h2 * (P(a2) * (P(d2) * (pmp + P(d1)) / (pmp + P(d3)) * ((numb)1.0 - zmp) - zmp * qmp));
+            j_ch = (P(c1) * P(v1) * pmp * pmp * pmp * Vnext(z) * Vnext(z) * Vnext(z) * Vnext(q) * Vnext(q) * Vnext(q) *
+                (P(c0) / P(c1) - ((numb)1.0 + (numb)1.0 / P(c1)) * Vnext(q))) /
+                (((pmp + P(d1)) * (Vnext(q) + P(d5))) * ((pmp + P(d1)) * (Vnext(q) + P(d5))) * ((pmp + P(d1)) * (Vnext(q) + P(d5))));
+            j_PLC = P(v4) * (Vnext(q) + ((numb)1.0 - P(alpha)) * P(k4)) / (Vnext(q) + P(k4));
+            j_leak = P(c1) * P(v2) * (P(c0) / P(c1) - ((numb)1.0 + (numb)1.0 / P(c1)) * Vnext(q));
+            j_pump = ((P(v3) * Vnext(q) * Vnext(q)) / (P(k3) * P(k3) + Vnext(q) * Vnext(q)));
+            j_in = P(v5) + P(v6) * pmp * pmp / (P(k2) * P(k2) + pmp * pmp);
+            j_out = P(k1) * V(q);
+
+            Vnext(q) = qmp + h2 * (j_ch - j_pump + j_leak + j_in - j_out);
+            j_ch = (P(c1) * P(v1) * pmp * pmp * pmp * Vnext(z) * Vnext(z) * Vnext(z) * Vnext(q) * Vnext(q) * Vnext(q) *
+                (P(c0) / P(c1) - ((numb)1.0 + (numb)1.0 / P(c1)) * Vnext(q))) /
+                (((pmp + P(d1)) * (Vnext(q) + P(d5))) * ((pmp + P(d1)) * (Vnext(q) + P(d5))) * ((pmp + P(d1)) * (Vnext(q) + P(d5))));
+            j_PLC = P(v4) * (Vnext(q) + ((numb)1.0 - P(alpha)) * P(k4)) / (Vnext(q) + P(k4));
+            j_leak = P(c1) * P(v2) * (P(c0) / P(c1) - ((numb)1.0 + (numb)1.0 / P(c1)) * Vnext(q));
+            j_pump = ((P(v3) * Vnext(q) * Vnext(q)) / (P(k3) * P(k3) + Vnext(q) * Vnext(q)));
+            j_in = P(v5) + P(v6) * pmp * pmp / (P(k2) * P(k2) + pmp * pmp);
+            j_out = P(k1) * V(q);
+
+            Vnext(q) = qmp + h2 * (j_ch - j_pump + j_leak + j_in - j_out);
+            j_ch = (P(c1) * P(v1) * pmp * pmp * pmp * Vnext(z) * Vnext(z) * Vnext(z) * Vnext(q) * Vnext(q) * Vnext(q) *
+                (P(c0) / P(c1) - ((numb)1.0 + (numb)1.0 / P(c1)) * Vnext(q))) /
+                (((pmp + P(d1)) * (Vnext(q) + P(d5))) * ((pmp + P(d1)) * (Vnext(q) + P(d5))) * ((pmp + P(d1)) * (Vnext(q) + P(d5))));
+            j_PLC = P(v4) * (Vnext(q) + ((numb)1.0 - P(alpha)) * P(k4)) / (Vnext(q) + P(k4));
+            j_leak = P(c1) * P(v2) * (P(c0) / P(c1) - ((numb)1.0 + (numb)1.0 / P(c1)) * Vnext(q));
+            j_pump = ((P(v3) * Vnext(q) * Vnext(q)) / (P(k3) * P(k3) + Vnext(q) * Vnext(q)));
+            j_in = P(v5) + P(v6) * pmp * pmp / (P(k2) * P(k2) + pmp * pmp);
+            j_out = P(k1) * V(q);
+
+            Vnext(q) = qmp + h2 * (j_ch - j_pump + j_leak + j_in - j_out);
+            j_ch = (P(c1) * P(v1) * pmp * pmp * pmp * Vnext(z) * Vnext(z) * Vnext(z) * Vnext(q) * Vnext(q) * Vnext(q) *
+                (P(c0) / P(c1) - ((numb)1.0 + (numb)1.0 / P(c1)) * Vnext(q))) /
+                (((pmp + P(d1)) * (Vnext(q) + P(d5))) * ((pmp + P(d1)) * (Vnext(q) + P(d5))) * ((pmp + P(d1)) * (Vnext(q) + P(d5))));
+            j_PLC = P(v4) * (Vnext(q) + ((numb)1.0 - P(alpha)) * P(k4)) / (Vnext(q) + P(k4));
+            j_leak = P(c1) * P(v2) * (P(c0) / P(c1) - ((numb)1.0 + (numb)1.0 / P(c1)) * Vnext(q));
+            j_pump = ((P(v3) * Vnext(q) * Vnext(q)) / (P(k3) * P(k3) + Vnext(q) * Vnext(q)));
+            j_in = P(v5) + P(v6) * pmp * pmp / (P(k2) * P(k2) + pmp * pmp);
+            j_out = P(k1) * V(q);
+
+            Vnext(p) = (pmp + h2 * P(c_IP3_e) / P(tau_IP3) + h2 * Vnext(j) + h2 * j_PLC) / (1 + h2 / P(tau_IP3));
+            j_ch = (P(c1) * P(v1) * Vnext(p) * Vnext(p) * Vnext(p) * Vnext(z) * Vnext(z) * Vnext(z) * Vnext(q) * Vnext(q) * Vnext(q) *
+                (P(c0) / P(c1) - ((numb)1.0 + (numb)1.0 / P(c1)) * Vnext(q))) /
+                (((Vnext(p) + P(d1)) * (Vnext(q) + P(d5))) * ((Vnext(p) + P(d1)) * (Vnext(q) + P(d5))) * ((Vnext(p) + P(d1)) * (Vnext(q) + P(d5))));
+            j_PLC = P(v4) * (Vnext(q) + ((numb)1.0 - P(alpha)) * P(k4)) / (Vnext(q) + P(k4));
+            j_leak = P(c1) * P(v2) * (P(c0) / P(c1) - ((numb)1.0 + (numb)1.0 / P(c1)) * Vnext(q));
+            j_pump = ((P(v3) * Vnext(q) * Vnext(q)) / (P(k3) * P(k3) + Vnext(q) * Vnext(q)));
+            j_in = P(v5) + P(v6) * Vnext(p) * Vnext(p) / (P(k2) * P(k2) + Vnext(p) * Vnext(p));
+            j_out = P(k1) * V(q);
+
+            Vnext(p) = (pmp + h2 * P(c_IP3_e) / P(tau_IP3) + h2 * Vnext(j) + h2 * j_PLC) / (1 + h2 / P(tau_IP3));
+            j_ch = (P(c1) * P(v1) * Vnext(p) * Vnext(p) * Vnext(p) * Vnext(z) * Vnext(z) * Vnext(z) * Vnext(q) * Vnext(q) * Vnext(q) *
+                (P(c0) / P(c1) - ((numb)1.0 + (numb)1.0 / P(c1)) * Vnext(q))) /
+                (((Vnext(p) + P(d1)) * (Vnext(q) + P(d5))) * ((Vnext(p) + P(d1)) * (Vnext(q) + P(d5))) * ((Vnext(p) + P(d1)) * (Vnext(q) + P(d5))));
+            j_PLC = P(v4) * (Vnext(q) + ((numb)1.0 - P(alpha)) * P(k4)) / (Vnext(q) + P(k4));
+            j_leak = P(c1) * P(v2) * (P(c0) / P(c1) - ((numb)1.0 + (numb)1.0 / P(c1)) * Vnext(q));
+            j_pump = ((P(v3) * Vnext(q) * Vnext(q)) / (P(k3) * P(k3) + Vnext(q) * Vnext(q)));
+            j_in = P(v5) + P(v6) * Vnext(p) * Vnext(p) / (P(k2) * P(k2) + Vnext(p) * Vnext(p));
+            j_out = P(k1) * V(q);
+
+            Vnext(p) = (pmp + h2 * P(c_IP3_e) / P(tau_IP3) + h2 * Vnext(j) + h2 * j_PLC) / (1 + h2 / P(tau_IP3));
+            j_ch = (P(c1) * P(v1) * Vnext(p) * Vnext(p) * Vnext(p) * Vnext(z) * Vnext(z) * Vnext(z) * Vnext(q) * Vnext(q) * Vnext(q) *
+                (P(c0) / P(c1) - ((numb)1.0 + (numb)1.0 / P(c1)) * Vnext(q))) /
+                (((Vnext(p) + P(d1)) * (Vnext(q) + P(d5))) * ((Vnext(p) + P(d1)) * (Vnext(q) + P(d5))) * ((Vnext(p) + P(d1)) * (Vnext(q) + P(d5))));
+            j_PLC = P(v4) * (Vnext(q) + ((numb)1.0 - P(alpha)) * P(k4)) / (Vnext(q) + P(k4));
+            j_leak = P(c1) * P(v2) * (P(c0) / P(c1) - ((numb)1.0 + (numb)1.0 / P(c1)) * Vnext(q));
+            j_pump = ((P(v3) * Vnext(q) * Vnext(q)) / (P(k3) * P(k3) + Vnext(q) * Vnext(q)));
+            j_in = P(v5) + P(v6) * Vnext(p) * Vnext(p) / (P(k2) * P(k2) + Vnext(p) * Vnext(p));
+            j_out = P(k1) * V(q);
+
+            Vnext(p) = (pmp + h2 * P(c_IP3_e) / P(tau_IP3) + h2 * Vnext(j) + h2 * j_PLC) / (1 + h2 / P(tau_IP3));
+            j_ch = (P(c1) * P(v1) * Vnext(p) * Vnext(p) * Vnext(p) * Vnext(z) * Vnext(z) * Vnext(z) * Vnext(q) * Vnext(q) * Vnext(q) *
+                (P(c0) / P(c1) - ((numb)1.0 + (numb)1.0 / P(c1)) * Vnext(q))) /
+                (((Vnext(p) + P(d1)) * (Vnext(q) + P(d5))) * ((Vnext(p) + P(d1)) * (Vnext(q) + P(d5))) * ((Vnext(p) + P(d1)) * (Vnext(q) + P(d5))));
+            j_PLC = P(v4) * (Vnext(q) + ((numb)1.0 - P(alpha)) * P(k4)) / (Vnext(q) + P(k4));
+            j_leak = P(c1) * P(v2) * (P(c0) / P(c1) - ((numb)1.0 + (numb)1.0 / P(c1)) * Vnext(q));
+            j_pump = ((P(v3) * Vnext(q) * Vnext(q)) / (P(k3) * P(k3) + Vnext(q) * Vnext(q)));
+            j_in = P(v5) + P(v6) * Vnext(p) * Vnext(p) / (P(k2) * P(k2) + Vnext(p) * Vnext(p));
+            j_out = P(k1) * V(q);
+
         }
 
     }
@@ -273,7 +417,7 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
             j_in = P(v5) + P(v6) * pmp * pmp / (P(k2) * P(k2) + pmp * pmp);
             j_out = P(k1) * qmp;
 
-            numb kp2 = ((P(c_IP3_e) - pmp) / P(tau_IP3) + j_PLC +  Vnext(j));
+            numb kp2 = ((P(c_IP3_e) - pmp) / P(tau_IP3) + j_PLC + Vnext(j));
             numb kq2 = j_ch - j_pump + j_leak + j_in - j_out;
             numb kz2 = P(a2) * (P(d2) * (pmp + P(d1)) / (pmp + P(d3)) * ((numb)1.0 - zmp) - zmp * qmp);
 
@@ -366,11 +510,8 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
             numb h1 = (numb)0.5 * H - P(symmetry);
             numb h2 = (numb)0.5 * H + P(symmetry);
 
-            numb tmp = V(t) + h1;
-            numb jmp = P(Jdc) + P(Jamp) * sin((numb)2.0 * (numb)3.141592 * P(Jfreq) * (V(t) - P(Jdel)));
-
-            Vnext(j) = jmp;
-            Vnext(t) = V(t) + H;
+            numb jmp = P(Jdc) + P(Jamp) * sin((numb)2.0 * (numb)3.141592653589793 * P(Jfreq) * (V(t) - P(Jdel)));
+            
 
             numb j_ch = (P(c1) * P(v1) * V(p) * V(p) * V(p) * V(z) * V(z) * V(z) * V(q) * V(q) * V(q) *
                 (P(c0) / P(c1) - ((numb)1.0 + (numb)1.0 / P(c1)) * V(q))) /
@@ -381,9 +522,33 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
             numb j_in = P(v5) + P(v6) * V(p) * V(p) / (P(k2) * P(k2) + V(p) * V(p));
             numb j_out = P(k1) * V(q);
 
-            numb pmp = V(p) + h1 * (((P(c_IP3_e) - V(p)) / P(tau_IP3) + j_PLC + jmp));
+            numb pmp = V(p) + h1 * ((P(c_IP3_e) - V(p)) / P(tau_IP3) + j_PLC + jmp);
+            j_ch = (P(c1) * P(v1) * pmp * pmp * pmp * V(z) * V(z) * V(z) * V(q) * V(q) * V(q) *
+                (P(c0) / P(c1) - ((numb)1.0 + (numb)1.0 / P(c1)) * V(q))) /
+                (((pmp + P(d1)) * (V(q) + P(d5))) * ((pmp + P(d1)) * (V(q) + P(d5))) * ((pmp + P(d1)) * (V(q) + P(d5))));
+            j_PLC = P(v4) * (V(q) + ((numb)1.0 - P(alpha)) * P(k4)) / (V(q) + P(k4));
+            j_leak = P(c1) * P(v2) * (P(c0) / P(c1) - ((numb)1.0 + (numb)1.0 / P(c1)) * V(q));
+            j_pump = ((P(v3) * V(q) * V(q)) / (P(k3) * P(k3) + V(q) * V(q)));
+            j_in = P(v5) + P(v6) * pmp * pmp / (P(k2) * P(k2) + pmp * pmp);
+            j_out = P(k1) * V(q);
+
             numb qmp = V(q) + h1 * (j_ch - j_pump + j_leak + j_in - j_out);
-            numb zmp = V(z) + h1 * (P(a2) * (P(d2) * (V(p) + P(d1)) / (V(p) + P(d3)) * ((numb)1.0 - V(z)) - V(z) * V(q)));
+            j_ch = (P(c1) * P(v1) * pmp * pmp * pmp * V(z) * V(z) * V(z) * qmp * qmp * qmp *
+                (P(c0) / P(c1) - ((numb)1.0 + (numb)1.0 / P(c1)) * qmp)) /
+                (((pmp + P(d1)) * (qmp + P(d5))) * ((pmp + P(d1)) * (qmp + P(d5))) * ((pmp + P(d1)) * (qmp + P(d5))));
+            j_PLC = P(v4) * (qmp + ((numb)1.0 - P(alpha)) * P(k4)) / (qmp + P(k4));
+            j_leak = P(c1) * P(v2) * (P(c0) / P(c1) - ((numb)1.0 + (numb)1.0 / P(c1)) * qmp);
+            j_pump = ((P(v3) * qmp * qmp) / (P(k3) * P(k3) + qmp * qmp));
+            j_in = P(v5) + P(v6) * pmp * pmp / (P(k2) * P(k2) + pmp * pmp);
+            j_out = P(k1) * V(q);
+
+            numb zmp = V(z) + h1 * (P(a2) * (P(d2) * (pmp + P(d1)) / (pmp + P(d3)) * ((numb)1.0 - V(z)) - V(z) * qmp));
+
+            ////
+            Vnext(t) = V(t) + H;
+
+
+            Vnext(j) = P(Jdc) + P(Jamp) * sin((numb)2.0 * (numb)3.141592653589793 * P(Jfreq) * (Vnext(t) - P(Jdel)));
 
             j_ch = (P(c1) * P(v1) * pmp * pmp * pmp * zmp * zmp * zmp * qmp * qmp * qmp *
                 (P(c0) / P(c1) - ((numb)1.0 + (numb)1.0 / P(c1)) * qmp)) /
@@ -392,11 +557,134 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
             j_leak = P(c1) * P(v2) * (P(c0) / P(c1) - ((numb)1.0 + (numb)1.0 / P(c1)) * qmp);
             j_pump = ((P(v3) * qmp * qmp) / (P(k3) * P(k3) + qmp * qmp));
             j_in = P(v5) + P(v6) * pmp * pmp / (P(k2) * P(k2) + pmp * pmp);
-            j_out = P(k1) * qmp;
+            j_out = P(k1) * V(q);
 
-            Vnext(p) = pmp + h2 * (((P(c_IP3_e) - pmp) / P(tau_IP3) + j_PLC + jmp));
+            Vnext(z) = (zmp + (h2 * P(a2) * P(d2) * (pmp + P(d1))) / (pmp + P(d3))) / (1 + h2 * P(a2) * P(d2) * (pmp + P(d1)) / (pmp + P(d3)) + h2 * P(a2) * qmp);
+            j_ch = (P(c1) * P(v1) * pmp * pmp * pmp * Vnext(z) * Vnext(z) * Vnext(z) * qmp * qmp * qmp *
+                (P(c0) / P(c1) - ((numb)1.0 + (numb)1.0 / P(c1)) * qmp)) /
+                (((pmp + P(d1)) * (qmp + P(d5))) * ((pmp + P(d1)) * (qmp + P(d5))) * ((pmp + P(d1)) * (qmp + P(d5))));
+            j_PLC = P(v4) * (qmp + ((numb)1.0 - P(alpha)) * P(k4)) / (qmp + P(k4));
+            j_leak = P(c1) * P(v2) * (P(c0) / P(c1) - ((numb)1.0 + (numb)1.0 / P(c1)) * qmp);
+            j_pump = ((P(v3) * qmp * qmp) / (P(k3) * P(k3) + qmp * qmp));
+            j_in = P(v5) + P(v6) * pmp * pmp / (P(k2) * P(k2) + pmp * pmp);
+            j_out = P(k1) * V(q);
+
+            Vnext(z) = (zmp + (h2 * P(a2) * P(d2) * (pmp + P(d1))) / (pmp + P(d3))) / (1 + h2 * P(a2) * P(d2) * (pmp + P(d1)) / (pmp + P(d3)) + h2 * P(a2) * qmp);
+            j_ch = (P(c1) * P(v1) * pmp * pmp * pmp * Vnext(z) * Vnext(z) * Vnext(z) * qmp * qmp * qmp *
+                (P(c0) / P(c1) - ((numb)1.0 + (numb)1.0 / P(c1)) * qmp)) /
+                (((pmp + P(d1)) * (qmp + P(d5))) * ((pmp + P(d1)) * (qmp + P(d5))) * ((pmp + P(d1)) * (qmp + P(d5))));
+            j_PLC = P(v4) * (qmp + ((numb)1.0 - P(alpha)) * P(k4)) / (qmp + P(k4));
+            j_leak = P(c1) * P(v2) * (P(c0) / P(c1) - ((numb)1.0 + (numb)1.0 / P(c1)) * qmp);
+            j_pump = ((P(v3) * qmp * qmp) / (P(k3) * P(k3) + qmp * qmp));
+            j_in = P(v5) + P(v6) * pmp * pmp / (P(k2) * P(k2) + pmp * pmp);
+            j_out = P(k1) * V(q);
+
+            Vnext(z) = (zmp + (h2 * P(a2) * P(d2) * (pmp + P(d1))) / (pmp + P(d3))) / (1 + h2 * P(a2) * P(d2) * (pmp + P(d1)) / (pmp + P(d3)) + h2 * P(a2) * qmp);
+            j_ch = (P(c1) * P(v1) * pmp * pmp * pmp * Vnext(z) * Vnext(z) * Vnext(z) * qmp * qmp * qmp *
+                (P(c0) / P(c1) - ((numb)1.0 + (numb)1.0 / P(c1)) * qmp)) /
+                (((pmp + P(d1)) * (qmp + P(d5))) * ((pmp + P(d1)) * (qmp + P(d5))) * ((pmp + P(d1)) * (qmp + P(d5))));
+            j_PLC = P(v4) * (qmp + ((numb)1.0 - P(alpha)) * P(k4)) / (qmp + P(k4));
+            j_leak = P(c1) * P(v2) * (P(c0) / P(c1) - ((numb)1.0 + (numb)1.0 / P(c1)) * qmp);
+            j_pump = ((P(v3) * qmp * qmp) / (P(k3) * P(k3) + qmp * qmp));
+            j_in = P(v5) + P(v6) * pmp * pmp / (P(k2) * P(k2) + pmp * pmp);
+            j_out = P(k1) * V(q);
+
+            Vnext(z) = (zmp + (h2 * P(a2) * P(d2) * (pmp + P(d1))) / (pmp + P(d3))) / (1 + h2 * P(a2) * P(d2) * (pmp + P(d1)) / (pmp + P(d3)) + h2 * P(a2) * qmp);
+            j_ch = (P(c1) * P(v1) * pmp * pmp * pmp * Vnext(z) * Vnext(z) * Vnext(z) * qmp * qmp * qmp *
+                (P(c0) / P(c1) - ((numb)1.0 + (numb)1.0 / P(c1)) * qmp)) /
+                (((pmp + P(d1)) * (qmp + P(d5))) * ((pmp + P(d1)) * (qmp + P(d5))) * ((pmp + P(d1)) * (qmp + P(d5))));
+            j_PLC = P(v4) * (qmp + ((numb)1.0 - P(alpha)) * P(k4)) / (qmp + P(k4));
+            j_leak = P(c1) * P(v2) * (P(c0) / P(c1) - ((numb)1.0 + (numb)1.0 / P(c1)) * qmp);
+            j_pump = ((P(v3) * qmp * qmp) / (P(k3) * P(k3) + qmp * qmp));
+            j_in = P(v5) + P(v6) * pmp * pmp / (P(k2) * P(k2) + pmp * pmp);
+            j_out = P(k1) * V(q);
+
+
             Vnext(q) = qmp + h2 * (j_ch - j_pump + j_leak + j_in - j_out);
-            Vnext(z) = zmp + h2 * (P(a2) * (P(d2) * (pmp + P(d1)) / (pmp + P(d3)) * ((numb)1.0 - zmp) - zmp * qmp));
+            j_ch = (P(c1) * P(v1) * pmp * pmp * pmp * Vnext(z) * Vnext(z) * Vnext(z) * Vnext(q) * Vnext(q) * Vnext(q) *
+                (P(c0) / P(c1) - ((numb)1.0 + (numb)1.0 / P(c1)) * Vnext(q))) /
+                (((pmp + P(d1)) * (Vnext(q) + P(d5))) * ((pmp + P(d1)) * (Vnext(q) + P(d5))) * ((pmp + P(d1)) * (Vnext(q) + P(d5))));
+            j_PLC = P(v4) * (Vnext(q) + ((numb)1.0 - P(alpha)) * P(k4)) / (Vnext(q) + P(k4));
+            j_leak = P(c1) * P(v2) * (P(c0) / P(c1) - ((numb)1.0 + (numb)1.0 / P(c1)) * Vnext(q));
+            j_pump = ((P(v3) * Vnext(q) * Vnext(q)) / (P(k3) * P(k3) + Vnext(q) * Vnext(q)));
+            j_in = P(v5) + P(v6) * pmp * pmp / (P(k2) * P(k2) + pmp * pmp);
+            j_out = P(k1) * V(q);
+
+            Vnext(q) = qmp + h2 * (j_ch - j_pump + j_leak + j_in - j_out);
+            j_ch = (P(c1) * P(v1) * pmp * pmp * pmp * Vnext(z) * Vnext(z) * Vnext(z) * Vnext(q) * Vnext(q) * Vnext(q) *
+                (P(c0) / P(c1) - ((numb)1.0 + (numb)1.0 / P(c1)) * Vnext(q))) /
+                (((pmp + P(d1)) * (Vnext(q) + P(d5))) * ((pmp + P(d1)) * (Vnext(q) + P(d5))) * ((pmp + P(d1)) * (Vnext(q) + P(d5))));
+            j_PLC = P(v4) * (Vnext(q) + ((numb)1.0 - P(alpha)) * P(k4)) / (Vnext(q) + P(k4));
+            j_leak = P(c1) * P(v2) * (P(c0) / P(c1) - ((numb)1.0 + (numb)1.0 / P(c1)) * Vnext(q));
+            j_pump = ((P(v3) * Vnext(q) * Vnext(q)) / (P(k3) * P(k3) + Vnext(q) * Vnext(q)));
+            j_in = P(v5) + P(v6) * pmp * pmp / (P(k2) * P(k2) + pmp * pmp);
+            j_out = P(k1) * V(q);
+
+            Vnext(q) = qmp + h2 * (j_ch - j_pump + j_leak + j_in - j_out);
+            j_ch = (P(c1) * P(v1) * pmp * pmp * pmp * Vnext(z) * Vnext(z) * Vnext(z) * Vnext(q) * Vnext(q) * Vnext(q) *
+                (P(c0) / P(c1) - ((numb)1.0 + (numb)1.0 / P(c1)) * Vnext(q))) /
+                (((pmp + P(d1)) * (Vnext(q) + P(d5))) * ((pmp + P(d1)) * (Vnext(q) + P(d5))) * ((pmp + P(d1)) * (Vnext(q) + P(d5))));
+            j_PLC = P(v4) * (Vnext(q) + ((numb)1.0 - P(alpha)) * P(k4)) / (Vnext(q) + P(k4));
+            j_leak = P(c1) * P(v2) * (P(c0) / P(c1) - ((numb)1.0 + (numb)1.0 / P(c1)) * Vnext(q));
+            j_pump = ((P(v3) * Vnext(q) * Vnext(q)) / (P(k3) * P(k3) + Vnext(q) * Vnext(q)));
+            j_in = P(v5) + P(v6) * pmp * pmp / (P(k2) * P(k2) + pmp * pmp);
+            j_out = P(k1) * V(q);
+
+            Vnext(q) = qmp + h2 * (j_ch - j_pump + j_leak + j_in - j_out);
+            j_ch = (P(c1) * P(v1) * pmp * pmp * pmp * Vnext(z) * Vnext(z) * Vnext(z) * Vnext(q) * Vnext(q) * Vnext(q) *
+                (P(c0) / P(c1) - ((numb)1.0 + (numb)1.0 / P(c1)) * Vnext(q))) /
+                (((pmp + P(d1)) * (Vnext(q) + P(d5))) * ((pmp + P(d1)) * (Vnext(q) + P(d5))) * ((pmp + P(d1)) * (Vnext(q) + P(d5))));
+            j_PLC = P(v4) * (Vnext(q) + ((numb)1.0 - P(alpha)) * P(k4)) / (Vnext(q) + P(k4));
+            j_leak = P(c1) * P(v2) * (P(c0) / P(c1) - ((numb)1.0 + (numb)1.0 / P(c1)) * Vnext(q));
+            j_pump = ((P(v3) * Vnext(q) * Vnext(q)) / (P(k3) * P(k3) + Vnext(q) * Vnext(q)));
+            j_in = P(v5) + P(v6) * pmp * pmp / (P(k2) * P(k2) + pmp * pmp);
+            j_out = P(k1) * V(q);
+
+            Vnext(p) = (pmp + h2 * P(c_IP3_e) / P(tau_IP3) + h2 * Vnext(j) + h2 * j_PLC) / (1 + h2 / P(tau_IP3));
+            j_ch = (P(c1) * P(v1) * Vnext(p) * Vnext(p) * Vnext(p) * Vnext(z) * Vnext(z) * Vnext(z) * Vnext(q) * Vnext(q) * Vnext(q) *
+                (P(c0) / P(c1) - ((numb)1.0 + (numb)1.0 / P(c1)) * Vnext(q))) /
+                (((Vnext(p) + P(d1)) * (Vnext(q) + P(d5))) * ((Vnext(p) + P(d1)) * (Vnext(q) + P(d5))) * ((Vnext(p) + P(d1)) * (Vnext(q) + P(d5))));
+            j_PLC = P(v4) * (Vnext(q) + ((numb)1.0 - P(alpha)) * P(k4)) / (Vnext(q) + P(k4));
+            j_leak = P(c1) * P(v2) * (P(c0) / P(c1) - ((numb)1.0 + (numb)1.0 / P(c1)) * Vnext(q));
+            j_pump = ((P(v3) * Vnext(q) * Vnext(q)) / (P(k3) * P(k3) + Vnext(q) * Vnext(q)));
+            j_in = P(v5) + P(v6) * Vnext(p) * Vnext(p) / (P(k2) * P(k2) + Vnext(p) * Vnext(p));
+            j_out = P(k1) * V(q);
+
+            Vnext(p) = (pmp + h2 * P(c_IP3_e) / P(tau_IP3) + h2 * Vnext(j) + h2 * j_PLC) / (1 + h2 / P(tau_IP3));
+            j_ch = (P(c1) * P(v1) * Vnext(p) * Vnext(p) * Vnext(p) * Vnext(z) * Vnext(z) * Vnext(z) * Vnext(q) * Vnext(q) * Vnext(q) *
+                (P(c0) / P(c1) - ((numb)1.0 + (numb)1.0 / P(c1)) * Vnext(q))) /
+                (((Vnext(p) + P(d1)) * (Vnext(q) + P(d5))) * ((Vnext(p) + P(d1)) * (Vnext(q) + P(d5))) * ((Vnext(p) + P(d1)) * (Vnext(q) + P(d5))));
+            j_PLC = P(v4) * (Vnext(q) + ((numb)1.0 - P(alpha)) * P(k4)) / (Vnext(q) + P(k4));
+            j_leak = P(c1) * P(v2) * (P(c0) / P(c1) - ((numb)1.0 + (numb)1.0 / P(c1)) * Vnext(q));
+            j_pump = ((P(v3) * Vnext(q) * Vnext(q)) / (P(k3) * P(k3) + Vnext(q) * Vnext(q)));
+            j_in = P(v5) + P(v6) * Vnext(p) * Vnext(p) / (P(k2) * P(k2) + Vnext(p) * Vnext(p));
+            j_out = P(k1) * V(q);
+
+            Vnext(p) = (pmp + h2 * P(c_IP3_e) / P(tau_IP3) + h2 * Vnext(j) + h2 * j_PLC) / (1 + h2 / P(tau_IP3));
+            j_ch = (P(c1) * P(v1) * Vnext(p) * Vnext(p) * Vnext(p) * Vnext(z) * Vnext(z) * Vnext(z) * Vnext(q) * Vnext(q) * Vnext(q) *
+                (P(c0) / P(c1) - ((numb)1.0 + (numb)1.0 / P(c1)) * Vnext(q))) /
+                (((Vnext(p) + P(d1)) * (Vnext(q) + P(d5))) * ((Vnext(p) + P(d1)) * (Vnext(q) + P(d5))) * ((Vnext(p) + P(d1)) * (Vnext(q) + P(d5))));
+            j_PLC = P(v4) * (Vnext(q) + ((numb)1.0 - P(alpha)) * P(k4)) / (Vnext(q) + P(k4));
+            j_leak = P(c1) * P(v2) * (P(c0) / P(c1) - ((numb)1.0 + (numb)1.0 / P(c1)) * Vnext(q));
+            j_pump = ((P(v3) * Vnext(q) * Vnext(q)) / (P(k3) * P(k3) + Vnext(q) * Vnext(q)));
+            j_in = P(v5) + P(v6) * Vnext(p) * Vnext(p) / (P(k2) * P(k2) + Vnext(p) * Vnext(p));
+            j_out = P(k1) * V(q);
+
+            Vnext(p) = (pmp + h2 * P(c_IP3_e) / P(tau_IP3) + h2 * Vnext(j) + h2 * j_PLC) / (1 + h2 / P(tau_IP3));
+            j_ch = (P(c1) * P(v1) * Vnext(p) * Vnext(p) * Vnext(p) * Vnext(z) * Vnext(z) * Vnext(z) * Vnext(q) * Vnext(q) * Vnext(q) *
+                (P(c0) / P(c1) - ((numb)1.0 + (numb)1.0 / P(c1)) * Vnext(q))) /
+                (((Vnext(p) + P(d1)) * (Vnext(q) + P(d5))) * ((Vnext(p) + P(d1)) * (Vnext(q) + P(d5))) * ((Vnext(p) + P(d1)) * (Vnext(q) + P(d5))));
+            j_PLC = P(v4) * (Vnext(q) + ((numb)1.0 - P(alpha)) * P(k4)) / (Vnext(q) + P(k4));
+            j_leak = P(c1) * P(v2) * (P(c0) / P(c1) - ((numb)1.0 + (numb)1.0 / P(c1)) * Vnext(q));
+            j_pump = ((P(v3) * Vnext(q) * Vnext(q)) / (P(k3) * P(k3) + Vnext(q) * Vnext(q)));
+            j_in = P(v5) + P(v6) * Vnext(p) * Vnext(p) / (P(k2) * P(k2) + Vnext(p) * Vnext(p));
+            j_out = P(k1) * V(q);
+            
+            
+
+            
+            
+            
         }
     }
 
@@ -455,7 +743,7 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
             j_in = P(v5) + P(v6) * pmp * pmp / (P(k2) * P(k2) + pmp * pmp);
             j_out = P(k1) * qmp;
 
-            numb kp2 = ((P(c_IP3_e) - pmp) / P(tau_IP3) + j_PLC +  Vnext(j));
+            numb kp2 = ((P(c_IP3_e) - pmp) / P(tau_IP3) + j_PLC + jmp);
             numb kq2 = j_ch - j_pump + j_leak + j_in - j_out;
             numb kz2 = P(a2) * (P(d2) * (pmp + P(d1)) / (pmp + P(d3)) * ((numb)1.0 - zmp) - zmp * qmp);
 
@@ -549,15 +837,13 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
 
         ifMETHOD(P(method), VariableSymmetryCD)
         {
+            
+
             numb h1 = (numb)0.5 * H - P(symmetry);
             numb h2 = (numb)0.5 * H + P(symmetry);
 
-            numb tmp = V(t) + h1;
             numb jmp = P(Jdc) + P(Jamp) * (((numb)4.0 * P(Jfreq) * (V(t) - P(Jdel)) - (numb)2.0 * floor((((numb)4.0 * P(Jfreq) * (V(t) - P(Jdel)) + (numb)1.0) /
                 (numb)2.0))) * pow((numb)-1.0, floor((((numb)4.0 * P(Jfreq) * (V(t) - P(Jdel)) + (numb)1.0) / (numb)2.0))));
-
-            Vnext(j) = jmp;
-            Vnext(t) = V(t) + H;
 
             numb j_ch = (P(c1) * P(v1) * V(p) * V(p) * V(p) * V(z) * V(z) * V(z) * V(q) * V(q) * V(q) *
                 (P(c0) / P(c1) - ((numb)1.0 + (numb)1.0 / P(c1)) * V(q))) /
@@ -568,9 +854,34 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
             numb j_in = P(v5) + P(v6) * V(p) * V(p) / (P(k2) * P(k2) + V(p) * V(p));
             numb j_out = P(k1) * V(q);
 
-            numb pmp = V(p) + h1 * (((P(c_IP3_e) - V(p)) / P(tau_IP3) + j_PLC + jmp));
+            numb pmp = V(p) + h1 * ((P(c_IP3_e) - V(p)) / P(tau_IP3) + j_PLC + jmp);
+            j_ch = (P(c1) * P(v1) * pmp * pmp * pmp * V(z) * V(z) * V(z) * V(q) * V(q) * V(q) *
+                (P(c0) / P(c1) - ((numb)1.0 + (numb)1.0 / P(c1)) * V(q))) /
+                (((pmp + P(d1)) * (V(q) + P(d5))) * ((pmp + P(d1)) * (V(q) + P(d5))) * ((pmp + P(d1)) * (V(q) + P(d5))));
+            j_PLC = P(v4) * (V(q) + ((numb)1.0 - P(alpha)) * P(k4)) / (V(q) + P(k4));
+            j_leak = P(c1) * P(v2) * (P(c0) / P(c1) - ((numb)1.0 + (numb)1.0 / P(c1)) * V(q));
+            j_pump = ((P(v3) * V(q) * V(q)) / (P(k3) * P(k3) + V(q) * V(q)));
+            j_in = P(v5) + P(v6) * pmp * pmp / (P(k2) * P(k2) + pmp * pmp);
+            j_out = P(k1) * V(q);
+
             numb qmp = V(q) + h1 * (j_ch - j_pump + j_leak + j_in - j_out);
-            numb zmp = V(z) + h1 * (P(a2) * (P(d2) * (V(p) + P(d1)) / (V(p) + P(d3)) * ((numb)1.0 - V(z)) - V(z) * V(q)));
+            j_ch = (P(c1) * P(v1) * pmp * pmp * pmp * V(z) * V(z) * V(z) * qmp * qmp * qmp *
+                (P(c0) / P(c1) - ((numb)1.0 + (numb)1.0 / P(c1)) * qmp)) /
+                (((pmp + P(d1)) * (qmp + P(d5))) * ((pmp + P(d1)) * (qmp + P(d5))) * ((pmp + P(d1)) * (qmp + P(d5))));
+            j_PLC = P(v4) * (qmp + ((numb)1.0 - P(alpha)) * P(k4)) / (qmp + P(k4));
+            j_leak = P(c1) * P(v2) * (P(c0) / P(c1) - ((numb)1.0 + (numb)1.0 / P(c1)) * qmp);
+            j_pump = ((P(v3) * qmp * qmp) / (P(k3) * P(k3) + qmp * qmp));
+            j_in = P(v5) + P(v6) * pmp * pmp / (P(k2) * P(k2) + pmp * pmp);
+            j_out = P(k1) * V(q);
+
+            numb zmp = V(z) + h1 * (P(a2) * (P(d2) * (pmp + P(d1)) / (pmp + P(d3)) * ((numb)1.0 - V(z)) - V(z) * qmp));
+
+            ////
+            Vnext(t) = V(t) + H;
+
+
+            Vnext(j) = P(Jdc) + P(Jamp) * (((numb)4.0 * P(Jfreq) * (Vnext(t) - P(Jdel)) - (numb)2.0 * floor((((numb)4.0 * P(Jfreq) * (Vnext(t) - P(Jdel)) + (numb)1.0) /
+                (numb)2.0))) * pow((numb)-1.0, floor((((numb)4.0 * P(Jfreq) * (Vnext(t) - P(Jdel)) + (numb)1.0) / (numb)2.0))));
 
             j_ch = (P(c1) * P(v1) * pmp * pmp * pmp * zmp * zmp * zmp * qmp * qmp * qmp *
                 (P(c0) / P(c1) - ((numb)1.0 + (numb)1.0 / P(c1)) * qmp)) /
@@ -579,14 +890,129 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
             j_leak = P(c1) * P(v2) * (P(c0) / P(c1) - ((numb)1.0 + (numb)1.0 / P(c1)) * qmp);
             j_pump = ((P(v3) * qmp * qmp) / (P(k3) * P(k3) + qmp * qmp));
             j_in = P(v5) + P(v6) * pmp * pmp / (P(k2) * P(k2) + pmp * pmp);
-            j_out = P(k1) * qmp;
+            j_out = P(k1) * V(q);
 
-            Vnext(p) = pmp + h2 * (((P(c_IP3_e) - pmp) / P(tau_IP3) + j_PLC + jmp));
+            Vnext(z) = (zmp + (h2 * P(a2) * P(d2) * (pmp + P(d1))) / (pmp + P(d3))) / (1 + h2 * P(a2) * P(d2) * (pmp + P(d1)) / (pmp + P(d3)) + h2 * P(a2) * qmp);
+            j_ch = (P(c1) * P(v1) * pmp * pmp * pmp * Vnext(z) * Vnext(z) * Vnext(z) * qmp * qmp * qmp *
+                (P(c0) / P(c1) - ((numb)1.0 + (numb)1.0 / P(c1)) * qmp)) /
+                (((pmp + P(d1)) * (qmp + P(d5))) * ((pmp + P(d1)) * (qmp + P(d5))) * ((pmp + P(d1)) * (qmp + P(d5))));
+            j_PLC = P(v4) * (qmp + ((numb)1.0 - P(alpha)) * P(k4)) / (qmp + P(k4));
+            j_leak = P(c1) * P(v2) * (P(c0) / P(c1) - ((numb)1.0 + (numb)1.0 / P(c1)) * qmp);
+            j_pump = ((P(v3) * qmp * qmp) / (P(k3) * P(k3) + qmp * qmp));
+            j_in = P(v5) + P(v6) * pmp * pmp / (P(k2) * P(k2) + pmp * pmp);
+            j_out = P(k1) * V(q);
+
+            Vnext(z) = (zmp + (h2 * P(a2) * P(d2) * (pmp + P(d1))) / (pmp + P(d3))) / (1 + h2 * P(a2) * P(d2) * (pmp + P(d1)) / (pmp + P(d3)) + h2 * P(a2) * qmp);
+            j_ch = (P(c1) * P(v1) * pmp * pmp * pmp * Vnext(z) * Vnext(z) * Vnext(z) * qmp * qmp * qmp *
+                (P(c0) / P(c1) - ((numb)1.0 + (numb)1.0 / P(c1)) * qmp)) /
+                (((pmp + P(d1)) * (qmp + P(d5))) * ((pmp + P(d1)) * (qmp + P(d5))) * ((pmp + P(d1)) * (qmp + P(d5))));
+            j_PLC = P(v4) * (qmp + ((numb)1.0 - P(alpha)) * P(k4)) / (qmp + P(k4));
+            j_leak = P(c1) * P(v2) * (P(c0) / P(c1) - ((numb)1.0 + (numb)1.0 / P(c1)) * qmp);
+            j_pump = ((P(v3) * qmp * qmp) / (P(k3) * P(k3) + qmp * qmp));
+            j_in = P(v5) + P(v6) * pmp * pmp / (P(k2) * P(k2) + pmp * pmp);
+            j_out = P(k1) * V(q);
+
+            Vnext(z) = (zmp + (h2 * P(a2) * P(d2) * (pmp + P(d1))) / (pmp + P(d3))) / (1 + h2 * P(a2) * P(d2) * (pmp + P(d1)) / (pmp + P(d3)) + h2 * P(a2) * qmp);
+            j_ch = (P(c1) * P(v1) * pmp * pmp * pmp * Vnext(z) * Vnext(z) * Vnext(z) * qmp * qmp * qmp *
+                (P(c0) / P(c1) - ((numb)1.0 + (numb)1.0 / P(c1)) * qmp)) /
+                (((pmp + P(d1)) * (qmp + P(d5))) * ((pmp + P(d1)) * (qmp + P(d5))) * ((pmp + P(d1)) * (qmp + P(d5))));
+            j_PLC = P(v4) * (qmp + ((numb)1.0 - P(alpha)) * P(k4)) / (qmp + P(k4));
+            j_leak = P(c1) * P(v2) * (P(c0) / P(c1) - ((numb)1.0 + (numb)1.0 / P(c1)) * qmp);
+            j_pump = ((P(v3) * qmp * qmp) / (P(k3) * P(k3) + qmp * qmp));
+            j_in = P(v5) + P(v6) * pmp * pmp / (P(k2) * P(k2) + pmp * pmp);
+            j_out = P(k1) * V(q);
+
+            Vnext(z) = (zmp + (h2 * P(a2) * P(d2) * (pmp + P(d1))) / (pmp + P(d3))) / (1 + h2 * P(a2) * P(d2) * (pmp + P(d1)) / (pmp + P(d3)) + h2 * P(a2) * qmp);
+            j_ch = (P(c1) * P(v1) * pmp * pmp * pmp * Vnext(z) * Vnext(z) * Vnext(z) * qmp * qmp * qmp *
+                (P(c0) / P(c1) - ((numb)1.0 + (numb)1.0 / P(c1)) * qmp)) /
+                (((pmp + P(d1)) * (qmp + P(d5))) * ((pmp + P(d1)) * (qmp + P(d5))) * ((pmp + P(d1)) * (qmp + P(d5))));
+            j_PLC = P(v4) * (qmp + ((numb)1.0 - P(alpha)) * P(k4)) / (qmp + P(k4));
+            j_leak = P(c1) * P(v2) * (P(c0) / P(c1) - ((numb)1.0 + (numb)1.0 / P(c1)) * qmp);
+            j_pump = ((P(v3) * qmp * qmp) / (P(k3) * P(k3) + qmp * qmp));
+            j_in = P(v5) + P(v6) * pmp * pmp / (P(k2) * P(k2) + pmp * pmp);
+            j_out = P(k1) * V(q);
+
+
             Vnext(q) = qmp + h2 * (j_ch - j_pump + j_leak + j_in - j_out);
-            Vnext(z) = zmp + h2 * (P(a2) * (P(d2) * (pmp + P(d1)) / (pmp + P(d3)) * ((numb)1.0 - zmp) - zmp * qmp));
-        }
+            j_ch = (P(c1) * P(v1) * pmp * pmp * pmp * Vnext(z) * Vnext(z) * Vnext(z) * Vnext(q) * Vnext(q) * Vnext(q) *
+                (P(c0) / P(c1) - ((numb)1.0 + (numb)1.0 / P(c1)) * Vnext(q))) /
+                (((pmp + P(d1)) * (Vnext(q) + P(d5))) * ((pmp + P(d1)) * (Vnext(q) + P(d5))) * ((pmp + P(d1)) * (Vnext(q) + P(d5))));
+            j_PLC = P(v4) * (Vnext(q) + ((numb)1.0 - P(alpha)) * P(k4)) / (Vnext(q) + P(k4));
+            j_leak = P(c1) * P(v2) * (P(c0) / P(c1) - ((numb)1.0 + (numb)1.0 / P(c1)) * Vnext(q));
+            j_pump = ((P(v3) * Vnext(q) * Vnext(q)) / (P(k3) * P(k3) + Vnext(q) * Vnext(q)));
+            j_in = P(v5) + P(v6) * pmp * pmp / (P(k2) * P(k2) + pmp * pmp);
+            j_out = P(k1) * V(q);
+
+            Vnext(q) = qmp + h2 * (j_ch - j_pump + j_leak + j_in - j_out);
+            j_ch = (P(c1) * P(v1) * pmp * pmp * pmp * Vnext(z) * Vnext(z) * Vnext(z) * Vnext(q) * Vnext(q) * Vnext(q) *
+                (P(c0) / P(c1) - ((numb)1.0 + (numb)1.0 / P(c1)) * Vnext(q))) /
+                (((pmp + P(d1)) * (Vnext(q) + P(d5))) * ((pmp + P(d1)) * (Vnext(q) + P(d5))) * ((pmp + P(d1)) * (Vnext(q) + P(d5))));
+            j_PLC = P(v4) * (Vnext(q) + ((numb)1.0 - P(alpha)) * P(k4)) / (Vnext(q) + P(k4));
+            j_leak = P(c1) * P(v2) * (P(c0) / P(c1) - ((numb)1.0 + (numb)1.0 / P(c1)) * Vnext(q));
+            j_pump = ((P(v3) * Vnext(q) * Vnext(q)) / (P(k3) * P(k3) + Vnext(q) * Vnext(q)));
+            j_in = P(v5) + P(v6) * pmp * pmp / (P(k2) * P(k2) + pmp * pmp);
+            j_out = P(k1) * V(q);
+
+            Vnext(q) = qmp + h2 * (j_ch - j_pump + j_leak + j_in - j_out);
+            j_ch = (P(c1) * P(v1) * pmp * pmp * pmp * Vnext(z) * Vnext(z) * Vnext(z) * Vnext(q) * Vnext(q) * Vnext(q) *
+                (P(c0) / P(c1) - ((numb)1.0 + (numb)1.0 / P(c1)) * Vnext(q))) /
+                (((pmp + P(d1)) * (Vnext(q) + P(d5))) * ((pmp + P(d1)) * (Vnext(q) + P(d5))) * ((pmp + P(d1)) * (Vnext(q) + P(d5))));
+            j_PLC = P(v4) * (Vnext(q) + ((numb)1.0 - P(alpha)) * P(k4)) / (Vnext(q) + P(k4));
+            j_leak = P(c1) * P(v2) * (P(c0) / P(c1) - ((numb)1.0 + (numb)1.0 / P(c1)) * Vnext(q));
+            j_pump = ((P(v3) * Vnext(q) * Vnext(q)) / (P(k3) * P(k3) + Vnext(q) * Vnext(q)));
+            j_in = P(v5) + P(v6) * pmp * pmp / (P(k2) * P(k2) + pmp * pmp);
+            j_out = P(k1) * V(q);
+
+            Vnext(q) = qmp + h2 * (j_ch - j_pump + j_leak + j_in - j_out);
+            j_ch = (P(c1) * P(v1) * pmp * pmp * pmp * Vnext(z) * Vnext(z) * Vnext(z) * Vnext(q) * Vnext(q) * Vnext(q) *
+                (P(c0) / P(c1) - ((numb)1.0 + (numb)1.0 / P(c1)) * Vnext(q))) /
+                (((pmp + P(d1)) * (Vnext(q) + P(d5))) * ((pmp + P(d1)) * (Vnext(q) + P(d5))) * ((pmp + P(d1)) * (Vnext(q) + P(d5))));
+            j_PLC = P(v4) * (Vnext(q) + ((numb)1.0 - P(alpha)) * P(k4)) / (Vnext(q) + P(k4));
+            j_leak = P(c1) * P(v2) * (P(c0) / P(c1) - ((numb)1.0 + (numb)1.0 / P(c1)) * Vnext(q));
+            j_pump = ((P(v3) * Vnext(q) * Vnext(q)) / (P(k3) * P(k3) + Vnext(q) * Vnext(q)));
+            j_in = P(v5) + P(v6) * pmp * pmp / (P(k2) * P(k2) + pmp * pmp);
+            j_out = P(k1) * V(q);
+
+            Vnext(p) = (pmp + h2 * P(c_IP3_e) / P(tau_IP3) + h2 * Vnext(j) + h2 * j_PLC) / (1 + h2 / P(tau_IP3));
+            j_ch = (P(c1) * P(v1) * Vnext(p) * Vnext(p) * Vnext(p) * Vnext(z) * Vnext(z) * Vnext(z) * Vnext(q) * Vnext(q) * Vnext(q) *
+                (P(c0) / P(c1) - ((numb)1.0 + (numb)1.0 / P(c1)) * Vnext(q))) /
+                (((Vnext(p) + P(d1)) * (Vnext(q) + P(d5))) * ((Vnext(p) + P(d1)) * (Vnext(q) + P(d5))) * ((Vnext(p) + P(d1)) * (Vnext(q) + P(d5))));
+            j_PLC = P(v4) * (Vnext(q) + ((numb)1.0 - P(alpha)) * P(k4)) / (Vnext(q) + P(k4));
+            j_leak = P(c1) * P(v2) * (P(c0) / P(c1) - ((numb)1.0 + (numb)1.0 / P(c1)) * Vnext(q));
+            j_pump = ((P(v3) * Vnext(q) * Vnext(q)) / (P(k3) * P(k3) + Vnext(q) * Vnext(q)));
+            j_in = P(v5) + P(v6) * Vnext(p) * Vnext(p) / (P(k2) * P(k2) + Vnext(p) * Vnext(p));
+            j_out = P(k1) * V(q);
+
+            Vnext(p) = (pmp + h2 * P(c_IP3_e) / P(tau_IP3) + h2 * Vnext(j) + h2 * j_PLC) / (1 + h2 / P(tau_IP3));
+            j_ch = (P(c1) * P(v1) * Vnext(p) * Vnext(p) * Vnext(p) * Vnext(z) * Vnext(z) * Vnext(z) * Vnext(q) * Vnext(q) * Vnext(q) *
+                (P(c0) / P(c1) - ((numb)1.0 + (numb)1.0 / P(c1)) * Vnext(q))) /
+                (((Vnext(p) + P(d1)) * (Vnext(q) + P(d5))) * ((Vnext(p) + P(d1)) * (Vnext(q) + P(d5))) * ((Vnext(p) + P(d1)) * (Vnext(q) + P(d5))));
+            j_PLC = P(v4) * (Vnext(q) + ((numb)1.0 - P(alpha)) * P(k4)) / (Vnext(q) + P(k4));
+            j_leak = P(c1) * P(v2) * (P(c0) / P(c1) - ((numb)1.0 + (numb)1.0 / P(c1)) * Vnext(q));
+            j_pump = ((P(v3) * Vnext(q) * Vnext(q)) / (P(k3) * P(k3) + Vnext(q) * Vnext(q)));
+            j_in = P(v5) + P(v6) * Vnext(p) * Vnext(p) / (P(k2) * P(k2) + Vnext(p) * Vnext(p));
+            j_out = P(k1) * V(q);
+
+            Vnext(p) = (pmp + h2 * P(c_IP3_e) / P(tau_IP3) + h2 * Vnext(j) + h2 * j_PLC) / (1 + h2 / P(tau_IP3));
+            j_ch = (P(c1) * P(v1) * Vnext(p) * Vnext(p) * Vnext(p) * Vnext(z) * Vnext(z) * Vnext(z) * Vnext(q) * Vnext(q) * Vnext(q) *
+                (P(c0) / P(c1) - ((numb)1.0 + (numb)1.0 / P(c1)) * Vnext(q))) /
+                (((Vnext(p) + P(d1)) * (Vnext(q) + P(d5))) * ((Vnext(p) + P(d1)) * (Vnext(q) + P(d5))) * ((Vnext(p) + P(d1)) * (Vnext(q) + P(d5))));
+            j_PLC = P(v4) * (Vnext(q) + ((numb)1.0 - P(alpha)) * P(k4)) / (Vnext(q) + P(k4));
+            j_leak = P(c1) * P(v2) * (P(c0) / P(c1) - ((numb)1.0 + (numb)1.0 / P(c1)) * Vnext(q));
+            j_pump = ((P(v3) * Vnext(q) * Vnext(q)) / (P(k3) * P(k3) + Vnext(q) * Vnext(q)));
+            j_in = P(v5) + P(v6) * Vnext(p) * Vnext(p) / (P(k2) * P(k2) + Vnext(p) * Vnext(p));
+            j_out = P(k1) * V(q);
+
+            Vnext(p) = (pmp + h2 * P(c_IP3_e) / P(tau_IP3) + h2 * Vnext(j) + h2 * j_PLC) / (1 + h2 / P(tau_IP3));
+            j_ch = (P(c1) * P(v1) * Vnext(p) * Vnext(p) * Vnext(p) * Vnext(z) * Vnext(z) * Vnext(z) * Vnext(q) * Vnext(q) * Vnext(q) *
+                (P(c0) / P(c1) - ((numb)1.0 + (numb)1.0 / P(c1)) * Vnext(q))) /
+                (((Vnext(p) + P(d1)) * (Vnext(q) + P(d5))) * ((Vnext(p) + P(d1)) * (Vnext(q) + P(d5))) * ((Vnext(p) + P(d1)) * (Vnext(q) + P(d5))));
+            j_PLC = P(v4) * (Vnext(q) + ((numb)1.0 - P(alpha)) * P(k4)) / (Vnext(q) + P(k4));
+            j_leak = P(c1) * P(v2) * (P(c0) / P(c1) - ((numb)1.0 + (numb)1.0 / P(c1)) * Vnext(q));
+            j_pump = ((P(v3) * Vnext(q) * Vnext(q)) / (P(k3) * P(k3) + Vnext(q) * Vnext(q)));
+            j_in = P(v5) + P(v6) * Vnext(p) * Vnext(p) / (P(k2) * P(k2) + Vnext(p) * Vnext(p));
+            j_out = P(k1) * V(q);
     }
 }
-
 
 #undef name
