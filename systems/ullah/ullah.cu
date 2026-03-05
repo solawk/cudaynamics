@@ -1012,7 +1012,9 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
             j_pump = ((P(v3) * Vnext(q) * Vnext(q)) / (P(k3) * P(k3) + Vnext(q) * Vnext(q)));
             j_in = P(v5) + P(v6) * Vnext(p) * Vnext(p) / (P(k2) * P(k2) + Vnext(p) * Vnext(p));
             j_out = P(k1) * V(q);
+        }
     }
 }
+
 
 #undef name
