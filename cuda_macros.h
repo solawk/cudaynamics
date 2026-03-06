@@ -12,8 +12,9 @@
 //#define H_BRANCH(p, v)  (CUDA_kernel.stepType == 0 ? p : (CUDA_kernel.stepType == 1 ? v : (numb)1.0))
 #define H_BRANCH(p, v)  p
 
-//#define H               H_BRANCH(parameters[CUDA_kernel.PARAM_COUNT - 1], currentV[CUDA_kernel.VAR_COUNT - 1])
 #define H               parameters[attributes::parameters::COUNT]
+
+#define H_KERNEL        parameters[CUDA_kernel.PARAM_COUNT - 1]
 
 #define LOCAL_BUFFERS   numb variables[MAX_ATTRIBUTES]{0}; \
                         numb variablesNext[MAX_ATTRIBUTES]{0}; \
@@ -74,10 +75,14 @@
 // Computation macros
 
 // Skip transient steps using the provided finite difference scheme, akin to computing but without recording the trajectory
-#define TRANSIENT_SKIP_NEW(FDS)      if (CUDA_kernel.transientSteps > 0 && data->isFirst)  \
+#define DEC_TRANSIENT_STEPS (!CUDA_kernel.usingTime ? CUDA_kernel.transientSteps : CUDA_kernel.transientTime / H_KERNEL)
+
+#define DEC_STEPS       (!CUDA_kernel.usingTime ? CUDA_kernel.steps : CUDA_kernel.time / H_KERNEL)
+
+#define TRANSIENT_SKIP_NEW(FDS)      if (DEC_TRANSIENT_STEPS > 0 && data->isFirst)  \
                             {  \
                                 numb transientBuffer[MAX_ATTRIBUTES];  \
-                                for (int ts = 0; ts < CUDA_kernel.transientSteps; ts++)  \
+                                for (int ts = 0; ts < DEC_TRANSIENT_STEPS; ts++)  \
                                 {  \
                                     FDS(&(variables[0]), &(transientBuffer[0]), &(parameters[0]));  \
                                     for (int v = 0; v < CUDA_kernel.VAR_COUNT; v++) variables[v] = transientBuffer[v];  \
@@ -91,7 +96,9 @@
 #define TRANSFER_VARIABLES  for (int i = 0; i < CUDA_kernel.VAR_COUNT; i++) variables[i] = variablesNext[i];
 
 #define RECORD_STEP     if (!data->isHires) for (int i = 0; i < CUDA_kernel.VAR_COUNT; i++) CUDA_marshal.trajectory[stepStart + CUDA_kernel.VAR_COUNT + i] = variables[i]; \
-                        else if (s == CUDA_kernel.steps - 1) for (int i = 0; i < CUDA_kernel.VAR_COUNT; i++) CUDA_marshal.variableInits[variation * CUDA_kernel.VAR_COUNT + i] = variables[i];
+                        else if (s == DEC_STEPS - 1) for (int i = 0; i < CUDA_kernel.VAR_COUNT; i++) CUDA_marshal.variableInits[variation * CUDA_kernel.VAR_COUNT + i] = variables[i];
+
+#define TARGET_STEPS    CUDA_kernel.targetSteps
 
 #define NORMAL_STEP_IN_ANALYSIS_IF_HIRES    if (data->isHires) { finiteDifferenceScheme(FDS_ARGUMENTS); TRANSFER_VARIABLES; RECORD_STEP; }
 

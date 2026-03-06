@@ -53,21 +53,14 @@ public:
 	std::vector<Constraint> constraints;
 
 	AnalysesSettings analyses;
-	
-	//std::vector<MapData> mapDatas;
 
 	int VAR_COUNT;
 	int PARAM_COUNT;
-	//int MAP_COUNT;
-
-	// An array of map setting values
-	//numb mapSettings[MAX_MAP_SETTINGS];
 
 	void calcAttributeCounts()
 	{
 		VAR_COUNT = (int)variables.size();
 		PARAM_COUNT = (int)parameters.size();
-		//MAP_COUNT = (int)mapDatas.size();
 	}
 
 	void CopyFrom(Kernel* kernel)
@@ -108,8 +101,6 @@ public:
 		PARAM_COUNT = kernel->PARAM_COUNT;
 		
 		analyses = kernel->analyses;
-
-		//for (int i = 0; i < MAX_MAP_SETTINGS; i++) mapSettings[i] = kernel->mapSettings[i];
 	}
 
 	void CopyParameterValuesFrom(Kernel* kernel)
@@ -131,7 +122,6 @@ public:
 		{
 			variables[i].CalcStepCount();
 			variables[i].CalcStep();
-			//if (!CUDA_kernel.variables[i].DoValuesExist()) CUDA_kernel.variables[i].Generate(); TODO
 			variables[i].ClearValues();
 			variables[i].Generate(false);
 		}
@@ -140,7 +130,6 @@ public:
 		{
 			parameters[i].CalcStepCount();
 			parameters[i].CalcStep();
-			//if (!CUDA_kernel.parameters[i].DoValuesExist()) CUDA_kernel.parameters[i].Generate();
 			parameters[i].ClearValues();
 			parameters[i].Generate(false);
 		}
@@ -148,7 +137,13 @@ public:
 
 	numb GetStepSize()
 	{
-		if (stepType == ST_Parameter) return parameters[PARAM_COUNT - 1].min;
+		if (stepType == ST_Parameter)
+		{
+			if (parameters[PARAM_COUNT - 1].rangingType == RT_None)
+				return parameters[PARAM_COUNT - 1].min;
+			else
+				return parameters[PARAM_COUNT - 1].max;
+		}
 		return 1.0f;
 	}
 };
@@ -180,8 +175,6 @@ public:
 
 	AnalysesSettings analyses;
 
-	//numb mapSettings[MAX_MAP_SETTINGS];
-
 	void CopyFrom(Kernel* kernel)
 	{
 		name = kernel->name;
@@ -207,8 +200,6 @@ public:
 		PARAM_COUNT = kernel->PARAM_COUNT;
 
 		analyses = kernel->analyses;
-
-		//memcpy(mapSettings, kernel->mapSettings, MAX_MAP_SETTINGS * sizeof(numb));
 	}
 
 	void CopyTo(Kernel* kernel)

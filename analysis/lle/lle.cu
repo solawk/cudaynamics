@@ -40,7 +40,7 @@ __host__ __device__ void LLE(Computation* data, uint64_t variation, void(* finit
         for (int i = 0; i < CUDA_kernel.VAR_COUNT; i++)
             LLE_array[i] = LLE_array_next[i];
 
-        sfloat += (numb)CUDA_kernel.targetSteps / CUDA_kernel.steps;
+        sfloat += (numb)TARGET_STEPS / CUDA_kernel.steps;
         if (sfloat >= (numb)1.0)
         {
             sfloat -= floor(sfloat);

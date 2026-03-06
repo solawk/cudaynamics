@@ -27,13 +27,13 @@ __host__ __device__ void kernelProgram_(name)(Computation* data, uint64_t variat
 
     TRANSIENT_SKIP_NEW(finiteDifferenceScheme_(name));
 
-    for (int s = 0; s < CUDA_kernel.steps && !data->isHires; s++)
+    for (int s = 0; s < DEC_STEPS && !data->isHires; s++)
     {
         finiteDifferenceScheme_(name)(FDS_ARGUMENTS);
         TRANSFER_VARIABLES;
 
-        sfloat += (numb)CUDA_kernel.targetSteps / CUDA_kernel.steps;
-        if (sfloat >= (numb)1.0 || s == CUDA_kernel.steps - 1)
+        sfloat += (numb)CUDA_kernel.targetSteps / DEC_STEPS;
+        if (sfloat >= (numb)1.0 || s == DEC_STEPS - 1)
         {
             sfloat -= floor(sfloat);
             stepStart = variationStart + scounter * CUDA_kernel.VAR_COUNT;

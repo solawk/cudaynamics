@@ -475,7 +475,7 @@ int imgui_main(int, char**)
 		}
 
 		IMGUI_WORK_BEGIN;
-		SetupImGuiStyle(applicationSettings.appStyle, applicationSettings.cudaColor, applicationSettings.hiresColor, applicationSettings.openmpColor, 
+		SetupImGuiStyle(applicationSettings.appStyle, applicationSettings.cudaColor, applicationSettings.hiresColor, applicationSettings.openmpColor,
 			HIRES_ON, !HIRES_ON ? applicationSettings.CPU_mode_interactive : applicationSettings.CPU_mode_hires);
 
 		if (fontNotDefault) ImGui::PushFont(GetFont(GlobalFontSettings.family, GlobalFontSettings.size, GlobalFontSettings.isBold, GlobalFontSettings.isItalic));
@@ -537,7 +537,7 @@ int imgui_main(int, char**)
 		}
 		else
 			spoilerVars = false;
-		
+
 		if (KERNEL.stepType != ST_Discrete)
 		{
 			if (spoilerStep) ImGui::SetNextItemOpen(true);
@@ -657,7 +657,7 @@ int imgui_main(int, char**)
 
 		// Steps
 		if (playingParticles) PUSH_DISABLED_FRAME
-		popStyle = false;
+			popStyle = false;
 
 		float stepSize = KERNELNEWCURRENT.GetStepSize();
 
@@ -734,15 +734,22 @@ int imgui_main(int, char**)
 			POP_FRAME(3);
 		}
 
-		if (!HIRES_ON)
+		if (!KERNELNEWCURRENT.usingTime)
 		{
-			ImGui::Checkbox("Use decimation", &(KERNELNEWCURRENT.useDecimation));
-			if (KERNELNEWCURRENT.useDecimation)
-				ImGui::InputFloat("Decimation", &(KERNELNEWCURRENT.decimationCoef), 1.0f, 10.0f, "%.3f", playingParticles ? ImGuiInputTextFlags_ReadOnly : 0);
-			KERNELNEWCURRENT.targetSteps = !KERNELNEWCURRENT.useDecimation ? KERNELNEWCURRENT.steps : KERNELNEWCURRENT.steps / KERNELNEWCURRENT.decimationCoef;
+			if (!HIRES_ON)
+			{
+				ImGui::Checkbox("Use decimation", &(KERNELNEWCURRENT.useDecimation));
+				if (KERNELNEWCURRENT.useDecimation)
+					ImGui::InputFloat("Decimation", &(KERNELNEWCURRENT.decimationCoef), 1.0f, 10.0f, "%.3f", playingParticles ? ImGuiInputTextFlags_ReadOnly : 0);
+				KERNELNEWCURRENT.targetSteps = !KERNELNEWCURRENT.useDecimation ? KERNELNEWCURRENT.steps : KERNELNEWCURRENT.steps / KERNELNEWCURRENT.decimationCoef;
+			}
+			else
+				KERNELNEWCURRENT.targetSteps = KERNELNEWCURRENT.steps;
 		}
-		else 
-			KERNELNEWCURRENT.targetSteps = KERNELNEWCURRENT.steps;
+		else
+		{
+			KERNELNEWCURRENT.targetSteps = KERNELNEWCURRENT.steps = KERNELNEWCURRENT.time / stepSize;
+		}
 
 		variation = 0;
 

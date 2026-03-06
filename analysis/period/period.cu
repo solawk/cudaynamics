@@ -28,8 +28,7 @@ __host__ __device__ void Period(Computation* data, uint64_t variation, void(*fin
     numb maxAllowedValue = settings.maxAllowedValue;    //the maximum value allowed before peak finder deems system dispersive
     numb epsFXP = settings.epsFXP;  //eps area used in checking if system is a fixed point
     numb peakThreshold = settings.peakThreshold;    //minimum value of peak that can be found in peak finder, -inf by default
-    numb stepSize = CUDA_kernel.stepType == ST_Parameter ? parameters[CUDA_kernel.PARAM_COUNT - 1] : 1;    //stepsize of system
-    stepSize *= CUDA_kernel.decimationCoef;
+    numb stepSize = H_KERNEL;    //stepsize of system
     numb timeFractionFXP = settings.timeFractionFXP;    //fraction of the trajectory that the system need to b e fixed point for peak finder to deem it a fixed point
     int fixedPointMaxCount = round((variationSize / varCount) * timeFractionFXP);   //amount of steps in trajectory that the system need to be fixed point for peak finder to deem it a fixed point
 
