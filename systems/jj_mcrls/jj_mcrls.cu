@@ -45,7 +45,7 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
         {
             Vnext(i) = P(Idc) + (fmod((V(t) - P(Idel)) > (numb)0.0 ? (V(t) - P(Idel)) : (P(Idf) / P(Ifreq) + P(Idel) - V(t)), (numb)1.0 / P(Ifreq)) < P(Idf) / P(Ifreq) ? P(Iamp) : (numb)0.0);
             Vnext(t) = V(t) + H;
-            Vnext(theta) = fmod(V(theta) + H * V(v), (numb)2.0 * (numb)3.141592);
+            Vnext(theta) = fmod(V(theta) + H * V(v), (numb)2.0 * (numb)3.141592653589793);
             Vnext(sin_theta) = sin(Vnext(theta));
             Vnext(iL) = V(iL) + H * (((numb)1.0 / P(betaL)) * (V(v) - V(iL)));
             Vnext(v) = V(v) + H * (((numb)1.0 / P(betaC)) * (Vnext(i) - P(betaM) * ((numb)1.0 + P(epsilon) * cos(V(theta))) * V(v) - sin(V(theta)) - P(delta) * V(iL)));
@@ -55,7 +55,7 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
         {
             Vnext(i) = P(Idc) + (fmod((V(t) - P(Idel)) > (numb)0.0 ? (V(t) - P(Idel)) : (P(Idf) / P(Ifreq) + P(Idel) - V(t)), (numb)1.0 / P(Ifreq)) < P(Idf) / P(Ifreq) ? P(Iamp) : (numb)0.0);
             Vnext(t) = V(t) + H;
-            Vnext(theta) = fmod(V(theta) + H * V(v), (numb)2.0 * (numb)3.141592);
+            Vnext(theta) = fmod(V(theta) + H * V(v), (numb)2.0 * (numb)3.141592653589793);
             Vnext(sin_theta) = sin(Vnext(theta));
             Vnext(iL) = V(iL) + H * (((numb)1.0 / P(betaL)) * (V(v) - V(iL)));
             Vnext(v) = V(v) + H * (((numb)1.0 / P(betaC)) * (Vnext(i) - P(betaM) * ((numb)1.0 + P(epsilon) * cos(Vnext(theta))) * V(v) - sin(Vnext(theta)) - P(delta) * Vnext(iL)));
@@ -66,14 +66,14 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
             numb imp = P(Idc) + (fmod((V(t) - P(Idel)) > (numb)0.0 ? (V(t) - P(Idel)) : (P(Idf) / P(Ifreq) + P(Idel) - V(t)), (numb)1.0 / P(Ifreq)) < P(Idf) / P(Ifreq) ? P(Iamp) : (numb)0.0);
             numb tmp = V(t) + H * (numb)0.5;
 
-            numb thetamp = fmod(V(theta) + H * (numb)0.5 * V(v), (numb)2.0 * (numb)3.141592);
+            numb thetamp = fmod(V(theta) + H * (numb)0.5 * V(v), (numb)2.0 * (numb)3.141592653589793);
             numb iLmp = V(iL) + H * (numb)0.5 * (((numb)1.0 / P(betaL)) * (V(v) - V(iL)));
             numb vmp = V(v) + H * (numb)0.5 * (((numb)1.0 / P(betaC)) * (Vnext(i) - P(betaM) * ((numb)1.0 + P(epsilon) * cos(V(theta))) * V(v) - sin(V(theta)) - P(delta) * V(iL)));
 
             Vnext(i) = P(Idc) + (fmod((tmp - P(Idel)) > (numb)0.0 ? (tmp - P(Idel)) : (P(Idf) / P(Ifreq) + P(Idel) - tmp), (numb)1.0 / P(Ifreq)) < P(Idf) / P(Ifreq) ? P(Iamp) : (numb)0.0);
             Vnext(t) = V(t) + H;
 
-            Vnext(theta) = fmod(V(theta) + H * vmp, (numb)2.0 * (numb)3.141592);
+            Vnext(theta) = fmod(V(theta) + H * vmp, (numb)2.0 * (numb)3.141592653589793);
             Vnext(sin_theta) = sin(Vnext(theta));
             Vnext(iL) = V(iL) + H * (((numb)1.0 / P(betaL)) * (vmp - iLmp));
             Vnext(v) = V(v) + H * (((numb)1.0 / P(betaC)) * (Vnext(i) - P(betaM) * ((numb)1.0 + P(epsilon) * cos(thetamp)) * vmp - sin(thetamp) - P(delta) * iLmp));
@@ -88,7 +88,7 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
             numb kiL1 = (((numb)1.0 / P(betaL)) * (V(v) - V(iL)));
             numb kv1 = (((numb)1.0 / P(betaC)) * (i1 - P(betaM) * ((numb)1.0 + P(epsilon) * cos(V(theta))) * V(v) - sin(V(theta)) - P(delta) * V(iL)));
 
-            numb thetamp = fmod(V(theta) + H * (numb)0.5 * ktheta1, (numb)2.0 * (numb)3.141592);
+            numb thetamp = fmod(V(theta) + H * (numb)0.5 * ktheta1, (numb)2.0 * (numb)3.141592653589793);
             numb iLmp = V(iL) + H * (numb)0.5 * kiL1;
             numb vmp = V(v) + H * (numb)0.5 * kv1;
 
@@ -98,7 +98,7 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
             numb kiL2 = (((numb)1.0 / P(betaL)) * (vmp - iLmp));
             numb kv2 = (((numb)1.0 / P(betaC)) * (i2 - P(betaM) * ((numb)1.0 + P(epsilon) * cos(thetamp)) * vmp - sin(thetamp) - P(delta) * iLmp));
 
-            thetamp = fmod(V(theta) + H * (numb)0.5 * ktheta2, (numb)2.0 * (numb)3.141592);
+            thetamp = fmod(V(theta) + H * (numb)0.5 * ktheta2, (numb)2.0 * (numb)3.141592653589793);
             iLmp = V(iL) + H * (numb)0.5 * kiL2;
             vmp = V(v) + H * (numb)0.5 * kv2;
 
@@ -109,7 +109,7 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
             numb kiL3 = (((numb)1.0 / P(betaL)) * (vmp - iLmp));
             numb kv3 = (((numb)1.0 / P(betaC)) * (i3 - P(betaM) * ((numb)1.0 + P(epsilon) * cos(thetamp)) * vmp - sin(thetamp) - P(delta) * iLmp));
 
-            thetamp = fmod(V(theta) + H * ktheta3, (numb)2.0 * (numb)3.141592);
+            thetamp = fmod(V(theta) + H * ktheta3, (numb)2.0 * (numb)3.141592653589793);
             iLmp = V(iL) + H * kiL3;
             vmp = V(v) + H * kv3;
 
@@ -120,7 +120,7 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
             numb kv4 = (((numb)1.0 / P(betaC)) * (i4 - P(betaM) * ((numb)1.0 + P(epsilon) * cos(thetamp)) * vmp - sin(thetamp) - P(delta) * iLmp));
 
             Vnext(i) = i4;
-            Vnext(theta) = fmod(V(theta) + H * (ktheta1 + (numb)2.0 * ktheta2 + (numb)2.0 * ktheta3 + ktheta4) / (numb)6.0, (numb)2.0 * (numb)3.141592);
+            Vnext(theta) = fmod(V(theta) + H * (ktheta1 + (numb)2.0 * ktheta2 + (numb)2.0 * ktheta3 + ktheta4) / (numb)6.0, (numb)2.0 * (numb)3.141592653589793);
             Vnext(sin_theta) = sin(Vnext(theta));
             Vnext(iL) = V(iL) + H * (kiL1 + (numb)2.0 * kiL2 + (numb)2.0 * kiL3 + kiL4) / (numb)6.0;
             Vnext(v) = V(v) + H * (kv1 + (numb)2.0 * kv2 + (numb)2.0 * kv3 + kv4) / (numb)6.0;
@@ -132,17 +132,16 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
             numb h2 = (numb)0.5 * H + P(symmetry);
 
             Vnext(i) = P(Idc) + (fmod((V(t) - P(Idel)) > (numb)0.0 ? (V(t) - P(Idel)) : (P(Idf) / P(Ifreq) + P(Idel) - V(t)), (numb)1.0 / P(Ifreq)) < P(Idf) / P(Ifreq) ? P(Iamp) : (numb)0.0);
-            Vnext(t) = V(t) + h1;
-            numb thetamp = fmod(V(theta) + h1 * V(v), (numb)2.0 * (numb)3.141592);
+            numb thetamp = fmod(V(theta) + h1 * V(v), (numb)2.0 * (numb)3.141592653589793);
             numb iLmp = V(iL) + h1 * (((numb)1.0 / P(betaL)) * (V(v) - V(iL)));
             numb vmp = V(v) + h1 * (((numb)1.0 / P(betaC)) * (Vnext(i) - P(betaM) * ((numb)1.0 + P(epsilon) * cos(thetamp)) * V(v) - sin(thetamp) - P(delta) * iLmp));
 
-            Vnext(t) = V(t) + h2;
-            Vnext(i) = P(Idc) + (fmod((V(t) - P(Idel)) > (numb)0.0 ? (V(t) - P(Idel)) : (P(Idf) / P(Ifreq) + P(Idel) - V(t)), (numb)1.0 / P(Ifreq)) < P(Idf) / P(Ifreq) ? P(Iamp) : (numb)0.0);
+            Vnext(t) = V(t) + H;
+            Vnext(i) = P(Idc) + (fmod((Vnext(t) - P(Idel)) > (numb)0.0 ? (Vnext(t) - P(Idel)) : (P(Idf) / P(Ifreq) + P(Idel) - Vnext(t)), (numb)1.0 / P(Ifreq)) < P(Idf) / P(Ifreq) ? P(Iamp) : (numb)0.0);
             Vnext(v) = vmp + h2 * (((numb)1.0 / P(betaC)) * (Vnext(i) - P(betaM) * ((numb)1.0 + P(epsilon) * cos(thetamp)) * vmp - sin(thetamp) - P(delta) * iLmp));
             Vnext(v) = vmp + h2 * (((numb)1.0 / P(betaC)) * (Vnext(i) - P(betaM) * ((numb)1.0 + P(epsilon) * cos(thetamp)) * Vnext(v) - sin(thetamp) - P(delta) * iLmp));
             Vnext(iL) = (iLmp + h2 * ((numb)1.0 / P(betaL)) * Vnext(v)) / ((numb)1.0 + h2 * ((numb)1.0 / P(betaL)));
-            Vnext(theta) = fmod(thetamp + h2 * Vnext(v), (numb)2.0 * (numb)3.141592);
+            Vnext(theta) = fmod(thetamp + h2 * Vnext(v), (numb)2.0 * (numb)3.141592653589793);
             Vnext(sin_theta) = sin(Vnext(theta));
         }
     }
@@ -150,9 +149,9 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
     {
         ifMETHOD(P(method), ExplicitEuler)
         {
-            Vnext(i) = P(Idc) + P(Iamp) * sin((numb)2.0 * (numb)3.141592 * P(Ifreq) * (V(t) - P(Idel)));
+            Vnext(i) = P(Idc) + P(Iamp) * sin((numb)2.0 * (numb)3.141592653589793 * P(Ifreq) * (V(t) - P(Idel)));
             Vnext(t) = V(t) + H;
-            Vnext(theta) = fmod(V(theta) + H * V(v), (numb)2.0 * (numb)3.141592);
+            Vnext(theta) = fmod(V(theta) + H * V(v), (numb)2.0 * (numb)3.141592653589793);
             Vnext(sin_theta) = sin(Vnext(theta));
             Vnext(iL) = V(iL) + H * (((numb)1.0 / P(betaL)) * (V(v) - V(iL)));
             Vnext(v) = V(v) + H * (((numb)1.0 / P(betaC)) * (Vnext(i) - P(betaM) * ((numb)1.0 + P(epsilon) * cos(V(theta))) * V(v) - sin(V(theta)) - P(delta) * V(iL)));
@@ -160,9 +159,9 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
 
         ifMETHOD(P(method), SemiExplicitEuler)
         {
-            Vnext(i) = P(Idc) + P(Iamp) * sin((numb)2.0 * (numb)3.141592 * P(Ifreq) * (V(t) - P(Idel)));
+            Vnext(i) = P(Idc) + P(Iamp) * sin((numb)2.0 * (numb)3.141592653589793 * P(Ifreq) * (V(t) - P(Idel)));
             Vnext(t) = V(t) + H;
-            Vnext(theta) = fmod(V(theta) + H * V(v), (numb)2.0 * (numb)3.141592);
+            Vnext(theta) = fmod(V(theta) + H * V(v), (numb)2.0 * (numb)3.141592653589793);
             Vnext(sin_theta) = sin(Vnext(theta));
             Vnext(iL) = V(iL) + H * (((numb)1.0 / P(betaL)) * (V(v) - V(iL)));
             Vnext(v) = V(v) + H * (((numb)1.0 / P(betaC)) * (Vnext(i) - P(betaM) * ((numb)1.0 + P(epsilon) * cos(Vnext(theta))) * V(v) - sin(Vnext(theta)) - P(delta) * Vnext(iL)));
@@ -170,17 +169,17 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
 
         ifMETHOD(P(method), ExplicitMidpoint)
         {
-            numb imp = P(Idc) + P(Iamp) * sin((numb)2.0 * (numb)3.141592 * P(Ifreq) * (V(t) - P(Idel)));
+            numb imp = P(Idc) + P(Iamp) * sin((numb)2.0 * (numb)3.141592653589793 * P(Ifreq) * (V(t) - P(Idel)));
             numb tmp = V(t) + H * (numb)0.5;
 
-            numb thetamp = fmod(V(theta) + H * (numb)0.5 * V(v), (numb)2.0 * (numb)3.141592);
+            numb thetamp = fmod(V(theta) + H * (numb)0.5 * V(v), (numb)2.0 * (numb)3.141592653589793);
             numb iLmp = V(iL) + H * (numb)0.5 * (((numb)1.0 / P(betaL)) * (V(v) - V(iL)));
             numb vmp = V(v) + H * (numb)0.5 * (((numb)1.0 / P(betaC)) * (Vnext(i) - P(betaM) * ((numb)1.0 + P(epsilon) * cos(V(theta))) * V(v) - sin(V(theta)) - P(delta) * V(iL)));
 
-            Vnext(i) = P(Idc) + P(Iamp) * sin((numb)2.0 * (numb)3.141592 * P(Ifreq) * (V(t) - P(Idel)));
+            Vnext(i) = P(Idc) + P(Iamp) * sin((numb)2.0 * (numb)3.141592653589793 * P(Ifreq) * (tmp - P(Idel)));
             Vnext(t) = V(t) + H;
 
-            Vnext(theta) = fmod(V(theta) + H * vmp, (numb)2.0 * (numb)3.141592);
+            Vnext(theta) = fmod(V(theta) + H * vmp, (numb)2.0 * (numb)3.141592653589793);
             Vnext(sin_theta) = sin(Vnext(theta));
             Vnext(iL) = V(iL) + H * (((numb)1.0 / P(betaL)) * (vmp - iLmp));
             Vnext(v) = V(v) + H * (((numb)1.0 / P(betaC)) * (Vnext(i) - P(betaM) * ((numb)1.0 + P(epsilon) * cos(thetamp)) * vmp - sin(thetamp) - P(delta) * iLmp));
@@ -188,46 +187,46 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
 
         ifMETHOD(P(method), ExplicitRungeKutta4)
         {
-            numb i1 = P(Idc) + P(Iamp) * sin((numb)2.0 * (numb)3.141592 * P(Ifreq) * (V(t) - P(Idel)));
+            numb i1 = P(Idc) + P(Iamp) * sin((numb)2.0 * (numb)3.141592653589793 * P(Ifreq) * (V(t) - P(Idel)));
             numb kt1 = V(t) + (numb)0.5 * H;
 
             numb ktheta1 = V(v);
             numb kiL1 = (((numb)1.0 / P(betaL)) * (V(v) - V(iL)));
             numb kv1 = (((numb)1.0 / P(betaC)) * (i1 - P(betaM) * ((numb)1.0 + P(epsilon) * cos(V(theta))) * V(v) - sin(V(theta)) - P(delta) * V(iL)));
 
-            numb thetamp = fmod(V(theta) + H * (numb)0.5 * ktheta1, (numb)2.0 * (numb)3.141592);
+            numb thetamp = fmod(V(theta) + H * (numb)0.5 * ktheta1, (numb)2.0 * (numb)3.141592653589793);
             numb iLmp = V(iL) + H * (numb)0.5 * kiL1;
             numb vmp = V(v) + H * (numb)0.5 * kv1;
 
-            numb i2 = P(Idc) + P(Iamp) * sin((numb)2.0 * (numb)3.141592 * P(Ifreq) * (V(t) - P(Idel)));
+            numb i2 = P(Idc) + P(Iamp) * sin((numb)2.0 * (numb)3.141592653589793 * P(Ifreq) * (kt1 - P(Idel)));
 
             numb ktheta2 = vmp;
             numb kiL2 = (((numb)1.0 / P(betaL)) * (vmp - iLmp));
             numb kv2 = (((numb)1.0 / P(betaC)) * (i2 - P(betaM) * ((numb)1.0 + P(epsilon) * cos(thetamp)) * vmp - sin(thetamp) - P(delta) * iLmp));
 
-            thetamp = fmod(V(theta) + H * (numb)0.5 * ktheta2, (numb)2.0 * (numb)3.141592);
+            thetamp = fmod(V(theta) + H * (numb)0.5 * ktheta2, (numb)2.0 * (numb)3.141592653589793);
             iLmp = V(iL) + H * (numb)0.5 * kiL2;
             vmp = V(v) + H * (numb)0.5 * kv2;
 
-            numb i3 = P(Idc) + P(Iamp) * sin((numb)2.0 * (numb)3.141592 * P(Ifreq) * (V(t) - P(Idel)));
+            numb i3 = P(Idc) + P(Iamp) * sin((numb)2.0 * (numb)3.141592653589793 * P(Ifreq) * (kt1 - P(Idel)));
             Vnext(t) = V(t) + H;
 
             numb ktheta3 = vmp;
             numb kiL3 = (((numb)1.0 / P(betaL)) * (vmp - iLmp));
             numb kv3 = (((numb)1.0 / P(betaC)) * (i3 - P(betaM) * ((numb)1.0 + P(epsilon) * cos(thetamp)) * vmp - sin(thetamp) - P(delta) * iLmp));
 
-            thetamp = fmod(V(theta) + H * ktheta3, (numb)2.0 * (numb)3.141592);
+            thetamp = fmod(V(theta) + H * ktheta3, (numb)2.0 * (numb)3.141592653589793);
             iLmp = V(iL) + H * kiL3;
             vmp = V(v) + H * kv3;
 
-            numb i4 = P(Idc) + P(Iamp) * sin((numb)2.0 * (numb)3.141592 * P(Ifreq) * (V(t) - P(Idel)));
+            numb i4 = P(Idc) + P(Iamp) * sin((numb)2.0 * (numb)3.141592653589793 * P(Ifreq) * (Vnext(t) - P(Idel)));
 
             numb ktheta4 = vmp;
             numb kiL4 = (((numb)1.0 / P(betaL)) * (vmp - iLmp));
             numb kv4 = (((numb)1.0 / P(betaC)) * (i4 - P(betaM) * ((numb)1.0 + P(epsilon) * cos(thetamp)) * vmp - sin(thetamp) - P(delta) * iLmp));
 
             Vnext(i) = i4;
-            Vnext(theta) = fmod(V(theta) + H * (ktheta1 + (numb)2.0 * ktheta2 + (numb)2.0 * ktheta3 + ktheta4) / (numb)6.0, (numb)2.0 * (numb)3.141592);
+            Vnext(theta) = fmod(V(theta) + H * (ktheta1 + (numb)2.0 * ktheta2 + (numb)2.0 * ktheta3 + ktheta4) / (numb)6.0, (numb)2.0 * (numb)3.141592653589793);
             Vnext(sin_theta) = sin(Vnext(theta));
             Vnext(iL) = V(iL) + H * (kiL1 + (numb)2.0 * kiL2 + (numb)2.0 * kiL3 + kiL4) / (numb)6.0;
             Vnext(v) = V(v) + H * (kv1 + (numb)2.0 * kv2 + (numb)2.0 * kv3 + kv4) / (numb)6.0;
@@ -238,18 +237,18 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
             numb h1 = (numb)0.5 * H - P(symmetry);
             numb h2 = (numb)0.5 * H + P(symmetry);
 
-            Vnext(i) = P(Idc) + P(Iamp) * sin((numb)2.0 * (numb)3.141592 * P(Ifreq) * (V(t) - P(Idel)));
-            Vnext(t) = V(t) + h1;
-            numb thetamp = fmod(V(theta) + h1 * V(v), (numb)2.0 * (numb)3.141592);
+            Vnext(i) = P(Idc) + P(Iamp) * sin((numb)2.0 * (numb)3.141592653589793 * P(Ifreq) * (V(t) - P(Idel)));
+            
+            numb thetamp = fmod(V(theta) + h1 * V(v), (numb)2.0 * (numb)3.141592653589793);
             numb iLmp = V(iL) + h1 * (((numb)1.0 / P(betaL)) * (V(v) - V(iL)));
             numb vmp = V(v) + h1 * (((numb)1.0 / P(betaC)) * (Vnext(i) - P(betaM) * ((numb)1.0 + P(epsilon) * cos(thetamp)) * V(v) - sin(thetamp) - P(delta) * iLmp));
 
-            Vnext(t) = V(t) + h2;
-            Vnext(i) = P(Idc) + P(Iamp) * sin((numb)2.0 * (numb)3.141592 * P(Ifreq) * (V(t) - P(Idel)));
+            Vnext(t) = V(t) + H;
+            Vnext(i) = P(Idc) + P(Iamp) * sin((numb)2.0 * (numb)3.141592653589793 * P(Ifreq) * (Vnext(t) - P(Idel)));
             Vnext(v) = vmp + h2 * (((numb)1.0 / P(betaC)) * (Vnext(i) - P(betaM) * ((numb)1.0 + P(epsilon) * cos(thetamp)) * vmp - sin(thetamp) - P(delta) * iLmp));
             Vnext(v) = vmp + h2 * (((numb)1.0 / P(betaC)) * (Vnext(i) - P(betaM) * ((numb)1.0 + P(epsilon) * cos(thetamp)) * Vnext(v) - sin(thetamp) - P(delta) * iLmp));
             Vnext(iL) = (iLmp + h2 * ((numb)1.0 / P(betaL)) * Vnext(v)) / ((numb)1.0 + h2 * ((numb)1.0 / P(betaL)));
-            Vnext(theta) = fmod(thetamp + h2 * Vnext(v), (numb)2.0 * (numb)3.141592);
+            Vnext(theta) = fmod(thetamp + h2 * Vnext(v), (numb)2.0 * (numb)3.141592653589793);
             Vnext(sin_theta) = sin(Vnext(theta));
         }
     }
@@ -257,9 +256,9 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
     {
         ifMETHOD(P(method), ExplicitEuler)
         {
-            Vnext(i) = P(Idc) + P(Iamp) * (((numb)4.0 * P(Ifreq) * (V(t) - P(Idel)) - (numb)2.0 * floor(((numb)4.0 * P(Ifreq) * (V(t) - P(Idel)) + (numb)1.0) / (numb)2.0)) * pow((-1), floor(((numb)4.0 * P(Ifreq) * (V(t) - P(Idel)) + (numb)1.0) / (numb)2.0)));
+            Vnext(i) = P(Idc) + P(Iamp) * (((numb)4.0 * P(Ifreq) * (V(t) - P(Idel)) - (numb)2.0 * floor(((numb)4.0 * P(Ifreq) * (V(t) - P(Idel)) + (numb)1.0) / (numb)2.0)) * ((int)floor(((numb)4.0 * P(Ifreq) * (V(t) - P(Idel)) + (numb)1.0) / (numb)2.0) % 2 == 0 ? (numb)1.0 : (numb)-1.0));
             Vnext(t) = V(t) + H;
-            Vnext(theta) = fmod(V(theta) + H * V(v), (numb)2.0 * (numb)3.141592);
+            Vnext(theta) = fmod(V(theta) + H * V(v), (numb)2.0 * (numb)3.141592653589793);
             Vnext(sin_theta) = sin(Vnext(theta));
             Vnext(iL) = V(iL) + H * (((numb)1.0 / P(betaL)) * (V(v) - V(iL)));
             Vnext(v) = V(v) + H * (((numb)1.0 / P(betaC)) * (Vnext(i) - P(betaM) * (1 + P(epsilon) * cos(V(theta))) * V(v) - sin(V(theta)) - P(delta) * V(iL)));
@@ -267,9 +266,9 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
 
         ifMETHOD(P(method), SemiExplicitEuler)
         {
-            Vnext(i) = P(Idc) + P(Iamp) * (((numb)4.0 * P(Ifreq) * (V(t) - P(Idel)) - (numb)2.0 * floor((((numb)4.0 * P(Ifreq) * (V(t) - P(Idel)) + (numb)1.0) / (numb)2.0))) * pow((numb)-1.0, floor((((numb)4.0 * P(Ifreq) * (V(t) - P(Idel)) + (numb)1.0) / (numb)2.0))));
+            Vnext(i) = P(Idc) + P(Iamp) * (((numb)4.0 * P(Ifreq) * (V(t) - P(Idel)) - (numb)2.0 * floor(((numb)4.0 * P(Ifreq) * (V(t) - P(Idel)) + (numb)1.0) / (numb)2.0)) * ((int)floor(((numb)4.0 * P(Ifreq) * (V(t) - P(Idel)) + (numb)1.0) / (numb)2.0) % 2 == 0 ? (numb)1.0 : (numb)-1.0));
             Vnext(t) = V(t) + H;
-            Vnext(theta) = fmod(V(theta) + H * V(v), (numb)2.0 * (numb)3.141592);
+            Vnext(theta) = fmod(V(theta) + H * V(v), (numb)2.0 * (numb)3.141592653589793);
             Vnext(sin_theta) = sin(Vnext(theta));
             Vnext(iL) = V(iL) + H * (((numb)1.0 / P(betaL)) * (V(v) - V(iL)));
             Vnext(v) = V(v) + H * (((numb)1.0 / P(betaC)) * (Vnext(i) - P(betaM) * ((numb)1.0 + P(epsilon) * cos(Vnext(theta))) * V(v) - sin(Vnext(theta)) - P(delta) * Vnext(iL)));
@@ -277,17 +276,17 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
 
         ifMETHOD(P(method), ExplicitMidpoint)
         {
-            numb imp = P(Idc) + P(Iamp) * (((numb)4.0 * P(Ifreq) * (V(t) - P(Idel)) - (numb)2.0 * floor((((numb)4.0 * P(Ifreq) * (V(t) - P(Idel)) + (numb)1.0) / (numb)2.0))) * pow((numb)-1.0, floor((((numb)4.0 * P(Ifreq) * (V(t) - P(Idel)) + (numb)1.0) / (numb)2.0))));
+            numb imp = P(Idc) + P(Iamp) * (((numb)4.0 * P(Ifreq) * (V(t) - P(Idel)) - (numb)2.0 * floor(((numb)4.0 * P(Ifreq) * (V(t) - P(Idel)) + (numb)1.0) / (numb)2.0)) * ((int)floor(((numb)4.0 * P(Ifreq) * (V(t) - P(Idel)) + (numb)1.0) / (numb)2.0) % 2 == 0 ? (numb)1.0 : (numb)-1.0));
             numb tmp = V(t) + H * (numb)0.5;
 
-            numb thetamp = fmod(V(theta) + H * (numb)0.5 * V(v), (numb)2.0 * (numb)3.141592);
+            numb thetamp = fmod(V(theta) + H * (numb)0.5 * V(v), (numb)2.0 * (numb)3.141592653589793);
             numb iLmp = V(iL) + H * (numb)0.5 * (((numb)1.0 / P(betaL)) * (V(v) - V(iL)));
             numb vmp = V(v) + H * (numb)0.5 * (((numb)1.0 / P(betaC)) * (Vnext(i) - P(betaM) * ((numb)1.0 + P(epsilon) * cos(V(theta))) * V(v) - sin(V(theta)) - P(delta) * V(iL)));
 
-            Vnext(i) = P(Idc) + P(Iamp) * (((numb)4.0 * P(Ifreq) * (V(t) - P(Idel)) - (numb)2.0 * floor((((numb)4.0 * P(Ifreq) * (V(t) - P(Idel)) + (numb)1.0) / (numb)2.0))) * pow((numb)-1.0, floor((((numb)4.0 * P(Ifreq) * (V(t) - P(Idel)) + (numb)1.0) / (numb)2.0))));
+            Vnext(i) = P(Idc) + P(Iamp) * (((numb)4.0 * P(Ifreq) * (tmp - P(Idel)) - (numb)2.0 * floor(((numb)4.0 * P(Ifreq) * (tmp - P(Idel)) + (numb)1.0) / (numb)2.0)) * ((int)floor(((numb)4.0 * P(Ifreq) * (tmp - P(Idel)) + (numb)1.0) / (numb)2.0) % 2 == 0 ? (numb)1.0 : (numb)-1.0));
             Vnext(t) = V(t) + H;
 
-            Vnext(theta) = fmod(V(theta) + H * vmp, (numb)2.0 * (numb)3.141592);
+            Vnext(theta) = fmod(V(theta) + H * vmp, (numb)2.0 * (numb)3.141592653589793);
             Vnext(sin_theta) = sin(Vnext(theta));
             Vnext(iL) = V(iL) + H * (((numb)1.0 / P(betaL)) * (vmp - iLmp));
             Vnext(v) = V(v) + H * (((numb)1.0 / P(betaC)) * (Vnext(i) - P(betaM) * ((numb)1.0 + P(epsilon) * cos(thetamp)) * vmp - sin(thetamp) - P(delta) * iLmp));
@@ -295,46 +294,46 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
 
         ifMETHOD(P(method), ExplicitRungeKutta4)
         {
-            numb i1 = P(Idc) + P(Iamp) * (((numb)4.0 * P(Ifreq) * (V(t) - P(Idel)) - (numb)2.0 * floor((((numb)4.0 * P(Ifreq) * (V(t) - P(Idel)) + (numb)1.0) / (numb)2.0))) * pow((numb)-1.0, floor((((numb)4.0 * P(Ifreq) * (V(t) - P(Idel)) + (numb)1.0) / (numb)2.0))));
+            numb i1 = P(Idc) + P(Iamp) * (((numb)4.0 * P(Ifreq) * (V(t) - P(Idel)) - (numb)2.0 * floor(((numb)4.0 * P(Ifreq) * (V(t) - P(Idel)) + (numb)1.0) / (numb)2.0)) * ((int)floor(((numb)4.0 * P(Ifreq) * (V(t) - P(Idel)) + (numb)1.0) / (numb)2.0) % 2 == 0 ? (numb)1.0 : (numb)-1.0));
             numb kt1 = V(t) + (numb)0.5 * H;
 
             numb ktheta1 = V(v);
             numb kiL1 = (((numb)1.0 / P(betaL)) * (V(v) - V(iL)));
             numb kv1 = (((numb)1.0 / P(betaC)) * (i1 - P(betaM) * ((numb)1.0 + P(epsilon) * cos(V(theta))) * V(v) - sin(V(theta)) - P(delta) * V(iL)));
 
-            numb thetamp = fmod(V(theta) + H * (numb)0.5 * ktheta1, (numb)2.0 * (numb)3.141592);
+            numb thetamp = fmod(V(theta) + H * (numb)0.5 * ktheta1, (numb)2.0 * (numb)3.141592653589793);
             numb iLmp = V(iL) + H * (numb)0.5 * kiL1;
             numb vmp = V(v) + H * (numb)0.5 * kv1;
 
-            numb i2 = P(Idc) + P(Iamp) * (((numb)4.0 * P(Ifreq) * (V(t) - P(Idel)) - (numb)2.0 * floor((((numb)4.0 * P(Ifreq) * (V(t) - P(Idel)) + (numb)1.0) / (numb)2.0))) * pow((numb)-1.0, floor((((numb)4.0 * P(Ifreq) * (V(t) - P(Idel)) + (numb)1.0) / (numb)2.0))));
+            numb i2 = P(Idc) + P(Iamp) * (((numb)4.0 * P(Ifreq) * (kt1 - P(Idel)) - (numb)2.0 * floor(((numb)4.0 * P(Ifreq) * (kt1 - P(Idel)) + (numb)1.0) / (numb)2.0)) * ((int)floor(((numb)4.0 * P(Ifreq) * (kt1 - P(Idel)) + (numb)1.0) / (numb)2.0) % 2 == 0 ? (numb)1.0 : (numb)-1.0));
 
             numb ktheta2 = vmp;
             numb kiL2 = (((numb)1.0 / P(betaL)) * (vmp - iLmp));
             numb kv2 = (((numb)1.0 / P(betaC)) * (i2 - P(betaM) * ((numb)1.0 + P(epsilon) * cos(thetamp)) * vmp - sin(thetamp) - P(delta) * iLmp));
 
-            thetamp = fmod(V(theta) + H * (numb)0.5 * ktheta2, (numb)2.0 * (numb)3.141592);
+            thetamp = fmod(V(theta) + H * (numb)0.5 * ktheta2, (numb)2.0 * (numb)3.141592653589793);
             iLmp = V(iL) + H * (numb)0.5 * kiL2;
             vmp = V(v) + H * (numb)0.5 * kv2;
 
-            numb i3 = P(Idc) + P(Iamp) * (((numb)4.0 * P(Ifreq) * (V(t) - P(Idel)) - (numb)2.0 * floor((((numb)4.0 * P(Ifreq) * (V(t) - P(Idel)) + (numb)1.0) / (numb)2.0))) * pow((numb)-1.0, floor((((numb)4.0 * P(Ifreq) * (V(t) - P(Idel)) + (numb)1.0) / (numb)2.0))));
+            numb i3 = P(Idc) + P(Iamp) * (((numb)4.0 * P(Ifreq) * (kt1 - P(Idel)) - (numb)2.0 * floor(((numb)4.0 * P(Ifreq) * (kt1 - P(Idel)) + (numb)1.0) / (numb)2.0)) * ((int)floor(((numb)4.0 * P(Ifreq) * (kt1 - P(Idel)) + (numb)1.0) / (numb)2.0) % 2 == 0 ? (numb)1.0 : (numb)-1.0));
             Vnext(t) = V(t) + H;
 
             numb ktheta3 = vmp;
             numb kiL3 = (((numb)1.0 / P(betaL)) * (vmp - iLmp));
             numb kv3 = (((numb)1.0 / P(betaC)) * (i3 - P(betaM) * ((numb)1.0 + P(epsilon) * cos(thetamp)) * vmp - sin(thetamp) - P(delta) * iLmp));
 
-            thetamp = fmod(V(theta) + H * ktheta3, (numb)2.0 * (numb)3.141592);
+            thetamp = fmod(V(theta) + H * ktheta3, (numb)2.0 * (numb)3.141592653589793);
             iLmp = V(iL) + H * kiL3;
             vmp = V(v) + H * kv3;
 
-            numb i4 = P(Idc) + P(Iamp) * (((numb)4.0 * P(Ifreq) * (V(t) - P(Idel)) - (numb)2.0 * floor((((numb)4.0 * P(Ifreq) * (V(t) - P(Idel)) + (numb)1.0) / (numb)2.0))) * pow((numb)-1.0, floor((((numb)4.0 * P(Ifreq) * (V(t) - P(Idel)) + (numb)1.0) / (numb)2.0))));
+            numb i4 = P(Idc) + P(Iamp) * (((numb)4.0 * P(Ifreq) * (Vnext(t) - P(Idel)) - (numb)2.0 * floor((((numb)4.0 * P(Ifreq) * (Vnext(t) - P(Idel)) + (numb)1.0) / (numb)2.0))) * pow((numb)-1.0, floor((((numb)4.0 * P(Ifreq) * (Vnext(t) - P(Idel)) + (numb)1.0) / (numb)2.0))));
 
             numb ktheta4 = vmp;
             numb kiL4 = (((numb)1.0 / P(betaL)) * (vmp - iLmp));
             numb kv4 = (((numb)1.0 / P(betaC)) * (i4 - P(betaM) * ((numb)1.0 + P(epsilon) * cos(thetamp)) * vmp - sin(thetamp) - P(delta) * iLmp));
 
             Vnext(i) = i4;
-            Vnext(theta) = fmod(V(theta) + H * (ktheta1 + (numb)2.0 * ktheta2 + (numb)2.0 * ktheta3 + ktheta4) / (numb)6.0, (numb)2.0 * (numb)3.141592);
+            Vnext(theta) = fmod(V(theta) + H * (ktheta1 + (numb)2.0 * ktheta2 + (numb)2.0 * ktheta3 + ktheta4) / (numb)6.0, (numb)2.0 * (numb)3.141592653589793);
             Vnext(sin_theta) = sin(Vnext(theta));
             Vnext(iL) = V(iL) + H * (kiL1 + (numb)2.0 * kiL2 + (numb)2.0 * kiL3 + kiL4) / (numb)6.0;
             Vnext(v) = V(v) + H * (kv1 + (numb)2.0 * kv2 + (numb)2.0 * kv3 + kv4) / (numb)6.0;
@@ -345,18 +344,17 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
             numb h1 = (numb)0.5 * H - P(symmetry);
             numb h2 = (numb)0.5 * H + P(symmetry);
 
-            Vnext(i) = P(Idc) + P(Iamp) * (((numb)4.0 * P(Ifreq) * (V(t) - P(Idel)) - (numb)2.0 * floor((((numb)4.0 * P(Ifreq) * (V(t) - P(Idel)) + (numb)1.0) / (numb)2.0))) * pow((numb)-1.0, floor((((numb)4.0 * P(Ifreq) * (V(t) - P(Idel)) + (numb)1.0) / (numb)2.0))));
-            Vnext(t) = V(t) + h1;
-            numb thetamp = fmod(V(theta) + h1 * V(v), (numb)2.0 * (numb)3.141592);
+            Vnext(i) = P(Idc) + P(Iamp) * (((numb)4.0 * P(Ifreq) * (V(t) - P(Idel)) - (numb)2.0 * floor(((numb)4.0 * P(Ifreq) * (V(t) - P(Idel)) + (numb)1.0) / (numb)2.0)) * ((int)floor(((numb)4.0 * P(Ifreq) * (V(t) - P(Idel)) + (numb)1.0) / (numb)2.0) % 2 == 0 ? (numb)1.0 : (numb)-1.0));
+            numb thetamp = fmod(V(theta) + h1 * V(v), (numb)2.0 * (numb)3.141592653589793);
             numb iLmp = V(iL) + h1 * (((numb)1.0 / P(betaL)) * (V(v) - V(iL)));
             numb vmp = V(v) + h1 * (((numb)1.0 / P(betaC)) * (Vnext(i) - P(betaM) * ((numb)1.0 + P(epsilon) * cos(thetamp)) * V(v) - sin(thetamp) - P(delta) * iLmp));
 
-            Vnext(t) = V(t) + h2;
-            Vnext(i) = P(Idc) + P(Iamp) * (((numb)4.0 * P(Ifreq) * (V(t) - P(Idel)) - (numb)2.0 * floor((((numb)4.0 * P(Ifreq) * (V(t) - P(Idel)) + (numb)1.0) / (numb)2.0))) * pow((numb)-1.0, floor((((numb)4.0 * P(Ifreq) * (V(t) - P(Idel)) + (numb)1.0) / (numb)2.0))));
+            Vnext(t) = V(t) + H;
+            Vnext(i) = P(Idc) + P(Iamp) * (((numb)4.0 * P(Ifreq) * (Vnext(t) - P(Idel)) - (numb)2.0 * floor(((numb)4.0 * P(Ifreq) * (Vnext(t) - P(Idel)) + (numb)1.0) / (numb)2.0)) * ((int)floor(((numb)4.0 * P(Ifreq) * (Vnext(t) - P(Idel)) + (numb)1.0) / (numb)2.0) % 2 == 0 ? (numb)1.0 : (numb)-1.0));
             Vnext(v) = vmp + h2 * (((numb)1.0 / P(betaC)) * (Vnext(i) - P(betaM) * ((numb)1.0 + P(epsilon) * cos(thetamp)) * vmp - sin(thetamp) - P(delta) * iLmp));
             Vnext(v) = vmp + h2 * (((numb)1.0 / P(betaC)) * (Vnext(i) - P(betaM) * ((numb)1.0 + P(epsilon) * cos(thetamp)) * Vnext(v) - sin(thetamp) - P(delta) * iLmp));
             Vnext(iL) = (iLmp + h2 * ((numb)1.0 / P(betaL)) * Vnext(v)) / ((numb)1.0 + h2 * ((numb)1.0 / P(betaL)));
-            Vnext(theta) = fmod(thetamp + h2 * Vnext(v), (numb)2.0 * (numb)3.141592);
+            Vnext(theta) = fmod(thetamp + h2 * Vnext(v), (numb)2.0 * (numb)3.141592653589793);
             Vnext(sin_theta) = sin(Vnext(theta));
         }
     }
