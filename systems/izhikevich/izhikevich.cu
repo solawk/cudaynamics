@@ -117,8 +117,7 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
 
         ifMETHOD(P(method), ImplicitMidpoint)
         {
-            //не квадратный сигнал? опечатка?
-            numb imp = P(Idc) + P(Iamp) * (((numb)4.0 * P(Ifreq) * (V(t) - P(Idel)) - (numb)2.0 * floor(((numb)4.0 * P(Ifreq) * (V(t) - P(Idel)) + (numb)1.0) / (numb)2.0)) * pow((numb)(-1), floor(((numb)4.0 * P(Ifreq) * (V(t) - P(Idel)) + (numb)1.0) / (numb)2.0)));
+            numb imp = P(Idc) + (fmod((V(t) - P(Idel)) > (numb)0 ? (V(t) - P(Idel)) : (P(Idf) / P(Ifreq) + P(Idel) - V(t)), (numb)1.0 / P(Ifreq)) < P(Idf) / P(Ifreq) ? P(Iamp) : (numb)0.0);
             numb tmp = V(t) + (numb)0.5 * H;
             numb v_mid_guess = V(v) + H * (numb)0.5 * (P(p0) * V(v) * V(v) + P(p1) * V(v) + P(p2) - V(u) + imp);
             numb u_mid_guess = V(u) + H * (numb)0.5 * (P(a) * (P(b) * Vnext(v) - V(u)));
@@ -327,5 +326,6 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
         }
 	}
 }
+
 
 #undef name
