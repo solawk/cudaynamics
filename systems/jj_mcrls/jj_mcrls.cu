@@ -21,6 +21,8 @@ __host__ __device__ void kernelProgram_(name)(Computation* data, uint64_t variat
     uint64_t stepStart, variationStart = variation * CUDA_marshal.variationSize;         // Start index to store the modelling data for the variation
     LOCAL_BUFFERS;
     LOAD_ATTRIBUTES(false);
+    numb sfloat = (numb)0.0;
+    int scounter = 0;
 
     // Custom area (usually) starts here
 
@@ -28,9 +30,17 @@ __host__ __device__ void kernelProgram_(name)(Computation* data, uint64_t variat
 
     for (int s = 0; s < CUDA_kernel.steps && !data->isHires; s++)
     {
-        stepStart = variationStart + s * CUDA_kernel.VAR_COUNT;
         finiteDifferenceScheme_(name)(FDS_ARGUMENTS);
-        RECORD_STEP;
+        TRANSFER_VARIABLES;
+
+        sfloat += (numb)CUDA_kernel.targetSteps / CUDA_kernel.steps;
+        if (sfloat >= (numb)1.0 || s == CUDA_kernel.steps - 1)
+        {
+            sfloat -= floor(sfloat);
+            stepStart = variationStart + scounter * CUDA_kernel.VAR_COUNT;
+            RECORD_STEP;
+            scounter++;
+        }
     }
 
     // Analysis
