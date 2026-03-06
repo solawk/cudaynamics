@@ -377,7 +377,7 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
             numb j_in = P(v5) + P(v6) * V(p) * V(p) / (P(k2) * P(k2) + V(p) * V(p));
             numb j_out = P(k1) * V(q);
 
-            Vnext(j) = P(Jdc) + P(Jamp) * sin((numb)2.0 * (numb)3.141592 * P(Jfreq) * (V(t) - P(Jdel)));
+            Vnext(j) = P(Jdc) + P(Jamp) * sin((numb)2.0 * (numb)3.141592653589793 * P(Jfreq) * (V(t) - P(Jdel)));
             Vnext(t) = V(t) + H;
 
             Vnext(p) = V(p) + H * ((P(c_IP3_e) - V(p)) / P(tau_IP3) + j_PLC + Vnext(j));
@@ -395,7 +395,7 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
             numb j_in = P(v5) + P(v6) * V(p) * V(p) / (P(k2) * P(k2) + V(p) * V(p));
             numb j_out = P(k1) * V(q);
 
-            numb jmp = P(Jdc) + P(Jamp) * sin((numb)2.0 * (numb)3.141592 * P(Jfreq) * (V(t) - P(Jdel)));
+            numb jmp = P(Jdc) + P(Jamp) * sin((numb)2.0 * (numb)3.141592653589793 * P(Jfreq) * (V(t) - P(Jdel)));
             numb tmp = V(t) + H * (numb)0.5;
 
             numb kp1 = ((P(c_IP3_e) - V(p)) / P(tau_IP3) + j_PLC + jmp);
@@ -406,7 +406,7 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
             numb qmp = V(q) + (numb)0.5 * H * kq1;
             numb zmp = V(z) + (numb)0.5 * H * kz1;
 
-            Vnext(j) = P(Jdc) + P(Jamp) * sin((numb)2.0 * (numb)3.141592 * P(Jfreq) * (tmp - P(Jdel)));
+            Vnext(j) = P(Jdc) + P(Jamp) * sin((numb)2.0 * (numb)3.141592653589793 * P(Jfreq) * (tmp - P(Jdel)));
             Vnext(t) = V(t) + H;
 
             j_ch = (P(c1) * P(v1) * pmp * pmp * pmp * zmp * zmp * zmp * qmp * qmp * qmp *
@@ -436,7 +436,7 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
             numb j_in = P(v5) + P(v6) * V(p) * V(p) / (P(k2) * P(k2) + V(p) * V(p));
             numb j_out = P(k1) * V(q);
 
-            numb jmp = P(Jdc) + P(Jamp) * sin((numb)2.0 * (numb)3.141592 * P(Jfreq) * (V(t) - P(Jdel)));
+            numb jmp = P(Jdc) + P(Jamp) * sin((numb)2.0 * (numb)3.141592653589793 * P(Jfreq) * (V(t) - P(Jdel)));
             numb tmp = V(t) + H * (numb)0.5;
 
             numb kp1 = ((P(c_IP3_e) - V(p)) / P(tau_IP3) + j_PLC + jmp);
@@ -455,7 +455,7 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
             j_in = P(v5) + P(v6) * pmp * pmp / (P(k2) * P(k2) + pmp * pmp);
             j_out = P(k1) * qmp;
 
-            jmp = P(Jdc) + P(Jamp) * sin((numb)2.0 * (numb)3.141592 * P(Jfreq) * (tmp - P(Jdel)));
+            jmp = P(Jdc) + P(Jamp) * sin((numb)2.0 * (numb)3.141592653589793 * P(Jfreq) * (tmp - P(Jdel)));
             tmp = V(t) + H * (numb)0.5;
 
             numb kp2 = ((P(c_IP3_e) - pmp) / P(tau_IP3) + j_PLC + jmp);
@@ -474,7 +474,7 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
             j_in = P(v5) + P(v6) * pmp * pmp / (P(k2) * P(k2) + pmp * pmp);
             j_out = P(k1) * qmp;
 
-            jmp = P(Jdc) + P(Jamp) * sin((numb)2.0 * (numb)3.141592 * P(Jfreq) * (tmp - P(Jdel)));
+            jmp = P(Jdc) + P(Jamp) * sin((numb)2.0 * (numb)3.141592653589793 * P(Jfreq) * (tmp - P(Jdel)));
             tmp = V(t) + H;
 
             numb kp3 = ((P(c_IP3_e) - pmp) / P(tau_IP3) + j_PLC + jmp);
@@ -493,7 +493,7 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
             j_in = P(v5) + P(v6) * pmp * pmp / (P(k2) * P(k2) + pmp * pmp);
             j_out = P(k1) * qmp;
 
-            Vnext(j) = P(Jdc) + P(Jamp) * sin((numb)2.0 * (numb)3.141592 * P(Jfreq) * (tmp - P(Jdel)));
+            Vnext(j) = P(Jdc) + P(Jamp) * sin((numb)2.0 * (numb)3.141592653589793 * P(Jfreq) * (tmp - P(Jdel)));
             Vnext(t) = V(t) + H;
 
             numb kp4 = ((P(c_IP3_e) - pmp) / P(tau_IP3) + j_PLC + Vnext(j));
@@ -700,8 +700,7 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
             numb j_in = P(v5) + P(v6) * V(p) * V(p) / (P(k2) * P(k2) + V(p) * V(p));
             numb j_out = P(k1) * V(q);
 
-            Vnext(j) = P(Jdc) + P(Jamp) * (((numb)4.0 * P(Jfreq) * (V(t) - P(Jdel)) - (numb)2.0 * floor((((numb)4.0 * P(Jfreq) * (V(t) - P(Jdel)) + (numb)1.0) /
-                (numb)2.0))) * pow((numb)-1.0, floor((((numb)4.0 * P(Jfreq) * (V(t) - P(Jdel)) + (numb)1.0) / (numb)2.0))));
+            Vnext(j) = P(Jdc) + P(Jamp) * (((numb)4.0 * P(Jfreq) * (V(t) - P(Jdel)) - (numb)2.0 * floor(((numb)4.0 * P(Jfreq) * (V(t) - P(Jdel)) + (numb)1.0) / (numb)2.0)) * ((int)floor(((numb)4.0 * P(Jfreq) * (V(t) - P(Jdel)) + (numb)1.0) / (numb)2.0) % 2 == 0 ? (numb)1.0 : (numb)-1.0));
             Vnext(t) = V(t) + H;
 
             Vnext(p) = V(p) + H * ((P(c_IP3_e) - V(p)) / P(tau_IP3) + j_PLC + Vnext(j));
@@ -719,8 +718,7 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
             numb j_in = P(v5) + P(v6) * V(p) * V(p) / (P(k2) * P(k2) + V(p) * V(p));
             numb j_out = P(k1) * V(q);
 
-            numb jmp = P(Jdc) + P(Jamp) * (((numb)4.0 * P(Jfreq) * (V(t) - P(Jdel)) - (numb)2.0 * floor((((numb)4.0 * P(Jfreq) * (V(t) - P(Jdel)) + (numb)1.0) /
-                (numb)2.0))) * pow((numb)-1.0, floor((((numb)4.0 * P(Jfreq) * (V(t) - P(Jdel)) + (numb)1.0) / (numb)2.0))));
+            numb jmp = P(Jdc) + P(Jamp) * (((numb)4.0 * P(Jfreq) * (V(t) - P(Jdel)) - (numb)2.0 * floor(((numb)4.0 * P(Jfreq) * (V(t) - P(Jdel)) + (numb)1.0) / (numb)2.0)) * ((int)floor(((numb)4.0 * P(Jfreq) * (V(t) - P(Jdel)) + (numb)1.0) / (numb)2.0) % 2 == 0 ? (numb)1.0 : (numb)-1.0));
             numb tmp = V(t) + H * (numb)0.5;
 
             numb kp1 = ((P(c_IP3_e) - V(p)) / P(tau_IP3) + j_PLC + jmp);
@@ -731,8 +729,7 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
             numb qmp = V(q) + (numb)0.5 * H * kq1;
             numb zmp = V(z) + (numb)0.5 * H * kz1;
 
-            Vnext(j) = P(Jdc) + P(Jamp) * (((numb)4.0 * P(Jfreq) * (tmp - P(Jdel)) - (numb)2.0 * floor((((numb)4.0 * P(Jfreq) * (tmp - P(Jdel)) + (numb)1.0) /
-                (numb)2.0))) * pow((numb)-1.0, floor((((numb)4.0 * P(Jfreq) * (tmp - P(Jdel)) + (numb)1.0) / (numb)2.0))));
+            Vnext(j) = P(Jdc) + P(Jamp) * (((numb)4.0 * P(Jfreq) * (tmp - P(Jdel)) - (numb)2.0 * floor(((numb)4.0 * P(Jfreq) * (tmp - P(Jdel)) + (numb)1.0) / (numb)2.0)) * ((int)floor(((numb)4.0 * P(Jfreq) * (tmp - P(Jdel)) + (numb)1.0) / (numb)2.0) % 2 == 0 ? (numb)1.0 : (numb)-1.0));
             Vnext(t) = V(t) + H;
 
             j_ch = (P(c1) * P(v1) * pmp * pmp * pmp * zmp * zmp * zmp * qmp * qmp * qmp *
@@ -762,8 +759,7 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
             numb j_in = P(v5) + P(v6) * V(p) * V(p) / (P(k2) * P(k2) + V(p) * V(p));
             numb j_out = P(k1) * V(q);
 
-            numb jmp = P(Jdc) + P(Jamp) * (((numb)4.0 * P(Jfreq) * (V(t) - P(Jdel)) - (numb)2.0 * floor((((numb)4.0 * P(Jfreq) * (V(t) - P(Jdel)) + (numb)1.0) /
-                (numb)2.0))) * pow((numb)-1.0, floor((((numb)4.0 * P(Jfreq) * (V(t) - P(Jdel)) + (numb)1.0) / (numb)2.0))));
+            numb jmp = P(Jdc) + P(Jamp) * (((numb)4.0 * P(Jfreq) * (V(t) - P(Jdel)) - (numb)2.0 * floor(((numb)4.0 * P(Jfreq) * (V(t) - P(Jdel)) + (numb)1.0) / (numb)2.0)) * ((int)floor(((numb)4.0 * P(Jfreq) * (V(t) - P(Jdel)) + (numb)1.0) / (numb)2.0) % 2 == 0 ? (numb)1.0 : (numb)-1.0));
             numb tmp = V(t) + H * (numb)0.5;
 
             numb kp1 = ((P(c_IP3_e) - V(p)) / P(tau_IP3) + j_PLC + jmp);
@@ -782,8 +778,7 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
             j_in = P(v5) + P(v6) * pmp * pmp / (P(k2) * P(k2) + pmp * pmp);
             j_out = P(k1) * qmp;
 
-            jmp = P(Jdc) + P(Jamp) * (((numb)4.0 * P(Jfreq) * (tmp - P(Jdel)) - (numb)2.0 * floor((((numb)4.0 * P(Jfreq) * (tmp - P(Jdel)) + (numb)1.0) /
-                (numb)2.0))) * pow((numb)-1.0, floor((((numb)4.0 * P(Jfreq) * (tmp - P(Jdel)) + (numb)1.0) / (numb)2.0))));
+            jmp = P(Jdc) + P(Jamp) * (((numb)4.0 * P(Jfreq) * (tmp - P(Jdel)) - (numb)2.0 * floor(((numb)4.0 * P(Jfreq) * (tmp - P(Jdel)) + (numb)1.0) / (numb)2.0)) * ((int)floor(((numb)4.0 * P(Jfreq) * (tmp - P(Jdel)) + (numb)1.0) / (numb)2.0) % 2 == 0 ? (numb)1.0 : (numb)-1.0));
             tmp = V(t) + H * (numb)0.5;
 
             numb kp2 = ((P(c_IP3_e) - pmp) / P(tau_IP3) + j_PLC + jmp);
@@ -802,8 +797,7 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
             j_in = P(v5) + P(v6) * pmp * pmp / (P(k2) * P(k2) + pmp * pmp);
             j_out = P(k1) * qmp;
 
-            jmp = P(Jdc) + P(Jamp) * (((numb)4.0 * P(Jfreq) * (tmp - P(Jdel)) - (numb)2.0 * floor((((numb)4.0 * P(Jfreq) * (tmp - P(Jdel)) + (numb)1.0) /
-                (numb)2.0))) * pow((numb)-1.0, floor((((numb)4.0 * P(Jfreq) * (tmp - P(Jdel)) + (numb)1.0) / (numb)2.0))));
+            jmp = P(Jdc) + P(Jamp) * (((numb)4.0 * P(Jfreq) * (tmp - P(Jdel)) - (numb)2.0 * floor(((numb)4.0 * P(Jfreq) * (tmp - P(Jdel)) + (numb)1.0) / (numb)2.0)) * ((int)floor(((numb)4.0 * P(Jfreq) * (tmp - P(Jdel)) + (numb)1.0) / (numb)2.0) % 2 == 0 ? (numb)1.0 : (numb)-1.0));
             tmp = V(t) + H;
 
             numb kp3 = ((P(c_IP3_e) - pmp) / P(tau_IP3) + j_PLC + jmp);
@@ -822,8 +816,7 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
             j_in = P(v5) + P(v6) * pmp * pmp / (P(k2) * P(k2) + pmp * pmp);
             j_out = P(k1) * qmp;
 
-            Vnext(j) = P(Jdc) + P(Jamp) * (((numb)4.0 * P(Jfreq) * (tmp - P(Jdel)) - (numb)2.0 * floor((((numb)4.0 * P(Jfreq) * (tmp - P(Jdel)) + (numb)1.0) /
-                (numb)2.0))) * pow((numb)-1.0, floor((((numb)4.0 * P(Jfreq) * (tmp - P(Jdel)) + (numb)1.0) / (numb)2.0))));
+            Vnext(j) = P(Jdc) + P(Jamp) * (((numb)4.0 * P(Jfreq) * (tmp - P(Jdel)) - (numb)2.0 * floor(((numb)4.0 * P(Jfreq) * (tmp - P(Jdel)) + (numb)1.0) / (numb)2.0)) * ((int)floor(((numb)4.0 * P(Jfreq) * (tmp - P(Jdel)) + (numb)1.0) / (numb)2.0) % 2 == 0 ? (numb)1.0 : (numb)-1.0));
             Vnext(t) = V(t) + H;
 
             numb kp4 = ((P(c_IP3_e) - pmp) / P(tau_IP3) + j_PLC + Vnext(j));
@@ -842,8 +835,7 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
             numb h1 = (numb)0.5 * H - P(symmetry);
             numb h2 = (numb)0.5 * H + P(symmetry);
 
-            numb jmp = P(Jdc) + P(Jamp) * (((numb)4.0 * P(Jfreq) * (V(t) - P(Jdel)) - (numb)2.0 * floor((((numb)4.0 * P(Jfreq) * (V(t) - P(Jdel)) + (numb)1.0) /
-                (numb)2.0))) * pow((numb)-1.0, floor((((numb)4.0 * P(Jfreq) * (V(t) - P(Jdel)) + (numb)1.0) / (numb)2.0))));
+            numb jmp = P(Jdc) + P(Jamp) * (((numb)4.0 * P(Jfreq) * (V(t) - P(Jdel)) - (numb)2.0 * floor(((numb)4.0 * P(Jfreq) * (V(t) - P(Jdel)) + (numb)1.0) / (numb)2.0)) * ((int)floor(((numb)4.0 * P(Jfreq) * (V(t) - P(Jdel)) + (numb)1.0) / (numb)2.0) % 2 == 0 ? (numb)1.0 : (numb)-1.0));
 
             numb j_ch = (P(c1) * P(v1) * V(p) * V(p) * V(p) * V(z) * V(z) * V(z) * V(q) * V(q) * V(q) *
                 (P(c0) / P(c1) - ((numb)1.0 + (numb)1.0 / P(c1)) * V(q))) /
@@ -880,8 +872,7 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
             Vnext(t) = V(t) + H;
 
 
-            Vnext(j) = P(Jdc) + P(Jamp) * (((numb)4.0 * P(Jfreq) * (Vnext(t) - P(Jdel)) - (numb)2.0 * floor((((numb)4.0 * P(Jfreq) * (Vnext(t) - P(Jdel)) + (numb)1.0) /
-                (numb)2.0))) * pow((numb)-1.0, floor((((numb)4.0 * P(Jfreq) * (Vnext(t) - P(Jdel)) + (numb)1.0) / (numb)2.0))));
+            Vnext(j) = P(Jdc) + P(Jamp) * (((numb)4.0 * P(Jfreq) * (Vnext(t) - P(Jdel)) - (numb)2.0 * floor(((numb)4.0 * P(Jfreq) * (Vnext(t) - P(Jdel)) + (numb)1.0) / (numb)2.0)) * ((int)floor(((numb)4.0 * P(Jfreq) * (Vnext(t) - P(Jdel)) + (numb)1.0) / (numb)2.0) % 2 == 0 ? (numb)1.0 : (numb)-1.0));
 
             j_ch = (P(c1) * P(v1) * pmp * pmp * pmp * zmp * zmp * zmp * qmp * qmp * qmp *
                 (P(c0) / P(c1) - ((numb)1.0 + (numb)1.0 / P(c1)) * qmp)) /
@@ -932,7 +923,7 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
             j_in = P(v5) + P(v6) * pmp * pmp / (P(k2) * P(k2) + pmp * pmp);
             j_out = P(k1) * V(q);
 
-
+            ////
             Vnext(q) = qmp + h2 * (j_ch - j_pump + j_leak + j_in - j_out);
             j_ch = (P(c1) * P(v1) * pmp * pmp * pmp * Vnext(z) * Vnext(z) * Vnext(z) * Vnext(q) * Vnext(q) * Vnext(q) *
                 (P(c0) / P(c1) - ((numb)1.0 + (numb)1.0 / P(c1)) * Vnext(q))) /
@@ -973,6 +964,7 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
             j_in = P(v5) + P(v6) * pmp * pmp / (P(k2) * P(k2) + pmp * pmp);
             j_out = P(k1) * V(q);
 
+            ///
             Vnext(p) = (pmp + h2 * P(c_IP3_e) / P(tau_IP3) + h2 * Vnext(j) + h2 * j_PLC) / (1 + h2 / P(tau_IP3));
             j_ch = (P(c1) * P(v1) * Vnext(p) * Vnext(p) * Vnext(p) * Vnext(z) * Vnext(z) * Vnext(z) * Vnext(q) * Vnext(q) * Vnext(q) *
                 (P(c0) / P(c1) - ((numb)1.0 + (numb)1.0 / P(c1)) * Vnext(q))) /
