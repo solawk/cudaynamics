@@ -2106,7 +2106,12 @@ int imgui_main(int, char**)
 									plot3d->RangeMax().y;
 									static float  xs[4], ys[4], zs[4];
 
-									ys[0] = plot3d->RangeMin().y; ys[1] = plot3d->RangeMin().y; ys[2] = plot3d->RangeMax().y; ys[3] = plot3d->RangeMax().y;  zs[0] = plot3d->RangeMin().z; zs[1] = plot3d->RangeMax().z; zs[2] = plot3d->RangeMax().z; zs[3] = plot3d->RangeMin().z; xs[0] = axis->min + axis->step * attributeValueIndices[window->orbit.xIndex + krnl->VAR_COUNT]; xs[3] = xs[2] = xs[1] = xs[0];
+									ys[0] = ys[1] = plot3d->RangeMin().y;
+									ys[2] = ys[3] = plot3d->RangeMax().y;
+									zs[0] = zs[3] = plot3d->RangeMin().z;
+									zs[1] = zs[2] = plot3d->RangeMax().z;
+									xs[0] = axis->min + axis->step * attributeValueIndices[window->orbit.xIndex + KERNEL.VAR_COUNT];
+									xs[3] = xs[2] = xs[1] = xs[0];
 									ImPlot3D::SetupAxis(ImAxis3D_X, axis->name.c_str());
 									ImPlot3D::SetupAxis(ImAxis3D_Y, "Peaks");
 									ImPlot3D::SetupAxis(ImAxis3D_Z, "Intervals");
