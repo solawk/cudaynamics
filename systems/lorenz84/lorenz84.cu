@@ -40,24 +40,24 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
 {
     ifMETHOD(P(method), ExplicitEuler)
     {
-        Vnext(x) = V(x) + H * (-P(a) * V(x) - pow(V(y), (numb)2.0) - pow(V(z), (numb)2.0) + P(a) * P(f));
+        Vnext(x) = V(x) + H * (-P(a) * V(x) - V(y)*V(y) - V(z)*V(z) + P(a) * P(f));
         Vnext(y) = V(y) + H * (-V(y) + V(x) * V(y) - P(b) * V(x) * V(z) + P(g));
         Vnext(z) = V(z) + H * (-V(z) + P(b) * V(x) * V(y) + V(x) * V(z));
     }
 
     ifMETHOD(P(method), ExplicitMidpoint)
     {
-        numb xmp = V(x) + H * (numb)0.5 * (-P(a) * V(x) - pow(V(y), (numb)2.0) - pow(V(z), (numb)2.0) + P(a) * P(f));
+        numb xmp = V(x) + H * (numb)0.5 * (-P(a) * V(x) - V(y) * V(y) - V(z) * V(z) + P(a) * P(f));
         numb ymp = V(y) + H * (numb)0.5 * (-V(y) + V(x) * V(y) - P(b) * V(x) * V(z) + P(g));
         numb zmp = V(z) + H * (numb)0.5 * (-V(z) + P(b) * V(x) * V(y) + V(x) * V(z));
 
-        Vnext(x) = V(x) + H * (-P(a) * xmp - pow(ymp, (numb)2.0) - pow(zmp, (numb)2.0) + P(a) * P(f));
+        Vnext(x) = V(x) + H * (-P(a) * xmp - ymp*ymp - zmp*zmp + P(a) * P(f));
         Vnext(y) = V(y) + H * (-ymp + xmp * ymp - P(b) * xmp * zmp + P(g));
         Vnext(z) = V(z) + H * (-zmp + P(b) * xmp * ymp + xmp * zmp);
     }
     ifMETHOD(P(method), ExplicitRungeKutta4)
     {
-        numb kx1 = -P(a) * V(x) - pow(V(y), (numb)2.0) - pow(V(z), (numb)2.0) + P(a) * P(f);
+        numb kx1 = -P(a) * V(x) - V(y) * V(y) - V(z) * V(z) + P(a) * P(f);
         numb ky1 = -V(y) + V(x) * V(y) - P(b) * V(x) * V(z) + P(g);
         numb kz1 = -V(z) + P(b) * V(x) * V(y) + V(x) * V(z);
 
@@ -65,7 +65,7 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
         numb ymp = V(y) + (numb)0.5 * H * ky1;
         numb zmp = V(z) + (numb)0.5 * H * kz1;
 
-        numb kx2 = -P(a) * xmp - pow(ymp, (numb)2.0) - pow(zmp, (numb)2.0) + P(a) * P(f);
+        numb kx2 = -P(a) * xmp - ymp * ymp - zmp * zmp + P(a) * P(f);
         numb ky2 = -ymp + xmp * ymp - P(b) * xmp * zmp + P(g);
         numb kz2 = -zmp + P(b) * xmp * ymp + xmp * zmp;
 
@@ -73,7 +73,7 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
         ymp = V(y) + (numb)0.5 * H * ky2;
         zmp = V(z) + (numb)0.5 * H * kz2;
 
-        numb kx3 = -P(a) * xmp - pow(ymp, (numb)2.0) - pow(zmp, (numb)2.0) + P(a) * P(f);
+        numb kx3 = -P(a) * xmp - ymp * ymp - zmp * zmp + P(a) * P(f);
         numb ky3 = -ymp + xmp * ymp - P(b) * xmp * zmp + P(g);
         numb kz3 = -zmp + P(b) * xmp * ymp + xmp * zmp;
 
@@ -81,7 +81,7 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
         ymp = V(y) + H * ky3;
         zmp = V(z) + H * kz3;
 
-        numb kx4 = -P(a) * xmp - pow(ymp, (numb)2.0) - pow(zmp, (numb)2.0) + P(a) * P(f);
+        numb kx4 = -P(a) * xmp - ymp * ymp - zmp * zmp + P(a) * P(f);
         numb ky4 = -ymp + xmp * ymp - P(b) * xmp * zmp + P(g);
         numb kz4 = -zmp + P(b) * xmp * ymp + xmp * zmp;
 
@@ -94,21 +94,21 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
         numb h1 = (numb)0.5 * H - P(symmetry);
         numb h2 = (numb)0.5 * H + P(symmetry);
 
-        numb xmp = V(x) + (numb)0.5 * h1 * (-P(a) * V(x) - pow(V(y), (numb)2.0) - pow(V(z), (numb)2.0) + P(a) * P(f));
-        numb ymp = V(y) + (numb)0.5 * h1 * (-V(y) + xmp * V(y) - P(b) * xmp * V(z) + P(g));
-        numb zmp = V(z) + (numb)0.5 * h1 * (-V(z) + P(b) * xmp * ymp + xmp * V(z));
+        numb xmp = V(x) + h1 * (-P(a) * V(x) - V(y) * V(y) - V(z) * V(z) + P(a) * P(f));
+        numb ymp = V(y) + h1 * (-V(y) + xmp * V(y) - P(b) * xmp * V(z) + P(g));
+        numb zmp = V(z) + h1 * (-V(z) + P(b) * xmp * ymp + xmp * V(z));
 
         numb denom_z = ((numb)1.0 + h2 - h2 * xmp);
-        if (fabs(denom_z) < (numb)1e-6) denom_z = copysign((numb)1e-6, denom_z);
+        if (abs(denom_z) < (numb)1e-6) denom_z = copysign((numb)1e-6, denom_z);
         Vnext(z) = (zmp + h2 * P(b) * xmp * ymp) / denom_z;
 
         numb denom_y = ((numb)1.0 + h2 - h2 * xmp);
-        if (fabs(denom_y) < (numb)1e-6) denom_y = copysign((numb)1e-6, denom_y);
+        if (abs(denom_y) < (numb)1e-6) denom_y = copysign((numb)1e-6, denom_y);
         Vnext(y) = (ymp - h2 * P(b) * xmp * Vnext(z) + h2 * P(g)) / denom_y;
 
         numb denom_x = ((numb)1.0 + h2 * P(a));
-        if (fabs(denom_x) < (numb)1e-6) denom_x = copysign((numb)1e-6, denom_x);
-        Vnext(x) = (xmp - h2 * pow(Vnext(y), (numb)2.0) - h2 * pow(Vnext(z), (numb)2.0) + h2 * P(a) * P(f)) / denom_x;
+        if (abs(denom_x) < (numb)1e-6) denom_x = copysign((numb)1e-6, denom_x);
+        Vnext(x) = (xmp - h2 * Vnext(y)*Vnext(y) - h2 * Vnext(z) * Vnext(z) + h2 * P(a) * P(f)) / denom_x;
     }
 }
 

@@ -54,7 +54,7 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
     }
     ifSIGNAL(P(signal), sine)
     {
-        Vnext(i) = P(Idc) + P(Iamp) * sin((numb)2.0 * (numb)3.141592 * P(Ifreq) * (V(t) - P(Idel)));
+        Vnext(i) = P(Idc) + P(Iamp) * sin((numb)2.0 * (numb)3.141592653589793 * P(Ifreq) * (V(t) - P(Idel)));
         Vnext(t) = V(t) + H;
         Vnext(Q) = V(Q) + V(c) * (Vnext(i) + V(S)) - !V(c) * (Vnext(i) + V(S));
 
@@ -81,5 +81,6 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
         Vnext(c) = (V(c) || (Vnext(Q) > (numb)0 ? (numb)0 : (numb)1)) && (Vnext(Q) < P(r) ? (numb)1 : (numb)0);
     }
 }
+
 
 #undef name

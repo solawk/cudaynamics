@@ -1171,7 +1171,7 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
 	{
 		ifMETHOD(P(method), ExplicitEuler)
 		{
-			numb I = p[7] + p[8] * (((numb)4.0 * p[11] * (v[4] - p[9]) - (numb)2.0 * floor(((numb)4.0 * p[11] * (v[4] - p[9]) + (numb)1.0) / (numb)2.0)) * pow(-(numb)1.0, floor(((numb)4.0 * p[11] * (v[4] - p[9]) + (numb)1.0) / (numb)2.0)));
+			numb I = p[7] + p[8] * (((numb)4.0 * p[11] * (v[4] - p[9]) - (numb)2.0 * floor(((numb)4.0 * p[11] * (v[4] - p[9]) + (numb)1.0) / (numb)2.0)) * ((int)floor(((numb)4.0 * p[11] * (v[4] - p[9]) + (numb)1.0) / (numb)2.0) % 2 == 0 ? (numb)1.0 : (numb)-1.0));
 			numb I_Na = (v[2] * v[2] * v[2]) * p[1] * v[3] * (v[0] - p[2]);
 			numb I_K = (v[1] * v[1] * v[1] * v[1]) * p[3] * (v[0] - p[4]);
 			numb I_L = p[5] * (v[0] - p[6]);
@@ -1190,12 +1190,12 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
 			Vnext(h) = v[3] + h * (alpha_h * ((numb)1.0 - v[3]) - beta_h * v[3]);
 			Vnext(t) = v[4] + h;
 
-			Vnext(i) = p[7] + p[8] * (((numb)4.0 * p[11] * (Vnext(t) - p[9]) - (numb)2.0 * floor(((numb)4.0 * p[11] * (Vnext(t) - p[9]) + (numb)1.0) / (numb)2.0)) * pow(-(numb)1.0, floor(((numb)4.0 * p[11] * (Vnext(t) - p[9]) + (numb)1.0) / (numb)2.0)));
+			Vnext(i) = p[7] + p[8] * (((numb)4.0 * p[11] * (Vnext(t) - p[9]) - (numb)2.0 * floor(((numb)4.0 * p[11] * (Vnext(t) - p[9]) + (numb)1.0) / (numb)2.0)) * ((int)floor(((numb)4.0 * p[11] * (Vnext(t) - p[9]) + (numb)1.0) / (numb)2.0) % 2 == 0 ? (numb)1.0 : (numb)-1.0));
 		}
 
 		ifMETHOD(P(method), SemiExplicitEuler)
 		{
-			numb I = p[7] + p[8] * (((numb)4.0 * p[11] * (v[4] - p[9]) - (numb)2.0 * floor(((numb)4.0 * p[11] * (v[4] - p[9]) + (numb)1.0) / (numb)2.0)) * pow(-(numb)1.0, floor(((numb)4.0 * p[11] * (v[4] - p[9]) + (numb)1.0) / (numb)2.0)));
+			numb I = p[7] + p[8] * (((numb)4.0 * p[11] * (v[4] - p[9]) - (numb)2.0 * floor(((numb)4.0 * p[11] * (v[4] - p[9]) + (numb)1.0) / (numb)2.0)) * ((int)floor(((numb)4.0 * p[11] * (v[4] - p[9]) + (numb)1.0) / (numb)2.0) % 2 == 0 ? (numb)1.0 : (numb)-1.0));
 			numb I_Na = (v[2] * v[2] * v[2]) * p[1] * v[3] * (v[0] - p[2]);
 			numb I_K = (v[1] * v[1] * v[1] * v[1]) * p[3] * (v[0] - p[4]);
 			numb I_L = p[5] * (v[0] - p[6]);
@@ -1214,7 +1214,7 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
 			Vnext(h) = v[3] + h * (alpha_h * ((numb)1.0 - v[3]) - beta_h * v[3]);
 			Vnext(t) = v[4] + h;
 
-			Vnext(i) = p[7] + p[8] * (((numb)4.0 * p[11] * (Vnext(t) - p[9]) - (numb)2.0 * floor(((numb)4.0 * p[11] * (Vnext(t) - p[9]) + (numb)1.0) / (numb)2.0)) * pow(-(numb)1.0, floor(((numb)4.0 * p[11] * (Vnext(t) - p[9]) + (numb)1.0) / (numb)2.0)));
+			Vnext(i) = p[7] + p[8] * (((numb)4.0 * p[11] * (Vnext(t) - p[9]) - (numb)2.0 * floor(((numb)4.0 * p[11] * (Vnext(t) - p[9]) + (numb)1.0) / (numb)2.0)) * ((int)floor(((numb)4.0 * p[11] * (Vnext(t) - p[9]) + (numb)1.0) / (numb)2.0) % 2 == 0 ? (numb)1.0 : (numb)-1.0));
 		}
 
 		ifMETHOD(P(method), ImplicitEuler)
@@ -1274,7 +1274,7 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
 					}
 				}
 
-				I = p[7] + p[8] * (((numb)4.0 * p[11] * (Z[4] - p[9]) - (numb)2.0 * floor(((numb)4.0 * p[11] * (Z[4] - p[9]) + (numb)1.0) / (numb)2.0)) * pow(-(numb)1.0, floor(((numb)4.0 * p[11] * (Z[4] - p[9]) + (numb)1.0) / (numb)2.0)));
+				I = p[7] + p[8] * (((numb)4.0 * p[11] * (Z[4] - p[9]) - (numb)2.0 * floor(((numb)4.0 * p[11] * (Z[4] - p[9]) + (numb)1.0) / (numb)2.0)) * ((int)floor(((numb)4.0 * p[11] * (Z[4] - p[9]) + (numb)1.0) / (numb)2.0) % 2 == 0 ? (numb)1.0 : (numb)-1.0));
 
 				I_Na = (Z[2] * Z[2] * Z[2]) * Z[3] * p[1] * (Z[0] - p[2]);
 				I_K = (Z[1] * Z[1] * Z[1] * Z[1]) * p[3] * (Z[0] - p[4]);
@@ -1361,12 +1361,12 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
 			Vnext(h) = Zn[3];
 			Vnext(t) = Zn[4];
 
-			Vnext(i) = p[7] + p[8] * (((numb)4.0 * p[11] * (Vnext(t) - p[9]) - (numb)2.0 * floor(((numb)4.0 * p[11] * (Vnext(t) - p[9]) + (numb)1.0) / (numb)2.0)) * pow(-(numb)1.0, floor(((numb)4.0 * p[11] * (Vnext(t) - p[9]) + (numb)1.0) / (numb)2.0)));
+			Vnext(i) = p[7] + p[8] * (((numb)4.0 * p[11] * (Vnext(t) - p[9]) - (numb)2.0 * floor(((numb)4.0 * p[11] * (Vnext(t) - p[9]) + (numb)1.0) / (numb)2.0)) * ((int)floor(((numb)4.0 * p[11] * (Vnext(t) - p[9]) + (numb)1.0) / (numb)2.0) % 2 == 0 ? (numb)1.0 : (numb)-1.0));
 		}
 
 		ifMETHOD(P(method), ExplicitMidpoint)
 		{
-			numb imp = p[7] + p[8] * (((numb)4.0 * p[11] * (v[4] - p[9]) - (numb)2.0 * floor(((numb)4.0 * p[11] * (v[4] - p[9]) + (numb)1.0) / (numb)2.0)) * pow(-(numb)1.0, floor(((numb)4.0 * p[11] * (v[4] - p[9]) + (numb)1.0) / (numb)2.0)));
+			numb imp = p[7] + p[8] * (((numb)4.0 * p[11] * (v[4] - p[9]) - (numb)2.0 * floor(((numb)4.0 * p[11] * (v[4] - p[9]) + (numb)1.0) / (numb)2.0)) * ((int)floor(((numb)4.0 * p[11] * (v[4] - p[9]) + (numb)1.0) / (numb)2.0) % 2 == 0 ? (numb)1.0 : (numb)-1.0));
 			numb I_Na = (v[2] * v[2] * v[2]) * p[1] * v[3] * (v[0] - p[2]);
 			numb I_K = (v[1] * v[1] * v[1] * v[1]) * p[3] * (v[0] - p[4]);
 			numb I_L = p[5] * (v[0] - p[6]);
@@ -1385,7 +1385,7 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
 			numb hmp = v[3] + h * (numb)0.5 * (alpha_h * ((numb)1.0 - v[3]) - beta_h * v[3]);
 			numb tmp = v[4] + h * (numb)0.5;
 
-			numb I = p[7] + p[8] * (((numb)4.0 * p[11] * (tmp - p[9]) - (numb)2.0 * floor(((numb)4.0 * p[11] * (tmp - p[9]) + (numb)1.0) / (numb)2.0)) * pow(-(numb)1.0, floor(((numb)4.0 * p[11] * (tmp - p[9]) + (numb)1.0) / (numb)2.0)));
+			numb I = p[7] + p[8] * (((numb)4.0 * p[11] * (tmp - p[9]) - (numb)2.0 * floor(((numb)4.0 * p[11] * (tmp - p[9]) + (numb)1.0) / (numb)2.0)) * ((int)floor(((numb)4.0 * p[11] * (tmp - p[9]) + (numb)1.0) / (numb)2.0) % 2 == 0 ? (numb)1.0 : (numb)-1.0));
 			I_Na = (mmp * mmp * mmp) * p[1] * hmp * (vmp - p[2]);
 			I_K = (nmp * nmp * nmp * nmp) * p[3] * (vmp - p[4]);
 			I_L = p[5] * (vmp - p[6]);
@@ -1404,7 +1404,7 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
 			Vnext(h) = v[3] + h * (alpha_h * ((numb)1.0 - hmp) - beta_h * hmp);
 			Vnext(t) = v[4] + h;
 
-			Vnext(i) = p[7] + p[8] * (((numb)4.0 * p[11] * (Vnext(t) - p[9]) - (numb)2.0 * floor(((numb)4.0 * p[11] * (Vnext(t) - p[9]) + (numb)1.0) / (numb)2.0)) * pow(-(numb)1.0, floor(((numb)4.0 * p[11] * (Vnext(t) - p[9]) + (numb)1.0) / (numb)2.0)));
+			Vnext(i) = p[7] + p[8] * (((numb)4.0 * p[11] * (Vnext(t) - p[9]) - (numb)2.0 * floor(((numb)4.0 * p[11] * (Vnext(t) - p[9]) + (numb)1.0) / (numb)2.0)) * ((int)floor(((numb)4.0 * p[11] * (Vnext(t) - p[9]) + (numb)1.0) / (numb)2.0) % 2 == 0 ? (numb)1.0 : (numb)-1.0));
 		}
 
 		ifMETHOD(P(method), ImplicitMidpoint)
@@ -1467,7 +1467,7 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
 				for (i = 0; i < N; i++)
 					a[i] = (numb)0.5 * (v[i] + Z[i]);
 
-				I = p[7] + p[8] * (((numb)4.0 * p[11] * (a[4] - p[9]) - (numb)2.0 * floor(((numb)4.0 * p[11] * (a[4] - p[9]) + (numb)1.0) / (numb)2.0)) * pow(-(numb)1.0, floor(((numb)4.0 * p[11] * (a[4] - p[9]) + (numb)1.0) / (numb)2.0)));
+				I = p[7] + p[8] * (((numb)4.0 * p[11] * (a[4] - p[9]) - (numb)2.0 * floor(((numb)4.0 * p[11] * (a[4] - p[9]) + (numb)1.0) / (numb)2.0)) * ((int)floor(((numb)4.0 * p[11] * (a[4] - p[9]) + (numb)1.0) / (numb)2.0) % 2 == 0 ? (numb)1.0 : (numb)-1.0));
 
 				I_Na = (a[2] * a[2] * a[2]) * a[3] * p[1] * (a[0] - p[2]);
 				I_K = (a[1] * a[1] * a[1] * a[1]) * p[3] * (a[0] - p[4]);
@@ -1554,7 +1554,7 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
 			Vnext(h) = Zn[3];
 			Vnext(t) = Zn[4];
 
-			Vnext(i) = p[7] + p[8] * (((numb)4.0 * p[11] * (Vnext(t) - p[9]) - (numb)2.0 * floor(((numb)4.0 * p[11] * (Vnext(t) - p[9]) + (numb)1.0) / (numb)2.0)) * pow(-(numb)1.0, floor(((numb)4.0 * p[11] * (Vnext(t) - p[9]) + (numb)1.0) / (numb)2.0)));
+			Vnext(i) = p[7] + p[8] * (((numb)4.0 * p[11] * (Vnext(t) - p[9]) - (numb)2.0 * floor(((numb)4.0 * p[11] * (Vnext(t) - p[9]) + (numb)1.0) / (numb)2.0)) * ((int)floor(((numb)4.0 * p[11] * (Vnext(t) - p[9]) + (numb)1.0) / (numb)2.0) % 2 == 0 ? (numb)1.0 : (numb)-1.0));
 		}
 
 		ifMETHOD(P(method), ExplicitRungeKutta4)
@@ -1569,7 +1569,7 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
 
 			for (j = 0; j < 4; j++) {
 
-				I = p[7] + p[8] * (((numb)4.0 * p[11] * (a[4] - p[9]) - (numb)2.0 * floor(((numb)4.0 * p[11] * (a[4] - p[9]) + (numb)1.0) / (numb)2.0)) * pow(-(numb)1.0, floor(((numb)4.0 * p[11] * (a[4] - p[9]) + (numb)1.0) / (numb)2.0)));
+				I = p[7] + p[8] * (((numb)4.0 * p[11] * (a[4] - p[9]) - (numb)2.0 * floor(((numb)4.0 * p[11] * (a[4] - p[9]) + (numb)1.0) / (numb)2.0)) * ((int)floor(((numb)4.0 * p[11] * (a[4] - p[9]) + (numb)1.0) / (numb)2.0) % 2 == 0 ? (numb)1.0 : (numb)-1.0));
 
 				numb alpha_n = (numb)0.01 * (((numb)10.0 - a[0]) / (exp(((numb)10.0 - a[0]) / (numb)10.0) - (numb)1.0));
 				numb beta_n = (numb)0.125 * exp(-a[0] / (numb)80.0);
@@ -1610,7 +1610,7 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
 				}
 			}
 
-			Vnext(i) = p[7] + p[8] * (((numb)4.0 * p[11] * (Vnext(t) - p[9]) - (numb)2.0 * floor(((numb)4.0 * p[11] * (Vnext(t) - p[9]) + (numb)1.0) / (numb)2.0)) * pow(-(numb)1.0, floor(((numb)4.0 * p[11] * (Vnext(t) - p[9]) + (numb)1.0) / (numb)2.0)));
+			Vnext(i) = p[7] + p[8] * (((numb)4.0 * p[11] * (Vnext(t) - p[9]) - (numb)2.0 * floor(((numb)4.0 * p[11] * (Vnext(t) - p[9]) + (numb)1.0) / (numb)2.0)) * ((int)floor(((numb)4.0 * p[11] * (Vnext(t) - p[9]) + (numb)1.0) / (numb)2.0) % 2 == 0 ? (numb)1.0 : (numb)-1.0));
 		}
 
 		ifMETHOD(P(method), ExplicitDormandPrince8)
@@ -1640,7 +1640,7 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
 
 			for (i = 0; i < 13; i++) {
 
-				I = p[7] + p[8] * (((numb)4.0 * p[11] * (X1[4] - p[9]) - (numb)2.0 * floor(((numb)4.0 * p[11] * (X1[4] - p[9]) + (numb)1.0) / (numb)2.0)) * pow(-(numb)1.0, floor(((numb)4.0 * p[11] * (X1[4] - p[9]) + (numb)1.0) / (numb)2.0)));
+				I = p[7] + p[8] * (((numb)4.0 * p[11] * (X1[4] - p[9]) - (numb)2.0 * floor(((numb)4.0 * p[11] * (X1[4] - p[9]) + (numb)1.0) / (numb)2.0)) * ((int)floor(((numb)4.0 * p[11] * (X1[4] - p[9]) + (numb)1.0) / (numb)2.0) % 2 == 0 ? (numb)1.0 : (numb)-1.0));
 
 				numb alpha_n = (numb)0.01 * (((numb)10.0 - X1[0]) / (exp(((numb)10.0 - X1[0]) / (numb)10.0) - (numb)1.0));
 				numb beta_n = (numb)0.125 * exp(-X1[0] / (numb)80.0);
@@ -1688,7 +1688,7 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
 			Vnext(h) = y[3];
 			Vnext(t) = y[4];
 
-			Vnext(i) = p[7] + p[8] * (((numb)4.0 * p[11] * (Vnext(t) - p[9]) - (numb)2.0 * floor(((numb)4.0 * p[11] * (Vnext(t) - p[9]) + (numb)1.0) / (numb)2.0)) * pow(-(numb)1.0, floor(((numb)4.0 * p[11] * (Vnext(t) - p[9]) + (numb)1.0) / (numb)2.0)));
+			Vnext(i) = p[7] + p[8] * (((numb)4.0 * p[11] * (Vnext(t) - p[9]) - (numb)2.0 * floor(((numb)4.0 * p[11] * (Vnext(t) - p[9]) + (numb)1.0) / (numb)2.0)) * ((int)floor(((numb)4.0 * p[11] * (Vnext(t) - p[9]) + (numb)1.0) / (numb)2.0) % 2 == 0 ? (numb)1.0 : (numb)-1.0));
 		}
 
 		ifMETHOD(P(method), VariableSymmetryCD)
@@ -1696,7 +1696,7 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
 			numb h1 = (numb)0.5 * h - p[12];
 			numb h2 = (numb)0.5 * h + p[12];
 
-			numb I = p[7] + p[8] * (((numb)4.0 * p[11] * (v[4] - p[9]) - (numb)2.0 * floor(((numb)4.0 * p[11] * (v[4] - p[9]) + (numb)1.0) / (numb)2.0)) * pow(-(numb)1.0, floor(((numb)4.0 * p[11] * (v[4] - p[9]) + (numb)1.0) / (numb)2.0)));
+			numb I = p[7] + p[8] * (((numb)4.0 * p[11] * (v[4] - p[9]) - (numb)2.0 * floor(((numb)4.0 * p[11] * (v[4] - p[9]) + (numb)1.0) / (numb)2.0)) * ((int)floor(((numb)4.0 * p[11] * (v[4] - p[9]) + (numb)1.0) / (numb)2.0) % 2 == 0 ? (numb)1.0 : (numb)-1.0));
 			numb I_Na = (v[2] * v[2] * v[2]) * p[1] * v[3] * (v[0] - p[2]);
 			numb I_K = (v[1] * v[1] * v[1] * v[1]) * p[3] * (v[0] - p[4]);
 			numb I_L = p[5] * (v[0] - p[6]);
@@ -1720,7 +1720,7 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
 			Vnext(m) = (mmp + h2 * alpha_m) / ((numb)1.0 + h2 * (alpha_m + beta_m));
 			Vnext(n) = (nmp + h2 * alpha_n) / ((numb)1.0 + h2 * (alpha_n + beta_n));
 
-			Vnext(i) = p[7] + p[8] * (((numb)4.0 * p[11] * (Vnext(t) - p[9]) - (numb)2.0 * floor(((numb)4.0 * p[11] * (Vnext(t) - p[9]) + (numb)1.0) / (numb)2.0)) * pow(-(numb)1.0, floor(((numb)4.0 * p[11] * (Vnext(t) - p[9]) + (numb)1.0) / (numb)2.0)));
+			Vnext(i) = p[7] + p[8] * (((numb)4.0 * p[11] * (Vnext(t) - p[9]) - (numb)2.0 * floor(((numb)4.0 * p[11] * (Vnext(t) - p[9]) + (numb)1.0) / (numb)2.0)) * ((int)floor(((numb)4.0 * p[11] * (Vnext(t) - p[9]) + (numb)1.0) / (numb)2.0) % 2 == 0 ? (numb)1.0 : (numb)-1.0));
 			numb x_Na = (Vnext(m) * Vnext(m) * Vnext(m)) * p[1] * Vnext(h);
 			numb x_K = (Vnext(n) * Vnext(n) * Vnext(n) * Vnext(n)) * p[3];
 
