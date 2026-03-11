@@ -1411,8 +1411,8 @@ int imgui_main(int, char**)
 							{
 								if (ImGui::Selectable(krnl->variables[v].name.c_str()))
 								{
-									heatmap->indexX = v;
-									heatmap->typeX = MDT_Variable;
+									window->hireshmp.indexX = window->hmp.indexX = v;
+									window->hireshmp.typeX = window->hmp.typeX = MDT_Variable;
 								}
 							}
 
@@ -1420,8 +1420,8 @@ int imgui_main(int, char**)
 							{
 								if (ImGui::Selectable(krnl->parameters[p].name.c_str()))
 								{
-									heatmap->indexX = p;
-									heatmap->typeX = MDT_Parameter;
+									window->hireshmp.indexX = window->hmp.indexX = p;
+									window->hireshmp.typeX = window->hmp.typeX = MDT_Parameter;
 								}
 							}
 
@@ -1448,8 +1448,8 @@ int imgui_main(int, char**)
 							{
 								if (ImGui::Selectable(krnl->variables[v].name.c_str()))
 								{
-									heatmap->indexY = v;
-									heatmap->typeY = MDT_Variable;
+									window->hireshmp.indexY = window->hmp.indexY = v;
+									window->hireshmp.typeY = window->hmp.typeY = MDT_Variable;
 								}
 							}
 
@@ -1457,8 +1457,8 @@ int imgui_main(int, char**)
 							{
 								if (ImGui::Selectable(krnl->parameters[p].name.c_str()))
 								{
-									heatmap->indexY = p;
-									heatmap->typeY = MDT_Parameter;
+									window->hireshmp.indexY = window->hmp.indexY = p;
+									window->hireshmp.typeY = window->hmp.typeY = MDT_Parameter;
 								}
 							}
 
@@ -2430,7 +2430,7 @@ int imgui_main(int, char**)
 					std::vector<int>* avi = isHires ? &attributeValueIndicesHires : &attributeValueIndices;
 					uint64_t* var = isHires ? &variationHires : &variation;
 					uint64_t* prevVar = isHires ? &prevVariationHires : &prevVariation;
-					bool hiresFrozenAndAvailable = window->isFrozenAsHires && window->hmp.values.valueBuffer != nullptr;
+					bool hiresFrozenAndAvailable = window->isFrozenAsHires && window->hireshmp.values.valueBuffer != nullptr;
 					bool showLegend = heatmap->showLegend;
 
 					if (!isMC)
