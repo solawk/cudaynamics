@@ -111,7 +111,8 @@
       <TargetMachinePlatform>64</TargetMachinePlatform>
       <Include>imgui;imgui/backends;.;backends;systems;implot;dbscan</Include>
       <FastMath>true</FastMath>
-      <MaxRegCount>32</MaxRegCount>
+      <MaxRegCount>
+      </MaxRegCount>
       <GenerateRelocatableDeviceCode>true</GenerateRelocatableDeviceCode>
       <AdditionalCompilerOptions>
       </AdditionalCompilerOptions>
