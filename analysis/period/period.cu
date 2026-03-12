@@ -8,6 +8,7 @@ __host__ __device__ void Period(Computation* data, uint64_t variation, void(*fin
 
     LOCAL_BUFFERS;
     LOAD_ATTRIBUTES(true);
+    if (data->isHires) TRANSIENT_SKIP_NEW(finiteDifferenceScheme);
 
     uint64_t stepStart = variationStart;
     long long s = -1;
