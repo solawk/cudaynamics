@@ -39,6 +39,7 @@ void common_main()
     addKernel(sang26);
     addKernel(pala_machaczek);
     addKernel(ullah);
+    addKernel(resonate_and_fire);
 
     //selectKernel(kernels.begin()->first);
     selectKernel(lorenz);
