@@ -73,20 +73,19 @@
 
 // Computation macros
 
+#define FDS_ARGUMENTS   &(variables[0]), &(variablesNext[0]), &(parameters[0])
+
 // Skip transient steps using the provided finite difference scheme, akin to computing but without recording the trajectory
 #define TRANSIENT_SKIP_NEW(FDS)      if (CUDA_kernel.transientSteps > 0 && data->isFirst)  \
                             {  \
-                                numb transientBuffer[MAX_ATTRIBUTES];  \
                                 for (int ts = 0; ts < CUDA_kernel.transientSteps; ts++)  \
                                 {  \
-                                    FDS(&(variables[0]), &(transientBuffer[0]), &(parameters[0]));  \
-                                    for (int v = 0; v < CUDA_kernel.VAR_COUNT; v++) variables[v] = transientBuffer[v];  \
+                                    FDS(FDS_ARGUMENTS);  \
+                                    for (int v = 0; v < CUDA_kernel.VAR_COUNT; v++) variables[v] = variablesNext[v];  \
                                 }  \
                                 if (!data->isHires) for (int v = 0; v < CUDA_kernel.VAR_COUNT; v++) CUDA_marshal.trajectory[variationStart + v] = variables[v]; \
                                 else for (int v = 0; v < CUDA_kernel.VAR_COUNT; v++) CUDA_marshal.variableInits[v] = variables[v]; \
                             }
-
-#define FDS_ARGUMENTS   &(variables[0]), &(variablesNext[0]), &(parameters[0])
 
 #define RECORD_STEP     if (!data->isHires) for (int i = 0; i < CUDA_kernel.VAR_COUNT; i++) CUDA_marshal.trajectory[stepStart + CUDA_kernel.VAR_COUNT + i] = variables[i] = variablesNext[i]; \
                         else for (int i = 0; i < CUDA_kernel.VAR_COUNT; i++) \

@@ -46,40 +46,75 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
     const numb C = P(C);
     const numb m = P(m);
 
-    const numb h1 = (numb)0.5 * H;
-    const numb h2 = H;
+    const numb h = H;
+    const numb h2 = h * (numb)0.5;
 
-    numb kx1 = ((numb)1.0 / L) * (y - x * exp(m * log(z)));
-    numb ky1 = ((numb)1.0 / (R * C)) * (R + (numb)1.0 - y - R * x);
-    numb kz1 = x * x - z;
+    const numb invL = (numb)1.0 / L;
+    const numb invRC = (numb)1.0 / (R * C);
+    const numb Rp1 = R + (numb)1.0;
 
-    numb xmp = x + h1 * kx1;
-    numb ymp = y + h1 * ky1;
-    numb zmp = z + h1 * kz1;
+    numb sx, sy, sz;
+    numb xmp, ymp, zmp;
+    numb kx, ky, kz;
 
-    numb kx2 = ((numb)1.0 / L) * (ymp - xmp * exp(m * log(zmp)));
-    numb ky2 = ((numb)1.0 / (R * C)) * (R + (numb)1.0 - ymp - R * xmp);
-    numb kz2 = xmp * xmp - zmp;
+    // k1
+    {
+        kx = invL * (y - x * exp(m * log(z)));
+        ky = invRC * (Rp1 - y - R * x);
+        kz = x * x - z;
 
-    xmp = x + h1 * kx2;
-    ymp = y + h1 * ky2;
-    zmp = z + h1 * kz2;
+        sx = kx;
+        sy = ky;
+        sz = kz;
 
-    numb kx3 = ((numb)1.0 / L) * (ymp - xmp * exp(m * log(zmp)));
-    numb ky3 = ((numb)1.0 / (R * C)) * (R + (numb)1.0 - ymp - R * xmp);
-    numb kz3 = xmp * xmp - zmp;
+        xmp = x + h2 * kx;
+        ymp = y + h2 * ky;
+        zmp = z + h2 * kz;
+    }
+    // k2
+    {
+        kx = invL * (ymp - xmp * exp(m * log(zmp)));
+        ky = invRC * (Rp1 - ymp - R * xmp);
+        kz = xmp * xmp - zmp;
 
-    xmp = x + h2 * kx3;
-    ymp = y + h2 * ky3;
-    zmp = z + h2 * kz3;
+        sx += (numb)2.0 * kx;
+        sy += (numb)2.0 * ky;
+        sz += (numb)2.0 * kz;
 
-    numb kx4 = ((numb)1.0 / L) * (ymp - xmp * exp(m * log(zmp)));
-    numb ky4 = ((numb)1.0 / (R * C)) * (R + (numb)1.0 - ymp - R * xmp);
-    numb kz4 = xmp * xmp - zmp;
+        xmp = x + h2 * kx;
+        ymp = y + h2 * ky;
+        zmp = z + h2 * kz;
+    }
+    // k3
+    {
+        kx = invL * (ymp - xmp * exp(m * log(zmp)));
+        ky = invRC * (Rp1 - ymp - R * xmp);
+        kz = xmp * xmp - zmp;
 
-    Vnext(x) = x + h2 * (kx1 + (numb)2.0 * kx2 + (numb)2.0 * kx3 + kx4) / (numb)6.0;
-    Vnext(y) = y + h2 * (ky1 + (numb)2.0 * ky2 + (numb)2.0 * ky3 + ky4) / (numb)6.0;
-    Vnext(z) = z + h2 * (kz1 + (numb)2.0 * kz2 + (numb)2.0 * kz3 + kz4) / (numb)6.0;
+        sx += (numb)2.0 * kx;
+        sy += (numb)2.0 * ky;
+        sz += (numb)2.0 * kz;
+
+        xmp = x + h * kx;
+        ymp = y + h * ky;
+        zmp = z + h * kz;
+    }
+    // k4
+    {
+        kx = invL * (ymp - xmp * exp(m * log(zmp)));
+        ky = invRC * (Rp1 - ymp - R * xmp);
+        kz = xmp * xmp - zmp;
+
+        sx += kx;
+        sy += ky;
+        sz += kz;
+    }
+
+    const numb h6 = h / (numb)6.0;
+
+    Vnext(x) = x + h6 * sx;
+    Vnext(y) = y + h6 * sy;
+    Vnext(z) = z + h6 * sz;
 }
 
 
