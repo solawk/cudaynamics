@@ -288,6 +288,7 @@
     <CudaCompile Include="systems\ostrovskii\ostrovskii.cu" />
     <CudaCompile Include="systems\pala_machaczek\pala_machaczek.cu" />
     <CudaCompile Include="systems\rabinovich_fabrikant\rabinovich_fabrikant.cu" />
+    <CudaCompile Include="systems\resonate_and_fire\resonate_and_fire.cu" />
     <CudaCompile Include="systems\rossler\rossler.cu" />
     <CudaCompile Include="systems\sang25\sang25.cu" />
     <CudaCompile Include="systems\sang26\sang26.cu" />
