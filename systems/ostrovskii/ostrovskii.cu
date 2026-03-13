@@ -6,16 +6,17 @@ namespace attributes
 {
     enum variables { v, x, i, t};
     enum parameters { 
-		// RHS
+		// Circuit
 		Utd, Uvm, C,
-		// GI403
+		// Tunnel diode GI403
 		Is, Vt, Vp, Ip, Iv, D, E,
-		// AND_TS
-		Ron_p, Ron_n, Vth_p, Vh_p, Vth_n, Vh_n, tau_s, tau_r, Vs, Vr, A, Ds, Dr, Ilk, 
-		//Stuff
-		Idc, Iamp, Ifreq, Idel, Idf, 
-		signal, method, 
-		COUNT 
+		// Volatile memristor AND_TS
+		Ron_p, Ron_n, Vth_p, Vh_p, Vth_n, Vh_n, tau_s, tau_r, Vs, Vr, A, Ds, Dr, Ilk,
+		// Input signal
+		Idc, Iamp, Ifreq, Idel, Idf, signal,
+		// Numerical integration
+		method,
+		COUNT
 	};
     enum waveforms { square, sine, triangle };
 	enum methods { ExplicitRungeKutta4 };

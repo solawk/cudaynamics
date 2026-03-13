@@ -401,7 +401,7 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
 			const numb b[13] = { (numb)0.04174749114153, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, -(numb)0.05545232861124, (numb)0.2393128072012, (numb)0.7035106694034, -(numb)0.7597596138145, (numb)0.6605630309223, (numb)0.1581874825101, -(numb)0.2381095387529, (numb)0.25 };
 			numb y[N], X1[N], X2[N];
 			numb k[N][13];
-			int i, j, l;
+			int i, j = 0, l;
 			numb I;
 
 			for (i = 0; i < N; i++)
@@ -839,7 +839,7 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
 			const numb b[13] = { (numb)0.04174749114153, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, -(numb)0.05545232861124, (numb)0.2393128072012, (numb)0.7035106694034, -(numb)0.7597596138145, (numb)0.6605630309223, (numb)0.1581874825101, -(numb)0.2381095387529, (numb)0.25 };
 			numb y[N], X1[N], X2[N];
 			numb k[N][13];
-			int i, j, l;
+			int i, j = 0, l;
 			numb I;
 
 			for (i = 0; i < N; i++)
@@ -1278,7 +1278,7 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
 			const numb b[13] = { (numb)0.04174749114153, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, -(numb)0.05545232861124, (numb)0.2393128072012, (numb)0.7035106694034, -(numb)0.7597596138145, (numb)0.6605630309223, (numb)0.1581874825101, -(numb)0.2381095387529, (numb)0.25 };
 			numb y[N], X1[N], X2[N];
 			numb k[N][13];
-			int i, j, l;
+			int i, j = 0, l;
 			numb I;
 
 			for (i = 0; i < N; i++)
