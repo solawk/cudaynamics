@@ -1,6 +1,6 @@
 #pragma once
 
-#define numb float
+#define numb double
 
 #pragma warning(disable:4305)
 #pragma warning(disable:4244)

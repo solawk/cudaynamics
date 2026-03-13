@@ -84,7 +84,7 @@
                                     for (int v = 0; v < CUDA_kernel.VAR_COUNT; v++) variables[v] = variablesNext[v];  \
                                 }  \
                                 if (!data->isHires) for (int v = 0; v < CUDA_kernel.VAR_COUNT; v++) CUDA_marshal.trajectory[variationStart + v] = variables[v]; \
-                                else for (int v = 0; v < CUDA_kernel.VAR_COUNT; v++) CUDA_marshal.variableInits[v] = variables[v]; \
+                                else for (int v = 0; v < CUDA_kernel.VAR_COUNT; v++) CUDA_marshal.variableInits[variation * CUDA_kernel.VAR_COUNT + v] = variables[v]; \
                             }
 
 #define RECORD_STEP     if (!data->isHires) for (int i = 0; i < CUDA_kernel.VAR_COUNT; i++) CUDA_marshal.trajectory[stepStart + CUDA_kernel.VAR_COUNT + i] = variables[i] = variablesNext[i]; \
