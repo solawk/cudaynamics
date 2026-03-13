@@ -401,7 +401,7 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
 			const numb b[13] = { (numb)0.04174749114153, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, -(numb)0.05545232861124, (numb)0.2393128072012, (numb)0.7035106694034, -(numb)0.7597596138145, (numb)0.6605630309223, (numb)0.1581874825101, -(numb)0.2381095387529, (numb)0.25 };
 			numb y[N], X1[N], X2[N];
 			numb k[N][13];
-			int i, j = 0, l;
+			int i = 0, j = 0, l = 0;
 			numb I;
 
 			for (i = 0; i < N; i++)
@@ -411,9 +411,9 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
 				I = p[5] + (fmod((X1[3] - p[8]) > 0 ? (X1[3] - p[8]) : (p[9] / p[7] + p[8] - X1[3]), 1 / p[7]) < p[9] / p[7] ? p[6] : (numb)0.0);
 
 
-				k[0][j] = ((p[0] * X1[1] + p[1] * X1[0]) + I);
-				k[1][j] = ((p[1] * X1[1] - p[0] * X1[0]));
-				k[3][j] = (numb)1.0;
+				k[0][i] = ((p[0] * X1[1] + p[1] * X1[0]) + I);
+				k[1][i] = ((p[1] * X1[1] - p[0] * X1[0]));
+				k[3][i] = (numb)1.0;
 
 				for (l = 0; l < N; l++)
 					X2[l] = 0;
@@ -839,7 +839,7 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
 			const numb b[13] = { (numb)0.04174749114153, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, -(numb)0.05545232861124, (numb)0.2393128072012, (numb)0.7035106694034, -(numb)0.7597596138145, (numb)0.6605630309223, (numb)0.1581874825101, -(numb)0.2381095387529, (numb)0.25 };
 			numb y[N], X1[N], X2[N];
 			numb k[N][13];
-			int i, j = 0, l;
+			int i = 0, j = 0, l = 0;
 			numb I;
 
 			for (i = 0; i < N; i++)
@@ -849,9 +849,9 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
 				I = p[5] + p[6] * sin((numb)2.0 * (numb)3.141592653589793 * p[7] * (X1[3] - p[8]));
 
 
-				k[0][j] = ((p[0] * X1[1] + p[1] * X1[0]) + I);
-				k[1][j] = ((p[1] * X1[1] - p[0] * X1[0]));
-				k[3][j] = (numb)1.0;
+				k[0][i] = ((p[0] * X1[1] + p[1] * X1[0]) + I);
+				k[1][i] = ((p[1] * X1[1] - p[0] * X1[0]));
+				k[3][i] = (numb)1.0;
 
 				for (l = 0; l < N; l++)
 					X2[l] = 0;
@@ -1278,7 +1278,7 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
 			const numb b[13] = { (numb)0.04174749114153, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, -(numb)0.05545232861124, (numb)0.2393128072012, (numb)0.7035106694034, -(numb)0.7597596138145, (numb)0.6605630309223, (numb)0.1581874825101, -(numb)0.2381095387529, (numb)0.25 };
 			numb y[N], X1[N], X2[N];
 			numb k[N][13];
-			int i, j = 0, l;
+			int i = 0, j = 0, l = 0;
 			numb I;
 
 			for (i = 0; i < N; i++)
@@ -1288,9 +1288,9 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
 				I = p[5] + p[6] * (((numb)4.0 * p[7] * (X1[3] - p[8]) - (numb)2.0 * floor(((numb)4.0 * p[8] * (X1[3] - p[8]) + (numb)1.0) / (numb)2.0)) * ((int)floor(((numb)4.0 * p[7] * (X1[3] - p[8]) + (numb)1.0) / (numb)2.0) % 2 == 0 ? (numb)1.0 : (numb)-1.0));
 
 
-				k[0][j] = ((p[0] * X1[1] + p[1] * X1[0]) + I);
-				k[1][j] = ((p[1] * X1[1] - p[0] * X1[0]));
-				k[3][j] = (numb)1.0;
+				k[0][i] = ((p[0] * X1[1] + p[1] * X1[0]) + I);
+				k[1][i] = ((p[1] * X1[1] - p[0] * X1[0]));
+				k[3][i] = (numb)1.0;
 
 				for (l = 0; l < N; l++)
 					X2[l] = 0;
