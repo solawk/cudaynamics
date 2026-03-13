@@ -32,11 +32,8 @@ __host__ __device__ void kernelProgram_(name)(Computation* data, uint64_t variat
 	if (variation >= CUDA_marshal.totalVariations) return;      // Shutdown thread if there isn't a variation to compute
 	uint64_t stepStart, variationStart = variation * CUDA_marshal.variationSize;         // Start index to store the modelling data for the variation
 	LOCAL_BUFFERS;
-	if (!data->isHires)
-	{
-		LOAD_ATTRIBUTES(false);
-		TRANSIENT_SKIP_NEW(finiteDifferenceScheme_(name));
-	}
+    LOAD_ATTRIBUTES(false);
+    TRANSIENT_SKIP_NEW(finiteDifferenceScheme_(name));
 
 	for (int s = 0; s < CUDA_kernel.steps && !data->isHires; s++)
 	{
