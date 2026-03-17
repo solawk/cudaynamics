@@ -125,7 +125,6 @@ void FontLoading(ImGuiIO& io)
     LoadFont("Ubuntu Mono", "fonts/UbuntuMono", ".ttf", io);
     LoadFont("Times New Roman", "fonts/TimesNewRoman", ".ttf", io);
     LoadFont("IBM Plex Sans", "fonts/IBMPlexSans", ".ttf", io);
-    LoadFont("Source Code Pro", "fonts/SourceCodePro", ".ttf", io);
 
     int defaultSize = 24;
     if (!loadedFontFamilies.empty())
