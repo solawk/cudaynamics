@@ -530,11 +530,11 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
 				numb I_K = X1[1] * X1[1] * X1[1] * X1[1] * p[3] * (X1[0] - p[4]);
 				numb I_L = p[5] * (X1[0] - p[6]);
 
-				k[0][j] = (I - I_Na - I_K - I_L) / p[0];
-				k[1][j] = alpha_n * ((numb)1.0 - X1[1]) - beta_n * X1[1];
-				k[2][j] = alpha_m * ((numb)1.0 - X1[2]) - beta_m * X1[2];
-				k[3][j] = alpha_h * ((numb)1.0 - X1[3]) - beta_h * X1[3];
-				k[4][j] = (numb)1.0;
+				k[0][i] = (I - I_Na - I_K - I_L) / p[0];
+				k[1][i] = alpha_n * ((numb)1.0 - X1[1]) - beta_n * X1[1];
+				k[2][i] = alpha_m * ((numb)1.0 - X1[2]) - beta_m * X1[2];
+				k[3][i] = alpha_h * ((numb)1.0 - X1[3]) - beta_h * X1[3];
+				k[4][i] = (numb)1.0;
 
 				for (l = 0; l < N; l++)
 					X2[l] = 0;
@@ -1091,11 +1091,11 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
 				numb I_K = X1[1] * X1[1] * X1[1] * X1[1] * p[3] * (X1[0] - p[4]);
 				numb I_L = p[5] * (X1[0] - p[6]);
 
-				k[0][j] = (I - I_Na - I_K - I_L) / p[0];
-				k[1][j] = alpha_n * ((numb)1.0 - X1[1]) - beta_n * X1[1];
-				k[2][j] = alpha_m * ((numb)1.0 - X1[2]) - beta_m * X1[2];
-				k[3][j] = alpha_h * ((numb)1.0 - X1[3]) - beta_h * X1[3];
-				k[4][j] = (numb)1.0;
+				k[0][i] = (I - I_Na - I_K - I_L) / p[0];
+				k[1][i] = alpha_n * ((numb)1.0 - X1[1]) - beta_n * X1[1];
+				k[2][i] = alpha_m * ((numb)1.0 - X1[2]) - beta_m * X1[2];
+				k[3][i] = alpha_h * ((numb)1.0 - X1[3]) - beta_h * X1[3];
+				k[4][i] = (numb)1.0;
 
 				for (l = 0; l < N; l++)
 					X2[l] = 0;
@@ -1652,11 +1652,11 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
 				numb I_K = X1[1] * X1[1] * X1[1] * X1[1] * p[3] * (X1[0] - p[4]);
 				numb I_L = p[5] * (X1[0] - p[6]);
 
-				k[0][j] = (I - I_Na - I_K - I_L) / p[0];
-				k[1][j] = alpha_n * ((numb)1.0 - X1[1]) - beta_n * X1[1];
-				k[2][j] = alpha_m * ((numb)1.0 - X1[2]) - beta_m * X1[2];
-				k[3][j] = alpha_h * ((numb)1.0 - X1[3]) - beta_h * X1[3];
-				k[4][j] = (numb)1.0;
+				k[0][i] = (I - I_Na - I_K - I_L) / p[0];
+				k[1][i] = alpha_n * ((numb)1.0 - X1[1]) - beta_n * X1[1];
+				k[2][i] = alpha_m * ((numb)1.0 - X1[2]) - beta_m * X1[2];
+				k[3][i] = alpha_h * ((numb)1.0 - X1[3]) - beta_h * X1[3];
+				k[4][i] = (numb)1.0;
 
 				for (l = 0; l < N; l++)
 					X2[l] = 0;

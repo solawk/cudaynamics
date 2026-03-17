@@ -37,16 +37,16 @@ __host__ __device__ void kernelProgram_(name)(Computation* data, uint64_t variat
 __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* currentV, numb* nextV, numb* parameters)
 {
 	const numb h = H;
-	const int N = 4;
+	const int N = 3;
 	const numb p[11] = { P(a), P(b), P(c), P(d), P(vpeak), P(Idc), P(Iamp), P(Ifreq), P(Idel), P(Idf), P(symmetry)};
-	numb v[N] = { V(v), V(u), V(i), V(t) };
+	numb v[N] = { V(v), V(u), V(t) };
 
 	ifSIGNAL(P(signal), square)
 	{
 		ifMETHOD(P(method), ExplicitEuler)
 		{
-			Vnext(i) = p[5] + (fmod((v[3] - p[8]) > 0 ? (v[3] - p[8]) : (p[9] / p[7] + p[8] - v[3]), 1 / p[7]) < p[9] / p[7] ? p[6] : (numb)0.0);
-			Vnext(t) = v[3] + h;
+			Vnext(i) = p[5] + (fmod((v[2] - p[8]) > 0 ? (v[2] - p[8]) : (p[9] / p[7] + p[8] - v[2]), 1 / p[7]) < p[9] / p[7] ? p[6] : (numb)0.0);
+			Vnext(t) = v[2] + h;
 			Vnext(v) = v[0] + h * ((p[0] * v[1] + p[1] * v[0]) + Vnext(i));
 			Vnext(u) = v[1] + h * ((p[1] * v[1] - p[0] * v[0]));
 
@@ -58,8 +58,8 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
 		}
 		ifMETHOD(P(method), SemiExplicitEuler)
 		{
-			Vnext(i) = p[5] + (fmod((v[3] - p[8]) > 0 ? (v[3] - p[8]) : (p[9] / p[7] + p[8] - v[3]), 1 / p[7]) < p[9] / p[7] ? p[6] : (numb)0.0);
-			Vnext(t) = v[3] + h;
+			Vnext(i) = p[5] + (fmod((v[2] - p[8]) > 0 ? (v[2] - p[8]) : (p[9] / p[7] + p[8] - v[2]), 1 / p[7]) < p[9] / p[7] ? p[6] : (numb)0.0);
+			Vnext(t) = v[2] + h;
 			Vnext(v) = v[0] + h * ((p[0] * v[1] + p[1] * v[0]) + Vnext(i));
 			Vnext(u) = v[1] + h * ((p[1] * v[1] - p[0] * Vnext(v)));
 
@@ -79,20 +79,12 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
 			int i, j;
 
 			J[0][2] = (numb)0.0;
-			J[0][3] = (numb)0.0;
 
 			J[1][2] = (numb)0.0;
-			J[1][3] = (numb)0.0;
 
 			J[2][0] = (numb)0.0;
 			J[2][1] = (numb)0.0;
 			J[2][2] = (numb)0.0;
-			J[2][3] = (numb)0.0;
-
-			J[3][0] = (numb)0.0;
-			J[3][1] = (numb)0.0;
-			J[3][2] = (numb)0.0;
-			J[3][3] = (numb)0.0;
 
 			for (i = 0; i < N; i++)
 				Z[i] = v[i];
@@ -114,11 +106,11 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
 					}
 				}
 
-				I = p[5] + (fmod((Z[3] - p[8]) > 0 ? (Z[3] - p[8]) : (p[9] / p[7] + p[8] - Z[3]), 1 / p[7]) < p[9] / p[7] ? p[6] : (numb)0.0);
+				I = p[5] + (fmod((Z[2] - p[8]) > 0 ? (Z[2] - p[8]) : (p[9] / p[7] + p[8] - Z[2]), 1 / p[7]) < p[9] / p[7] ? p[6] : (numb)0.0);
 
 				W[0][N] = v[0] - Z[0] + h * ((p[0] * Z[1] + p[1] * Z[0]) + I);
 				W[1][N] = v[1] - Z[1] + h * (p[1] * Z[1] - p[0] * v[0]);
-				W[3][N] = v[3] - Z[3] + h * ((numb)1.0);
+				W[2][N] = v[2] - Z[2] + h * ((numb)1.0);
 
 				int k;
 				numb b, d;
@@ -189,20 +181,20 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
 				Vnext(u) = p[3];
 			}
 
-			Vnext(t) = Zn[3];
+			Vnext(t) = Zn[2];
 			Vnext(i) = p[5] + (fmod((Vnext(t) - p[8]) > 0 ? (Vnext(t) - p[8]) : (p[9] / p[7] + p[8] - Vnext(t)), 1 / p[7]) < p[9] / p[7] ? p[6] : (numb)0.0);
 		}
 
 		ifMETHOD(P(method), ExplicitMidpoint)
 		{
-			numb imp = p[5] + (fmod((v[3] - p[8]) > 0 ? (v[3] - p[8]) : (p[9] / p[7] + p[8] - v[3]), 1 / p[7]) < p[9] / p[7] ? p[6] : (numb)0.0);
-			numb tmp = v[3] + h * (numb)0.5;
+			numb imp = p[5] + (fmod((v[2] - p[8]) > 0 ? (v[2] - p[8]) : (p[9] / p[7] + p[8] - v[2]), 1 / p[7]) < p[9] / p[7] ? p[6] : (numb)0.0);
+			numb tmp = v[2] + h * (numb)0.5;
 			numb vmp = v[0] + h * (numb)0.5 * ((p[0] * v[1] + p[1] * v[0]) + imp);
 			numb ump = v[1] + h * (numb)0.5 * ((p[1] * v[1] - p[0] * v[0]));
 
 
 			Vnext(i) = p[5] + (fmod((tmp - p[8]) > 0 ? (tmp - p[8]) : (p[9] / p[7] + p[8] - tmp), 1 / p[7]) < p[9] / p[7] ? p[6] : (numb)0.0);
-			Vnext(t) = v[3] + h;
+			Vnext(t) = v[2] + h;
 			Vnext(v) = v[0] + h * ((p[0] * ump + p[1] * vmp) + Vnext(i));
 			Vnext(u) = v[1] + h * ((p[1] * ump - p[0] * vmp));
 
@@ -222,20 +214,13 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
 			int i, j;
 
 			J[0][2] = (numb)0.0;
-			J[0][3] = (numb)0.0;
 
 			J[1][2] = (numb)0.0;
-			J[1][3] = (numb)0.0;
 
 			J[2][0] = (numb)0.0;
 			J[2][1] = (numb)0.0;
 			J[2][2] = (numb)0.0;
-			J[2][3] = (numb)0.0;
 
-			J[3][0] = (numb)0.0;
-			J[3][1] = (numb)0.0;
-			J[3][2] = (numb)0.0;
-			J[3][3] = (numb)0.0;
 
 			for (i = 0; i < N; i++)
 				Z[i] = v[i];
@@ -260,11 +245,11 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
 				for (i = 0; i < N; i++)
 					a[i] = (numb)0.5 * (v[i] + Z[i]);
 
-				I = p[5] + (fmod((a[3] - p[8]) > 0 ? (a[3] - p[8]) : (p[9] / p[7] + p[8] - a[3]), 1 / p[7]) < p[9] / p[7] ? p[6] : (numb)0.0);
+				I = p[5] + (fmod((a[2] - p[8]) > 0 ? (a[2] - p[8]) : (p[9] / p[7] + p[8] - a[2]), 1 / p[7]) < p[9] / p[7] ? p[6] : (numb)0.0);
 
 				W[0][N] = v[0] - Z[0] + h * ((p[0] * a[1] + p[1] * a[0]) + I);
 				W[1][N] = v[1] - Z[1] + h * (p[1] * a[1] - p[0] * a[0]);
-				W[3][N] = v[3] - Z[3] + h * ((numb)1.0);
+				W[2][N] = v[2] - Z[2] + h * ((numb)1.0);
 
 				int k;
 				numb b, d;
@@ -335,7 +320,7 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
 				Vnext(u) = p[3];
 			}
 
-			Vnext(t) = Zn[3];
+			Vnext(t) = Zn[2];
 			Vnext(i) = p[5] + (fmod((Vnext(t) - p[8]) > 0 ? (Vnext(t) - p[8]) : (p[9] / p[7] + p[8] - Vnext(t)), 1 / p[7]) < p[9] / p[7] ? p[6] : (numb)0.0);
 		}
 
@@ -344,7 +329,7 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
 			numb k[2][4];
 			numb a[2];
 			numb I; numb tmp;
-			tmp = v[3];
+			tmp = v[2];
 			int i, j;
 
 			for (i = 0; i < 2; i++)
@@ -371,12 +356,12 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
 				else if (j == 2) {
 					for (i = 0; i < 2; i++)
 						a[i] = v[i] + h * k[i][j];
-					tmp = v[3] + h;
+					tmp = v[2] + h;
 				}
 				else {
 					for (i = 0; i < 2; i++)
 						a[i] = v[i] + (numb)0.5 * h * k[i][j];
-					tmp = v[3] + h * (numb)0.5;
+					tmp = v[2] + h * (numb)0.5;
 				}
 				
 			}
@@ -401,19 +386,19 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
 			const numb b[13] = { (numb)0.04174749114153, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, -(numb)0.05545232861124, (numb)0.2393128072012, (numb)0.7035106694034, -(numb)0.7597596138145, (numb)0.6605630309223, (numb)0.1581874825101, -(numb)0.2381095387529, (numb)0.25 };
 			numb y[N], X1[N], X2[N];
 			numb k[N][13];
-			int i, j = 0, l;
+			int i = 0, j = 0, l = 0;
 			numb I;
 
 			for (i = 0; i < N; i++)
 				X1[i] = v[i];
 
 			for (i = 0; i < 13; i++) {
-				I = p[5] + (fmod((X1[3] - p[8]) > 0 ? (X1[3] - p[8]) : (p[9] / p[7] + p[8] - X1[3]), 1 / p[7]) < p[9] / p[7] ? p[6] : (numb)0.0);
+				I = p[5] + (fmod((X1[2] - p[8]) > 0 ? (X1[2] - p[8]) : (p[9] / p[7] + p[8] - X1[2]), 1 / p[7]) < p[9] / p[7] ? p[6] : (numb)0.0);
 
 
-				k[0][j] = ((p[0] * X1[1] + p[1] * X1[0]) + I);
-				k[1][j] = ((p[1] * X1[1] - p[0] * X1[0]));
-				k[3][j] = (numb)1.0;
+				k[0][i] = ((p[0] * X1[1] + p[1] * X1[0]) + I);
+				k[1][i] = ((p[1] * X1[1] - p[0] * X1[0]));
+				k[2][i] = (numb)1.0;
 
 				for (l = 0; l < N; l++)
 					X2[l] = 0;
@@ -444,7 +429,7 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
 
 			Vnext(v) = y[0];
 			Vnext(u) = y[1];
-			Vnext(t) = y[3];
+			Vnext(t) = y[2];
 			Vnext(i) = p[5] + (fmod((Vnext(t) - p[8]) > 0 ? (Vnext(t) - p[8]) : (p[9] / p[7] + p[8] - Vnext(t)), 1 / p[7]) < p[9] / p[7] ? p[6] : (numb)0.0);
 			if (Vnext(v) >= p[4])
 			{
@@ -458,13 +443,13 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
 			numb h1 = (numb)0.5 * h - p[10];
 			numb h2 = (numb)0.5 * h + p[10];
 
-			numb I = p[5] + (fmod((v[3] - p[8]) > 0 ? (v[3] - p[8]) : (p[9] / p[7] + p[8] - v[3]), 1 / p[7]) < p[9] / p[7] ? p[6] : (numb)0.0);
+			numb I = p[5] + (fmod((v[2] - p[8]) > 0 ? (v[2] - p[8]) : (p[9] / p[7] + p[8] - v[2]), 1 / p[7]) < p[9] / p[7] ? p[6] : (numb)0.0);
 
 			numb vmp = v[0] + h1 * ((p[0] * v[1] + p[1] * v[0]) + I);
 			numb ump = v[1] + h1 * ((p[1] * v[1] - p[0] * vmp));
 
 
-			Vnext(t) = V(t) + h;
+			Vnext(t) = v[2] + h;
 			
 			Vnext(i) = p[5] + (fmod((Vnext(t) - p[8]) > 0 ? (Vnext(t) - p[8]) : (p[9] / p[7] + p[8] - Vnext(t)), 1 / p[7]) < p[9] / p[7] ? p[6] : (numb)0.0);
 
@@ -483,8 +468,8 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
 	{
 		ifMETHOD(P(method), ExplicitEuler)
 		{
-			Vnext(i) = p[5] + p[6] * sin((numb)2.0 * (numb)3.141592653589793 * p[7] * (v[3] - p[8]));
-			Vnext(t) = v[3] + h;
+			Vnext(i) = p[5] + p[6] * sin((numb)2.0 * (numb)3.141592653589793 * p[7] * (v[2] - p[8]));
+			Vnext(t) = v[2] + h;
 			Vnext(v) = v[0] + h * ((p[0] * v[1] + p[1] * v[0]) + Vnext(i));
 			Vnext(u) = v[1] + h * ((p[1] * v[1] - p[0] * v[0]));
 
@@ -496,8 +481,8 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
 		}
 		ifMETHOD(P(method), SemiExplicitEuler)
 		{
-			Vnext(i) = p[5] + p[6] * sin((numb)2.0 * (numb)3.141592653589793 * p[7] * (v[3] - p[8]));
-			Vnext(t) = v[3] + h;
+			Vnext(i) = p[5] + p[6] * sin((numb)2.0 * (numb)3.141592653589793 * p[7] * (v[2] - p[8]));
+			Vnext(t) = v[2] + h;
 			Vnext(v) = v[0] + h * ((p[0] * v[1] + p[1] * v[0]) + Vnext(i));
 			Vnext(u) = v[1] + h * ((p[1] * v[1] - p[0] * Vnext(v)));
 
@@ -517,20 +502,12 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
 			int i, j;
 
 			J[0][2] = (numb)0.0;
-			J[0][3] = (numb)0.0;
 
 			J[1][2] = (numb)0.0;
-			J[1][3] = (numb)0.0;
 
 			J[2][0] = (numb)0.0;
 			J[2][1] = (numb)0.0;
 			J[2][2] = (numb)0.0;
-			J[2][3] = (numb)0.0;
-
-			J[3][0] = (numb)0.0;
-			J[3][1] = (numb)0.0;
-			J[3][2] = (numb)0.0;
-			J[3][3] = (numb)0.0;
 
 			for (i = 0; i < N; i++)
 				Z[i] = v[i];
@@ -552,11 +529,11 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
 					}
 				}
 
-				I = p[5] + p[6] * sin((numb)2.0 * (numb)3.141592653589793 * p[7] * (Z[3] - p[8]));
+				I = p[5] + p[6] * sin((numb)2.0 * (numb)3.141592653589793 * p[7] * (Z[2] - p[8]));
 
 				W[0][N] = v[0] - Z[0] + h * ((p[0] * Z[1] + p[1] * Z[0]) + I);
 				W[1][N] = v[1] - Z[1] + h * (p[1] * Z[1] - p[0] * v[0]);
-				W[3][N] = v[3] - Z[3] + h * ((numb)1.0);
+				W[2][N] = v[2] - Z[2] + h * ((numb)1.0);
 
 				int k;
 				numb b, d;
@@ -627,20 +604,20 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
 				Vnext(u) = p[3];
 			}
 
-			Vnext(t) = Zn[3];
+			Vnext(t) = Zn[2];
 			Vnext(i) = p[5] + p[6] * sin((numb)2.0 * (numb)3.141592653589793 * p[7] * (Vnext(t) - p[8]));
 		}
 
 		ifMETHOD(P(method), ExplicitMidpoint)
 		{
-			numb imp = p[5] + p[6] * sin((numb)2.0 * (numb)3.141592653589793 * p[7] * (v[3] - p[8]));
-			numb tmp = v[3] + h * (numb)0.5;
+			numb imp = p[5] + p[6] * sin((numb)2.0 * (numb)3.141592653589793 * p[7] * (v[2] - p[8]));
+			numb tmp = v[2] + h * (numb)0.5;
 			numb vmp = v[0] + h * (numb)0.5 * ((p[0] * v[1] + p[1] * v[0]) + imp);
 			numb ump = v[1] + h * (numb)0.5 * ((p[1] * v[1] - p[0] * v[0]));
 
 
 			Vnext(i) = p[5] + p[6] * sin((numb)2.0 * (numb)3.141592653589793 * p[7] * (tmp- p[8]));
-			Vnext(t) = v[3] + h;
+			Vnext(t) = v[2] + h;
 			Vnext(v) = v[0] + h * ((p[0] * ump + p[1] * vmp) + Vnext(i));
 			Vnext(u) = v[1] + h * ((p[1] * ump - p[0] * vmp));
 
@@ -660,20 +637,12 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
 			int i, j;
 
 			J[0][2] = (numb)0.0;
-			J[0][3] = (numb)0.0;
 
 			J[1][2] = (numb)0.0;
-			J[1][3] = (numb)0.0;
 
 			J[2][0] = (numb)0.0;
 			J[2][1] = (numb)0.0;
 			J[2][2] = (numb)0.0;
-			J[2][3] = (numb)0.0;
-
-			J[3][0] = (numb)0.0;
-			J[3][1] = (numb)0.0;
-			J[3][2] = (numb)0.0;
-			J[3][3] = (numb)0.0;
 
 			for (i = 0; i < N; i++)
 				Z[i] = v[i];
@@ -698,11 +667,11 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
 				for (i = 0; i < N; i++)
 					a[i] = (numb)0.5 * (v[i] + Z[i]);
 
-				I = p[5] + p[6] * sin((numb)2.0 * (numb)3.141592653589793 * p[7] * (a[3] - p[8]));
+				I = p[5] + p[6] * sin((numb)2.0 * (numb)3.141592653589793 * p[7] * (a[2] - p[8]));
 
 				W[0][N] = v[0] - Z[0] + h * ((p[0] * a[1] + p[1] * a[0]) + I);
 				W[1][N] = v[1] - Z[1] + h * (p[1] * a[1] - p[0] * a[0]);
-				W[3][N] = v[3] - Z[3] + h * ((numb)1.0);
+				W[2][N] = v[2] - Z[2] + h * ((numb)1.0);
 
 				int k;
 				numb b, d;
@@ -773,7 +742,7 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
 				Vnext(u) = p[3];
 			}
 
-			Vnext(t) = Zn[3];
+			Vnext(t) = Zn[2];
 			Vnext(i) = p[5] + p[6] * sin((numb)2.0 * (numb)3.141592653589793 * p[7] * (Vnext(t) - p[8]));
 		}
 
@@ -782,7 +751,7 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
 			numb k[2][4];
 			numb a[2];
 			numb I; numb tmp;
-			tmp = v[3];
+			tmp = v[2];
 			int i, j;
 
 			for (i = 0; i < 2; i++)
@@ -809,12 +778,12 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
 				else if (j == 2) {
 					for (i = 0; i < 2; i++)
 						a[i] = v[i] + h * k[i][j];
-					tmp = v[3] + h;
+					tmp = v[2] + h;
 				}
 				else {
 					for (i = 0; i < 2; i++)
 						a[i] = v[i] + (numb)0.5 * h * k[i][j];
-					tmp = v[3] + h * (numb)0.5;
+					tmp = v[2] + h * (numb)0.5;
 				}
 
 			}
@@ -839,19 +808,19 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
 			const numb b[13] = { (numb)0.04174749114153, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, -(numb)0.05545232861124, (numb)0.2393128072012, (numb)0.7035106694034, -(numb)0.7597596138145, (numb)0.6605630309223, (numb)0.1581874825101, -(numb)0.2381095387529, (numb)0.25 };
 			numb y[N], X1[N], X2[N];
 			numb k[N][13];
-			int i, j = 0, l;
+			int i = 0, j = 0, l = 0;
 			numb I;
 
 			for (i = 0; i < N; i++)
 				X1[i] = v[i];
 
 			for (i = 0; i < 13; i++) {
-				I = p[5] + p[6] * sin((numb)2.0 * (numb)3.141592653589793 * p[7] * (X1[3] - p[8]));
+				I = p[5] + p[6] * sin((numb)2.0 * (numb)3.141592653589793 * p[7] * (X1[2] - p[8]));
 
 
-				k[0][j] = ((p[0] * X1[1] + p[1] * X1[0]) + I);
-				k[1][j] = ((p[1] * X1[1] - p[0] * X1[0]));
-				k[3][j] = (numb)1.0;
+				k[0][i] = ((p[0] * X1[1] + p[1] * X1[0]) + I);
+				k[1][i] = ((p[1] * X1[1] - p[0] * X1[0]));
+				k[2][i] = (numb)1.0;
 
 				for (l = 0; l < N; l++)
 					X2[l] = 0;
@@ -882,7 +851,7 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
 
 			Vnext(v) = y[0];
 			Vnext(u) = y[1];
-			Vnext(t) = y[3];
+			Vnext(t) = y[2];
 			Vnext(i) = p[5] + p[6] * sin((numb)2.0 * (numb)3.141592653589793 * p[7] * (Vnext(t) - p[8]));
 			if (Vnext(v) >= p[4])
 			{
@@ -896,13 +865,13 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
 			numb h1 = (numb)0.5 * h - p[10];
 			numb h2 = (numb)0.5 * h + p[10];
 
-			numb I = p[5] + p[6] * sin((numb)2.0 * (numb)3.141592653589793 * p[7] * (v[3] - p[8]));
+			numb I = p[5] + p[6] * sin((numb)2.0 * (numb)3.141592653589793 * p[7] * (v[2] - p[8]));
 
 			numb vmp = v[0] + h1 * ((p[0] * v[1] + p[1] * v[0]) + I);
 			numb ump = v[1] + h1 * ((p[1] * v[1] - p[0] * vmp));
 
 
-			Vnext(t) = V(t) + h;
+			Vnext(t) = v[2] + h;
 
 			Vnext(i) = p[5] + p[6] * sin((numb)2.0 * (numb)3.141592653589793 * p[7] * (Vnext(t) - p[8]));
 
@@ -922,8 +891,8 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
 		ifMETHOD(P(method), ExplicitEuler)
 		{
 
-			Vnext(i) = p[5] + p[6] * (((numb)4.0 * p[7] * (v[3] - p[8]) - (numb)2.0 * floor(((numb)4.0 * p[8] * (v[3] - p[8]) + (numb)1.0) / (numb)2.0)) * ((int)floor(((numb)4.0 * p[7] * (v[3] - p[8]) + (numb)1.0) / (numb)2.0) % 2 == 0 ? (numb)1.0 : (numb)-1.0));
-			Vnext(t) = v[3] + h;
+			Vnext(i) = p[5] + p[6] * (((numb)4.0 * p[7] * (v[2] - p[8]) - (numb)2.0 * floor(((numb)4.0 * p[8] * (v[2] - p[8]) + (numb)1.0) / (numb)2.0)) * ((int)floor(((numb)4.0 * p[7] * (v[2] - p[8]) + (numb)1.0) / (numb)2.0) % 2 == 0 ? (numb)1.0 : (numb)-1.0));
+			Vnext(t) = v[2] + h;
 			Vnext(v) = v[0] + h * ((p[0] * v[1] + p[1] * v[0]) + Vnext(i));
 			Vnext(u) = v[1] + h * ((p[1] * v[1] - p[0] * v[0]));
 
@@ -935,8 +904,8 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
 		}
 		ifMETHOD(P(method), SemiExplicitEuler)
 		{
-			Vnext(i) = p[5] + p[6] * (((numb)4.0 * p[7] * (v[3] - p[8]) - (numb)2.0 * floor(((numb)4.0 * p[8] * (v[3] - p[8]) + (numb)1.0) / (numb)2.0)) * ((int)floor(((numb)4.0 * p[7] * (v[3] - p[8]) + (numb)1.0) / (numb)2.0) % 2 == 0 ? (numb)1.0 : (numb)-1.0));
-			Vnext(t) = v[3] + h;
+			Vnext(i) = p[5] + p[6] * (((numb)4.0 * p[7] * (v[2] - p[8]) - (numb)2.0 * floor(((numb)4.0 * p[8] * (v[2] - p[8]) + (numb)1.0) / (numb)2.0)) * ((int)floor(((numb)4.0 * p[7] * (v[2] - p[8]) + (numb)1.0) / (numb)2.0) % 2 == 0 ? (numb)1.0 : (numb)-1.0));
+			Vnext(t) = v[2] + h;
 			Vnext(v) = v[0] + h * ((p[0] * v[1] + p[1] * v[0]) + Vnext(i));
 			Vnext(u) = v[1] + h * ((p[1] * v[1] - p[0] * Vnext(v)));
 
@@ -956,20 +925,13 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
 			int i, j;
 
 			J[0][2] = (numb)0.0;
-			J[0][3] = (numb)0.0;
 
 			J[1][2] = (numb)0.0;
-			J[1][3] = (numb)0.0;
+
 
 			J[2][0] = (numb)0.0;
 			J[2][1] = (numb)0.0;
 			J[2][2] = (numb)0.0;
-			J[2][3] = (numb)0.0;
-
-			J[3][0] = (numb)0.0;
-			J[3][1] = (numb)0.0;
-			J[3][2] = (numb)0.0;
-			J[3][3] = (numb)0.0;
 
 			for (i = 0; i < N; i++)
 				Z[i] = v[i];
@@ -991,11 +953,11 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
 					}
 				}
 
-				I = p[5] + p[6] * (((numb)4.0 * p[7] * (Z[3] - p[8]) - (numb)2.0 * floor(((numb)4.0 * p[8] * (Z[3] - p[8]) + (numb)1.0) / (numb)2.0)) * ((int)floor(((numb)4.0 * p[7] * (Z[3] - p[8]) + (numb)1.0) / (numb)2.0) % 2 == 0 ? (numb)1.0 : (numb)-1.0));
+				I = p[5] + p[6] * (((numb)4.0 * p[7] * (Z[2] - p[8]) - (numb)2.0 * floor(((numb)4.0 * p[8] * (Z[2] - p[8]) + (numb)1.0) / (numb)2.0)) * ((int)floor(((numb)4.0 * p[7] * (Z[2] - p[8]) + (numb)1.0) / (numb)2.0) % 2 == 0 ? (numb)1.0 : (numb)-1.0));
 
 				W[0][N] = v[0] - Z[0] + h * ((p[0] * Z[1] + p[1] * Z[0]) + I);
 				W[1][N] = v[1] - Z[1] + h * (p[1] * Z[1] - p[0] * v[0]);
-				W[3][N] = v[3] - Z[3] + h * ((numb)1.0);
+				W[2][N] = v[2] - Z[2] + h * ((numb)1.0);
 
 				int k;
 				numb b, d;
@@ -1066,20 +1028,20 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
 				Vnext(u) = p[3];
 			}
 
-			Vnext(t) = Zn[3];
+			Vnext(t) = Zn[2];
 			Vnext(i) = p[5] + p[6] * (((numb)4.0 * p[7] * (Vnext(t) - p[8]) - (numb)2.0 * floor(((numb)4.0 * p[8] * (Vnext(t) - p[8]) + (numb)1.0) / (numb)2.0)) * ((int)floor(((numb)4.0 * p[7] * (Vnext(t) - p[8]) + (numb)1.0) / (numb)2.0) % 2 == 0 ? (numb)1.0 : (numb)-1.0));
 		}
 
 		ifMETHOD(P(method), ExplicitMidpoint)
 		{
-			numb imp = p[5] + p[6] * (((numb)4.0 * p[7] * (v[3] - p[8]) - (numb)2.0 * floor(((numb)4.0 * p[8] * (v[3] - p[8]) + (numb)1.0) / (numb)2.0)) * ((int)floor(((numb)4.0 * p[7] * (v[3] - p[8]) + (numb)1.0) / (numb)2.0) % 2 == 0 ? (numb)1.0 : (numb)-1.0));
-			numb tmp = v[3] + h * (numb)0.5;
+			numb imp = p[5] + p[6] * (((numb)4.0 * p[7] * (v[2] - p[8]) - (numb)2.0 * floor(((numb)4.0 * p[8] * (v[2] - p[8]) + (numb)1.0) / (numb)2.0)) * ((int)floor(((numb)4.0 * p[7] * (v[2] - p[8]) + (numb)1.0) / (numb)2.0) % 2 == 0 ? (numb)1.0 : (numb)-1.0));
+			numb tmp = v[2] + h * (numb)0.5;
 			numb vmp = v[0] + h * (numb)0.5 * ((p[0] * v[1] + p[1] * v[0]) + imp);
 			numb ump = v[1] + h * (numb)0.5 * ((p[1] * v[1] - p[0] * v[0]));
 
 
 			Vnext(i) = p[5] + p[6] * (((numb)4.0 * p[7] * (tmp - p[8]) - (numb)2.0 * floor(((numb)4.0 * p[8] * (tmp - p[8]) + (numb)1.0) / (numb)2.0)) * ((int)floor(((numb)4.0 * p[7] * (tmp - p[8]) + (numb)1.0) / (numb)2.0) % 2 == 0 ? (numb)1.0 : (numb)-1.0));
-			Vnext(t) = v[3] + h;
+			Vnext(t) = v[2] + h;
 			Vnext(v) = v[0] + h * ((p[0] * ump + p[1] * vmp) + Vnext(i));
 			Vnext(u) = v[1] + h * ((p[1] * ump - p[0] * vmp));
 
@@ -1099,20 +1061,12 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
 			int i, j;
 
 			J[0][2] = (numb)0.0;
-			J[0][3] = (numb)0.0;
 
 			J[1][2] = (numb)0.0;
-			J[1][3] = (numb)0.0;
 
 			J[2][0] = (numb)0.0;
 			J[2][1] = (numb)0.0;
 			J[2][2] = (numb)0.0;
-			J[2][3] = (numb)0.0;
-
-			J[3][0] = (numb)0.0;
-			J[3][1] = (numb)0.0;
-			J[3][2] = (numb)0.0;
-			J[3][3] = (numb)0.0;
 
 			for (i = 0; i < N; i++)
 				Z[i] = v[i];
@@ -1137,11 +1091,11 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
 				for (i = 0; i < N; i++)
 					a[i] = (numb)0.5 * (v[i] + Z[i]);
 
-				I = p[5] + p[6] * (((numb)4.0 * p[7] * (a[3] - p[8]) - (numb)2.0 * floor(((numb)4.0 * p[8] * (a[3] - p[8]) + (numb)1.0) / (numb)2.0)) * ((int)floor(((numb)4.0 * p[7] * (a[3] - p[8]) + (numb)1.0) / (numb)2.0) % 2 == 0 ? (numb)1.0 : (numb)-1.0));
+				I = p[5] + p[6] * (((numb)4.0 * p[7] * (a[2] - p[8]) - (numb)2.0 * floor(((numb)4.0 * p[8] * (a[2] - p[8]) + (numb)1.0) / (numb)2.0)) * ((int)floor(((numb)4.0 * p[7] * (a[2] - p[8]) + (numb)1.0) / (numb)2.0) % 2 == 0 ? (numb)1.0 : (numb)-1.0));
 
 				W[0][N] = v[0] - Z[0] + h * ((p[0] * a[1] + p[1] * a[0]) + I);
 				W[1][N] = v[1] - Z[1] + h * (p[1] * a[1] - p[0] * a[0]);
-				W[3][N] = v[3] - Z[3] + h * ((numb)1.0);
+				W[2][N] = v[2] - Z[2] + h * ((numb)1.0);
 
 				int k;
 				numb b, d;
@@ -1212,7 +1166,7 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
 				Vnext(u) = p[3];
 			}
 
-			Vnext(t) = Zn[3];
+			Vnext(t) = Zn[2];
 			Vnext(i) = p[5] + p[6] * (((numb)4.0 * p[7] * (Vnext(t) - p[8]) - (numb)2.0 * floor(((numb)4.0 * p[8] * (Vnext(t) - p[8]) + (numb)1.0) / (numb)2.0)) * ((int)floor(((numb)4.0 * p[7] * (Vnext(t) - p[8]) + (numb)1.0) / (numb)2.0) % 2 == 0 ? (numb)1.0 : (numb)-1.0));
 		}
 
@@ -1221,7 +1175,7 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
 			numb k[2][4];
 			numb a[2];
 			numb I; numb tmp;
-			tmp = v[3];
+			tmp = v[2];
 			int i, j;
 
 			for (i = 0; i < 2; i++)
@@ -1248,12 +1202,12 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
 				else if (j == 2) {
 					for (i = 0; i < 2; i++)
 						a[i] = v[i] + h * k[i][j];
-					tmp = v[3] + h;
+					tmp = v[2] + h;
 				}
 				else {
 					for (i = 0; i < 2; i++)
 						a[i] = v[i] + (numb)0.5 * h * k[i][j];
-					tmp = v[3] + h * (numb)0.5;
+					tmp = v[2] + h * (numb)0.5;
 				}
 
 			}
@@ -1278,19 +1232,19 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
 			const numb b[13] = { (numb)0.04174749114153, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, -(numb)0.05545232861124, (numb)0.2393128072012, (numb)0.7035106694034, -(numb)0.7597596138145, (numb)0.6605630309223, (numb)0.1581874825101, -(numb)0.2381095387529, (numb)0.25 };
 			numb y[N], X1[N], X2[N];
 			numb k[N][13];
-			int i, j = 0, l;
+			int i = 0, j = 0, l = 0;
 			numb I;
 
 			for (i = 0; i < N; i++)
 				X1[i] = v[i];
 
 			for (i = 0; i < 13; i++) {
-				I = p[5] + p[6] * (((numb)4.0 * p[7] * (X1[3] - p[8]) - (numb)2.0 * floor(((numb)4.0 * p[8] * (X1[3] - p[8]) + (numb)1.0) / (numb)2.0)) * ((int)floor(((numb)4.0 * p[7] * (X1[3] - p[8]) + (numb)1.0) / (numb)2.0) % 2 == 0 ? (numb)1.0 : (numb)-1.0));
+				I = p[5] + p[6] * (((numb)4.0 * p[7] * (X1[2] - p[8]) - (numb)2.0 * floor(((numb)4.0 * p[8] * (X1[2] - p[8]) + (numb)1.0) / (numb)2.0)) * ((int)floor(((numb)4.0 * p[7] * (X1[2] - p[8]) + (numb)1.0) / (numb)2.0) % 2 == 0 ? (numb)1.0 : (numb)-1.0));
 
 
-				k[0][j] = ((p[0] * X1[1] + p[1] * X1[0]) + I);
-				k[1][j] = ((p[1] * X1[1] - p[0] * X1[0]));
-				k[3][j] = (numb)1.0;
+				k[0][i] = ((p[0] * X1[1] + p[1] * X1[0]) + I);
+				k[1][i] = ((p[1] * X1[1] - p[0] * X1[0]));
+				k[2][i] = (numb)1.0;
 
 				for (l = 0; l < N; l++)
 					X2[l] = 0;
@@ -1321,7 +1275,7 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
 
 			Vnext(v) = y[0];
 			Vnext(u) = y[1];
-			Vnext(t) = y[3];
+			Vnext(t) = y[2];
 			Vnext(i) = p[5] + p[6] * (((numb)4.0 * p[7] * (Vnext(t) - p[8]) - (numb)2.0 * floor(((numb)4.0 * p[8] * (Vnext(t) - p[8]) + (numb)1.0) / (numb)2.0)) * ((int)floor(((numb)4.0 * p[7] * (Vnext(t) - p[8]) + (numb)1.0) / (numb)2.0) % 2 == 0 ? (numb)1.0 : (numb)-1.0));
 			if (Vnext(v) >= p[4])
 			{
@@ -1335,13 +1289,13 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
 			numb h1 = (numb)0.5 * h - p[10];
 			numb h2 = (numb)0.5 * h + p[10];
 
-			numb I = p[5] + (fmod((v[3] - p[8]) > 0 ? (v[3] - p[8]) : (p[9] / p[7] + p[8] - v[3]), 1 / p[7]) < p[9] / p[7] ? p[6] : (numb)0.0);
+			numb I = p[5] + (fmod((v[2] - p[8]) > 0 ? (v[2] - p[8]) : (p[9] / p[7] + p[8] - v[2]), 1 / p[7]) < p[9] / p[7] ? p[6] : (numb)0.0);
 
 			numb vmp = v[0] + h1 * ((p[0] * v[1] + p[1] * v[0]) + I);
 			numb ump = v[1] + h1 * ((p[1] * v[1] - p[0] * vmp));
 
 
-			Vnext(t) = V(t) + h;
+			Vnext(t) = v[2] + h;
 
 			Vnext(i) = p[5] + (fmod((Vnext(t) - p[8]) > 0 ? (Vnext(t) - p[8]) : (p[9] / p[7] + p[8] - Vnext(t)), 1 / p[7]) < p[9] / p[7] ? p[6] : (numb)0.0);
 
