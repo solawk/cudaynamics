@@ -92,8 +92,7 @@ void plotWindowMenu_File(PlotWindow* window)
 {
 	if (ImGui::BeginMenu("File"))
 	{
-		if (ImGui::MenuItem("Export to .csv", nullptr, false,
-			(window->type == Heatmap) || (window->type == VarSeries) || (window->type == Decay) || (window->type == Orbit)))
+		if (ImGui::MenuItem("Export to .csv", nullptr, false, true))
 		{
 			std::string savedPath;
 			bool attempted = false; 
@@ -155,6 +154,43 @@ void plotWindowMenu_File(PlotWindow* window)
 			case Orbit:
 			{
 				savedPath = exportOrbitCSV(window);
+				attempted = true;
+				break;
+			}
+
+			case IndSeries:
+			{
+				savedPath = exportIndicesSeriesCSV(window);
+				attempted = true;
+				break;
+			}
+
+			case Phase2D:
+			{
+				savedPath = exportPhase2DCSV(window);
+				attempted = true;
+				break;
+			}
+
+			case Phase:
+			{
+				savedPath = exportPhase3DCSV(window);
+				attempted = true;
+				break;
+			}
+
+			case MCHeatmap:
+			{
+				savedPath = exportMCHeatmapCSV(window);
+
+
+				attempted = true;
+				break;
+			}
+
+			case Metric:
+			{
+				savedPath = exportMetricCSV(window);
 				attempted = true;
 				break;
 			}

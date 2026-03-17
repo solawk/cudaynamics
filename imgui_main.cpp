@@ -1986,25 +1986,33 @@ int imgui_main(int, char**)
 							switch (window->orbit.type)
 							{
 							case OPT_Selected_Var_Section:
-								if (ImPlot::BeginPlot(("##" + plotName + "_ChosenVariation").c_str(), window->orbit.invertedAxes ? "Peaks" : "Intervals", window->orbit.invertedAxes ? "Intervals" : "Peaks", ImVec2(-1, -1), ImPlotFlags_NoTitle, 0, 0)) {
+								if (ImPlot::BeginPlot(("##" + plotName + "_ChosenVariation").c_str(), window->orbit.invertedAxes ? "Peaks" : "Intervals", window->orbit.invertedAxes ? "Intervals" : "Peaks", ImVec2(-1, -1), ImPlotFlags_NoTitle, 0, 0)) 
+								{
 									plot = ImPlot::GetPlot(("##" + plotName + "_ChosenVariation").c_str()); plot->is3d = false;
 									ImPlot::SetupAxisLimits(ImAxis_X1, window->orbit.minX * 0.95f, window->orbit.maxX * 1.05f, ImGuiCond_None);
 									ImPlot::SetupAxisLimits(ImAxis_Y1, window->orbit.minY * 0.95f, window->orbit.maxY * 1.05f, ImGuiCond_None);
 									ImPlot::SetupFinish();
 									ImPlot::SetNextMarkerStyle(window->markerShape, window->orbit.pointSize, window->plotColor, -1.0, window->plotColor);
-									if (!window->orbit.invertedAxes) {
-										ImPlot::PlotScatter(window->orbit.drawingContinuation ? ("Standard##" + plotName + "_ChosenVariationPlot").c_str() : ("##" + plotName + "_ChosenVariationPlot").c_str(), window->orbit.peakIntervals, window->orbit.peakAmplitudes, window->orbit.peakCount - 1);
-										if (window->orbit.drawingContinuation && window->orbit.continuationAmpsForward != NULL) {
-											ImPlot::SetNextMarkerStyle(window->orbit.dotShapeForward, window->orbit.pointSizeForward, window->orbit.dotColorForward, IMPLOT_AUTO, window->orbit.dotColorForward);
-											ImPlot::PlotScatter(("Forward##" + plotName + "_ChosenVariationPlot").c_str(), window->orbit.SliceForwardInt.data(), window->orbit.SliceForwardPeak.data(), window->orbit.forNum - 1);
-											ImPlot::SetNextMarkerStyle(window->orbit.dotShapeBack, window->orbit.pointSizeBack, window->orbit.dotColorBack, IMPLOT_AUTO, window->orbit.dotColorBack);
-											ImPlot::PlotScatter(("Backward##" + plotName + "_ChosenVariationPlot").c_str(), window->orbit.SliceBackwardInt.data(), window->orbit.SliceBackwardPeak.data(), window->orbit.backNum - 1);
-										}
+
+									numb* xs = !window->orbit.invertedAxes ? window->orbit.peakIntervals : window->orbit.peakAmplitudes;
+									numb* ys = !window->orbit.invertedAxes ? window->orbit.peakAmplitudes : window->orbit.peakIntervals;
+
+									ImPlot::PlotScatter(window->orbit.drawingContinuation ? ("Standard##" + plotName + "_ChosenVariationPlot").c_str() : ("##" + plotName + "_ChosenVariationPlot").c_str(), xs, ys, window->orbit.peakCount - 1);
+
+									if (window->orbit.drawingContinuation && window->orbit.continuationAmpsForward != NULL)
+									{
+										numb* xsForward = !window->orbit.invertedAxes ? window->orbit.SliceForwardInt.data() : window->orbit.SliceForwardPeak.data();
+										numb* ysForward = !window->orbit.invertedAxes ? window->orbit.SliceForwardPeak.data() : window->orbit.SliceForwardInt.data();
+
+										numb* xsBackward = !window->orbit.invertedAxes ? window->orbit.SliceBackwardInt.data() : window->orbit.SliceBackwardPeak.data();
+										numb* ysBackward = !window->orbit.invertedAxes ? window->orbit.SliceBackwardPeak.data() : window->orbit.SliceBackwardInt.data();
+
+										ImPlot::SetNextMarkerStyle(window->orbit.dotShapeForward, window->orbit.pointSizeForward, window->orbit.dotColorForward, IMPLOT_AUTO, window->orbit.dotColorForward);
+										ImPlot::PlotScatter(("Forward##" + plotName + "_ChosenVariationPlot").c_str(), xsForward, ysForward, window->orbit.forNum - 1);
+										ImPlot::SetNextMarkerStyle(window->orbit.dotShapeBack, window->orbit.pointSizeBack, window->orbit.dotColorBack, IMPLOT_AUTO, window->orbit.dotColorBack);
+										ImPlot::PlotScatter(("Backward##" + plotName + "_ChosenVariationPlot").c_str(), xsBackward, ysBackward, window->orbit.backNum - 1);
 									}
-									else {
-										ImPlot::PlotScatter(("##" + plotName + "_ChosenVariationPlot").c_str(), window->orbit.peakAmplitudes, window->orbit.peakIntervals, window->orbit.peakCount - 1);
-									}
-									;
+
 									ImPlot::EndPlot();
 								}
 								break;
