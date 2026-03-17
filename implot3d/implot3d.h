@@ -289,6 +289,7 @@ enum ImPlot3DColormap_ {
     ImPlot3DColormap_PiYG = 13,     // Same as matplotlib "PiYG"
     ImPlot3DColormap_Spectral = 14, // Same as matplotlib "Spectral"
     ImPlot3DColormap_Greys = 15,    // White/black
+    ImPlot3DColormap_Turbo = 16,
 };
 
 //-----------------------------------------------------------------------------

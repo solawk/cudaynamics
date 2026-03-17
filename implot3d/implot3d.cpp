@@ -2603,6 +2603,7 @@ void InitializeContext(ImPlot3DContext* ctx) {
     const ImU32 PiYG[] = {IM_RGB(142, 1, 82), IM_RGB(197, 27, 125), IM_RGB(222, 119, 174), IM_RGB(241, 182, 218), IM_RGB(253, 224, 239), IM_RGB(247, 247, 247), IM_RGB(230, 245, 208), IM_RGB(184, 225, 134), IM_RGB(127, 188, 65), IM_RGB(77, 146, 33), IM_RGB(39, 100, 25)};
     const ImU32 Spectral[] = {IM_RGB(158, 1, 66), IM_RGB(213, 62, 79), IM_RGB(244, 109, 67), IM_RGB(253, 174, 97), IM_RGB(254, 224, 139), IM_RGB(255, 255, 191), IM_RGB(230, 245, 152), IM_RGB(171, 221, 164), IM_RGB(102, 194, 165), IM_RGB(50, 136, 189), IM_RGB(94, 79, 162)};
     const ImU32 Greys[] = {IM_COL32_WHITE, IM_COL32_BLACK};
+    const ImU32 Turbo[] = { IM_RGB(48,18,59),IM_RGB(68,88,203),IM_RGB(62,155,254),IM_RGB(24,213,204),IM_RGB(70,247,131),IM_RGB(164,252,59),IM_RGB(225,220,55),IM_RGB(253,163,48),IM_RGB(239,90,17),IM_RGB(195,36,2),IM_RGB(122,4,2) };
 
     IMPLOT3D_APPEND_CMAP(Deep, true);
     IMPLOT3D_APPEND_CMAP(Dark, true);
@@ -2620,6 +2621,7 @@ void InitializeContext(ImPlot3DContext* ctx) {
     IMPLOT3D_APPEND_CMAP(PiYG, false);
     IMPLOT3D_APPEND_CMAP(Spectral, false);
     IMPLOT3D_APPEND_CMAP(Greys, false);
+    IMPLOT3D_APPEND_CMAP(Turbo, false);
 }
 
 void ResetContext(ImPlot3DContext* ctx) {
