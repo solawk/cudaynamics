@@ -23,7 +23,7 @@ void listAttrRanging(Attribute* attr, bool isChanged)
 	//ImGui::PushItemWidth(120.0f);
 	if (ImGui::BeginCombo(("##RANGING_" + attr->name).c_str(), (rangingTypes[attr->rangingType]).c_str()))
 	{
-		for (int r = 0; r < /*5*/3; r++) // 3 without randoms, 5 with randoms
+		for (int r = 0; r < /*6*/4; r++) // 4 without randoms, 6 with randoms
 		{
 			bool isSelected = attr->rangingType == r;
 			ImGuiSelectableFlags selectableFlags = 0;
@@ -106,6 +106,17 @@ void listVariable(int i)
 		ImGui::TableSetColumnIndex(5); ImGui::SetNextItemWidth(-1);
 		ImGui::Text(("Step: " + (std::to_string(KERNELNEWCURRENT.variables[i].step))).c_str());
 		break;
+	case RT_Factor:
+		ImGui::TableSetColumnIndex(2); ImGui::SetNextItemWidth(-1);
+		listAttrNumb(&(KERNELNEWCURRENT.variables[i]), &(KERNELNEWCURRENT.variables[i].min), "", "From: ", KERNELNEWCURRENT.variables[i].min != KERNEL.variables[i].min);
+		ImGui::TableSetColumnIndex(3); ImGui::SetNextItemWidth(-1);
+		listAttrNumb(&(KERNELNEWCURRENT.variables[i]), &(KERNELNEWCURRENT.variables[i].step), "FACTOR", "Factor: ", KERNELNEWCURRENT.variables[i].step != KERNEL.variables[i].step);
+		ImGui::TableSetColumnIndex(4); ImGui::SetNextItemWidth(-1);
+		listAttrInt(&(KERNELNEWCURRENT.variables[i]), &(KERNELNEWCURRENT.variables[i].stepCount), "STEPCOUNT", "Count: ", KERNELNEWCURRENT.variables[i].stepCount != KERNEL.variables[i].stepCount, 2);
+		KERNELNEWCURRENT.variables[i].CalcMax();
+		ImGui::TableSetColumnIndex(5); ImGui::SetNextItemWidth(-1);
+		ImGui::Text(("To: " + (std::to_string(KERNELNEWCURRENT.variables[i].max))).c_str());
+		break;
 	case RT_UniformRandom:
 		listAttrNumb(&(KERNELNEWCURRENT.variables[i]), &(KERNELNEWCURRENT.variables[i].mean), "MEAN", "Mean: ", KERNELNEWCURRENT.variables[i].mean != KERNEL.variables[i].mean);
 		listAttrNumb(&(KERNELNEWCURRENT.variables[i]), &(KERNELNEWCURRENT.variables[i].deviation), "DEV", "Dev: ", KERNELNEWCURRENT.variables[i].deviation != KERNEL.variables[i].deviation);
@@ -178,6 +189,17 @@ void listParameter(int i)
 		KERNELNEWCURRENT.parameters[i].CalcStep();
 		ImGui::TableSetColumnIndex(5); ImGui::SetNextItemWidth(-1); 
 		ImGui::Text(("Step: " + (std::to_string(KERNELNEWCURRENT.parameters[i].step))).c_str());
+		break;
+	case RT_Factor:
+		ImGui::TableSetColumnIndex(2); ImGui::SetNextItemWidth(-1);
+		listAttrNumb(&(KERNELNEWCURRENT.parameters[i]), &(KERNELNEWCURRENT.parameters[i].min), "", "From: ", KERNELNEWCURRENT.parameters[i].min != KERNEL.parameters[i].min);
+		ImGui::TableSetColumnIndex(3); ImGui::SetNextItemWidth(-1);
+		listAttrNumb(&(KERNELNEWCURRENT.parameters[i]), &(KERNELNEWCURRENT.parameters[i].step), "FACTOR", "Factor: ", KERNELNEWCURRENT.parameters[i].step != KERNEL.parameters[i].step);
+		ImGui::TableSetColumnIndex(4); ImGui::SetNextItemWidth(-1);
+		listAttrInt(&(KERNELNEWCURRENT.parameters[i]), &(KERNELNEWCURRENT.parameters[i].stepCount), "STEPCOUNT", "Count: ", KERNELNEWCURRENT.parameters[i].stepCount != KERNEL.parameters[i].stepCount, 2);
+		KERNELNEWCURRENT.parameters[i].CalcMax();
+		ImGui::TableSetColumnIndex(5); ImGui::SetNextItemWidth(-1);
+		ImGui::Text(("To: " + (std::to_string(KERNELNEWCURRENT.parameters[i].max))).c_str());
 		break;
 	case RT_UniformRandom:
 		listAttrNumb(&(KERNELNEWCURRENT.parameters[i]), &(KERNELNEWCURRENT.parameters[i].mean), "MEAN", "Mean: ", KERNELNEWCURRENT.parameters[i].mean != KERNEL.parameters[i].mean);

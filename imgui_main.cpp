@@ -865,7 +865,7 @@ int imgui_main(int, char**)
 				if (!isEnum)
 				{
 					ImGui::SameLine();
-					ImGui::Text(("Value: " + std::to_string(calculateValue(attr->min, attr->step, index))).c_str());
+					ImGui::Text(("Value: " + std::to_string(attr->values[index])).c_str());
 				}
 				else
 				{
@@ -2501,10 +2501,28 @@ int imgui_main(int, char**)
 									if (heatmap->showActualDiapasons)
 									{
 										// Values
-										heatmap->lastClickedLocation.x = (float)valueFromStep(sizing.minX, sizing.stepX,
-											(*avi)[sizing.hmp->indexX + (sizing.hmp->typeX == MDT_Variable ? 0 : krnl->VAR_COUNT)]);
-										heatmap->lastClickedLocation.y = (float)valueFromStep(sizing.minY, sizing.stepY,
-											(*avi)[sizing.hmp->indexY + (sizing.hmp->typeY == MDT_Variable ? 0 : krnl->VAR_COUNT)]);
+
+										if (axisX->rangingType == RT_Linear || axisX->rangingType == RT_Step)
+										{
+											heatmap->lastClickedLocation.x = (float)valueFromStep(sizing.minX, sizing.stepX,
+												(*avi)[sizing.hmp->indexX + (sizing.hmp->typeX == MDT_Variable ? 0 : krnl->VAR_COUNT)]);
+										}
+										else if (axisX->rangingType == RT_Factor)
+										{
+											heatmap->lastClickedLocation.x = (float)valueFromStep(sizing.minX, (sizing.maxX - sizing.minX) / sizing.xSize,
+												(*avi)[sizing.hmp->indexX + (sizing.hmp->typeX == MDT_Variable ? 0 : krnl->VAR_COUNT)]);
+										}
+
+										if (axisY->rangingType == RT_Linear || axisY->rangingType == RT_Step)
+										{
+											heatmap->lastClickedLocation.y = (float)valueFromStep(sizing.minY, sizing.stepY,
+												(*avi)[sizing.hmp->indexY + (sizing.hmp->typeY == MDT_Variable ? 0 : krnl->VAR_COUNT)]);
+										}
+										else if (axisY->rangingType == RT_Factor)
+										{
+											heatmap->lastClickedLocation.y = (float)valueFromStep(sizing.minY, (sizing.maxY - sizing.minY) / sizing.ySize,
+												(*avi)[sizing.hmp->indexY + (sizing.hmp->typeY == MDT_Variable ? 0 : krnl->VAR_COUNT)]);
+										}
 									}
 									else
 									{
@@ -2837,11 +2855,100 @@ int imgui_main(int, char**)
 									IM_ASSERT(ret);
 								}
 
-								ImPlotPoint from = heatmap->showActualDiapasons ? ImPlotPoint(sizing.minX, sizing.maxY + sizing.stepY) : ImPlotPoint(0, sizing.ySize);
-								ImPlotPoint to = heatmap->showActualDiapasons ? ImPlotPoint(sizing.maxX + sizing.stepX, sizing.minY) : ImPlotPoint(sizing.xSize, 0);
+								double maxX = sizing.maxX + sizing.stepX;
+								if (axisX->rangingType == RT_Factor) maxX = sizing.maxX;
+								double maxY = sizing.maxY + sizing.stepY;
+								if (axisY->rangingType == RT_Factor) maxY = sizing.maxY;
+
+								ImPlotPoint from = heatmap->showActualDiapasons ? ImPlotPoint(sizing.minX, maxY) : ImPlotPoint(0, sizing.ySize);
+								ImPlotPoint to = heatmap->showActualDiapasons ? ImPlotPoint(maxX, sizing.minY) : ImPlotPoint(sizing.xSize, 0);
 
 								ImPlot::SetupAxes(sizing.hmp->typeX == MDT_Parameter ? krnl->parameters[sizing.hmp->indexX].name.c_str() : krnl->variables[sizing.hmp->indexX].name.c_str(),
 									sizing.hmp->typeY == MDT_Parameter ? krnl->parameters[sizing.hmp->indexY].name.c_str() : krnl->variables[sizing.hmp->indexY].name.c_str());
+
+								// Custom ticks for Factor ranging
+								if (heatmap->showActualDiapasons)
+								{
+									if (axisX->rangingType == RT_Factor)
+									{
+										int stepCount = axisX->stepCount;
+										float xValuesRange = (float)(plot->Axes[ImAxis_X1].Range.Max - plot->Axes[ImAxis_X1].Range.Min);
+										float xImageRange = sizing.maxX - sizing.minX;
+										float imageInViewXRatio = xImageRange / xValuesRange;
+										float axisXpixels = plot->FrameRect.GetWidth();
+										float imageInViewXPixels = axisXpixels * imageInViewXRatio;
+
+										int maxTickCount = (int)(imageInViewXPixels / (GlobalFontSettings.size * 6));
+										if (maxTickCount < 2) maxTickCount = 2;
+										if (maxTickCount > stepCount) maxTickCount = stepCount;
+										int stepsPerTick = stepCount / (maxTickCount - 1);
+
+										double* tickValues = new double[maxTickCount];
+										std::string* tickStrings = new std::string[maxTickCount];
+										const char** tickLabels = new const char* [maxTickCount];
+
+										double linearStep = (sizing.maxX - sizing.minX) / axisX->stepCount;
+										for (int t = 0; t < maxTickCount; t++)
+										{
+											if (t < maxTickCount - 1)
+											{
+												tickValues[t] = sizing.minX + t * stepsPerTick * linearStep;
+												tickStrings[t] = std::to_string(axisX->values[t * stepsPerTick]);
+											}
+											else
+											{
+												tickValues[t] = sizing.maxX;
+												tickStrings[t] = std::to_string(axisX->values[stepCount - 1]);
+											}
+											tickLabels[t] = tickStrings[t].c_str();
+										}
+
+										ImPlot::SetupAxisTicks(ImAxis_X1, tickValues, maxTickCount, tickLabels);
+										delete[] tickValues;
+										delete[] tickLabels;
+										delete[] tickStrings;
+									}
+
+									if (axisY->rangingType == RT_Factor)
+									{
+										int stepCount = axisY->stepCount;
+										float yValuesRange = (float)(plot->Axes[ImAxis_Y1].Range.Max - plot->Axes[ImAxis_Y1].Range.Min);
+										float yImageRange = sizing.maxY - sizing.minY;
+										float imageInViewYRatio = yImageRange / yValuesRange;
+										float axisYpixels = plot->FrameRect.GetHeight();
+										float imageInViewYPixels = axisYpixels * imageInViewYRatio;
+
+										int maxTickCount = (int)(imageInViewYPixels / (GlobalFontSettings.size * 3));
+										if (maxTickCount < 2) maxTickCount = 2;
+										if (maxTickCount > stepCount) maxTickCount = stepCount;
+										int stepsPerTick = stepCount / (maxTickCount - 1);
+
+										double* tickValues = new double[maxTickCount];
+										std::string* tickStrings = new std::string[maxTickCount];
+										const char** tickLabels = new const char* [maxTickCount];
+
+										double linearStep = (sizing.maxY - sizing.minY) / axisY->stepCount;
+										for (int t = 0; t < maxTickCount; t++)
+										{
+											if (t < maxTickCount - 1)
+											{
+												tickValues[t] = sizing.minY + t * stepsPerTick * linearStep;
+												tickStrings[t] = std::to_string(axisY->values[t * stepsPerTick]);
+											}
+											else
+											{
+												tickValues[t] = sizing.maxY;
+												tickStrings[t] = std::to_string(axisY->values[stepCount - 1]);
+											}
+											tickLabels[t] = tickStrings[t].c_str();
+										}
+
+										ImPlot::SetupAxisTicks(ImAxis_Y1, tickValues, maxTickCount, tickLabels);
+										delete[] tickValues;
+										delete[] tickLabels;
+										delete[] tickStrings;
+									}
+								}
 
 								ImPlot::PlotImage(("Map " + std::to_string(mapIndex) + "##" + plotName + std::to_string(0)).c_str(), (ImTextureID)(heatmap->texture),
 									from, to, ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f), ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
@@ -2932,8 +3039,11 @@ int imgui_main(int, char**)
 
 								if (heatmap->showDragLines)
 								{
-									double valueX = (double)heatmap->lastClickedLocation.x + (heatmap->showActualDiapasons ? sizing.stepX * 0.5 : 0.5);
-									double valueY = (double)heatmap->lastClickedLocation.y + (heatmap->showActualDiapasons ? sizing.stepY * 0.5 : 0.5);
+									float stepX = axisX->rangingType != RT_Factor ? sizing.stepX : ((sizing.maxX - sizing.minX) / (sizing.xSize - 1));
+									float stepY = axisY->rangingType != RT_Factor ? sizing.stepY : ((sizing.maxY - sizing.minY) / (sizing.ySize - 1));
+
+									double valueX = (double)heatmap->lastClickedLocation.x + (heatmap->showActualDiapasons ? stepX * 0.5 : 0.5);
+									double valueY = (double)heatmap->lastClickedLocation.y + (heatmap->showActualDiapasons ? stepY * 0.5 : 0.5);
 
 									ImPlot::DragLineX(0, &valueX, window->markerColor, window->markerWidth, ImPlotDragToolFlags_NoInputs);
 									ImPlot::DragLineY(1, &valueY, window->markerColor, window->markerWidth, ImPlotDragToolFlags_NoInputs);
