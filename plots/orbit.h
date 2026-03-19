@@ -124,7 +124,7 @@ struct OrbitProperties
 
 			parameters[xIndex] = KERNEL.parameters[xIndex].min;
 			for (int i = 0; i < KERNEL.transientSteps; i++) { kernelFDS[selectedKernel](startingVariables, newVariables, parameters); startingVariables = newVariables; }
-			trajectory.push_back(startingVariables[xIndex]);
+			trajectory.push_back(startingVariables[analyzedVariable]);
 
 			int BifDotAmount = 0;
 
@@ -132,7 +132,7 @@ struct OrbitProperties
 				parameters[xIndex] = KERNEL.parameters[xIndex].min + KERNEL.parameters[xIndex].step * j;
 				for (int trajstep = 0; trajstep < variationSize / varCount; trajstep++) {
 					kernelFDS[selectedKernel](startingVariables, newVariables, parameters);
-					trajectory.push_back(newVariables[xIndex]);
+					trajectory.push_back(newVariables[analyzedVariable]);
 					startingVariables = newVariables;
 				}
 				int peakCount = 0;
