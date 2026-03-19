@@ -14,6 +14,7 @@ constexpr int MAX_PEAKS = 1024;
 struct OrbitProperties
 {
 	int xIndex;
+	int analyzedVariable;
 	bool showParLines;
 	OrbitPlotType type;
 	float pointSize;
@@ -311,9 +312,14 @@ struct OrbitProperties
 
 			if (lastAttributeValueIndices.size() != 0)
 			{
-				for (int i = 0; i < varCount + paramCount - 2; i++) {
-					if (i != varCount + xIndex) {
-						if (attributeValueIndices[i] != lastAttributeValueIndices[i]) areValuesDirty = true;
+				for (int i = 0; i < varCount + paramCount - 2; i++) 
+				{
+					if (i != varCount + xIndex) 
+					{
+						if (attributeValueIndices[i] != lastAttributeValueIndices[i])
+						{
+							areValuesDirty = true;
+						}
 					}
 				}
 			}
@@ -337,9 +343,10 @@ struct OrbitProperties
 					numb temppeakindex;
 					for (int i = 1; i < variationSize / varCount - 1 && peakCount < MAX_PEAKS; i++)
 					{
-						numb prev = computedVariation[xIndex + varCount * i - varCount];
-						numb curr = computedVariation[xIndex + varCount * i];
-						numb next = computedVariation[xIndex + varCount * i + varCount];
+						numb prev = computedVariation[analyzedVariable + varCount * i - varCount];
+						numb curr = computedVariation[analyzedVariable + varCount * i];
+						numb next = computedVariation[analyzedVariable + varCount * i + varCount];
+
 						if (curr > prev && curr > next)
 						{
 							if (firstpeakreached == false)
