@@ -528,7 +528,7 @@ int imgui_main(int, char**)
 		{
 			if (ImGui::BeginTable("##VarTable", 6))
 			{
-				ImGui::TableSetupColumn(nullptr, ImGuiTableColumnFlags_WidthFixed, GlobalFontSettings.size * 4.0f);
+				ImGui::TableSetupColumn(nullptr, ImGuiTableColumnFlags_WidthFixed, GlobalFontSettings.size * maxNameLength * 0.6f);
 				ImGui::TableSetupColumn(nullptr, ImGuiTableColumnFlags_WidthFixed, GlobalFontSettings.size * 5.0f);
 				for (int c = 2; c < 6; c++) ImGui::TableSetupColumn(nullptr);
 				for (int i = 0; i < KERNEL.VAR_COUNT - (KERNEL.stepType == ST_Variable ? 1 : 0); i++) listVariable(i);
@@ -547,7 +547,7 @@ int imgui_main(int, char**)
 			{
 				if (ImGui::BeginTable("##StepTable", 6))
 				{
-					ImGui::TableSetupColumn(nullptr, ImGuiTableColumnFlags_WidthFixed, GlobalFontSettings.size * 4.0f);
+					ImGui::TableSetupColumn(nullptr, ImGuiTableColumnFlags_WidthFixed, GlobalFontSettings.size * maxNameLength * 0.6f);
 					ImGui::TableSetupColumn(nullptr, ImGuiTableColumnFlags_WidthFixed, GlobalFontSettings.size * 5.0f);
 					for (int c = 2; c < 6; c++) ImGui::TableSetupColumn(nullptr);
 					if (KERNEL.stepType == ST_Variable) listVariable(KERNEL.VAR_COUNT - 1);
@@ -568,7 +568,7 @@ int imgui_main(int, char**)
 		{
 			if (ImGui::BeginTable("##ParamTable", 6, ImGuiTableFlags_NoClip))
 			{
-				ImGui::TableSetupColumn(nullptr, ImGuiTableColumnFlags_WidthFixed, GlobalFontSettings.size * 4.0f);
+				ImGui::TableSetupColumn(nullptr, ImGuiTableColumnFlags_WidthFixed, GlobalFontSettings.size * maxNameLength * 0.6f);
 				ImGui::TableSetupColumn(nullptr, ImGuiTableColumnFlags_WidthFixed, GlobalFontSettings.size * 5.0f);
 				for (int c = 2; c < 6; c++) ImGui::TableSetupColumn(nullptr);
 				for (int i = 0; i < KERNEL.PARAM_COUNT - (KERNEL.stepType == ST_Parameter ? 1 : 0); i++)
