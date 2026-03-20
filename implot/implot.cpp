@@ -3013,7 +3013,7 @@ void EndPlot() {
                 continue;
             if (i > 0)
                 builder.append(", (");
-            double v = x_axis.PixelsToPlot(IO.MousePos.x);
+            double v = x_axis.PixelsToPlot(IO.MousePos.x, true);
             if (no_fmt)
                 Formatter_Default(v,buff,IMPLOT_LABEL_MAX_SIZE,(void*)IMPLOT_LABEL_FORMAT);
             else
@@ -3030,7 +3030,7 @@ void EndPlot() {
                 continue;
             if (i > 0)
                 builder.append(", (");
-            double v = y_axis.PixelsToPlot(IO.MousePos.y);
+            double v = y_axis.PixelsToPlot(IO.MousePos.y, true);
             if (no_fmt)
                 Formatter_Default(v,buff,IMPLOT_LABEL_MAX_SIZE,(void*)IMPLOT_LABEL_FORMAT);
             else

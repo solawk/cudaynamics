@@ -7,7 +7,7 @@ std::string rangingDescriptions[] =
     "Single value",
     "Values from 'min' to 'max' (inclusive), separated by 'step'",
     "Specified amount of values between 'min' and 'max' (inclusive)",
-    "Start with 'min' and multiply by 'factor' for each new step",
+    "Start with 'min' and multiply by 'factor' (>1.0) for each new step",
     "Uniform random distribution of values between 'min' and 'max'",
     "Normal random distribution of values around 'mu' with standard deviation 'sigma'"
 };

@@ -111,6 +111,7 @@ void listVariable(int i)
 		listAttrNumb(&(KERNELNEWCURRENT.variables[i]), &(KERNELNEWCURRENT.variables[i].min), "", "From: ", KERNELNEWCURRENT.variables[i].min != KERNEL.variables[i].min);
 		ImGui::TableSetColumnIndex(3); ImGui::SetNextItemWidth(-1);
 		listAttrNumb(&(KERNELNEWCURRENT.variables[i]), &(KERNELNEWCURRENT.variables[i].step), "FACTOR", "Factor: ", KERNELNEWCURRENT.variables[i].step != KERNEL.variables[i].step);
+		if (KERNELNEWCURRENT.variables[i].step < (numb)1.0) KERNELNEWCURRENT.variables[i].step = (numb)1.0;
 		ImGui::TableSetColumnIndex(4); ImGui::SetNextItemWidth(-1);
 		listAttrInt(&(KERNELNEWCURRENT.variables[i]), &(KERNELNEWCURRENT.variables[i].stepCount), "STEPCOUNT", "Count: ", KERNELNEWCURRENT.variables[i].stepCount != KERNEL.variables[i].stepCount, 2);
 		KERNELNEWCURRENT.variables[i].CalcMax();
@@ -195,6 +196,7 @@ void listParameter(int i)
 		listAttrNumb(&(KERNELNEWCURRENT.parameters[i]), &(KERNELNEWCURRENT.parameters[i].min), "", "From: ", KERNELNEWCURRENT.parameters[i].min != KERNEL.parameters[i].min);
 		ImGui::TableSetColumnIndex(3); ImGui::SetNextItemWidth(-1);
 		listAttrNumb(&(KERNELNEWCURRENT.parameters[i]), &(KERNELNEWCURRENT.parameters[i].step), "FACTOR", "Factor: ", KERNELNEWCURRENT.parameters[i].step != KERNEL.parameters[i].step);
+		if (KERNELNEWCURRENT.parameters[i].step < (numb)1.0) KERNELNEWCURRENT.parameters[i].step = (numb)1.0;
 		ImGui::TableSetColumnIndex(4); ImGui::SetNextItemWidth(-1);
 		listAttrInt(&(KERNELNEWCURRENT.parameters[i]), &(KERNELNEWCURRENT.parameters[i].stepCount), "STEPCOUNT", "Count: ", KERNELNEWCURRENT.parameters[i].stepCount != KERNEL.parameters[i].stepCount, 2);
 		KERNELNEWCURRENT.parameters[i].CalcMax();

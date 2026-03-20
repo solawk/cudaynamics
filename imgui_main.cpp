@@ -2502,27 +2502,10 @@ int imgui_main(int, char**)
 									{
 										// Values
 
-										if (axisX->rangingType == RT_Linear || axisX->rangingType == RT_Step)
-										{
-											heatmap->lastClickedLocation.x = (float)valueFromStep(sizing.minX, sizing.stepX,
-												(*avi)[sizing.hmp->indexX + (sizing.hmp->typeX == MDT_Variable ? 0 : krnl->VAR_COUNT)]);
-										}
-										else if (axisX->rangingType == RT_Factor)
-										{
-											heatmap->lastClickedLocation.x = (float)valueFromStep(sizing.minX, (sizing.maxX - sizing.minX) / sizing.xSize,
-												(*avi)[sizing.hmp->indexX + (sizing.hmp->typeX == MDT_Variable ? 0 : krnl->VAR_COUNT)]);
-										}
-
-										if (axisY->rangingType == RT_Linear || axisY->rangingType == RT_Step)
-										{
-											heatmap->lastClickedLocation.y = (float)valueFromStep(sizing.minY, sizing.stepY,
-												(*avi)[sizing.hmp->indexY + (sizing.hmp->typeY == MDT_Variable ? 0 : krnl->VAR_COUNT)]);
-										}
-										else if (axisY->rangingType == RT_Factor)
-										{
-											heatmap->lastClickedLocation.y = (float)valueFromStep(sizing.minY, (sizing.maxY - sizing.minY) / sizing.ySize,
-												(*avi)[sizing.hmp->indexY + (sizing.hmp->typeY == MDT_Variable ? 0 : krnl->VAR_COUNT)]);
-										}
+										heatmap->lastClickedLocation.x = (float)valueFromStep(sizing.minX, sizing.stepX,
+											(*avi)[sizing.hmp->indexX + (sizing.hmp->typeX == MDT_Variable ? 0 : krnl->VAR_COUNT)]);
+										heatmap->lastClickedLocation.y = (float)valueFromStep(sizing.minY, sizing.stepY,
+											(*avi)[sizing.hmp->indexY + (sizing.hmp->typeY == MDT_Variable ? 0 : krnl->VAR_COUNT)]);
 									}
 									else
 									{
@@ -2856,9 +2839,7 @@ int imgui_main(int, char**)
 								}
 
 								double maxX = sizing.maxX + sizing.stepX;
-								if (axisX->rangingType == RT_Factor) maxX = sizing.maxX;
 								double maxY = sizing.maxY + sizing.stepY;
-								if (axisY->rangingType == RT_Factor) maxY = sizing.maxY;
 
 								ImPlotPoint from = heatmap->showActualDiapasons ? ImPlotPoint(sizing.minX, maxY) : ImPlotPoint(0, sizing.ySize);
 								ImPlotPoint to = heatmap->showActualDiapasons ? ImPlotPoint(maxX, sizing.minY) : ImPlotPoint(sizing.xSize, 0);
@@ -2866,11 +2847,19 @@ int imgui_main(int, char**)
 								ImPlot::SetupAxes(sizing.hmp->typeX == MDT_Parameter ? krnl->parameters[sizing.hmp->indexX].name.c_str() : krnl->variables[sizing.hmp->indexX].name.c_str(),
 									sizing.hmp->typeY == MDT_Parameter ? krnl->parameters[sizing.hmp->indexY].name.c_str() : krnl->variables[sizing.hmp->indexY].name.c_str());
 
-								// Custom ticks for Factor ranging
+								plot->XAxis(0).usesFactor = false;
+								plot->YAxis(0).usesFactor = false;
+
+								// for Factor ranging
 								if (heatmap->showActualDiapasons)
 								{
 									if (axisX->rangingType == RT_Factor)
 									{
+										plot->XAxis(0).usesFactor = true;
+										plot->XAxis(0).factor = axisX->step;
+										plot->XAxis(0).factorMin = axisX->min;
+										plot->XAxis(0).factorMax = axisX->max;
+
 										int stepCount = axisX->stepCount;
 										float xValuesRange = (float)(plot->Axes[ImAxis_X1].Range.Max - plot->Axes[ImAxis_X1].Range.Min);
 										float xImageRange = sizing.maxX - sizing.minX;
@@ -2878,22 +2867,22 @@ int imgui_main(int, char**)
 										float axisXpixels = plot->FrameRect.GetWidth();
 										float imageInViewXPixels = axisXpixels * imageInViewXRatio;
 
-										int maxTickCount = (int)(imageInViewXPixels / (GlobalFontSettings.size * 6));
+										int maxTickCount = (int)(imageInViewXPixels / (GlobalFontSettings.size * 8));
 										if (maxTickCount < 2) maxTickCount = 2;
 										if (maxTickCount > stepCount) maxTickCount = stepCount;
-										int stepsPerTick = stepCount / (maxTickCount - 1);
+										float stepsPerTick = (float)stepCount / (maxTickCount - 1);
 
 										double* tickValues = new double[maxTickCount];
 										std::string* tickStrings = new std::string[maxTickCount];
 										const char** tickLabels = new const char* [maxTickCount];
 
-										double linearStep = (sizing.maxX - sizing.minX) / axisX->stepCount;
 										for (int t = 0; t < maxTickCount; t++)
 										{
 											if (t < maxTickCount - 1)
 											{
-												tickValues[t] = sizing.minX + t * stepsPerTick * linearStep;
-												tickStrings[t] = std::to_string(axisX->values[t * stepsPerTick]);
+												int tickStep = stepsPerTick * t;
+												tickValues[t] = sizing.minX + tickStep * sizing.stepX;
+												tickStrings[t] = std::to_string(axisX->values[tickStep]);
 											}
 											else
 											{
@@ -2907,10 +2896,17 @@ int imgui_main(int, char**)
 										delete[] tickValues;
 										delete[] tickLabels;
 										delete[] tickStrings;
+
+										plot->XAxis(0).linearStep = sizing.stepX;
 									}
 
 									if (axisY->rangingType == RT_Factor)
 									{
+										plot->YAxis(0).usesFactor = true;
+										plot->YAxis(0).factor = axisY->step;
+										plot->YAxis(0).factorMin = axisY->min;
+										plot->YAxis(0).factorMax = axisY->max;
+
 										int stepCount = axisY->stepCount;
 										float yValuesRange = (float)(plot->Axes[ImAxis_Y1].Range.Max - plot->Axes[ImAxis_Y1].Range.Min);
 										float yImageRange = sizing.maxY - sizing.minY;
@@ -2921,19 +2917,19 @@ int imgui_main(int, char**)
 										int maxTickCount = (int)(imageInViewYPixels / (GlobalFontSettings.size * 3));
 										if (maxTickCount < 2) maxTickCount = 2;
 										if (maxTickCount > stepCount) maxTickCount = stepCount;
-										int stepsPerTick = stepCount / (maxTickCount - 1);
+										float stepsPerTick = (float)stepCount / (maxTickCount - 1);
 
 										double* tickValues = new double[maxTickCount];
 										std::string* tickStrings = new std::string[maxTickCount];
 										const char** tickLabels = new const char* [maxTickCount];
 
-										double linearStep = (sizing.maxY - sizing.minY) / axisY->stepCount;
 										for (int t = 0; t < maxTickCount; t++)
 										{
 											if (t < maxTickCount - 1)
 											{
-												tickValues[t] = sizing.minY + t * stepsPerTick * linearStep;
-												tickStrings[t] = std::to_string(axisY->values[t * stepsPerTick]);
+												int tickStep = stepsPerTick * t;
+												tickValues[t] = sizing.minY + tickStep * sizing.stepY;
+												tickStrings[t] = std::to_string(axisY->values[tickStep]);
 											}
 											else
 											{
@@ -2947,6 +2943,8 @@ int imgui_main(int, char**)
 										delete[] tickValues;
 										delete[] tickLabels;
 										delete[] tickStrings;
+
+										plot->YAxis(0).linearStep = sizing.stepY;
 									}
 								}
 
@@ -2958,26 +2956,28 @@ int imgui_main(int, char**)
 									&& ImGui::IsMouseHoveringRect(plot->PlotRect.Min, plot->PlotRect.Max) && plot->ContextLocked && !isHires;
 								if (plotDragShiftClicked) {
 									//values
-									if (heatmap->showActualDiapasons) {
+									if (heatmap->showActualDiapasons) 
+									{
 										numb MousePosX = (numb)ImPlot::GetPlotMousePos().x; //find mouse Position
 										if (axisX->min > MousePosX)sizing.hmp->typeX == MDT_Variable ? attributeValueIndices[sizing.hmp->indexX] = 0 : attributeValueIndices[sizing.hmp->indexX + krnl->VAR_COUNT] = 0; // check if position is under minimum of parameter
 										else if (axisX->max < MousePosX)sizing.hmp->typeX == MDT_Variable ? attributeValueIndices[sizing.hmp->indexX] = axisX->stepCount - 1 : attributeValueIndices[sizing.hmp->indexX + krnl->VAR_COUNT] = axisX->stepCount - 1; // or above maximum
 										else {
-											numb NotRoundedIndex = (MousePosX - axisX->min - axisX->step) / (axisX->max - axisX->min) * axisX->stepCount;   // mathematically find what index would the mouse pos be
-											int index = static_cast<int>(std::round(NotRoundedIndex)); index < 0 ? index = 0 : 1; if (index > axisX->stepCount - 1)index = axisX->stepCount - 1;    // round the index and check if it is in parameter bounds
+											numb NotRoundedIndex = (MousePosX - axisX->min) / (axisX->max - axisX->min) * (axisX->stepCount - 1);   // mathematically find what index would the mouse pos be
+											int index = static_cast<int>(std::floor(NotRoundedIndex)); index < 0 ? index = 0 : 1; if (index > axisX->stepCount - 1)index = axisX->stepCount - 1;    // round the index and check if it is in parameter bounds
 											sizing.hmp->typeX == MDT_Variable ? attributeValueIndices[sizing.hmp->indexX] = index : attributeValueIndices[sizing.hmp->indexX + krnl->VAR_COUNT] = index;    // write index into attrivuteValueIndices
 										}
 										numb MousePosY = (numb)ImPlot::GetPlotMousePos().y;
 										if (axisY->min > MousePosY)sizing.hmp->typeY == MDT_Variable ? attributeValueIndices[sizing.hmp->indexY] = 0 : attributeValueIndices[sizing.hmp->indexY + krnl->VAR_COUNT] = 0;
 										else if (axisY->max < MousePosY)sizing.hmp->typeY == MDT_Variable ? attributeValueIndices[sizing.hmp->indexY] = axisY->stepCount - 1 : attributeValueIndices[sizing.hmp->indexY + krnl->VAR_COUNT] = axisY->stepCount - 1;
 										else {
-											numb NotRoundedIndex = (MousePosY - axisY->min - axisY->step) / (axisY->max - axisY->min) * axisY->stepCount;
-											int index = static_cast<int>(std::round(NotRoundedIndex)); index < 0 ? index = 0 : 1; if (index > axisY->stepCount - 1)index = axisY->stepCount - 1;
+											numb NotRoundedIndex = (MousePosY - axisY->min) / (axisY->max - axisY->min) * (axisY->stepCount - 1);
+											int index = static_cast<int>(std::floor(NotRoundedIndex)); index < 0 ? index = 0 : 1; if (index > axisY->stepCount - 1)index = axisY->stepCount - 1;
 											sizing.hmp->typeY == MDT_Variable ? attributeValueIndices[sizing.hmp->indexY] = index : attributeValueIndices[sizing.hmp->indexY + krnl->VAR_COUNT] = index;
 										}
 									}
 									//steps
-									else {
+									else 
+									{
 										numb MousePosX = (numb)ImPlot::GetPlotMousePos().x - 0.5;
 										if (0 > MousePosX)sizing.hmp->typeX == MDT_Variable ? attributeValueIndices[sizing.hmp->indexX] = 0 : attributeValueIndices[sizing.hmp->indexX + krnl->VAR_COUNT] = 0;
 										else if (axisX->stepCount < MousePosX)sizing.hmp->typeX == MDT_Variable ? attributeValueIndices[sizing.hmp->indexX] = axisX->stepCount - 1 : attributeValueIndices[sizing.hmp->indexX + krnl->VAR_COUNT] = axisX->stepCount - 1;

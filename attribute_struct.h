@@ -66,6 +66,11 @@ public:
 		step = (max - min) / (stepCount - 1);
 	}
 
+	numb GetLinearStep()
+	{
+		return (max - min) / (stepCount - 1);
+	}
+
 	void CalcMax()
 	{
 		if (rangingType != RT_Factor) return;
