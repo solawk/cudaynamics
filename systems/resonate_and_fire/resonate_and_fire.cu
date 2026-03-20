@@ -1,5 +1,4 @@
-﻿#include "main.h"
-#include "resonate_and_fire.h"
+﻿#include "resonate_and_fire.h"
 
 #define name resonate_and_fire
 

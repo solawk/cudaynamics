@@ -1506,6 +1506,7 @@ int imgui_main(int, char**)
 
 				ImGui::SameLine();
 				ImGui::Text(("Variable: " + KERNEL.variables[window->variables[0]].name).c_str());
+				window->orbit.analyzedVariable = window->variables[0];
 			}
 			if (window->type == Metric) {
 				Kernel* krnl =  &(KERNEL);

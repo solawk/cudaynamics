@@ -14,6 +14,7 @@ constexpr int MAX_PEAKS = 1024;
 struct OrbitProperties
 {
 	int xIndex;
+	int analyzedVariable;
 	bool showParLines;
 	OrbitPlotType type;
 	float pointSize;
@@ -65,6 +66,7 @@ struct OrbitProperties
 	OrbitProperties()
 	{
 		xIndex = 0;
+		analyzedVariable = 0;
 		showParLines = true;
 		type = OPT_Peak_Bifurcation;
 		pointSize = 0.5f;
@@ -123,7 +125,7 @@ struct OrbitProperties
 
 			parameters[xIndex] = KERNEL.parameters[xIndex].min;
 			for (int i = 0; i < KERNEL.transientSteps; i++) { kernelFDS[selectedKernel](startingVariables, newVariables, parameters); startingVariables = newVariables; }
-			trajectory.push_back(startingVariables[xIndex]);
+			trajectory.push_back(startingVariables[analyzedVariable]);
 
 			int BifDotAmount = 0;
 
@@ -131,7 +133,7 @@ struct OrbitProperties
 				parameters[xIndex] = KERNEL.parameters[xIndex].min + KERNEL.parameters[xIndex].step * j;
 				for (int trajstep = 0; trajstep < variationSize / varCount; trajstep++) {
 					kernelFDS[selectedKernel](startingVariables, newVariables, parameters);
-					trajectory.push_back(newVariables[xIndex]);
+					trajectory.push_back(newVariables[analyzedVariable]);
 					startingVariables = newVariables;
 				}
 				int peakCount = 0;
@@ -177,7 +179,7 @@ struct OrbitProperties
 				parameters[xIndex] = KERNEL.parameters[xIndex].min + KERNEL.parameters[xIndex].step * j;
 				for (int trajstep = 0; trajstep < variationSize / varCount; trajstep++) {
 					kernelFDS[selectedKernel](startingVariables, newVariables, parameters);
-					trajectory.push_back(newVariables[xIndex]);
+					trajectory.push_back(newVariables[analyzedVariable]);
 					startingVariables = newVariables;
 				}
 				int peakCount = 0;
@@ -249,9 +251,9 @@ struct OrbitProperties
 			numb* computedVariation = trajectory + (variationSize * variation);
 			for (int i = 1; i < variationSize / varCount - 1 && peakCount < MAX_PEAKS; i++)
 			{
-				numb prev = computedVariation[xIndex + varCount * i - varCount];
-				numb curr = computedVariation[xIndex + varCount * i];
-				numb next = computedVariation[xIndex + varCount * i + varCount];
+				numb prev = computedVariation[analyzedVariable + varCount * i - varCount];
+				numb curr = computedVariation[analyzedVariable + varCount * i];
+				numb next = computedVariation[analyzedVariable + varCount * i + varCount];
 				if (curr > prev && curr > next)
 				{
 					if (firstpeakreached == false)
@@ -311,9 +313,14 @@ struct OrbitProperties
 
 			if (lastAttributeValueIndices.size() != 0)
 			{
-				for (int i = 0; i < varCount + paramCount - 2; i++) {
-					if (i != varCount + xIndex) {
-						if (attributeValueIndices[i] != lastAttributeValueIndices[i]) areValuesDirty = true;
+				for (int i = 0; i < varCount + paramCount - 2; i++) 
+				{
+					if (i != varCount + xIndex) 
+					{
+						if (attributeValueIndices[i] != lastAttributeValueIndices[i])
+						{
+							areValuesDirty = true;
+						}
 					}
 				}
 			}
@@ -337,9 +344,10 @@ struct OrbitProperties
 					numb temppeakindex;
 					for (int i = 1; i < variationSize / varCount - 1 && peakCount < MAX_PEAKS; i++)
 					{
-						numb prev = computedVariation[xIndex + varCount * i - varCount];
-						numb curr = computedVariation[xIndex + varCount * i];
-						numb next = computedVariation[xIndex + varCount * i + varCount];
+						numb prev = computedVariation[analyzedVariable + varCount * i - varCount];
+						numb curr = computedVariation[analyzedVariable + varCount * i];
+						numb next = computedVariation[analyzedVariable + varCount * i + varCount];
+
 						if (curr > prev && curr > next)
 						{
 							if (firstpeakreached == false)
