@@ -890,7 +890,7 @@ int imgui_main(int, char**)
 					if (!isEnum)
 					{
 						kernelNewAttr->rangingType = RT_None;
-						kernelNewAttr->min = calculateValue(attr->min, attr->step, index);
+						kernelNewAttr->min = attr->values[index];
 					}
 					else
 					{
@@ -2061,7 +2061,7 @@ int imgui_main(int, char**)
 										if (window->orbit.isAutoComputeOn) computeAfterShiftSelect = true;
 									}
 									if (window->orbit.showParLines) {
-										double value = attributeValueIndices[KERNEL.VAR_COUNT + window->orbit.xIndex] * axis->step + axis->min;
+										double value = axis->values[attributeValueIndices[KERNEL.VAR_COUNT + window->orbit.xIndex]];
 										if (!window->orbit.invertedAxes)ImPlot::DragLineX(0, &value, window->orbit.markerColor, window->orbit.markerWidth, ImPlotDragToolFlags_NoInputs);
 										else ImPlot::DragLineY(0, &value, window->orbit.markerColor, window->orbit.markerWidth, ImPlotDragToolFlags_NoInputs);
 									}
@@ -2116,7 +2116,7 @@ int imgui_main(int, char**)
 										if (window->orbit.isAutoComputeOn) computeAfterShiftSelect = true;
 									}
 									if (window->orbit.showParLines) {
-										double value = attributeValueIndices[KERNEL.VAR_COUNT + window->orbit.xIndex] * axis->step + axis->min;
+										double value = axis->values[attributeValueIndices[KERNEL.VAR_COUNT + window->orbit.xIndex]];
 										if (!window->orbit.invertedAxes)ImPlot::DragLineX(0, &value, window->orbit.markerColor, window->orbit.markerWidth, ImPlotDragToolFlags_NoInputs);
 										else ImPlot::DragLineY(0, &value, window->orbit.markerColor, window->orbit.markerWidth, ImPlotDragToolFlags_NoInputs);
 									}
@@ -2135,7 +2135,7 @@ int imgui_main(int, char**)
 									ys[2] = ys[3] = plot3d->RangeMax().y;
 									zs[0] = zs[3] = plot3d->RangeMin().z;
 									zs[1] = zs[2] = plot3d->RangeMax().z;
-									xs[0] = axis->min + axis->step * attributeValueIndices[window->orbit.xIndex + KERNEL.VAR_COUNT];
+									xs[0] = axis->values[attributeValueIndices[KERNEL.VAR_COUNT + window->orbit.xIndex]];
 									xs[3] = xs[2] = xs[1] = xs[0];
 									ImPlot3D::SetupAxis(ImAxis3D_X, axis->name.c_str());
 									ImPlot3D::SetupAxis(ImAxis3D_Y, "Peaks");

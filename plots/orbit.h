@@ -117,10 +117,10 @@ struct OrbitProperties
 			continuationIntervalsForward = new numb[MAX_PEAKS * axis->stepCount];
 			std::vector<numb> trajectory;
 			for (int i = 0; i < varCount; i++) {
-				startingVariables[i] = attributeValueIndices[i] == 0 ? KERNEL.variables[i].min : KERNEL.variables[i].min + KERNEL.variables[i].step * attributeValueIndices[i];
+				startingVariables[i] = attributeValueIndices[i] == 0 ? KERNEL.variables[i].min : KERNEL.variables[i].values[attributeValueIndices[i]];
 			}
 			for (int i = 0; i < paramCount; i++) {
-				parameters[i] = attributeValueIndices[i + varCount] == 0 ? KERNEL.parameters[i].min : KERNEL.parameters[i].min + KERNEL.parameters[i].step * attributeValueIndices[i + varCount];
+				parameters[i] = attributeValueIndices[i + varCount] == 0 ? KERNEL.parameters[i].min : KERNEL.parameters[i].values[attributeValueIndices[i + varCount]];
 			}
 
 			parameters[xIndex] = KERNEL.parameters[xIndex].min;
@@ -130,7 +130,7 @@ struct OrbitProperties
 			int BifDotAmount = 0;
 
 			for (int j = 0; j < axis->stepCount; j++) {
-				parameters[xIndex] = KERNEL.parameters[xIndex].min + KERNEL.parameters[xIndex].step * j;
+				parameters[xIndex] = KERNEL.parameters[xIndex].values[j];
 				for (int trajstep = 0; trajstep < variationSize / varCount; trajstep++) {
 					kernelFDS[selectedKernel](startingVariables, newVariables, parameters);
 					trajectory.push_back(newVariables[analyzedVariable]);
@@ -154,7 +154,7 @@ struct OrbitProperties
 						{
 							continuationAmpsForward[BifDotAmount] = curr;
 							continuationIntervalsForward[BifDotAmount] = (trajstep - temppeakindex) * step;
-							continuationParamIndicesForward[BifDotAmount] = axis->min + j * axis->step;
+							continuationParamIndicesForward[BifDotAmount] = axis->values[j];
 							temppeakindex = (float)trajstep;
 							peakCount++;
 							BifDotAmount++;
@@ -167,7 +167,7 @@ struct OrbitProperties
 
 
 			for (int i = 0; i < varCount; i++) {
-				startingVariables[i] = attributeValueIndices[i] == 0 ? KERNEL.variables[i].min : KERNEL.variables[i].min + KERNEL.variables[i].step * attributeValueIndices[i];
+				startingVariables[i] = attributeValueIndices[i] == 0 ? KERNEL.variables[i].min : KERNEL.variables[i].values[attributeValueIndices[i]];
 			}
 
 			parameters[xIndex] = KERNEL.parameters[xIndex].max;
@@ -176,7 +176,7 @@ struct OrbitProperties
 
 			BifDotAmount = 0;
 			for (int j = axis->stepCount - 1; j >= 0; j--) {
-				parameters[xIndex] = KERNEL.parameters[xIndex].min + KERNEL.parameters[xIndex].step * j;
+				parameters[xIndex] = KERNEL.parameters[xIndex].values[j];
 				for (int trajstep = 0; trajstep < variationSize / varCount; trajstep++) {
 					kernelFDS[selectedKernel](startingVariables, newVariables, parameters);
 					trajectory.push_back(newVariables[analyzedVariable]);
@@ -201,7 +201,7 @@ struct OrbitProperties
 						{
 							continuationAmpsBack[BifDotAmount] = curr;
 							continuationIntervalsBack[BifDotAmount] = (trajstep - temppeakindex) * step;
-							continuationParamIndicesBack[BifDotAmount] = axis->min + j * axis->step;
+							continuationParamIndicesBack[BifDotAmount] = axis->values[j];
 							temppeakindex = (float)trajstep;
 							peakCount++;
 							BifDotAmount++;
@@ -292,14 +292,14 @@ struct OrbitProperties
 				SliceBackwardInt.clear(); SliceBackwardPeak.clear(); SliceForwardInt.clear(); SliceForwardPeak.clear();
 				lastAttributevalueindicesContinuations = attributeValueIndices;
 				for (int i = 0; i < bifDotAmountForward - 1; i++) {
-					if (continuationParamIndicesForward[i] == axis->min + attributeValueIndices[varCount + xIndex] * axis->step) {
+					if (continuationParamIndicesForward[i] == axis->values[attributeValueIndices[varCount + xIndex]]) {
 						if (!sectionFound) { sectionFound = true; }
 						SliceForwardInt.push_back(continuationIntervalsForward[i]); SliceForwardPeak.push_back(continuationAmpsForward[i]);
 						forNum++;
 					}
 				}
 				for (int i = 0; i < bifDotAmountBack - 1; i++) {
-					if (continuationParamIndicesBack[i] == axis->min + attributeValueIndices[varCount + xIndex] * axis->step) {
+					if (continuationParamIndicesBack[i] == axis->values[attributeValueIndices[varCount + xIndex]]) {
 						if (!sectionFound) { sectionFound = true; }
 						SliceBackwardInt.push_back(continuationIntervalsBack[i]); SliceBackwardPeak.push_back(continuationAmpsBack[i]);
 						backNum++;
@@ -328,9 +328,9 @@ struct OrbitProperties
 			if (areValuesDirty)
 			{
 				if (bifAmps != nullptr) { delete[]bifAmps; delete[]bifIntervals; delete[]bifParamIndices; }
-				bifAmps = new numb[MAX_PEAKS * axis->stepCount];
-				bifIntervals = new numb[MAX_PEAKS * axis->stepCount];
-				bifParamIndices = new numb[MAX_PEAKS * axis->stepCount];
+				bifAmps = new numb[MAX_PEAKS * axis->stepCount]{ 0.0 };
+				bifIntervals = new numb[MAX_PEAKS * axis->stepCount]{ 0.0 };
+				bifParamIndices = new numb[MAX_PEAKS * axis->stepCount]{ 0.0 };
 				std::vector<int> tempattributeValueIndices = attributeValueIndices;
 				lastAttributeValueIndices = attributeValueIndices;
 				int BifDotAmount = 0;
@@ -359,7 +359,7 @@ struct OrbitProperties
 							{
 								bifAmps[BifDotAmount] = curr;
 								bifIntervals[BifDotAmount] = (i - temppeakindex) * step;
-								bifParamIndices[BifDotAmount] = axis->min + j * axis->step;
+								bifParamIndices[BifDotAmount] = axis->values[j];
 								temppeakindex = (float)i;
 								peakCount++;
 								BifDotAmount++;
