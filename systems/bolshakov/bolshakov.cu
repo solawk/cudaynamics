@@ -20,9 +20,6 @@ __host__ __device__ void kernelProgram_(name)(Computation* data, uint64_t variat
     uint64_t stepStart, variationStart = variation * CUDA_marshal.variationSize;         // Start index to store the modelling data for the variation
     LOCAL_BUFFERS;
     LOAD_ATTRIBUTES(false);
-
-    // Custom area (usually) starts here
-
     TRANSIENT_SKIP_NEW(finiteDifferenceScheme_(name));
 
     for (int s = 0; s < CUDA_kernel.steps && !data->isHires; s++)
@@ -54,7 +51,7 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
     }
     ifSIGNAL(P(signal), sine)
     {
-        Vnext(i) = P(Idc) + P(Iamp) * sin((numb)2.0 * (numb)3.141592 * P(Ifreq) * (V(t) - P(Idel)));
+        Vnext(i) = P(Idc) + P(Iamp) * sin((numb)2.0 * (numb)3.141592653589793 * P(Ifreq) * (V(t) - P(Idel)));
         Vnext(t) = V(t) + H;
         Vnext(Q) = V(Q) + V(c) * (Vnext(i) + V(S)) - !V(c) * (Vnext(i) + V(S));
 
@@ -81,5 +78,6 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
         Vnext(c) = (V(c) || (Vnext(Q) > (numb)0 ? (numb)0 : (numb)1)) && (Vnext(Q) < P(r) ? (numb)1 : (numb)0);
     }
 }
+
 
 #undef name

@@ -673,6 +673,10 @@ struct ImPlotAxis
     bool                 Hovered;
     bool                 Held;
 
+    // Injected
+    bool                usesFactor;
+    double              factor, factorMin, factorMax, linearStep;
+
     ImPlotAxis() {
         ID               = 0;
         Flags            = PreviousFlags = ImPlotAxisFlags_None;
@@ -698,6 +702,9 @@ struct ImPlotAxis
         Locator          = nullptr;
         Enabled          = Hovered = Held = FitThisFrame = HasRange = HasFormatSpec = false;
         ShowDefaultTicks = true;
+
+        usesFactor = false;
+        factor = factorMin = factorMax = linearStep = 0.0;
     }
 
     inline void Reset() {
@@ -832,9 +839,22 @@ struct ImPlotAxis
     }
 
 
-    inline double PixelsToPlot(float pix) const {
+    inline double PixelsToPlot(float pix, bool isForDisplay = false) const {
         double plt = (pix - PixelMin) / ScaleToPixel + Range.Min;
-        if (TransformInverse != nullptr) {
+        if (isForDisplay && usesFactor)
+        {
+            double t = (plt - Range.Min) / Range.Size();
+            double s = t * (ScaleMax - ScaleMin) + ScaleMin;
+
+            if (s >= factorMax) plt = factorMax;
+            else if (s <= factorMin) plt = factorMin;
+            else
+            {
+                double factt = (s - factorMin) / (factorMax - factorMin);
+                plt = factorMin * pow(factorMax / factorMin, factt);
+            }
+        }
+        else if (TransformInverse != nullptr) {
             double t = (plt - Range.Min) / Range.Size();
             double s = t * (ScaleMax - ScaleMin) + ScaleMin;
             plt = TransformInverse(s, TransformData);

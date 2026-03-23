@@ -66,6 +66,12 @@ void mainWindowMenu()
             }
             TOOLTIP("Enable 12-digit fraction for attribute values");
 
+            if (ImGui::Checkbox("Sliders for ranging", &(applicationSettings.sliderRanging)))
+            {
+                applicationSettings.Save();
+            }
+            TOOLTIP("Use sliders instead of input fields for attribute ranging");
+
             ImGui::EndMenu();
         }
 

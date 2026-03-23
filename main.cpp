@@ -35,10 +35,12 @@ void common_main()
     addKernel(mishchenko);
     addKernel(mixed);
     addKernel(ostrovskii);
+    addKernel(ostrovskii_modified);
     addKernel(hodgkin_huxley);
     addKernel(sang26);
     addKernel(pala_machaczek);
     addKernel(ullah);
+    addKernel(resonate_and_fire);
 
     //selectKernel(kernels.begin()->first);
     selectKernel(lorenz);

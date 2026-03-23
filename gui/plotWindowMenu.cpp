@@ -92,8 +92,7 @@ void plotWindowMenu_File(PlotWindow* window)
 {
 	if (ImGui::BeginMenu("File"))
 	{
-		if (ImGui::MenuItem("Export to .csv", nullptr, false,
-			(window->type == Heatmap) || (window->type == VarSeries) || (window->type == Decay) || (window->type == Orbit)))
+		if (ImGui::MenuItem("Export to .csv", nullptr, false, true))
 		{
 			std::string savedPath;
 			bool attempted = false; 
@@ -155,6 +154,43 @@ void plotWindowMenu_File(PlotWindow* window)
 			case Orbit:
 			{
 				savedPath = exportOrbitCSV(window);
+				attempted = true;
+				break;
+			}
+
+			case IndSeries:
+			{
+				savedPath = exportIndicesSeriesCSV(window);
+				attempted = true;
+				break;
+			}
+
+			case Phase2D:
+			{
+				savedPath = exportPhase2DCSV(window);
+				attempted = true;
+				break;
+			}
+
+			case Phase:
+			{
+				savedPath = exportPhase3DCSV(window);
+				attempted = true;
+				break;
+			}
+
+			case MCHeatmap:
+			{
+				savedPath = exportMCHeatmapCSV(window);
+
+
+				attempted = true;
+				break;
+			}
+
+			case Metric:
+			{
+				savedPath = exportMetricCSV(window);
 				attempted = true;
 				break;
 			}
@@ -469,11 +505,11 @@ void plotWindowMenu_HeatmapColors(PlotWindow* window)
 		bool isHires = window->isTheHiresWindow(hiresIndex);
 		HeatmapProperties* heatmap = isHires ? &window->hireshmp : &window->hmp;
 
-		std::string colormapStrings[] = { "Deep", "Dark", "Pastel", "Paired", "Viridis", "Plasma", "Hot", "Cool", "Pink", "Jet", "Twilight", "RdBu", "BrBG", "PiYG", "Spectral", "Greys" };
+		std::string colormapStrings[] = { "Deep", "Dark", "Pastel", "Paired", "Viridis", "Plasma", "Hot", "Cool", "Pink", "Jet", "Twilight", "RdBu", "BrBG", "PiYG", "Spectral", "Greys", "Turbo" };
 		ImGui::PushItemFlag(ImGuiItemFlags_AutoClosePopups, false);
 		if (ImGui::BeginCombo(("##" + windowName + "colormap").c_str(), (colormapStrings[heatmap->colormap]).c_str()))
 		{
-			for (int i = 0; i < 16; i++)
+			for (int i = 0; i < 17; i++)
 				if (ImGui::Selectable(colormapStrings[i].c_str(), heatmap->colormap == i))
 				{
 					heatmap->colormap = i;
@@ -519,11 +555,11 @@ void plotWindowMenu_MetricPlot(PlotWindow*window) {
 			ImGui::ColorEdit4(("##" + windowName + "_lineColor").c_str(), (float*)(&(window->markerColor)));		ImGui::SameLine(); ImGui::Text("Line color");
 		}
 		else {
-			std::string colormapStrings[] = {"Deep", "Dark", "Pastel", "Paired", "Viridis", "Plasma", "Hot", "Cool", "Pink", "Jet", "Twilight", "RdBu", "BrBG", "PiYG", "Spectral", "Greys"};
+			std::string colormapStrings[] = {"Deep", "Dark", "Pastel", "Paired", "Viridis", "Plasma", "Hot", "Cool", "Pink", "Jet", "Twilight", "RdBu", "BrBG", "PiYG", "Spectral", "Greys", "Turbo" };
 			ImGui::PushItemFlag(ImGuiItemFlags_AutoClosePopups, false);
 			if (ImGui::BeginCombo(("##" + windowName + "colormap").c_str(), (colormapStrings[window->colormap]).c_str()))
 			{
-				for (int i = 0; i < 16; i++)
+				for (int i = 0; i < 17; i++)
 					if (ImGui::Selectable(colormapStrings[i].c_str(), window->colormap == i))
 					{
 						window->colormap = i;
@@ -560,11 +596,11 @@ void plotWindowMenu_SeriesPlot(PlotWindow* window) {
 			ImGui::ColorEdit4(("##" + windowName + "_lineColor").c_str(), (float*)(&(window->markerColor)));		ImGui::SameLine(); ImGui::Text("Line color");
 		}
 		else {
-			std::string colormapStrings[] = { "Deep", "Dark", "Pastel", "Paired", "Viridis", "Plasma", "Hot", "Cool", "Pink", "Jet", "Twilight", "RdBu", "BrBG", "PiYG", "Spectral", "Greys" };
+			std::string colormapStrings[] = { "Deep", "Dark", "Pastel", "Paired", "Viridis", "Plasma", "Hot", "Cool", "Pink", "Jet", "Twilight", "RdBu", "BrBG", "PiYG", "Spectral", "Greys", "Turbo" };
 			ImGui::PushItemFlag(ImGuiItemFlags_AutoClosePopups, false);
 			if (ImGui::BeginCombo(("##" + windowName + "colormap").c_str(), (colormapStrings[window->colormap]).c_str()))
 			{
-				for (int i = 0; i < 16; i++)
+				for (int i = 0; i < 17; i++)
 					if (ImGui::Selectable(colormapStrings[i].c_str(), window->colormap == i))
 					{
 						window->colormap = i;
@@ -592,11 +628,11 @@ void plotWindowMenu_IndSeriesPlot(PlotWindow* window) {
 			ImGui::ColorEdit4(("##" + windowName + "_lineColor").c_str(), (float*)(&(window->markerColor)));		ImGui::SameLine(); ImGui::Text("Line color");
 		}
 		else {
-			std::string colormapStrings[] = { "Deep", "Dark", "Pastel", "Paired", "Viridis", "Plasma", "Hot", "Cool", "Pink", "Jet", "Twilight", "RdBu", "BrBG", "PiYG", "Spectral", "Greys" };
+			std::string colormapStrings[] = { "Deep", "Dark", "Pastel", "Paired", "Viridis", "Plasma", "Hot", "Cool", "Pink", "Jet", "Twilight", "RdBu", "BrBG", "PiYG", "Spectral", "Greys", "Turbo" };
 			ImGui::PushItemFlag(ImGuiItemFlags_AutoClosePopups, false);
 			if (ImGui::BeginCombo(("##" + windowName + "colormap").c_str(), (colormapStrings[window->colormap]).c_str()))
 			{
-				for (int i = 0; i < 16; i++)
+				for (int i = 0; i < 17; i++)
 					if (ImGui::Selectable(colormapStrings[i].c_str(), window->colormap == i))
 					{
 						window->colormap = i;

@@ -5,8 +5,6 @@ __host__ __device__ void PhaseVolume(Computation* data, uint64_t variation, void
     LOCAL_BUFFERS;
     LOAD_ATTRIBUTES(true);
 
-    if (data->isHires) TRANSIENT_SKIP_NEW(finiteDifferenceScheme);   
-
 	PV_Settings settings =  CUDA_kernel.analyses.PV;
     int ObsSteps = settings.ObsSteps / ((numb)TARGET_STEPS / CUDA_kernel.steps);   //The amount of trajectory points in one sample
 

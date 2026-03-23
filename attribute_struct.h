@@ -12,9 +12,16 @@ struct Attribute
 public:
 	std::string name;
 	RangingType rangingType;
+
+	// Or from
 	numb min;
+
+	// Or to
 	numb max;
+
+	// Or factor
 	numb step;
+
 	int stepCount;
 	numb mean;
 	numb deviation;
@@ -48,6 +55,7 @@ public:
 		}
 
 		if (rangingType != RT_Step) return;
+		if (rangingType != RT_Factor) return;
 		stepCount = (int)((max - min) / step + 1);
 		if (stepCount < 1) stepCount = 1;
 	}
@@ -56,6 +64,18 @@ public:
 	{
 		if (rangingType != RT_Linear) return;
 		step = (max - min) / (stepCount - 1);
+	}
+
+	numb GetLinearStep()
+	{
+		return (max - min) / (stepCount - 1);
+	}
+
+	void CalcMax()
+	{
+		if (rangingType != RT_Factor) return;
+		max = min;
+		for (int i = 1; i < stepCount; i++) max *= step;
 	}
 	
 	bool DoValuesExist()
@@ -90,6 +110,13 @@ public:
 			{
 				values[i] = min + step * i;
 				if (values[i] > max) values[i] = max;
+			}
+			break;
+		case RT_Factor:
+			values[0] = min;
+			for (int i = 1; i < trueStepCount; i++)
+			{
+				values[i] = values[i - 1] * step;
 			}
 			break;
 		case RT_Enum:

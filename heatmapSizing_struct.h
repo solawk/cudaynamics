@@ -29,12 +29,12 @@ struct HeatmapSizing
 		{
 		case MDT_Parameter:
 			minX = kernel->parameters[hmp->indexX].min;
-			stepX = kernel->parameters[hmp->indexX].step;
+			stepX = kernel->parameters[hmp->indexX].GetLinearStep();
 			maxX = kernel->parameters[hmp->indexX].max;
 			break;
 		case MDT_Variable:
 			minX = kernel->variables[hmp->indexX].min;
-			stepX = kernel->variables[hmp->indexX].step;
+			stepX = kernel->variables[hmp->indexX].GetLinearStep();
 			maxX = kernel->variables[hmp->indexX].max;
 			break;
 		case MDT_Step: // TODO
@@ -48,12 +48,12 @@ struct HeatmapSizing
 		{
 		case MDT_Parameter:
 			minY = kernel->parameters[hmp->indexY].min;
-			stepY = kernel->parameters[hmp->indexY].step;
+			stepY = kernel->parameters[hmp->indexY].GetLinearStep();
 			maxY = kernel->parameters[hmp->indexY].max;
 			break;
 		case MDT_Variable:
 			minY = kernel->variables[hmp->indexY].min;
-			stepY = kernel->variables[hmp->indexY].step;
+			stepY = kernel->variables[hmp->indexY].GetLinearStep();
 			maxY = kernel->variables[hmp->indexY].max;
 			break;
 		case MDT_Step: // TODO

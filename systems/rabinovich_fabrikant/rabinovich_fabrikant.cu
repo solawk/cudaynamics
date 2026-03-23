@@ -20,9 +20,6 @@ __host__ __device__ void kernelProgram_(name)(Computation* data, uint64_t variat
     uint64_t stepStart, variationStart = variation * CUDA_marshal.variationSize;         // Start index to store the modelling data for the variation
     LOCAL_BUFFERS;
     LOAD_ATTRIBUTES(false);
-
-    // Custom area (usually) starts here
-
     TRANSIENT_SKIP_NEW(finiteDifferenceScheme_(name));
 
     for (int s = 0; s < CUDA_kernel.steps && !data->isHires; s++)

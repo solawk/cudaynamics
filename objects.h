@@ -13,10 +13,11 @@
 #define valueFromStep(_min, _step, _index) (_min + _step * _index)
 
 // None - no ranging, only the min value
-// Linear - fixed step values from min (inclusive) to max (not necessarily inclusive)
+// Linear (Count) - fixed step values from min (inclusive) to max (not necessarily inclusive)
+// Factor - start from "from", multiply by factor each step, until "count" steps are reached
 // UniformRandom - random values from min to max with uniform distribution, step = quantity
 // NormalRandom - random values from min to max with normal distribution around midpoint, step = quantity
-enum RangingType { RT_None, RT_Step, RT_Linear, RT_UniformRandom, RT_NormalRandom, RT_Enum };
+enum RangingType { RT_None, RT_Step, RT_Linear, RT_Factor, RT_UniformRandom, RT_NormalRandom, RT_Enum };
 
 // Parameter step – doesn't change throughout the simulation
 // Variable step - can change throughout the simulation and be plotted like a variable

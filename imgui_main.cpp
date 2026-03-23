@@ -205,6 +205,8 @@ void hiresComputing();
 
 int hiresAsyncComputation()
 {
+	computationHires.ready = false;
+
 	kernelHiresComputed.CopyFrom(&kernelHiresNew);
 	kernelHiresComputed.PrepareAttributes();
 
@@ -526,7 +528,7 @@ int imgui_main(int, char**)
 		{
 			if (ImGui::BeginTable("##VarTable", 6))
 			{
-				ImGui::TableSetupColumn(nullptr, ImGuiTableColumnFlags_WidthFixed, GlobalFontSettings.size * 4.0f);
+				ImGui::TableSetupColumn(nullptr, ImGuiTableColumnFlags_WidthFixed, GlobalFontSettings.size * maxNameLength * 0.6f);
 				ImGui::TableSetupColumn(nullptr, ImGuiTableColumnFlags_WidthFixed, GlobalFontSettings.size * 5.0f);
 				for (int c = 2; c < 6; c++) ImGui::TableSetupColumn(nullptr);
 				for (int i = 0; i < KERNEL.VAR_COUNT - (KERNEL.stepType == ST_Variable ? 1 : 0); i++) listVariable(i);
@@ -545,7 +547,7 @@ int imgui_main(int, char**)
 			{
 				if (ImGui::BeginTable("##StepTable", 6))
 				{
-					ImGui::TableSetupColumn(nullptr, ImGuiTableColumnFlags_WidthFixed, GlobalFontSettings.size * 4.0f);
+					ImGui::TableSetupColumn(nullptr, ImGuiTableColumnFlags_WidthFixed, GlobalFontSettings.size * maxNameLength * 0.6f);
 					ImGui::TableSetupColumn(nullptr, ImGuiTableColumnFlags_WidthFixed, GlobalFontSettings.size * 5.0f);
 					for (int c = 2; c < 6; c++) ImGui::TableSetupColumn(nullptr);
 					if (KERNEL.stepType == ST_Variable) listVariable(KERNEL.VAR_COUNT - 1);
@@ -566,7 +568,7 @@ int imgui_main(int, char**)
 		{
 			if (ImGui::BeginTable("##ParamTable", 6, ImGuiTableFlags_NoClip))
 			{
-				ImGui::TableSetupColumn(nullptr, ImGuiTableColumnFlags_WidthFixed, GlobalFontSettings.size * 4.0f);
+				ImGui::TableSetupColumn(nullptr, ImGuiTableColumnFlags_WidthFixed, GlobalFontSettings.size * maxNameLength * 0.6f);
 				ImGui::TableSetupColumn(nullptr, ImGuiTableColumnFlags_WidthFixed, GlobalFontSettings.size * 5.0f);
 				for (int c = 2; c < 6; c++) ImGui::TableSetupColumn(nullptr);
 				for (int i = 0; i < KERNEL.PARAM_COUNT - (KERNEL.stepType == ST_Parameter ? 1 : 0); i++)
@@ -864,13 +866,23 @@ int imgui_main(int, char**)
 				ImGui::Text(name.c_str()); ImGui::SameLine();
 				int index = (*rangingAVI)[i];
 				ImGui::SetNextItemWidth(150.0f);
-				ImGui::SliderInt(("##RangingNo_" + std::to_string(i)).c_str(), &index, 0, attr->stepCount - 1, "Step: %d");
+
+				if (applicationSettings.sliderRanging)
+					ImGui::SliderInt(("##RangingNo_" + std::to_string(i)).c_str(), &index, 0, attr->stepCount - 1, "Step: %d");
+				else
+				{
+					ImGui::Text(" Step:"); ImGui::SameLine();
+					ImGui::InputInt(("##RangingNo_" + std::to_string(i)).c_str(), &index, 1, 100, 0);
+					if (index < 0) index = 0;
+					if (index > attr->stepCount - 1) index = attr->stepCount - 1;
+				}
+
 				(*rangingAVI)[i] = index;
 
 				if (!isEnum)
 				{
 					ImGui::SameLine();
-					ImGui::Text(("Value: " + std::to_string(calculateValue(attr->min, attr->step, index))).c_str());
+					ImGui::Text(("Value: " + std::to_string(attr->values[index])).c_str());
 				}
 				else
 				{
@@ -895,7 +907,7 @@ int imgui_main(int, char**)
 					if (!isEnum)
 					{
 						kernelNewAttr->rangingType = RT_None;
-						kernelNewAttr->min = calculateValue(attr->min, attr->step, index);
+						kernelNewAttr->min = attr->values[index];
 					}
 					else
 					{
@@ -1392,89 +1404,93 @@ int imgui_main(int, char**)
 				int prevTypeY = heatmap->typeY;
 				int prevValueIndex = heatmap->values.mapValueIndex;
 
+				bool attributeVectorsLoaded = krnl->variables.size() == krnl->VAR_COUNT && krnl->parameters.size() == krnl->PARAM_COUNT;
 				bool showMapValueInput = window->type == Heatmap && !isSingleValue;
 				int columns = showMapValueInput ? 4 : 3;
 
-				if (ImGui::BeginTable((plotName + "_axisTable").c_str(), columns))
+				if (attributeVectorsLoaded)
 				{
-					ImGui::TableSetupColumn(nullptr);
-					ImGui::TableSetupColumn(nullptr, ImGuiTableColumnFlags_WidthFixed, 40.0f);
-					ImGui::TableSetupColumn(nullptr);
-					if (columns == 4) ImGui::TableSetupColumn(nullptr);
-					ImGui::TableNextRow();
-
-					ImGui::TableSetColumnIndex(0);
-					ImGui::SetNextItemWidth(-1);
-
-					if (ImGui::BeginCombo(("##" + windowName + "_axisX").c_str(),
-						heatmap->typeX == MDT_Variable ? krnl->variables[heatmap->indexX].name.c_str() : krnl->parameters[heatmap->indexX].name.c_str()))
+					if (ImGui::BeginTable((plotName + "_axisTable").c_str(), columns))
 					{
-						for (int v = 0; v < krnl->VAR_COUNT; v++)
-						{
-							if (ImGui::Selectable(krnl->variables[v].name.c_str()))
-							{
-								heatmap->indexX = v;
-								heatmap->typeX = MDT_Variable;
-							}
-						}
+						ImGui::TableSetupColumn(nullptr);
+						ImGui::TableSetupColumn(nullptr, ImGuiTableColumnFlags_WidthFixed, 40.0f);
+						ImGui::TableSetupColumn(nullptr);
+						if (columns == 4) ImGui::TableSetupColumn(nullptr);
+						ImGui::TableNextRow();
 
-						for (int p = 0; p < krnl->PARAM_COUNT; p++)
-						{
-							if (ImGui::Selectable(krnl->parameters[p].name.c_str()))
-							{
-								heatmap->indexX = p;
-								heatmap->typeX = MDT_Parameter;
-							}
-						}
-
-						ImGui::EndCombo();
-					}
-
-					ImGui::TableSetColumnIndex(1);
-					if (ImGui::Button(("<>##" + windowName + "_flipAxesButton").c_str()))
-					{
-						int tempIndex = heatmap->indexX;
-						MapDimensionType tempMDT = heatmap->typeX;
-						heatmap->indexX = heatmap->indexY;
-						heatmap->typeX = heatmap->typeY;
-						heatmap->indexY = tempIndex;
-						heatmap->typeY = tempMDT;
-					}
-
-					ImGui::TableSetColumnIndex(2);
-					ImGui::SetNextItemWidth(-1);
-					if (ImGui::BeginCombo(("##" + windowName + "_axisY").c_str(),
-						heatmap->typeY == MDT_Variable ? krnl->variables[heatmap->indexY].name.c_str() : krnl->parameters[heatmap->indexY].name.c_str()))
-					{
-						for (int v = 0; v < krnl->VAR_COUNT; v++)
-						{
-							if (ImGui::Selectable(krnl->variables[v].name.c_str()))
-							{
-								heatmap->indexY = v;
-								heatmap->typeY = MDT_Variable;
-							}
-						}
-
-						for (int p = 0; p < krnl->PARAM_COUNT; p++)
-						{
-							if (ImGui::Selectable(krnl->parameters[p].name.c_str()))
-							{
-								heatmap->indexY = p;
-								heatmap->typeY = MDT_Parameter;
-							}
-						}
-
-						ImGui::EndCombo();
-					}
-
-					if (showMapValueInput)
-					{
-						ImGui::TableSetColumnIndex(3);
+						ImGui::TableSetColumnIndex(0);
 						ImGui::SetNextItemWidth(-1);
-						mapValueSelectionCombo((AnalysisIndex)mapIndex, -1, windowName, heatmap);
-					}
 
-					ImGui::EndTable();
+						if (ImGui::BeginCombo(("##" + windowName + "_axisX").c_str(),
+							heatmap->typeX == MDT_Variable ? krnl->variables[heatmap->indexX].name.c_str() : krnl->parameters[heatmap->indexX].name.c_str()))
+						{
+							for (int v = 0; v < krnl->VAR_COUNT; v++)
+							{
+								if (ImGui::Selectable(krnl->variables[v].name.c_str()))
+								{
+									window->hireshmp.indexX = window->hmp.indexX = v;
+									window->hireshmp.typeX = window->hmp.typeX = MDT_Variable;
+								}
+							}
+
+							for (int p = 0; p < krnl->PARAM_COUNT; p++)
+							{
+								if (ImGui::Selectable(krnl->parameters[p].name.c_str()))
+								{
+									window->hireshmp.indexX = window->hmp.indexX = p;
+									window->hireshmp.typeX = window->hmp.typeX = MDT_Parameter;
+								}
+							}
+
+							ImGui::EndCombo();
+						}
+
+						ImGui::TableSetColumnIndex(1);
+						if (ImGui::Button(("<>##" + windowName + "_flipAxesButton").c_str()))
+						{
+							int tempIndex = heatmap->indexX;
+							MapDimensionType tempMDT = heatmap->typeX;
+							heatmap->indexX = heatmap->indexY;
+							heatmap->typeX = heatmap->typeY;
+							heatmap->indexY = tempIndex;
+							heatmap->typeY = tempMDT;
+						}
+
+						ImGui::TableSetColumnIndex(2);
+						ImGui::SetNextItemWidth(-1);
+						if (ImGui::BeginCombo(("##" + windowName + "_axisY").c_str(),
+							heatmap->typeY == MDT_Variable ? krnl->variables[heatmap->indexY].name.c_str() : krnl->parameters[heatmap->indexY].name.c_str()))
+						{
+							for (int v = 0; v < krnl->VAR_COUNT; v++)
+							{
+								if (ImGui::Selectable(krnl->variables[v].name.c_str()))
+								{
+									window->hireshmp.indexY = window->hmp.indexY = v;
+									window->hireshmp.typeY = window->hmp.typeY = MDT_Variable;
+								}
+							}
+
+							for (int p = 0; p < krnl->PARAM_COUNT; p++)
+							{
+								if (ImGui::Selectable(krnl->parameters[p].name.c_str()))
+								{
+									window->hireshmp.indexY = window->hmp.indexY = p;
+									window->hireshmp.typeY = window->hmp.typeY = MDT_Parameter;
+								}
+							}
+
+							ImGui::EndCombo();
+						}
+
+						if (showMapValueInput)
+						{
+							ImGui::TableSetColumnIndex(3);
+							ImGui::SetNextItemWidth(-1);
+							mapValueSelectionCombo((AnalysisIndex)mapIndex, -1, windowName, heatmap);
+						}
+
+						ImGui::EndTable();
+					}
 				}
 
 				if (prevIndexX != heatmap->indexX || prevIndexY != heatmap->indexY || prevTypeX != heatmap->typeX || prevTypeY != heatmap->typeY || prevValueIndex != heatmap->values.mapValueIndex)
@@ -1507,6 +1523,7 @@ int imgui_main(int, char**)
 
 				ImGui::SameLine();
 				ImGui::Text(("Variable: " + KERNEL.variables[window->variables[0]].name).c_str());
+				window->orbit.analyzedVariable = window->variables[0];
 			}
 			if (window->type == Metric) {
 				Kernel* krnl =  &(KERNEL);
@@ -1987,25 +2004,33 @@ int imgui_main(int, char**)
 							switch (window->orbit.type)
 							{
 							case OPT_Selected_Var_Section:
-								if (ImPlot::BeginPlot(("##" + plotName + "_ChosenVariation").c_str(), window->orbit.invertedAxes ? "Peaks" : "Intervals", window->orbit.invertedAxes ? "Intervals" : "Peaks", ImVec2(-1, -1), ImPlotFlags_NoTitle, 0, 0)) {
+								if (ImPlot::BeginPlot(("##" + plotName + "_ChosenVariation").c_str(), window->orbit.invertedAxes ? "Peaks" : "Intervals", window->orbit.invertedAxes ? "Intervals" : "Peaks", ImVec2(-1, -1), ImPlotFlags_NoTitle, 0, 0)) 
+								{
 									plot = ImPlot::GetPlot(("##" + plotName + "_ChosenVariation").c_str()); plot->is3d = false;
 									ImPlot::SetupAxisLimits(ImAxis_X1, window->orbit.minX * 0.95f, window->orbit.maxX * 1.05f, ImGuiCond_None);
 									ImPlot::SetupAxisLimits(ImAxis_Y1, window->orbit.minY * 0.95f, window->orbit.maxY * 1.05f, ImGuiCond_None);
 									ImPlot::SetupFinish();
 									ImPlot::SetNextMarkerStyle(window->markerShape, window->orbit.pointSize, window->plotColor, -1.0, window->plotColor);
-									if (!window->orbit.invertedAxes) {
-										ImPlot::PlotScatter(window->orbit.drawingContinuation ? ("Standard##" + plotName + "_ChosenVariationPlot").c_str() : ("##" + plotName + "_ChosenVariationPlot").c_str(), window->orbit.peakIntervals, window->orbit.peakAmplitudes, window->orbit.peakCount - 1);
-										if (window->orbit.drawingContinuation && window->orbit.continuationAmpsForward != NULL) {
-											ImPlot::SetNextMarkerStyle(window->orbit.dotShapeForward, window->orbit.pointSizeForward, window->orbit.dotColorForward, IMPLOT_AUTO, window->orbit.dotColorForward);
-											ImPlot::PlotScatter(("Forward##" + plotName + "_ChosenVariationPlot").c_str(), window->orbit.SliceForwardInt.data(), window->orbit.SliceForwardPeak.data(), window->orbit.forNum - 1);
-											ImPlot::SetNextMarkerStyle(window->orbit.dotShapeBack, window->orbit.pointSizeBack, window->orbit.dotColorBack, IMPLOT_AUTO, window->orbit.dotColorBack);
-											ImPlot::PlotScatter(("Backward##" + plotName + "_ChosenVariationPlot").c_str(), window->orbit.SliceBackwardInt.data(), window->orbit.SliceBackwardPeak.data(), window->orbit.backNum - 1);
-										}
+
+									numb* xs = !window->orbit.invertedAxes ? window->orbit.peakIntervals : window->orbit.peakAmplitudes;
+									numb* ys = !window->orbit.invertedAxes ? window->orbit.peakAmplitudes : window->orbit.peakIntervals;
+
+									ImPlot::PlotScatter(window->orbit.drawingContinuation ? ("Standard##" + plotName + "_ChosenVariationPlot").c_str() : ("##" + plotName + "_ChosenVariationPlot").c_str(), xs, ys, window->orbit.peakCount - 1);
+
+									if (window->orbit.drawingContinuation && window->orbit.continuationAmpsForward != NULL)
+									{
+										numb* xsForward = !window->orbit.invertedAxes ? window->orbit.SliceForwardInt.data() : window->orbit.SliceForwardPeak.data();
+										numb* ysForward = !window->orbit.invertedAxes ? window->orbit.SliceForwardPeak.data() : window->orbit.SliceForwardInt.data();
+
+										numb* xsBackward = !window->orbit.invertedAxes ? window->orbit.SliceBackwardInt.data() : window->orbit.SliceBackwardPeak.data();
+										numb* ysBackward = !window->orbit.invertedAxes ? window->orbit.SliceBackwardPeak.data() : window->orbit.SliceBackwardInt.data();
+
+										ImPlot::SetNextMarkerStyle(window->orbit.dotShapeForward, window->orbit.pointSizeForward, window->orbit.dotColorForward, IMPLOT_AUTO, window->orbit.dotColorForward);
+										ImPlot::PlotScatter(("Forward##" + plotName + "_ChosenVariationPlot").c_str(), xsForward, ysForward, window->orbit.forNum - 1);
+										ImPlot::SetNextMarkerStyle(window->orbit.dotShapeBack, window->orbit.pointSizeBack, window->orbit.dotColorBack, IMPLOT_AUTO, window->orbit.dotColorBack);
+										ImPlot::PlotScatter(("Backward##" + plotName + "_ChosenVariationPlot").c_str(), xsBackward, ysBackward, window->orbit.backNum - 1);
 									}
-									else {
-										ImPlot::PlotScatter(("##" + plotName + "_ChosenVariationPlot").c_str(), window->orbit.peakAmplitudes, window->orbit.peakIntervals, window->orbit.peakCount - 1);
-									}
-									;
+
 									ImPlot::EndPlot();
 								}
 								break;
@@ -2053,7 +2078,7 @@ int imgui_main(int, char**)
 										if (window->orbit.isAutoComputeOn) computeAfterShiftSelect = true;
 									}
 									if (window->orbit.showParLines) {
-										double value = attributeValueIndices[KERNEL.VAR_COUNT + window->orbit.xIndex] * axis->step + axis->min;
+										double value = axis->values[attributeValueIndices[KERNEL.VAR_COUNT + window->orbit.xIndex]];
 										if (!window->orbit.invertedAxes)ImPlot::DragLineX(0, &value, window->orbit.markerColor, window->orbit.markerWidth, ImPlotDragToolFlags_NoInputs);
 										else ImPlot::DragLineY(0, &value, window->orbit.markerColor, window->orbit.markerWidth, ImPlotDragToolFlags_NoInputs);
 									}
@@ -2108,7 +2133,7 @@ int imgui_main(int, char**)
 										if (window->orbit.isAutoComputeOn) computeAfterShiftSelect = true;
 									}
 									if (window->orbit.showParLines) {
-										double value = attributeValueIndices[KERNEL.VAR_COUNT + window->orbit.xIndex] * axis->step + axis->min;
+										double value = axis->values[attributeValueIndices[KERNEL.VAR_COUNT + window->orbit.xIndex]];
 										if (!window->orbit.invertedAxes)ImPlot::DragLineX(0, &value, window->orbit.markerColor, window->orbit.markerWidth, ImPlotDragToolFlags_NoInputs);
 										else ImPlot::DragLineY(0, &value, window->orbit.markerColor, window->orbit.markerWidth, ImPlotDragToolFlags_NoInputs);
 									}
@@ -2123,7 +2148,12 @@ int imgui_main(int, char**)
 									plot3d->RangeMax().y;
 									static float  xs[4], ys[4], zs[4];
 
-									ys[0] = plot3d->RangeMin().y; ys[1] = plot3d->RangeMin().y; ys[2] = plot3d->RangeMax().y; ys[3] = plot3d->RangeMax().y;  zs[0] = plot3d->RangeMin().z; zs[1] = plot3d->RangeMax().z; zs[2] = plot3d->RangeMax().z; zs[3] = plot3d->RangeMin().z; xs[0] = axis->min + axis->step * attributeValueIndices[window->orbit.xIndex + krnl->VAR_COUNT]; xs[3] = xs[2] = xs[1] = xs[0];
+									ys[0] = ys[1] = plot3d->RangeMin().y;
+									ys[2] = ys[3] = plot3d->RangeMax().y;
+									zs[0] = zs[3] = plot3d->RangeMin().z;
+									zs[1] = zs[2] = plot3d->RangeMax().z;
+									xs[0] = axis->values[attributeValueIndices[KERNEL.VAR_COUNT + window->orbit.xIndex]];
+									xs[3] = xs[2] = xs[1] = xs[0];
 									ImPlot3D::SetupAxis(ImAxis3D_X, axis->name.c_str());
 									ImPlot3D::SetupAxis(ImAxis3D_Y, "Peaks");
 									ImPlot3D::SetupAxis(ImAxis3D_Z, "Intervals");
@@ -2426,7 +2456,7 @@ int imgui_main(int, char**)
 					std::vector<int>* avi = isHires ? &attributeValueIndicesHires : &attributeValueIndices;
 					uint64_t* var = isHires ? &variationHires : &variation;
 					uint64_t* prevVar = isHires ? &prevVariationHires : &prevVariation;
-					bool hiresFrozenAndAvailable = window->isFrozenAsHires && window->hmp.values.valueBuffer != nullptr;
+					bool hiresFrozenAndAvailable = window->isFrozenAsHires && window->hireshmp.values.valueBuffer != nullptr;
 					bool showLegend = heatmap->showLegend;
 
 					if (!isMC)
@@ -2489,6 +2519,7 @@ int imgui_main(int, char**)
 									if (heatmap->showActualDiapasons)
 									{
 										// Values
+
 										heatmap->lastClickedLocation.x = (float)valueFromStep(sizing.minX, sizing.stepX,
 											(*avi)[sizing.hmp->indexX + (sizing.hmp->typeX == MDT_Variable ? 0 : krnl->VAR_COUNT)]);
 										heatmap->lastClickedLocation.y = (float)valueFromStep(sizing.minY, sizing.stepY,
@@ -2825,11 +2856,115 @@ int imgui_main(int, char**)
 									IM_ASSERT(ret);
 								}
 
-								ImPlotPoint from = heatmap->showActualDiapasons ? ImPlotPoint(sizing.minX, sizing.maxY + sizing.stepY) : ImPlotPoint(0, sizing.ySize);
-								ImPlotPoint to = heatmap->showActualDiapasons ? ImPlotPoint(sizing.maxX + sizing.stepX, sizing.minY) : ImPlotPoint(sizing.xSize, 0);
+								double maxX = sizing.maxX + sizing.stepX;
+								double maxY = sizing.maxY + sizing.stepY;
+
+								ImPlotPoint from = heatmap->showActualDiapasons ? ImPlotPoint(sizing.minX, maxY) : ImPlotPoint(0, sizing.ySize);
+								ImPlotPoint to = heatmap->showActualDiapasons ? ImPlotPoint(maxX, sizing.minY) : ImPlotPoint(sizing.xSize, 0);
 
 								ImPlot::SetupAxes(sizing.hmp->typeX == MDT_Parameter ? krnl->parameters[sizing.hmp->indexX].name.c_str() : krnl->variables[sizing.hmp->indexX].name.c_str(),
 									sizing.hmp->typeY == MDT_Parameter ? krnl->parameters[sizing.hmp->indexY].name.c_str() : krnl->variables[sizing.hmp->indexY].name.c_str());
+
+								plot->XAxis(0).usesFactor = false;
+								plot->YAxis(0).usesFactor = false;
+
+								// for Factor ranging
+								if (heatmap->showActualDiapasons)
+								{
+									if (axisX->rangingType == RT_Factor)
+									{
+										plot->XAxis(0).usesFactor = true;
+										plot->XAxis(0).factor = axisX->step;
+										plot->XAxis(0).factorMin = axisX->min;
+										plot->XAxis(0).factorMax = axisX->max;
+
+										int stepCount = axisX->stepCount;
+										float xValuesRange = (float)(plot->Axes[ImAxis_X1].Range.Max - plot->Axes[ImAxis_X1].Range.Min);
+										float xImageRange = sizing.maxX - sizing.minX;
+										float imageInViewXRatio = xImageRange / xValuesRange;
+										float axisXpixels = plot->FrameRect.GetWidth();
+										float imageInViewXPixels = axisXpixels * imageInViewXRatio;
+
+										int maxTickCount = (int)(imageInViewXPixels / (GlobalFontSettings.size * 8));
+										if (maxTickCount < 2) maxTickCount = 2;
+										if (maxTickCount > stepCount) maxTickCount = stepCount;
+										float stepsPerTick = (float)stepCount / (maxTickCount - 1);
+
+										double* tickValues = new double[maxTickCount];
+										std::string* tickStrings = new std::string[maxTickCount];
+										const char** tickLabels = new const char* [maxTickCount];
+
+										for (int t = 0; t < maxTickCount; t++)
+										{
+											if (t < maxTickCount - 1)
+											{
+												int tickStep = stepsPerTick * t;
+												tickValues[t] = sizing.minX + tickStep * sizing.stepX;
+												tickStrings[t] = std::to_string(axisX->values[tickStep]);
+											}
+											else
+											{
+												tickValues[t] = sizing.maxX;
+												tickStrings[t] = std::to_string(axisX->values[stepCount - 1]);
+											}
+											tickLabels[t] = tickStrings[t].c_str();
+										}
+
+										ImPlot::SetupAxisTicks(ImAxis_X1, tickValues, maxTickCount, tickLabels);
+										delete[] tickValues;
+										delete[] tickLabels;
+										delete[] tickStrings;
+
+										plot->XAxis(0).linearStep = sizing.stepX;
+									}
+
+									if (axisY->rangingType == RT_Factor)
+									{
+										plot->YAxis(0).usesFactor = true;
+										plot->YAxis(0).factor = axisY->step;
+										plot->YAxis(0).factorMin = axisY->min;
+										plot->YAxis(0).factorMax = axisY->max;
+
+										int stepCount = axisY->stepCount;
+										float yValuesRange = (float)(plot->Axes[ImAxis_Y1].Range.Max - plot->Axes[ImAxis_Y1].Range.Min);
+										float yImageRange = sizing.maxY - sizing.minY;
+										float imageInViewYRatio = yImageRange / yValuesRange;
+										float axisYpixels = plot->FrameRect.GetHeight();
+										float imageInViewYPixels = axisYpixels * imageInViewYRatio;
+
+										int maxTickCount = (int)(imageInViewYPixels / (GlobalFontSettings.size * 3));
+										if (maxTickCount < 2) maxTickCount = 2;
+										if (maxTickCount > stepCount) maxTickCount = stepCount;
+										float stepsPerTick = (float)stepCount / (maxTickCount - 1);
+
+										double* tickValues = new double[maxTickCount];
+										std::string* tickStrings = new std::string[maxTickCount];
+										const char** tickLabels = new const char* [maxTickCount];
+
+										for (int t = 0; t < maxTickCount; t++)
+										{
+											if (t < maxTickCount - 1)
+											{
+												int tickStep = stepsPerTick * t;
+												tickValues[t] = sizing.minY + tickStep * sizing.stepY;
+												tickStrings[t] = std::to_string(axisY->values[tickStep]);
+											}
+											else
+											{
+												tickValues[t] = sizing.maxY;
+												tickStrings[t] = std::to_string(axisY->values[stepCount - 1]);
+											}
+											tickLabels[t] = tickStrings[t].c_str();
+										}
+
+										ImPlot::SetupAxisTicks(ImAxis_Y1, tickValues, maxTickCount, tickLabels);
+										delete[] tickValues;
+										delete[] tickLabels;
+										delete[] tickStrings;
+
+										plot->YAxis(0).linearStep = sizing.stepY;
+									}
+								}
 
 								ImPlot::PlotImage(("Map " + std::to_string(mapIndex) + "##" + plotName + std::to_string(0)).c_str(), (ImTextureID)(heatmap->texture),
 									from, to, ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f), ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
@@ -2839,26 +2974,28 @@ int imgui_main(int, char**)
 									&& ImGui::IsMouseHoveringRect(plot->PlotRect.Min, plot->PlotRect.Max) && plot->ContextLocked && !isHires;
 								if (plotDragShiftClicked) {
 									//values
-									if (heatmap->showActualDiapasons) {
+									if (heatmap->showActualDiapasons) 
+									{
 										numb MousePosX = (numb)ImPlot::GetPlotMousePos().x; //find mouse Position
 										if (axisX->min > MousePosX)sizing.hmp->typeX == MDT_Variable ? attributeValueIndices[sizing.hmp->indexX] = 0 : attributeValueIndices[sizing.hmp->indexX + krnl->VAR_COUNT] = 0; // check if position is under minimum of parameter
 										else if (axisX->max < MousePosX)sizing.hmp->typeX == MDT_Variable ? attributeValueIndices[sizing.hmp->indexX] = axisX->stepCount - 1 : attributeValueIndices[sizing.hmp->indexX + krnl->VAR_COUNT] = axisX->stepCount - 1; // or above maximum
 										else {
-											numb NotRoundedIndex = (MousePosX - axisX->min - axisX->step) / (axisX->max - axisX->min) * axisX->stepCount;   // mathematically find what index would the mouse pos be
-											int index = static_cast<int>(std::round(NotRoundedIndex)); index < 0 ? index = 0 : 1; if (index > axisX->stepCount - 1)index = axisX->stepCount - 1;    // round the index and check if it is in parameter bounds
+											numb NotRoundedIndex = (MousePosX - axisX->min) / (axisX->max - axisX->min) * (axisX->stepCount - 1);   // mathematically find what index would the mouse pos be
+											int index = static_cast<int>(std::floor(NotRoundedIndex)); index < 0 ? index = 0 : 1; if (index > axisX->stepCount - 1)index = axisX->stepCount - 1;    // round the index and check if it is in parameter bounds
 											sizing.hmp->typeX == MDT_Variable ? attributeValueIndices[sizing.hmp->indexX] = index : attributeValueIndices[sizing.hmp->indexX + krnl->VAR_COUNT] = index;    // write index into attrivuteValueIndices
 										}
 										numb MousePosY = (numb)ImPlot::GetPlotMousePos().y;
 										if (axisY->min > MousePosY)sizing.hmp->typeY == MDT_Variable ? attributeValueIndices[sizing.hmp->indexY] = 0 : attributeValueIndices[sizing.hmp->indexY + krnl->VAR_COUNT] = 0;
 										else if (axisY->max < MousePosY)sizing.hmp->typeY == MDT_Variable ? attributeValueIndices[sizing.hmp->indexY] = axisY->stepCount - 1 : attributeValueIndices[sizing.hmp->indexY + krnl->VAR_COUNT] = axisY->stepCount - 1;
 										else {
-											numb NotRoundedIndex = (MousePosY - axisY->min - axisY->step) / (axisY->max - axisY->min) * axisY->stepCount;
-											int index = static_cast<int>(std::round(NotRoundedIndex)); index < 0 ? index = 0 : 1; if (index > axisY->stepCount - 1)index = axisY->stepCount - 1;
+											numb NotRoundedIndex = (MousePosY - axisY->min) / (axisY->max - axisY->min) * (axisY->stepCount - 1);
+											int index = static_cast<int>(std::floor(NotRoundedIndex)); index < 0 ? index = 0 : 1; if (index > axisY->stepCount - 1)index = axisY->stepCount - 1;
 											sizing.hmp->typeY == MDT_Variable ? attributeValueIndices[sizing.hmp->indexY] = index : attributeValueIndices[sizing.hmp->indexY + krnl->VAR_COUNT] = index;
 										}
 									}
 									//steps
-									else {
+									else 
+									{
 										numb MousePosX = (numb)ImPlot::GetPlotMousePos().x - 0.5;
 										if (0 > MousePosX)sizing.hmp->typeX == MDT_Variable ? attributeValueIndices[sizing.hmp->indexX] = 0 : attributeValueIndices[sizing.hmp->indexX + krnl->VAR_COUNT] = 0;
 										else if (axisX->stepCount < MousePosX)sizing.hmp->typeX == MDT_Variable ? attributeValueIndices[sizing.hmp->indexX] = axisX->stepCount - 1 : attributeValueIndices[sizing.hmp->indexX + krnl->VAR_COUNT] = axisX->stepCount - 1;
@@ -2920,8 +3057,11 @@ int imgui_main(int, char**)
 
 								if (heatmap->showDragLines)
 								{
-									double valueX = (double)heatmap->lastClickedLocation.x + (heatmap->showActualDiapasons ? sizing.stepX * 0.5 : 0.5);
-									double valueY = (double)heatmap->lastClickedLocation.y + (heatmap->showActualDiapasons ? sizing.stepY * 0.5 : 0.5);
+									float stepX = axisX->rangingType != RT_Factor ? sizing.stepX : ((sizing.maxX - sizing.minX) / (sizing.xSize - 1));
+									float stepY = axisY->rangingType != RT_Factor ? sizing.stepY : ((sizing.maxY - sizing.minY) / (sizing.ySize - 1));
+
+									double valueX = (double)heatmap->lastClickedLocation.x + (heatmap->showActualDiapasons ? stepX * 0.5 : 0.5);
+									double valueY = (double)heatmap->lastClickedLocation.y + (heatmap->showActualDiapasons ? stepY * 0.5 : 0.5);
 
 									ImPlot::DragLineX(0, &valueX, window->markerColor, window->markerWidth, ImPlotDragToolFlags_NoInputs);
 									ImPlot::DragLineY(1, &valueY, window->markerColor, window->markerWidth, ImPlotDragToolFlags_NoInputs);

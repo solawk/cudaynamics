@@ -456,6 +456,7 @@ enum ImPlotColormap_ {
     ImPlotColormap_PiYG     = 13,  // pink/yellow-green, Color Brewer (qual=false, n=11)
     ImPlotColormap_Spectral = 14,  // color spectrum, Color Brewer    (qual=false, n=11)
     ImPlotColormap_Greys    = 15,  // white/black                     (qual=false, n=2 )
+    ImPlotColormap_Turbo = 16,
 };
 
 // Used to position items on a plot (e.g. legends, labels, etc.)

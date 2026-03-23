@@ -100,7 +100,7 @@ struct HeatmapProperties
 		lastClickedLocation = ImVec2(0.0f, 0.0f);
 		showDragLines = true;
 		showLegend = true;
-		colormap = ImPlotColormap_Jet;
+		colormap = ImPlotColormap_Turbo;
 		valueDisplay = VDM_Split;
 
 		ignoreLimitsRecalculationOnSelection = false;

@@ -67,6 +67,7 @@
       <LanguageStandard>stdcpp17</LanguageStandard>
       <OpenMPSupport>true</OpenMPSupport>
       <IntrinsicFunctions>true</IntrinsicFunctions>
+      <WholeProgramOptimization>false</WholeProgramOptimization>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -82,10 +83,12 @@
       </AdditionalCompilerOptions>
       <GenerateRelocatableDeviceCode>true</GenerateRelocatableDeviceCode>
       <PtxAsOptionV>false</PtxAsOptionV>
-      <MaxRegCount>32</MaxRegCount>
+      <MaxRegCount>
+      </MaxRegCount>
       <FastMath>true</FastMath>
       <Warning>InheritFromHost</Warning>
       <AdditionalOptions>-Xcompiler "/openmp" %(AdditionalOptions)</AdditionalOptions>
+      <GPUDebugInfo>true</GPUDebugInfo>
     </CudaCompile>
     <CudaLink />
   </ItemDefinitionGroup>
@@ -111,11 +114,13 @@
       <TargetMachinePlatform>64</TargetMachinePlatform>
       <Include>imgui;imgui/backends;.;backends;systems;implot;dbscan</Include>
       <FastMath>true</FastMath>
-      <MaxRegCount>32</MaxRegCount>
+      <MaxRegCount>
+      </MaxRegCount>
       <GenerateRelocatableDeviceCode>true</GenerateRelocatableDeviceCode>
       <AdditionalCompilerOptions>
       </AdditionalCompilerOptions>
       <AdditionalOptions>-Xcompiler "/openmp" %(AdditionalOptions)</AdditionalOptions>
+      <PtxAsOptionV>false</PtxAsOptionV>
     </CudaCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -284,8 +289,10 @@
     <CudaCompile Include="systems\mishchenko\mishchenko.cu" />
     <CudaCompile Include="systems\mixed\mixed.cu" />
     <CudaCompile Include="systems\ostrovskii\ostrovskii.cu" />
+    <CudaCompile Include="systems\ostrovskii_modified\ostrovskii_modified.cu" />
     <CudaCompile Include="systems\pala_machaczek\pala_machaczek.cu" />
     <CudaCompile Include="systems\rabinovich_fabrikant\rabinovich_fabrikant.cu" />
+    <CudaCompile Include="systems\resonate_and_fire\resonate_and_fire.cu" />
     <CudaCompile Include="systems\rossler\rossler.cu" />
     <CudaCompile Include="systems\sang25\sang25.cu" />
     <CudaCompile Include="systems\sang26\sang26.cu" />

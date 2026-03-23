@@ -12,6 +12,7 @@
 struct ApplicationSettings
 {
 	static const bool preciseNumbDrags_default = false;
+	static const bool sliderRanging_default = true;
 	static const bool CPU_mode_interactive_default = false;
 	static const bool CPU_mode_hires_default = false;
 	static const bool calculateDeltaDecay_default = true;
@@ -25,6 +26,7 @@ struct ApplicationSettings
 	static const ImGuiCustomStyle appStyle_default = ImGuiCustomStyle::Dark;
 
 	bool preciseNumbDrags;
+	bool sliderRanging;
 	bool CPU_mode_interactive, CPU_mode_hires;
 	bool calculateDeltaDecay;
 	bool computeOnLaunch;
@@ -43,6 +45,7 @@ struct ApplicationSettings
 		hiresColor_default = ImVec4(0.50f, 0.10f, 0.30f, 1.00f);
 
 		preciseNumbDrags = preciseNumbDrags_default;
+		sliderRanging = sliderRanging_default;
 		CPU_mode_interactive = CPU_mode_interactive_default;
 		CPU_mode_hires = CPU_mode_hires_default;
 		calculateDeltaDecay = calculateDeltaDecay_default;
@@ -62,6 +65,7 @@ struct ApplicationSettings
 	{
 		json::jobject settings;
 		settings["preciseNumbDrags"].set_boolean(preciseNumbDrags);
+		settings["sliderRanging"].set_boolean(sliderRanging);
 		settings["CPU_mode_interactive"].set_boolean(CPU_mode_interactive);
 		settings["CPU_mode_hires"].set_boolean(CPU_mode_hires);
 		settings["calculateDeltaDecay"].set_boolean(calculateDeltaDecay);
@@ -90,6 +94,7 @@ struct ApplicationSettings
 		if (!JSONRead("applicationSettings.json", &settings, false)) return;
 
 		preciseNumbDrags = settings.has_key("preciseNumbDrags") ? settings["preciseNumbDrags"].is_true() : preciseNumbDrags_default;
+		sliderRanging = settings.has_key("sliderRanging") ? settings["sliderRanging"].is_true() : sliderRanging_default;
 		CPU_mode_interactive = settings.has_key("CPU_mode_interactive") ? settings["CPU_mode_interactive"].is_true() : CPU_mode_interactive_default;
 		CPU_mode_hires = settings.has_key("CPU_mode_hires") ? settings["CPU_mode_hires"].is_true() : CPU_mode_hires_default;
 		calculateDeltaDecay = settings.has_key("calculateDeltaDecay") ? settings["calculateDeltaDecay"].is_true() : calculateDeltaDecay_default;

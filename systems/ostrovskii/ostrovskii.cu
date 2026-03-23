@@ -6,16 +6,17 @@ namespace attributes
 {
     enum variables { v, x, i, t};
     enum parameters { 
-		// RHS
+		// Circuit
 		Utd, Uvm, C,
-		// GI403
+		// Tunnel diode GI403
 		Is, Vt, Vp, Ip, Iv, D, E,
-		// AND_TS
-		Ron_p, Ron_n, Vth_p, Vh_p, Vth_n, Vh_n, tau_s, tau_r, Vs, Vr, A, Ds, Dr, Ilk, 
-		//Stuff
-		Idc, Iamp, Ifreq, Idel, Idf, 
-		signal, method, 
-		COUNT 
+		// Volatile memristor AND_TS
+		Ron_p, Ron_n, Vth_p, Vh_p, Vth_n, Vh_n, tau_s, tau_r, Vs, Vr, A, Ds, Dr, Ilk,
+		// Input signal
+		Idc, Iamp, Ifreq, Idel, Idf, signal,
+		// Numerical integration
+		method,
+		COUNT
 	};
     enum waveforms { square, sine, triangle };
 	enum methods { ExplicitRungeKutta4 };
@@ -32,9 +33,6 @@ __host__ __device__ void kernelProgram_(name)(Computation* data, uint64_t variat
 	uint64_t stepStart, variationStart = variation * CUDA_marshal.variationSize;         // Start index to store the modelling data for the variation
 	LOCAL_BUFFERS;
 	LOAD_ATTRIBUTES(false);
-
-	// Custom area (usually) starts here
-
 	TRANSIENT_SKIP_NEW(finiteDifferenceScheme_(name));
 
 	for (int s = 0; s < CUDA_kernel.steps && !data->isHires; s++)
@@ -133,7 +131,7 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
 			else
 				Im = (-V(v) + P(Uvm)) * V(x) / P(Ron_n) - P(Ilk);
 
-			numb imp = P(Idc) + P(Iamp) * sin((numb)2.0 * (numb)3.141592 * P(Ifreq) * (V(t) - P(Idel)));
+			numb imp = P(Idc) + P(Iamp) * sin((numb)2.0 * (numb)3.141592653589793 * P(Ifreq) * (V(t) - P(Idel)));
 
 			numb kv1 = (imp + Im - Id) / P(C);
 			numb kx1 = ((numb)1.0 / P(tau_s)) * ((numb)1.0 / ((numb)1.0 + exp(-(numb)1.0 / (P(Vs) * P(Vs)) * ((-V(v) + P(Uvm)) - P(Vth_p)) * ((-V(v) + P(Uvm)) - P(Vth_n))))) * (((numb)1.0 - (numb)1.0 / (exp((P(A) * V(x) + P(Ds))))) * ((numb)1.0 - V(x)) + V(x) * ((numb)1.0 - (numb)1.0 / (exp(P(A) * ((numb)1.0 - V(x)))))) - ((numb)1.0 / P(tau_r)) * ((numb)1.0 - (numb)1.0 / ((numb)1.0 + exp(-(numb)1.0 / (P(Vr) * P(Vr)) * ((-V(v) + P(Uvm)) - P(Vh_n)) * ((-V(v) + P(Uvm)) - P(Vh_p))))) * (((numb)1.0 - (numb)1.0 / (exp((P(A) * V(x))))) * ((numb)1.0 - V(x)) + V(x) * ((numb)1.0 - (numb)1.0 / (exp(P(A) * ((numb)1.0 - V(x)) + P(Dr)))));
@@ -150,7 +148,7 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
 			else
 				Im = (-vmp + P(Uvm)) * xmp / P(Ron_n) - P(Ilk);
 
-			imp = P(Idc) + P(Iamp) * sin((numb)2.0 * (numb)3.141592 * P(Ifreq) * (tmp - P(Idel)));
+			imp = P(Idc) + P(Iamp) * sin((numb)2.0 * (numb)3.141592653589793 * P(Ifreq) * (tmp - P(Idel)));
 
 			numb kv2 = (imp + Im - Id) / P(C);
 			numb kx2 = ((numb)1.0 / P(tau_s)) * ((numb)1.0 / ((numb)1.0 + exp(-(numb)1.0 / (P(Vs) * P(Vs)) * ((-vmp + P(Uvm)) - P(Vth_p)) * ((-vmp + P(Uvm)) - P(Vth_n))))) * (((numb)1.0 - (numb)1.0 / (exp((P(A) * xmp + P(Ds))))) * ((numb)1.0 - xmp) + xmp * ((numb)1.0 - (numb)1.0 / (exp(P(A) * ((numb)1.0 - xmp))))) - ((numb)1.0 / P(tau_r)) * ((numb)1.0 - (numb)1.0 / ((numb)1.0 + exp(-(numb)1.0 / (P(Vr) * P(Vr)) * ((-vmp + P(Uvm)) - P(Vh_n)) * ((-vmp + P(Uvm)) - P(Vh_p))))) * (((numb)1.0 - (numb)1.0 / (exp((P(A) * xmp)))) * ((numb)1.0 - xmp) + xmp * ((numb)1.0 - (numb)1.0 / (exp(P(A) * ((numb)1.0 - xmp) + P(Dr)))));
@@ -167,7 +165,7 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
 			else
 				Im = (-vmp + P(Uvm)) * xmp / P(Ron_n) - P(Ilk);
 
-			imp = P(Idc) + P(Iamp) * sin((numb)2.0 * (numb)3.141592 * P(Ifreq) * (tmp - P(Idel)));
+			imp = P(Idc) + P(Iamp) * sin((numb)2.0 * (numb)3.141592653589793 * P(Ifreq) * (tmp - P(Idel)));
 
 			numb kv3 = (imp + Im - Id) / P(C);
 			numb kx3 = ((numb)1.0 / P(tau_s)) * ((numb)1.0 / ((numb)1.0 + exp(-(numb)1.0 / (P(Vs) * P(Vs)) * ((-vmp + P(Uvm)) - P(Vth_p)) * ((-vmp + P(Uvm)) - P(Vth_n))))) * (((numb)1.0 - (numb)1.0 / (exp((P(A) * xmp + P(Ds))))) * ((numb)1.0 - xmp) + xmp * ((numb)1.0 - (numb)1.0 / (exp(P(A) * ((numb)1.0 - xmp))))) - ((numb)1.0 / P(tau_r)) * ((numb)1.0 - (numb)1.0 / ((numb)1.0 + exp(-(numb)1.0 / (P(Vr) * P(Vr)) * ((-vmp + P(Uvm)) - P(Vh_n)) * ((-vmp + P(Uvm)) - P(Vh_p))))) * (((numb)1.0 - (numb)1.0 / (exp((P(A) * xmp)))) * ((numb)1.0 - xmp) + xmp * ((numb)1.0 - (numb)1.0 / (exp(P(A) * ((numb)1.0 - xmp) + P(Dr)))));
@@ -184,7 +182,7 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
 			else
 				Im = (-vmp + P(Uvm)) * xmp / P(Ron_n) - P(Ilk);
 
-			Vnext(i) = P(Idc) + P(Iamp) * sin((numb)2.0 * (numb)3.141592 * P(Ifreq) * (tmp - P(Idel)));
+			Vnext(i) = P(Idc) + P(Iamp) * sin((numb)2.0 * (numb)3.141592653589793 * P(Ifreq) * (tmp - P(Idel)));
 
 			numb kv4 = (Vnext(i) + Im - Id) / P(C);
 			numb kx4 = ((numb)1.0 / P(tau_s)) * ((numb)1.0 / ((numb)1.0 + exp(-(numb)1.0 / (P(Vs) * P(Vs)) * ((-vmp + P(Uvm)) - P(Vth_p)) * ((-vmp + P(Uvm)) - P(Vth_n))))) * (((numb)1.0 - (numb)1.0 / (exp((P(A) * xmp + P(Ds))))) * ((numb)1.0 - xmp) + xmp * ((numb)1.0 - (numb)1.0 / (exp(P(A) * ((numb)1.0 - xmp))))) - ((numb)1.0 / P(tau_r)) * ((numb)1.0 - (numb)1.0 / ((numb)1.0 + exp(-(numb)1.0 / (P(Vr) * P(Vr)) * ((-vmp + P(Uvm)) - P(Vh_n)) * ((-vmp + P(Uvm)) - P(Vh_p))))) * (((numb)1.0 - (numb)1.0 / (exp((P(A) * xmp)))) * ((numb)1.0 - xmp) + xmp * ((numb)1.0 - (numb)1.0 / (exp(P(A) * ((numb)1.0 - xmp) + P(Dr)))));
@@ -205,7 +203,7 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
 			else
 				Im = (-V(v) + P(Uvm)) * V(x) / P(Ron_n) - P(Ilk);
 
-			numb imp = P(Idc) + P(Iamp) * (((numb)4.0 * P(Ifreq) * (V(t) - P(Idel)) - (numb)2.0 * floor((((numb)4.0 * P(Ifreq) * (V(t) - P(Idel)) + (numb)1.0) / (numb)2.0))) * pow((numb)-1.0, floor((((numb)4.0 * P(Ifreq) * (V(t) - P(Idel)) + (numb)1.0) / (numb)2.0))));
+			numb imp = P(Idc) + P(Iamp) * (((numb)4.0 * P(Ifreq) * (V(t) - P(Idel)) - (numb)2.0 * floor(((numb)4.0 * P(Ifreq) * (V(t) - P(Idel)) + (numb)1.0) / (numb)2.0)) * ((int)floor(((numb)4.0 * P(Ifreq) * (V(t) - P(Idel)) + (numb)1.0) / (numb)2.0) % 2 == 0 ? (numb)1.0 : (numb)-1.0));
 
 			numb kv1 = (imp + Im - Id) / P(C);
 			numb kx1 = ((numb)1.0 / P(tau_s)) * ((numb)1.0 / ((numb)1.0 + exp(-(numb)1.0 / (P(Vs) * P(Vs)) * ((-V(v) + P(Uvm)) - P(Vth_p)) * ((-V(v) + P(Uvm)) - P(Vth_n))))) * (((numb)1.0 - (numb)1.0 / (exp((P(A) * V(x) + P(Ds))))) * ((numb)1.0 - V(x)) + V(x) * ((numb)1.0 - (numb)1.0 / (exp(P(A) * ((numb)1.0 - V(x)))))) - ((numb)1.0 / P(tau_r)) * ((numb)1.0 - (numb)1.0 / ((numb)1.0 + exp(-(numb)1.0 / (P(Vr) * P(Vr)) * ((-V(v) + P(Uvm)) - P(Vh_n)) * ((-V(v) + P(Uvm)) - P(Vh_p))))) * (((numb)1.0 - (numb)1.0 / (exp((P(A) * V(x))))) * ((numb)1.0 - V(x)) + V(x) * ((numb)1.0 - (numb)1.0 / (exp(P(A) * ((numb)1.0 - V(x)) + P(Dr)))));
@@ -222,7 +220,7 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
 			else
 				Im = (-vmp + P(Uvm)) * xmp / P(Ron_n) - P(Ilk);
 
-			imp = P(Idc) + P(Iamp) * (((numb)4.0 * P(Ifreq) * (tmp - P(Idel)) - (numb)2.0 * floor((((numb)4.0 * P(Ifreq) * (tmp - P(Idel)) + (numb)1.0) / (numb)2.0))) * pow((numb)-1.0, floor((((numb)4.0 * P(Ifreq) * (tmp - P(Idel)) + (numb)1.0) / (numb)2.0))));
+			imp = P(Idc) + P(Iamp) * (((numb)4.0 * P(Ifreq) * (tmp - P(Idel)) - (numb)2.0 * floor(((numb)4.0 * P(Ifreq) * (tmp - P(Idel)) + (numb)1.0) / (numb)2.0)) * ((int)floor(((numb)4.0 * P(Ifreq) * (tmp - P(Idel)) + (numb)1.0) / (numb)2.0) % 2 == 0 ? (numb)1.0 : (numb)-1.0));
 
 			numb kv2 = (imp + Im - Id) / P(C);
 			numb kx2 = ((numb)1.0 / P(tau_s)) * ((numb)1.0 / ((numb)1.0 + exp(-(numb)1.0 / (P(Vs) * P(Vs)) * ((-vmp + P(Uvm)) - P(Vth_p)) * ((-vmp + P(Uvm)) - P(Vth_n))))) * (((numb)1.0 - (numb)1.0 / (exp((P(A) * xmp + P(Ds))))) * ((numb)1.0 - xmp) + xmp * ((numb)1.0 - (numb)1.0 / (exp(P(A) * ((numb)1.0 - xmp))))) - ((numb)1.0 / P(tau_r)) * ((numb)1.0 - (numb)1.0 / ((numb)1.0 + exp(-(numb)1.0 / (P(Vr) * P(Vr)) * ((-vmp + P(Uvm)) - P(Vh_n)) * ((-vmp + P(Uvm)) - P(Vh_p))))) * (((numb)1.0 - (numb)1.0 / (exp((P(A) * xmp)))) * ((numb)1.0 - xmp) + xmp * ((numb)1.0 - (numb)1.0 / (exp(P(A) * ((numb)1.0 - xmp) + P(Dr)))));
@@ -239,7 +237,7 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
 			else
 				Im = (-vmp + P(Uvm)) * xmp / P(Ron_n) - P(Ilk);
 
-			imp = P(Idc) + P(Iamp) * (((numb)4.0 * P(Ifreq) * (tmp - P(Idel)) - (numb)2.0 * floor((((numb)4.0 * P(Ifreq) * (tmp - P(Idel)) + (numb)1.0) / (numb)2.0))) * pow((numb)-1.0, floor((((numb)4.0 * P(Ifreq) * (tmp - P(Idel)) + (numb)1.0) / (numb)2.0))));
+			imp = P(Idc) + P(Iamp) * (((numb)4.0 * P(Ifreq) * (tmp - P(Idel)) - (numb)2.0 * floor(((numb)4.0 * P(Ifreq) * (tmp - P(Idel)) + (numb)1.0) / (numb)2.0)) * ((int)floor(((numb)4.0 * P(Ifreq) * (tmp - P(Idel)) + (numb)1.0) / (numb)2.0) % 2 == 0 ? (numb)1.0 : (numb)-1.0));
 
 			numb kv3 = (imp + Im - Id) / P(C);
 			numb kx3 = ((numb)1.0 / P(tau_s)) * ((numb)1.0 / ((numb)1.0 + exp(-(numb)1.0 / (P(Vs) * P(Vs)) * ((-vmp + P(Uvm)) - P(Vth_p)) * ((-vmp + P(Uvm)) - P(Vth_n))))) * (((numb)1.0 - (numb)1.0 / (exp((P(A) * xmp + P(Ds))))) * ((numb)1.0 - xmp) + xmp * ((numb)1.0 - (numb)1.0 / (exp(P(A) * ((numb)1.0 - xmp))))) - ((numb)1.0 / P(tau_r)) * ((numb)1.0 - (numb)1.0 / ((numb)1.0 + exp(-(numb)1.0 / (P(Vr) * P(Vr)) * ((-vmp + P(Uvm)) - P(Vh_n)) * ((-vmp + P(Uvm)) - P(Vh_p))))) * (((numb)1.0 - (numb)1.0 / (exp((P(A) * xmp)))) * ((numb)1.0 - xmp) + xmp * ((numb)1.0 - (numb)1.0 / (exp(P(A) * ((numb)1.0 - xmp) + P(Dr)))));
@@ -256,7 +254,7 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
 			else
 				Im = (-vmp + P(Uvm)) * xmp / P(Ron_n) - P(Ilk);
 
-			Vnext(i) = P(Idc) + P(Iamp) * (((numb)4.0 * P(Ifreq) * (tmp - P(Idel)) - (numb)2.0 * floor((((numb)4.0 * P(Ifreq) * (tmp - P(Idel)) + (numb)1.0) / (numb)2.0))) * pow((numb)-1.0, floor((((numb)4.0 * P(Ifreq) * (tmp - P(Idel)) + (numb)1.0) / (numb)2.0))));
+			Vnext(i) = P(Idc) + P(Iamp) * (((numb)4.0 * P(Ifreq) * (tmp - P(Idel)) - (numb)2.0 * floor(((numb)4.0 * P(Ifreq) * (tmp - P(Idel)) + (numb)1.0) / (numb)2.0)) * ((int)floor(((numb)4.0 * P(Ifreq) * (tmp - P(Idel)) + (numb)1.0) / (numb)2.0) % 2 == 0 ? (numb)1.0 : (numb)-1.0));
 
 			numb kv4 = (Vnext(i) + Im - Id) / P(C);
 			numb kx4 = ((numb)1.0 / P(tau_s)) * ((numb)1.0 / ((numb)1.0 + exp(-(numb)1.0 / (P(Vs) * P(Vs)) * ((-vmp + P(Uvm)) - P(Vth_p)) * ((-vmp + P(Uvm)) - P(Vth_n))))) * (((numb)1.0 - (numb)1.0 / (exp((P(A) * xmp + P(Ds))))) * ((numb)1.0 - xmp) + xmp * ((numb)1.0 - (numb)1.0 / (exp(P(A) * ((numb)1.0 - xmp))))) - ((numb)1.0 / P(tau_r)) * ((numb)1.0 - (numb)1.0 / ((numb)1.0 + exp(-(numb)1.0 / (P(Vr) * P(Vr)) * ((-vmp + P(Uvm)) - P(Vh_n)) * ((-vmp + P(Uvm)) - P(Vh_p))))) * (((numb)1.0 - (numb)1.0 / (exp((P(A) * xmp)))) * ((numb)1.0 - xmp) + xmp * ((numb)1.0 - (numb)1.0 / (exp(P(A) * ((numb)1.0 - xmp) + P(Dr)))));

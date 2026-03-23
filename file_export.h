@@ -21,3 +21,13 @@ std::string exportTimeSeriesCSV(const PlotWindow* window);
 std::string exportDecayCSV(const PlotWindow* window);
 
 std::string exportOrbitCSV(const PlotWindow* window);
+
+std::string exportIndicesSeriesCSV(const PlotWindow* window);
+
+std::string exportPhase2DCSV(const PlotWindow* window);
+
+std::string exportPhase3DCSV(const PlotWindow* window);
+
+std::string exportMCHeatmapCSV(const PlotWindow* window);
+
+std::string exportMetricCSV(const PlotWindow* window);

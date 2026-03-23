@@ -8,7 +8,6 @@ __host__ __device__ void LLE(Computation* data, uint64_t variation, void(* finit
     int stepParamIndex = CUDA_kernel.PARAM_COUNT - 1;
     LOCAL_BUFFERS;
     LOAD_ATTRIBUTES(true);
-    if (data->isHires) TRANSIENT_SKIP_NEW(finiteDifferenceScheme);
 
     numb LLE_array[MAX_ATTRIBUTES]{ 0 }; // The deflected trajectory
     numb LLE_array_next[MAX_ATTRIBUTES]; // Buffer for the next step of the deflected trajectory

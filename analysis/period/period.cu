@@ -8,7 +8,6 @@ __host__ __device__ void Period(Computation* data, uint64_t variation, void(*fin
 
     LOCAL_BUFFERS;
     LOAD_ATTRIBUTES(true);
-    if (data->isHires) TRANSIENT_SKIP_NEW(finiteDifferenceScheme);
 
     uint64_t stepStart = variationStart;
     long long s = -1;
@@ -276,8 +275,8 @@ __host__ __device__ void Period(Computation* data, uint64_t variation, void(*fin
 
             int cluster = 0;
             int NumNeibor = 0;
-            int helpfulArraySize = 2 * MAX_PEAKS;
-            int helpfulArray[2 * MAX_PEAKS];
+            const int helpfulArraySize = 2 * MAX_PEAKS;
+            int helpfulArray[helpfulArraySize]{ 0 };
             for (int i = 0; i < helpfulArraySize; ++i) {
                 helpfulArray[i] = 0;
             }
@@ -291,7 +290,7 @@ __host__ __device__ void Period(Computation* data, uint64_t variation, void(*fin
                     NumNeibor = NumNeibor - 1;
                     for (int k = 0; k < peakCount - 1; k++) {
                         if (i != k && helpfulArray[k] == 0) {
-                            if (sqrt(pow(peakAmplitudes[i] - peakAmplitudes[k], 2) + pow(peakIntervals[i] - peakIntervals[k], 2)) <= epsDBSCAN) {
+                            if (sqrt((peakAmplitudes[i] - peakAmplitudes[k]) * (peakAmplitudes[i] - peakAmplitudes[k]) + (peakIntervals[i] - peakIntervals[k]) * (peakIntervals[i] - peakIntervals[k])) <= epsDBSCAN) {
                                 helpfulArray[k] = cluster;
                                 helpfulArray[peakCount + k] = k;
                                 ++NumNeibor;
@@ -306,7 +305,7 @@ __host__ __device__ void Period(Computation* data, uint64_t variation, void(*fin
                     helpfulArray[i] = cluster;
                     for (int k = 0; k < peakCount - 1; k++) {
                         if (i != k && helpfulArray[peakCount + k] == 0) {
-                            if (sqrt(pow(peakAmplitudes[i] - peakAmplitudes[k], 2) + pow(peakIntervals[i] - peakIntervals[k], 2)) <= epsDBSCAN) {
+                            if (sqrt((peakAmplitudes[i] - peakAmplitudes[k]) * (peakAmplitudes[i] - peakAmplitudes[k]) + (peakIntervals[i] - peakIntervals[k]) * (peakIntervals[i] - peakIntervals[k])) <= epsDBSCAN) {
                                 helpfulArray[k] = cluster;
                                 helpfulArray[peakCount + k] = k;
                                 ++NumNeibor;

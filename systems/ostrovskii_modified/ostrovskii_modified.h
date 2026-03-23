@@ -1,7 +1,7 @@
 #pragma once
 #include <kernels_common.h>
 
-#define name ostrovskii
+#define name ostrovskii_modified
 
 __global__ void gpu_wrapper_(name)(Computation* data, uint64_t variation);
 

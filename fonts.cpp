@@ -14,7 +14,7 @@ bool fontNotDefault = false;
 
 ImFont* GetFont(int familyIndex, int targetSize, bool bold, bool italic)
 {
-    FontFamily& family = loadedFontFamilies[familyIndex];
+    FontFamily& family = loadedFontFamilies[familyIndex < loadedFontFamilies.size() ? familyIndex : 0];
     int bestSize = fontSizes[0];
     int minDiff = 1000;
     for (const auto& pair : family.sizeVariants)
@@ -124,6 +124,7 @@ void FontLoading(ImGuiIO& io)
 {
     LoadFont("Ubuntu Mono", "fonts/UbuntuMono", ".ttf", io);
     LoadFont("Times New Roman", "fonts/TimesNewRoman", ".ttf", io);
+    LoadFont("IBM Plex Sans", "fonts/IBMPlexSans", ".ttf", io);
 
     int defaultSize = 24;
     if (!loadedFontFamilies.empty())
