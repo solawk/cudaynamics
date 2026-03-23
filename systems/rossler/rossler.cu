@@ -30,7 +30,6 @@ __host__ __device__ void kernelProgram_(name)(Computation* data, uint64_t variat
         for (int s = 0; s < steps && !data->isHires; s++)
         {
             finiteDifferenceScheme_(name)(FDS_ARGUMENTS);
-            TRANSFER_VARIABLES;
             stepStart = variationStart + s * CUDA_kernel.VAR_COUNT;
             RECORD_STEP;
         }
@@ -50,7 +49,7 @@ __host__ __device__ void kernelProgram_(name)(Computation* data, uint64_t variat
             {
                 sfloat -= floor(sfloat);
                 stepStart = variationStart + scounter * CUDA_kernel.VAR_COUNT;
-                RECORD_STEP;
+                RECORD_STEP_WO_NEXT;
                 scounter++;
             }
         }
