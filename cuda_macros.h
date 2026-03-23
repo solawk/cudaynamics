@@ -79,9 +79,10 @@
 // Skip transient steps using the provided finite difference scheme, akin to computing but without recording the trajectory
 #define DECIMATION_INIT if (CUDA_kernel.usingTime) { CUDA_kernel.transientSteps = CUDA_kernel.transientTime / H; CUDA_kernel.steps = CUDA_kernel.time / H; }
 
-#define TRANSIENT_SKIP_NEW(FDS) if (CUDA_kernel.transientSteps > 0 && data->isFirst)  \
+#define TRANSIENT_SKIP_NEW(FDS) int transientSteps = !CUDA_kernel.usingTime ? CUDA_kernel.transientSteps : CUDA_kernel.transientTime / H; \
+                            if (transientSteps > 0 && data->isFirst)  \
                             {  \
-                                for (int ts = 0; ts < CUDA_kernel.transientSteps; ts++)  \
+                                for (int ts = 0; ts < transientSteps; ts++)  \
                                 {  \
                                     FDS(FDS_ARGUMENTS);  \
                                     for (int v = 0; v < CUDA_kernel.VAR_COUNT; v++) variables[v] = variablesNext[v];  \

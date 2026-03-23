@@ -20,25 +20,39 @@ __host__ __device__ void kernelProgram_(name)(Computation* data, uint64_t variat
     uint64_t stepStart, variationStart = variation * CUDA_marshal.variationSize;         // Start index to store the modelling data for the variation
     LOCAL_BUFFERS;
     LOAD_ATTRIBUTES(false);
-    DECIMATION_INIT;
-    numb sfloat = (numb)0.0;
-    numb sfloatStep = (numb)CUDA_kernel.targetSteps / CUDA_kernel.steps;
-    int scounter = 0;
-
     TRANSIENT_SKIP_NEW(finiteDifferenceScheme_(name));
 
-    for (int s = 0; s < CUDA_kernel.steps && !data->isHires; s++)
+    int steps = !CUDA_kernel.usingTime ? CUDA_kernel.steps : CUDA_kernel.time / H;
+    bool noDecimation = CUDA_kernel.targetSteps == steps;
+   
+    if (noDecimation)
     {
-        finiteDifferenceScheme_(name)(FDS_ARGUMENTS);
-        TRANSFER_VARIABLES;
-
-        sfloat += sfloatStep;
-        if (sfloat >= (numb)1.0 || s == CUDA_kernel.steps - 1)
+        for (int s = 0; s < steps && !data->isHires; s++)
         {
-            sfloat -= floor(sfloat);
-            stepStart = variationStart + scounter * CUDA_kernel.VAR_COUNT;
+            finiteDifferenceScheme_(name)(FDS_ARGUMENTS);
+            TRANSFER_VARIABLES;
+            stepStart = variationStart + s * CUDA_kernel.VAR_COUNT;
             RECORD_STEP;
-            scounter++;
+        }
+    }
+    else
+    {
+        numb sfloat = (numb)0.0;
+        numb sfloatStep = (numb)CUDA_kernel.targetSteps / steps;
+        int scounter = 0;
+
+        for (int s = 0; s < steps && !data->isHires; s++)
+        {
+            finiteDifferenceScheme_(name)(FDS_ARGUMENTS);
+            TRANSFER_VARIABLES;
+            sfloat += sfloatStep;
+            if (sfloat >= (numb)1.0 || s == steps - 1)
+            {
+                sfloat -= floor(sfloat);
+                stepStart = variationStart + scounter * CUDA_kernel.VAR_COUNT;
+                RECORD_STEP;
+                scounter++;
+            }
         }
     }
 
