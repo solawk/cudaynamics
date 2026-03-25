@@ -248,6 +248,7 @@
     <ClInclude Include="marshal_struct.h" />
     <ClInclude Include="numb.h" />
     <ClInclude Include="objects.h" />
+    <ClInclude Include="perthread_struct.h" />
     <ClInclude Include="plots\decay.h" />
     <ClInclude Include="plots\orbit.h" />
     <ClInclude Include="plots\trs.h" />

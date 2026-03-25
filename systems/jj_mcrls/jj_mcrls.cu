@@ -24,12 +24,10 @@ __host__ __device__ void kernelProgram_(name)(Computation* data, uint64_t variat
 #if __CUDA_ARCH__
     curandState state;
     curand_init(123ULL, 0L, 0L, &state);
-    data->randomGPUstate = &state;
+    pt.randomGPUstate = &state;
 #else
-    std::mt19937_64 gen(123U);
-    std::normal_distribution<numb> distrib((numb)0.0, 0.01);
-    data->randomCPUgen = &gen;
-    data->randomCPUdistrib = &distrib;
+    pt.randomCPUgen = data->randomCPUgen[omp_get_thread_num()];
+    pt.randomCPUdistrib = data->randomCPUdistrib[omp_get_thread_num()];
 #endif
     TRANSIENT_SKIP_NEW(finiteDifferenceScheme_(name));
 
@@ -45,7 +43,7 @@ __host__ __device__ void kernelProgram_(name)(Computation* data, uint64_t variat
     AnalysisLobby(data, &finiteDifferenceScheme_(name), variation);
 }
 
-__host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* currentV, numb* nextV, numb* parameters, Computation* data)
+__host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* currentV, numb* nextV, numb* parameters, PerThread* pt)
 {
     ifSIGNAL(P(signal), square)
     {
@@ -62,9 +60,9 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
         ifMETHOD(P(method), EulerMaruyama)
         {
 #if __CUDA_ARCH__
-            numb randomNumber = (numb)(curand_normal_double(data->randomGPUstate) * 0.01);
+            numb randomNumber = (numb)(curand_normal_double(pt->randomGPUstate) * 0.01);
 #else
-            numb randomNumber = (*data->randomCPUdistrib)(*data->randomCPUgen);
+            numb randomNumber = (*pt->randomCPUdistrib)(*pt->randomCPUgen);
 #endif
 
             Vnext(i) = P(Idc) + (fmod((V(t) - P(Idel)) > (numb)0.0 ? (V(t) - P(Idel)) : (P(Idf) / P(Ifreq) + P(Idel) - V(t)), (numb)1.0 / P(Ifreq)) < P(Idf) / P(Ifreq) ? P(Iamp) : (numb)0.0) + (randomNumber / sqrt(H));

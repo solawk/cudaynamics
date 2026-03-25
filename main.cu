@@ -210,6 +210,18 @@ int compute(Computation* data)
             cpuNotHiresTP[0] = std::chrono::steady_clock::now();
 #endif
 
+            std::mt19937_64 randomCPUgens[64];
+            std::normal_distribution<numb> randomCPUdistribs[64];
+
+            for (int i = 0; i < 64; i++)
+            {
+                randomCPUgens[i] = std::mt19937_64(123U);
+                randomCPUdistribs[i] = std::normal_distribution<numb>((numb)0.0, 0.01);
+
+                data->randomCPUgen[i] = &(randomCPUgens[i]);
+                data->randomCPUdistrib[i] = &(randomCPUdistribs[i]);
+            }
+
 #pragma omp parallel for
             for (int v = 0; v < variations; v++)
             {
@@ -249,6 +261,23 @@ int compute(Computation* data)
 
                 if (!data->isGPU)
                 {
+                    std::vector<std::mt19937_64> randomCPUgens;
+                    std::vector<std::normal_distribution<numb>> randomCPUdistribs;
+
+#pragma omp parallel
+                    {
+                        std::mt19937_64 gen(123U);
+                        std::normal_distribution<numb> distrib((numb)0.0, 0.01);
+                        randomCPUgens.push_back(gen);
+                        randomCPUdistribs.push_back(distrib);
+                    }
+
+                    for (int i = 0; i < randomCPUgens.size() && i < 64; i++)
+                    {
+                        data->randomCPUgen[i] = &(randomCPUgens[i]);
+                        data->randomCPUdistrib[i] = &(randomCPUdistribs[i]);
+                    }
+
 #pragma omp parallel for
                     for (int v = 0; v < data->variationsInCurrentExecute; v++)
                     {

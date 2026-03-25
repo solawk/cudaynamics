@@ -19,8 +19,8 @@ public:
 	int threadsPerBlock;
 
 	unsigned int randomSeed;
-	std::mt19937_64* randomCPUgen;
-	std::normal_distribution<numb>* randomCPUdistrib;
+	std::mt19937_64* randomCPUgen[64];
+	std::normal_distribution<numb>* randomCPUdistrib[64];
 	curandState* randomGPUstate;
 
 	bool isFirst;

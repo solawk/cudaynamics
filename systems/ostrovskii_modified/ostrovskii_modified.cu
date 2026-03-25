@@ -210,7 +210,7 @@ template <typename TSignal> __host__ __device__ __forceinline__ void rk4_scheme(
     Vnext(t) = t0 + h;
 }
 
-__host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* currentV, numb* nextV, numb* parameters, Computation* data)
+__host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* currentV, numb* nextV, numb* parameters, PerThread* pt)
 {
     ifMETHOD(P(method), ExplicitRungeKutta4)
     {

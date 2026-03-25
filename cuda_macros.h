@@ -17,7 +17,8 @@
 
 #define LOCAL_BUFFERS   numb variables[MAX_ATTRIBUTES]{0}; \
                         numb variablesNext[MAX_ATTRIBUTES]{0}; \
-                        numb parameters[MAX_ATTRIBUTES]{0};
+                        numb parameters[MAX_ATTRIBUTES]{0}; \
+                        PerThread pt;
 
 #define LOAD_ATTRIBUTES(isAnalysis)     for (int i = 0; i < CUDA_kernel.VAR_COUNT; i++) variables[i] = CUDA_marshal.variableInits[variation * CUDA_kernel.VAR_COUNT + i]; \
                                         for (int i = 0; i < CUDA_kernel.PARAM_COUNT; i++) parameters[i] = CUDA_marshal.parameterVariations[variation * CUDA_kernel.PARAM_COUNT + i]; \
@@ -73,7 +74,7 @@
 
 // Computation macros
 
-#define FDS_ARGUMENTS   &(variables[0]), &(variablesNext[0]), &(parameters[0]), data
+#define FDS_ARGUMENTS   &(variables[0]), &(variablesNext[0]), &(parameters[0]), &pt
 
 // Skip transient steps using the provided finite difference scheme, akin to computing but without recording the trajectory
 #define TRANSIENT_SKIP_NEW(FDS)      if (CUDA_kernel.transientSteps > 0 && data->isFirst)  \
