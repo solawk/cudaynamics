@@ -161,10 +161,6 @@ public:
 	Attribute parameters[MAX_ATTRIBUTES];
 	MapData mapDatas[MAX_MAPS]; // TODO: remove and remove from systems
 
-	int VAR_COUNT;
-	int PARAM_COUNT;
-	int MAP_COUNT;
-
 	AnalysesSettings analyses;
 
 	//numb mapSettings[MAX_MAP_SETTINGS];

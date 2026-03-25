@@ -785,13 +785,11 @@ int imgui_main(int, char**)
 				{
 					playingParticles = !playingParticles;
 					kernelNew.CopyFrom(&KERNEL);
-					
 				}
 
 				if (!playingParticles)
 				{
 					KERNEL.CopyFrom(&kernelNew);
-					
 				}
 			}
 			if (anyChanged) POP_FRAME(4);
@@ -840,7 +838,7 @@ int imgui_main(int, char**)
 			for (int i = 0; i < KERNEL.VAR_COUNT + KERNEL.PARAM_COUNT; i++)
 			{
 				bool isVar = i < KERNEL.VAR_COUNT;
-				Attribute* attr = isVar ? &(rangingCmp->marshal.kernel.variables[i]) : &(rangingCmp->marshal.kernel.parameters[i - rangingKernel->VAR_COUNT]);
+				Attribute* attr = isVar ? &(rangingKernel->variables[i]) : &(rangingKernel->parameters[i - rangingKernel->VAR_COUNT]);
 				Attribute* kernelNewAttr = isVar ? &(rangingKernelNew->variables[i]) : &(rangingKernelNew->parameters[i - rangingKernel->VAR_COUNT]);
 				bool isEnum = attr->rangingType == RT_Enum;
 				if (attr->TrueStepCount() == 1) continue;
