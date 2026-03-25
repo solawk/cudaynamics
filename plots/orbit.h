@@ -124,7 +124,7 @@ struct OrbitProperties
 			}
 
 			parameters[xIndex] = KERNEL.parameters[xIndex].min;
-			for (int i = 0; i < KERNEL.transientSteps; i++) { kernelFDS[selectedKernel](startingVariables, newVariables, parameters); startingVariables = newVariables; }
+			for (int i = 0; i < KERNEL.transientSteps; i++) { kernelFDS[selectedKernel](startingVariables, newVariables, parameters, nullptr); startingVariables = newVariables; }
 			trajectory.push_back(startingVariables[analyzedVariable]);
 
 			int BifDotAmount = 0;
@@ -132,7 +132,7 @@ struct OrbitProperties
 			for (int j = 0; j < axis->stepCount; j++) {
 				parameters[xIndex] = KERNEL.parameters[xIndex].values[j];
 				for (int trajstep = 0; trajstep < variationSize / varCount; trajstep++) {
-					kernelFDS[selectedKernel](startingVariables, newVariables, parameters);
+					kernelFDS[selectedKernel](startingVariables, newVariables, parameters, nullptr);
 					trajectory.push_back(newVariables[analyzedVariable]);
 					startingVariables = newVariables;
 				}
@@ -171,14 +171,14 @@ struct OrbitProperties
 			}
 
 			parameters[xIndex] = KERNEL.parameters[xIndex].max;
-			for (int i = 0; i < KERNEL.transientSteps; i++) { kernelFDS[selectedKernel](startingVariables, newVariables, parameters); startingVariables = newVariables; }
+			for (int i = 0; i < KERNEL.transientSteps; i++) { kernelFDS[selectedKernel](startingVariables, newVariables, parameters, nullptr); startingVariables = newVariables; }
 			trajectory.push_back(startingVariables[xIndex]);
 
 			BifDotAmount = 0;
 			for (int j = axis->stepCount - 1; j >= 0; j--) {
 				parameters[xIndex] = KERNEL.parameters[xIndex].values[j];
 				for (int trajstep = 0; trajstep < variationSize / varCount; trajstep++) {
-					kernelFDS[selectedKernel](startingVariables, newVariables, parameters);
+					kernelFDS[selectedKernel](startingVariables, newVariables, parameters, nullptr);
 					trajectory.push_back(newVariables[analyzedVariable]);
 					startingVariables = newVariables;
 				}

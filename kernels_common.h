@@ -1,5 +1,7 @@
 #pragma once
 #include "cuda_runtime.h"
+#include "curand_kernel.h"
+#include <random>
 #include "device_launch_parameters.h"
 #include <stdio.h>
 #include <fstream>

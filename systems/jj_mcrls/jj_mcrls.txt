@@ -39,7 +39,7 @@ constraint method VariableSymmetryCD
 // Defining enumerated parameters (useful for methods):
 // enum <name> <ranging type> <minimum value> <maximum value> <step> <step count> <normal mean> <normal deviation> <enum names, no spaces>
 enum signal 1square 0sine 0triangle
-enum method 0ExplicitEuler 0SemiExplicitEuler 1ExplicitMidpoint 0ExplicitRungeKutta4 0VariableSymmetryCD
+enum method 0ExplicitEuler 1EulerMaruyama 0SemiExplicitEuler 0ExplicitMidpoint 0ExplicitRungeKutta4 0VariableSymmetryCD
 // Defining maps:
 analysis Minimum-maximum settings 1 2
 analysis Largest Lyapunov exponent settings 0.01 1000 2 1 2 3 -1

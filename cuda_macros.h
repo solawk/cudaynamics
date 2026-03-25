@@ -73,7 +73,7 @@
 
 // Computation macros
 
-#define FDS_ARGUMENTS   &(variables[0]), &(variablesNext[0]), &(parameters[0])
+#define FDS_ARGUMENTS   &(variables[0]), &(variablesNext[0]), &(parameters[0]), data
 
 // Skip transient steps using the provided finite difference scheme, akin to computing but without recording the trajectory
 #define TRANSIENT_SKIP_NEW(FDS)      if (CUDA_kernel.transientSteps > 0 && data->isFirst)  \

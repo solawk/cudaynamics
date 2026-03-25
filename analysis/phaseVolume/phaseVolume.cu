@@ -1,6 +1,6 @@
 #include "phaseVolume.h"
 
-__host__ __device__ void PhaseVolume(Computation* data, uint64_t variation, void(*finiteDifferenceScheme)(numb*, numb*, numb*)) {
+__host__ __device__ void PhaseVolume(Computation* data, uint64_t variation, void(*finiteDifferenceScheme)(numb*, numb*, numb*, Computation*)) {
     uint64_t stepStart, variationStart = variation * CUDA_marshal.variationSize;
     LOCAL_BUFFERS;
     LOAD_ATTRIBUTES(true);
