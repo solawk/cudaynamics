@@ -216,7 +216,7 @@ int compute(Computation* data)
             for (int i = 0; i < 64; i++)
             {
                 randomCPUgens[i] = std::mt19937_64(123U);
-                randomCPUdistribs[i] = std::normal_distribution<numb>((numb)0.0, 0.01);
+                randomCPUdistribs[i] = std::normal_distribution<numb>(0.0, 1.0);
 
                 data->randomCPUgen[i] = &(randomCPUgens[i]);
                 data->randomCPUdistrib[i] = &(randomCPUdistribs[i]);

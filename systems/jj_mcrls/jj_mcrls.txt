@@ -34,6 +34,8 @@ param Ifreq Fixed 0.01 0.5 0.001 100 0.0 0.0
 param Idel Fixed 0.0 0.5 0.01 50 0.0 0.0
 param Idf Fixed 0.0 1.0 0.1 100 0.0 0.0
 constraint signal square
+param gamma Fixed 0.01 1.0 0.1 100 0.0 0.0
+constraint method EulerMaruyama
 param symmetry Fixed 0.0 29.0 0.1 0 0.0 0.0
 constraint method VariableSymmetryCD
 // Defining enumerated parameters (useful for methods):

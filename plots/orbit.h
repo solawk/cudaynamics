@@ -106,7 +106,14 @@ struct OrbitProperties
 
 			lastAttributevalueindicesContinuations = attributeValueIndices;
 
+			PerThread pt;
+			std::mt19937_64 gen(123U);
+			std::normal_distribution<numb> distrib(0.0, 1.0);
+			pt.randomCPUgen = &gen;
+			pt.randomCPUdistrib = &distrib;
+
 			numb* startingVariables = new numb[varCount];
+			numb* afterTrstartingVariables = new numb[varCount];
 			numb* newVariables = new numb[varCount];
 			numb* parameters = new numb[paramCount];
 			continuationParamIndicesBack = new numb[MAX_PEAKS * axis->stepCount];
@@ -119,22 +126,33 @@ struct OrbitProperties
 			for (int i = 0; i < varCount; i++) {
 				startingVariables[i] = attributeValueIndices[i] == 0 ? KERNEL.variables[i].min : KERNEL.variables[i].values[attributeValueIndices[i]];
 			}
-			for (int i = 0; i < paramCount; i++) {
-				parameters[i] = attributeValueIndices[i + varCount] == 0 ? KERNEL.parameters[i].min : KERNEL.parameters[i].values[attributeValueIndices[i + varCount]];
+			for (int i = 0; i < paramCount; i++) 
+			{
+				if (KERNEL.parameters[i].rangingType != RT_Enum)
+				{
+					parameters[i] = attributeValueIndices[i + varCount] == 0 ? KERNEL.parameters[i].min : KERNEL.parameters[i].values[attributeValueIndices[i + varCount]];
+				}
+				else
+				{
+					parameters[i] = KERNEL.parameters[i].values[attributeValueIndices[i + varCount]];
+				}
 			}
 
 			parameters[xIndex] = KERNEL.parameters[xIndex].min;
-			for (int i = 0; i < KERNEL.transientSteps; i++) { kernelFDS[selectedKernel](startingVariables, newVariables, parameters, nullptr); startingVariables = newVariables; }
+			for (int i = 0; i < KERNEL.transientSteps; i++) { kernelFDS[selectedKernel](startingVariables, newVariables, parameters, &pt); for (int j = 0; j < varCount; j++) startingVariables[j] = newVariables[j]; }
+			for (int i = 0; i < varCount; i++) afterTrstartingVariables[i] = startingVariables[i];
 			trajectory.push_back(startingVariables[analyzedVariable]);
 
 			int BifDotAmount = 0;
 
 			for (int j = 0; j < axis->stepCount; j++) {
+				//for (int i = 0; i < varCount; i++) startingVariables[i] = afterTrstartingVariables[i];
+				//trajectory.push_back(startingVariables[analyzedVariable]);
 				parameters[xIndex] = KERNEL.parameters[xIndex].values[j];
 				for (int trajstep = 0; trajstep < variationSize / varCount; trajstep++) {
-					kernelFDS[selectedKernel](startingVariables, newVariables, parameters, nullptr);
+					kernelFDS[selectedKernel](startingVariables, newVariables, parameters, &pt);
 					trajectory.push_back(newVariables[analyzedVariable]);
-					startingVariables = newVariables;
+					for (int i = 0; i < varCount; i++) startingVariables[i] = newVariables[i];
 				}
 				int peakCount = 0;
 				bool firstpeakreached = false;
@@ -171,16 +189,19 @@ struct OrbitProperties
 			}
 
 			parameters[xIndex] = KERNEL.parameters[xIndex].max;
-			for (int i = 0; i < KERNEL.transientSteps; i++) { kernelFDS[selectedKernel](startingVariables, newVariables, parameters, nullptr); startingVariables = newVariables; }
-			trajectory.push_back(startingVariables[xIndex]);
+			for (int i = 0; i < KERNEL.transientSteps; i++) { kernelFDS[selectedKernel](startingVariables, newVariables, parameters, &pt); for (int j = 0; j < varCount; j++) startingVariables[j] = newVariables[j]; }
+			for (int i = 0; i < varCount; i++) afterTrstartingVariables[i] = startingVariables[i];
+			trajectory.push_back(startingVariables[analyzedVariable]);
 
 			BifDotAmount = 0;
 			for (int j = axis->stepCount - 1; j >= 0; j--) {
+				//for (int i = 0; i < varCount; i++) startingVariables[i] = afterTrstartingVariables[i];
+				//trajectory.push_back(startingVariables[analyzedVariable]);
 				parameters[xIndex] = KERNEL.parameters[xIndex].values[j];
 				for (int trajstep = 0; trajstep < variationSize / varCount; trajstep++) {
-					kernelFDS[selectedKernel](startingVariables, newVariables, parameters, nullptr);
+					kernelFDS[selectedKernel](startingVariables, newVariables, parameters, &pt);
 					trajectory.push_back(newVariables[analyzedVariable]);
-					startingVariables = newVariables;
+					for (int i = 0; i < varCount; i++) startingVariables[i] = newVariables[i];
 				}
 				int peakCount = 0;
 				bool firstpeakreached = false;
@@ -313,7 +334,7 @@ struct OrbitProperties
 
 			if (lastAttributeValueIndices.size() != 0)
 			{
-				for (int i = 0; i < varCount + paramCount - 2; i++) 
+				for (int i = 0; i < varCount + paramCount; i++) 
 				{
 					if (i != varCount + xIndex) 
 					{
