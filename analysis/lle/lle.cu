@@ -8,12 +8,9 @@ __host__ __device__ void LLE(Computation* data, uint64_t variation, void(* finit
     LOCAL_BUFFERS;
     LOAD_ATTRIBUTES(true);
 #if __CUDA_ARCH__
-    curandState state;
-    curand_init(123ULL, 0L, 0L, &state);
-    pt.randomGPUstate = &state;
+    LOAD_PT_CUDA
 #else
-    pt.randomCPUgen = data->randomCPUgen[omp_get_thread_num()];
-    pt.randomCPUdistrib = data->randomCPUdistrib[omp_get_thread_num()];
+    LOAD_PT_OMP
 #endif
 
     numb LLE_array[MAX_ATTRIBUTES]{ 0 }; // The deflected trajectory

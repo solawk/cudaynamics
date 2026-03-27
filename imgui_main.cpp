@@ -333,6 +333,7 @@ void prepareAndCompute(bool hires)
 	if (hires) computationHires.Clear();
 
 	computations[0].isGPU = computations[1].isGPU = !applicationSettings.CPU_mode_interactive;
+	computations[0].randomSeed = computations[1].randomSeed = computationHires.randomSeed = 123U;
 	computationHires.isGPU = !applicationSettings.CPU_mode_hires;
 	executedOnLaunch = true;
 	if (!hires) computeAfterShiftSelect = false;

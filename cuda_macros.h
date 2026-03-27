@@ -24,6 +24,13 @@
                                         for (int i = 0; i < CUDA_kernel.PARAM_COUNT; i++) parameters[i] = CUDA_marshal.parameterVariations[variation * CUDA_kernel.PARAM_COUNT + i]; \
                                         if (!isAnalysis && !data->isHires) for (int i = 0; i < CUDA_kernel.VAR_COUNT; i++) CUDA_marshal.trajectory[variationStart + i] = variables[i];
 
+#define LOAD_PT_OMP     pt.randomCPUgen = data->randomCPUgen[omp_get_thread_num()]; \
+                        pt.randomCPUdistrib = data->randomCPUdistrib[omp_get_thread_num()];
+
+#define LOAD_PT_CUDA    curandState state; \
+                        curand_init(data->randomSeed, 0L, 0L, &state); \
+                        pt.randomGPUstate = &state;
+
 // Map
 #define M(n)			CUDA_kernel.mapDatas[attributes::maps::n]
 

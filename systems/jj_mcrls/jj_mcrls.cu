@@ -22,15 +22,11 @@ __host__ __device__ void kernelProgram_(name)(Computation* data, uint64_t variat
     LOCAL_BUFFERS;
     LOAD_ATTRIBUTES(false);
 #if __CUDA_ARCH__
-    curandState state;
-    curand_init(123ULL, 0L, 0L, &state);
-    pt.randomGPUstate = &state;
+    LOAD_PT_CUDA
 #else
-    pt.randomCPUgen = data->randomCPUgen[omp_get_thread_num()];
-    pt.randomCPUdistrib = data->randomCPUdistrib[omp_get_thread_num()];
+    LOAD_PT_OMP
 #endif
     TRANSIENT_SKIP_NEW(finiteDifferenceScheme_(name));
-
 
     for (int s = 0; s < CUDA_kernel.steps && !data->isHires; s++)
     {
