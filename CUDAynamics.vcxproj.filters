@@ -295,6 +295,7 @@
     <ClInclude Include="gui\commonItemDialogs.h" />
     <ClInclude Include="gui\hwnd.h" />
     <ClInclude Include="gui\ui_strings.h" />
+    <ClInclude Include="perthread_struct.h" />
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="main.cu" />
@@ -396,6 +397,8 @@
     <CudaCompile Include="systems\ullah\ullah.cu">
       <Filter>systems</Filter>
     </CudaCompile>
+    <CudaCompile Include="systems\ostrovskii_modified\ostrovskii_modified.cu" />
+    <CudaCompile Include="systems\resonate_and_fire\resonate_and_fire.cu" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="CUDAynamics.rc" />

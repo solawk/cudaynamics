@@ -5,9 +5,9 @@
 namespace attributes
 {
     enum variables { theta, sin_theta, v, iL, i, t };
-    enum parameters { betaL, betaC, betaM, epsilon, delta, Idc, Iamp, Ifreq, Idel, Idf, symmetry, signal, method, COUNT };
+    enum parameters { betaL, betaC, betaM, epsilon, delta, Idc, Iamp, Ifreq, Idel, Idf, gamma, symmetry, signal, method, COUNT };
     enum waveforms { square, sine, triangle };
-    enum methods { ExplicitEuler, SemiExplicitEuler, ExplicitMidpoint, ExplicitRungeKutta4, VariableSymmetryCD };
+    enum methods { ExplicitEuler, EulerMaruyama, SemiExplicitEuler, ExplicitMidpoint, ExplicitRungeKutta4, VariableSymmetryCD };
 }
 
 __global__ void gpu_wrapper_(name)(Computation* data, uint64_t variation)
@@ -21,6 +21,11 @@ __host__ __device__ void kernelProgram_(name)(Computation* data, uint64_t variat
     uint64_t stepStart, variationStart = variation * CUDA_marshal.variationSize;         // Start index to store the modelling data for the variation
     LOCAL_BUFFERS;
     LOAD_ATTRIBUTES(false);
+#if __CUDA_ARCH__
+    LOAD_PT_CUDA
+#else
+    LOAD_PT_OMP
+#endif
     TRANSIENT_SKIP_NEW(finiteDifferenceScheme_(name));
 
     for (int s = 0; s < CUDA_kernel.steps && !data->isHires; s++)
@@ -34,13 +39,29 @@ __host__ __device__ void kernelProgram_(name)(Computation* data, uint64_t variat
     AnalysisLobby(data, &finiteDifferenceScheme_(name), variation);
 }
 
-__host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* currentV, numb* nextV, numb* parameters)
+__host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* currentV, numb* nextV, numb* parameters, PerThread* pt)
 {
     ifSIGNAL(P(signal), square)
     {
         ifMETHOD(P(method), ExplicitEuler)
         {
             Vnext(i) = P(Idc) + (fmod((V(t) - P(Idel)) > (numb)0.0 ? (V(t) - P(Idel)) : (P(Idf) / P(Ifreq) + P(Idel) - V(t)), (numb)1.0 / P(Ifreq)) < P(Idf) / P(Ifreq) ? P(Iamp) : (numb)0.0);
+            Vnext(t) = V(t) + H;
+            Vnext(theta) = fmod(V(theta) + H * V(v), (numb)2.0 * (numb)3.141592653589793);
+            Vnext(sin_theta) = sin(Vnext(theta));
+            Vnext(iL) = V(iL) + H * (((numb)1.0 / P(betaL)) * (V(v) - V(iL)));
+            Vnext(v) = V(v) + H * (((numb)1.0 / P(betaC)) * (Vnext(i) - P(betaM) * ((numb)1.0 + P(epsilon) * cos(V(theta))) * V(v) - sin(V(theta)) - P(delta) * V(iL)));
+        }
+
+        ifMETHOD(P(method), EulerMaruyama)
+        {
+#if __CUDA_ARCH__
+            numb randomNumber = (numb)(curand_normal_double(pt->randomGPUstate));
+#else
+            numb randomNumber = (*pt->randomCPUdistrib)(*pt->randomCPUgen);
+#endif
+
+            Vnext(i) = P(Idc) + (fmod((V(t) - P(Idel)) > (numb)0.0 ? (V(t) - P(Idel)) : (P(Idf) / P(Ifreq) + P(Idel) - V(t)), (numb)1.0 / P(Ifreq)) < P(Idf) / P(Ifreq) ? P(Iamp) : (numb)0.0) + (randomNumber * P(gamma) * sqrt(H));
             Vnext(t) = V(t) + H;
             Vnext(theta) = fmod(V(theta) + H * V(v), (numb)2.0 * (numb)3.141592653589793);
             Vnext(sin_theta) = sin(Vnext(theta));
@@ -154,6 +175,22 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
             Vnext(v) = V(v) + H * (((numb)1.0 / P(betaC)) * (Vnext(i) - P(betaM) * ((numb)1.0 + P(epsilon) * cos(V(theta))) * V(v) - sin(V(theta)) - P(delta) * V(iL)));
         }
 
+        ifMETHOD(P(method), EulerMaruyama)
+        {
+#if __CUDA_ARCH__
+            numb randomNumber = (numb)(curand_normal_double(pt->randomGPUstate));
+#else
+            numb randomNumber = (*pt->randomCPUdistrib)(*pt->randomCPUgen);
+#endif
+
+            Vnext(i) = P(Idc) + P(Iamp) * sin((numb)2.0 * (numb)3.141592653589793 * P(Ifreq) * (V(t) - P(Idel))) + (randomNumber * P(gamma) * sqrt(H));
+            Vnext(t) = V(t) + H;
+            Vnext(theta) = fmod(V(theta) + H * V(v), (numb)2.0 * (numb)3.141592653589793);
+            Vnext(sin_theta) = sin(Vnext(theta));
+            Vnext(iL) = V(iL) + H * (((numb)1.0 / P(betaL)) * (V(v) - V(iL)));
+            Vnext(v) = V(v) + H * (((numb)1.0 / P(betaC)) * (Vnext(i) - P(betaM) * ((numb)1.0 + P(epsilon) * cos(V(theta))) * V(v) - sin(V(theta)) - P(delta) * V(iL)));
+        }
+
         ifMETHOD(P(method), SemiExplicitEuler)
         {
             Vnext(i) = P(Idc) + P(Iamp) * sin((numb)2.0 * (numb)3.141592653589793 * P(Ifreq) * (V(t) - P(Idel)));
@@ -254,6 +291,22 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
         ifMETHOD(P(method), ExplicitEuler)
         {
             Vnext(i) = P(Idc) + P(Iamp) * (((numb)4.0 * P(Ifreq) * (V(t) - P(Idel)) - (numb)2.0 * floor(((numb)4.0 * P(Ifreq) * (V(t) - P(Idel)) + (numb)1.0) / (numb)2.0)) * ((int)floor(((numb)4.0 * P(Ifreq) * (V(t) - P(Idel)) + (numb)1.0) / (numb)2.0) % 2 == 0 ? (numb)1.0 : (numb)-1.0));
+            Vnext(t) = V(t) + H;
+            Vnext(theta) = fmod(V(theta) + H * V(v), (numb)2.0 * (numb)3.141592653589793);
+            Vnext(sin_theta) = sin(Vnext(theta));
+            Vnext(iL) = V(iL) + H * (((numb)1.0 / P(betaL)) * (V(v) - V(iL)));
+            Vnext(v) = V(v) + H * (((numb)1.0 / P(betaC)) * (Vnext(i) - P(betaM) * (1 + P(epsilon) * cos(V(theta))) * V(v) - sin(V(theta)) - P(delta) * V(iL)));
+        }
+
+        ifMETHOD(P(method), EulerMaruyama)
+        {
+#if __CUDA_ARCH__
+            numb randomNumber = (numb)(curand_normal_double(pt->randomGPUstate));
+#else
+            numb randomNumber = (*pt->randomCPUdistrib)(*pt->randomCPUgen);
+#endif
+
+            Vnext(i) = P(Idc) + P(Iamp) * (((numb)4.0 * P(Ifreq) * (V(t) - P(Idel)) - (numb)2.0 * floor(((numb)4.0 * P(Ifreq) * (V(t) - P(Idel)) + (numb)1.0) / (numb)2.0)) * ((int)floor(((numb)4.0 * P(Ifreq) * (V(t) - P(Idel)) + (numb)1.0) / (numb)2.0) % 2 == 0 ? (numb)1.0 : (numb)-1.0)) + (randomNumber * P(gamma) * sqrt(H));
             Vnext(t) = V(t) + H;
             Vnext(theta) = fmod(V(theta) + H * V(v), (numb)2.0 * (numb)3.141592653589793);
             Vnext(sin_theta) = sin(Vnext(theta));

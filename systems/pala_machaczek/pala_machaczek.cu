@@ -32,7 +32,7 @@ __host__ __device__ void kernelProgram_(name)(Computation* data, uint64_t variat
     AnalysisLobby(data, &finiteDifferenceScheme_(name), variation);
 }
 
-__host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* currentV, numb* nextV, numb* parameters)
+__host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* currentV, numb* nextV, numb* parameters, PerThread* pt)
 {
     const numb x = V(x);
     const numb y = V(y);

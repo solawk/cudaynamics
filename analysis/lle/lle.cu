@@ -2,11 +2,16 @@
 #pragma warning(push)
 #pragma warning(disable:6385)
 
-__host__ __device__ void LLE(Computation* data, uint64_t variation, void(* finiteDifferenceScheme)(numb*, numb*, numb*))
+__host__ __device__ void LLE(Computation* data, uint64_t variation, void(* finiteDifferenceScheme)(numb*, numb*, numb*, PerThread*))
 {
     uint64_t stepStart, variationStart = variation * CUDA_marshal.variationSize;
     LOCAL_BUFFERS;
     LOAD_ATTRIBUTES(true);
+#if __CUDA_ARCH__
+    LOAD_PT_CUDA
+#else
+    LOAD_PT_OMP
+#endif
 
     numb LLE_array[MAX_ATTRIBUTES]{ 0 }; // The deflected trajectory
     numb LLE_array_next[MAX_ATTRIBUTES]; // Buffer for the next step of the deflected trajectory
@@ -30,7 +35,7 @@ __host__ __device__ void LLE(Computation* data, uint64_t variation, void(* finit
         NORMAL_STEP_IN_ANALYSIS_IF_HIRES;
 
         // Deflected step
-        finiteDifferenceScheme(LLE_array, LLE_array_next, &(parameters[0]));
+        finiteDifferenceScheme(LLE_array, LLE_array_next, &(parameters[0]), &pt);
 
         for (int i = 0; i < CUDA_kernel.VAR_COUNT; i++)
             LLE_array[i] = LLE_array_next[i];

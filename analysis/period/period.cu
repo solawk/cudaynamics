@@ -1,6 +1,6 @@
 #include "period.h"
 
-__host__ __device__ void Period(Computation* data, uint64_t variation, void(*finiteDifferenceScheme)(numb*, numb*, numb*))
+__host__ __device__ void Period(Computation* data, uint64_t variation, void(*finiteDifferenceScheme)(numb*, numb*, numb*, PerThread*))
 {
     uint64_t variationStart = variation * CUDA_marshal.variationSize;
     int varCount = CUDA_kernel.VAR_COUNT;
@@ -8,6 +8,11 @@ __host__ __device__ void Period(Computation* data, uint64_t variation, void(*fin
 
     LOCAL_BUFFERS;
     LOAD_ATTRIBUTES(true);
+#if __CUDA_ARCH__
+    LOAD_PT_CUDA
+#else
+    LOAD_PT_OMP
+#endif
 
     uint64_t stepStart = variationStart;
     long long s = -1;

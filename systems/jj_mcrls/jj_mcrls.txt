@@ -34,12 +34,14 @@ param Ifreq Fixed 0.01 0.5 0.001 100 0.0 0.0
 param Idel Fixed 0.0 0.5 0.01 50 0.0 0.0
 param Idf Fixed 0.0 1.0 0.1 100 0.0 0.0
 constraint signal square
+param gamma Fixed 0.01 1.0 0.1 100 0.0 0.0
+constraint method EulerMaruyama
 param symmetry Fixed 0.0 29.0 0.1 0 0.0 0.0
 constraint method VariableSymmetryCD
 // Defining enumerated parameters (useful for methods):
 // enum <name> <ranging type> <minimum value> <maximum value> <step> <step count> <normal mean> <normal deviation> <enum names, no spaces>
 enum signal 1square 0sine 0triangle
-enum method 0ExplicitEuler 0SemiExplicitEuler 1ExplicitMidpoint 0ExplicitRungeKutta4 0VariableSymmetryCD
+enum method 0ExplicitEuler 0EulerMaruyama 0SemiExplicitEuler 1ExplicitMidpoint 0ExplicitRungeKutta4 0VariableSymmetryCD
 // Defining maps:
 analysis Minimum-maximum settings 1 2
 analysis Largest Lyapunov exponent settings 0.01 1000 2 1 2 3 -1

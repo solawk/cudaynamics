@@ -1,5 +1,7 @@
 #pragma once
 #include <future>
+#include <random>
+#include "curand_kernel.h"
 #include "marshal_struct.h"
 
 // Computation stores the marshal and metainformation about a CUDA launch
@@ -15,6 +17,11 @@ public:
 	bool isGPU;
 	bool calculateDeltaDecay;
 	int threadsPerBlock;
+
+	unsigned int randomSeed;
+	std::mt19937_64* randomCPUgen[64];
+	std::normal_distribution<numb>* randomCPUdistrib[64];
+	curandState* randomGPUstate;
 
 	bool isFirst;
 	int bufferNo; // When computing starts, this holds the continuous index of the current buffer
