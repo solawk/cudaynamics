@@ -70,7 +70,7 @@ void common_main()
     {
         //kernelNew.CopyFrom(&KERNEL);
         if (!loadCfg(launchConfig, true, true, true)) return;
-        KERNEL.CopyFrom(&kernelNew);
+        KERNEL.CopyFrom(hiresIndex == IND_NONE ? &kernelNew : &kernelHiresNew);
         if (hiresIndex == IND_NONE)
         {
             printf("FAIL: No Hi-res index is selected\n");
