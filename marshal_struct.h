@@ -26,6 +26,7 @@ struct Marshal
 	// Analysis index values delta (for delta and decay plots)
 	numb* indecesDelta;
 	numb* indecesDecay;
+	numb* indecesDecayLifetime;
 	bool indecesDeltaExists;
 
 	// Ranging attribute combinations count

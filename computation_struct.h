@@ -43,6 +43,7 @@ public:
 		if (marshal.maps != nullptr)					{ delete[] marshal.maps;				marshal.maps = nullptr; }
 		if (marshal.indecesDelta != nullptr)			{ delete[] marshal.indecesDelta;		marshal.indecesDelta = nullptr; }
 		if (marshal.indecesDecay != nullptr)			{ delete[] marshal.indecesDecay;		marshal.indecesDecay = nullptr; }
+		if (marshal.indecesDecayLifetime != nullptr) { delete[] marshal.indecesDecayLifetime;		marshal.indecesDecayLifetime = nullptr; }
 
 		ready = false;
 		timeElapsed = 0.0f;

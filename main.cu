@@ -427,6 +427,8 @@ void setupAnFuncs(Computation* data)
             CUDA_marshal.indecesDelta = new numb[CUDA_marshal.totalVariations * CUDA_marshal.totalMapValuesPerVariation];
             CUDA_marshal.indecesDecay = new numb[CUDA_marshal.totalVariations * CUDA_marshal.totalMapValuesPerVariation];
             memset(CUDA_marshal.indecesDecay, 0.0, sizeof(numb) * CUDA_marshal.totalVariations * CUDA_marshal.totalMapValuesPerVariation);
+            CUDA_marshal.indecesDecayLifetime = new numb[CUDA_marshal.totalVariations * CUDA_marshal.totalMapValuesPerVariation];
+            memset(CUDA_marshal.indecesDecayLifetime, 0.0, sizeof(numb) * CUDA_marshal.totalVariations * CUDA_marshal.totalMapValuesPerVariation);
         }
     }
 
@@ -454,6 +456,7 @@ void indexDecayPostprocessing(Computation* data)
         {
             for (uint64_t v = 0; v < CUDA_marshal.totalVariations * CUDA_marshal.totalMapValuesPerVariation; v++) CUDA_marshal.indecesDelta[v] = data->otherMarshal->maps[v] - CUDA_marshal.maps[v];
             memcpy(CUDA_marshal.indecesDecay, data->otherMarshal->indecesDecay, sizeof(numb) * CUDA_marshal.totalVariations * CUDA_marshal.totalMapValuesPerVariation);
+            memcpy(CUDA_marshal.indecesDecayLifetime, data->otherMarshal->indecesDecayLifetime, sizeof(numb) * CUDA_marshal.totalVariations * CUDA_marshal.totalMapValuesPerVariation);
             CUDA_marshal.indecesDeltaExists = true;
         }
 

@@ -2749,8 +2749,10 @@ int imgui_main(int, char**)
 									{
 										if (!isMC)
 										{
-											extractMap((window->deltaState == DS_No ? cmp->marshal.maps : (window->deltaState == DS_Delta ? cmp->marshal.indecesDelta : cmp->marshal.indecesDecay))
-												+ (index2port(cmp->marshal.kernel.analyses, mapIndex)->offset + heatmap->values.mapValueIndex) * cmp->marshal.totalVariations,
+											numb* src = cmp->marshal.maps;
+											if (window->deltaState == DS_Delta) src = cmp->marshal.indecesDelta;
+											if (window->deltaState == DS_Decay) src = cmp->marshal.indecesDecay;
+											extractMap(src + (index2port(cmp->marshal.kernel.analyses, mapIndex)->offset + heatmap->values.mapValueIndex) * cmp->marshal.totalVariations,
 												heatmap->values.valueBuffer, heatmap->indexBuffer, &(avi->data()[0]),
 												sizing.hmp->typeX == MDT_Parameter ? sizing.hmp->indexX + krnl->VAR_COUNT : sizing.hmp->indexX,
 												sizing.hmp->typeY == MDT_Parameter ? sizing.hmp->indexY + krnl->VAR_COUNT : sizing.hmp->indexY,
