@@ -443,55 +443,66 @@ void setupAnFuncs(Computation* data)
     }
 }
 
+void setDecayed(Computation* data, uint64_t v, numb val, numb life)
+{
+    CUDA_marshal.indecesDecay[v] = val;
+
+    if (CUDA_marshal.indecesDecayLifetime[v] == 0)
+        CUDA_marshal.indecesDecayLifetime[v] = life;
+}
+
 void indexDecayPostprocessing(Computation* data)
 {
-    //if (!data->isHires)
+    // Calculate the delta if it's not the first launch
+    if (data->isFirst)
     {
-        // Calculate the delta if it's not the first launch
-        if (data->isFirst)
-        {
-            CUDA_marshal.indecesDeltaExists = false;
-        }
-        else
-        {
-            for (uint64_t v = 0; v < CUDA_marshal.totalVariations * CUDA_marshal.totalMapValuesPerVariation; v++) CUDA_marshal.indecesDelta[v] = data->otherMarshal->maps[v] - CUDA_marshal.maps[v];
-            memcpy(CUDA_marshal.indecesDecay, data->otherMarshal->indecesDecay, sizeof(numb) * CUDA_marshal.totalVariations * CUDA_marshal.totalMapValuesPerVariation);
-            memcpy(CUDA_marshal.indecesDecayLifetime, data->otherMarshal->indecesDecayLifetime, sizeof(numb) * CUDA_marshal.totalVariations * CUDA_marshal.totalMapValuesPerVariation);
-            CUDA_marshal.indecesDeltaExists = true;
-        }
+        CUDA_marshal.indecesDeltaExists = false;
+    }
+    else
+    {
+        for (uint64_t v = 0; v < CUDA_marshal.totalVariations * CUDA_marshal.totalMapValuesPerVariation; v++) CUDA_marshal.indecesDelta[v] = data->otherMarshal->maps[v] - CUDA_marshal.maps[v];
+        memcpy(CUDA_marshal.indecesDecay, data->otherMarshal->indecesDecay, sizeof(numb) * CUDA_marshal.totalVariations * CUDA_marshal.totalMapValuesPerVariation);
+        memcpy(CUDA_marshal.indecesDecayLifetime, data->otherMarshal->indecesDecayLifetime, sizeof(numb) * CUDA_marshal.totalVariations * CUDA_marshal.totalMapValuesPerVariation);
+        CUDA_marshal.indecesDeltaExists = true;
+    }
 
-        // Calculating decayed variations
-        for (auto& indexPair : indices)
-        {
-            Port* port = index2port(CUDA_kernel.analyses, indexPair.first);
-            int indexStart = port->offset * CUDA_marshal.totalVariations;
-            int indexEnd = indexStart + indexPair.second.size * CUDA_marshal.totalVariations;
-            DecaySettings* settings = &(indexPair.second.decay);
-            float thresholdCount = settings->thresholds.size();
+    // Calculating decayed variations
+    for (auto& indexPair : indices)
+    {
+        Port* port = index2port(CUDA_kernel.analyses, indexPair.first);
+        int indexStart = port->offset * CUDA_marshal.totalVariations;
+        int indexEnd = indexStart + indexPair.second.size * CUDA_marshal.totalVariations;
+        DecaySettings* settings = &(indexPair.second.decay);
+        float thresholdCount = settings->thresholds.size();
 
-            if (data->bufferNo >= (settings->source == DTS_Index ? -2 : 1) && port->used)
+        if (data->bufferNo >= (settings->source == DTS_Index ? -2 : 1) && port->used)
+        {
+            for (uint64_t v = indexStart; v < indexEnd; v++)
             {
-                for (uint64_t v = indexStart; v < indexEnd; v++)
+                for (int t = 0; t < thresholdCount; t++)
                 {
-                    for (int t = 0; t < thresholdCount; t++)
-                    {
-                        numb decayValue = (numb)(t + 1);
+                    numb decayValue = (numb)(t + 1);
 
-                        switch (settings->mode)
-                        {
-                        case DTM_Less:
-                            if (settings->source == DTS_Index && CUDA_marshal.maps[v] <         settings->thresholds[t] && CUDA_marshal.indecesDecay[v] < decayValue) CUDA_marshal.indecesDecay[v] = decayValue;
-                            if (settings->source == DTS_Delta && CUDA_marshal.indecesDelta[v] < settings->thresholds[t] && CUDA_marshal.indecesDecay[v] < decayValue) CUDA_marshal.indecesDecay[v] = decayValue;
-                            break;
-                        case DTM_More:
-                            if (settings->source == DTS_Index && CUDA_marshal.maps[v] >         settings->thresholds[t] && CUDA_marshal.indecesDecay[v] < decayValue) CUDA_marshal.indecesDecay[v] = decayValue;
-                            if (settings->source == DTS_Delta && CUDA_marshal.indecesDelta[v] > settings->thresholds[t] && CUDA_marshal.indecesDecay[v] < decayValue) CUDA_marshal.indecesDecay[v] = decayValue;
-                            break;
-                        case DTM_Abs_More:
-                            if (settings->source == DTS_Index && abs(CUDA_marshal.maps[v]) >            settings->thresholds[t] && CUDA_marshal.indecesDecay[v] < decayValue) CUDA_marshal.indecesDecay[v] = decayValue;
-                            if (settings->source == DTS_Delta && abs(CUDA_marshal.indecesDelta[v]) >    settings->thresholds[t] && CUDA_marshal.indecesDecay[v] < decayValue) CUDA_marshal.indecesDecay[v] = decayValue;
-                            break;
-                        }
+                    switch (settings->mode)
+                    {
+                    case DTM_Less:
+                        if (settings->source == DTS_Index && CUDA_marshal.maps[v] < settings->thresholds[t] && CUDA_marshal.indecesDecay[v] < decayValue)
+                            setDecayed(data, v, decayValue, data->bufferNo + 1);
+                        if (settings->source == DTS_Delta && CUDA_marshal.indecesDelta[v] < settings->thresholds[t] && CUDA_marshal.indecesDecay[v] < decayValue)
+                            setDecayed(data, v, decayValue, data->bufferNo + 1);
+                        break;
+                    case DTM_More:
+                        if (settings->source == DTS_Index && CUDA_marshal.maps[v] > settings->thresholds[t] && CUDA_marshal.indecesDecay[v] < decayValue)
+                            setDecayed(data, v, decayValue, data->bufferNo + 1);
+                        if (settings->source == DTS_Delta && CUDA_marshal.indecesDelta[v] > settings->thresholds[t] && CUDA_marshal.indecesDecay[v] < decayValue)
+                            setDecayed(data, v, decayValue, data->bufferNo + 1);
+                        break;
+                    case DTM_Abs_More:
+                        if (settings->source == DTS_Index && abs(CUDA_marshal.maps[v]) > settings->thresholds[t] && CUDA_marshal.indecesDecay[v] < decayValue)
+                            setDecayed(data, v, decayValue, data->bufferNo + 1);
+                        if (settings->source == DTS_Delta && abs(CUDA_marshal.indecesDelta[v]) > settings->thresholds[t] && CUDA_marshal.indecesDecay[v] < decayValue)
+                            setDecayed(data, v, decayValue, data->bufferNo + 1);
+                        break;
                     }
                 }
             }

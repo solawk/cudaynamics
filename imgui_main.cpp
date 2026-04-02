@@ -2752,6 +2752,7 @@ int imgui_main(int, char**)
 											numb* src = cmp->marshal.maps;
 											if (window->deltaState == DS_Delta) src = cmp->marshal.indecesDelta;
 											if (window->deltaState == DS_Decay) src = cmp->marshal.indecesDecay;
+											if (window->deltaState == DS_Lifetime) src = cmp->marshal.indecesDecayLifetime;
 											extractMap(src + (index2port(cmp->marshal.kernel.analyses, mapIndex)->offset + heatmap->values.mapValueIndex) * cmp->marshal.totalVariations,
 												heatmap->values.valueBuffer, heatmap->indexBuffer, &(avi->data()[0]),
 												sizing.hmp->typeX == MDT_Parameter ? sizing.hmp->indexX + krnl->VAR_COUNT : sizing.hmp->indexX,
@@ -2825,8 +2826,11 @@ int imgui_main(int, char**)
 										for (int i = 0; i < paintLUTsize; i++) heatmap->paintLUT.lut[i] = new int[cmp->marshal.totalVariations];
 										heatmap->paintLUT.lutSizes = new int[paintLUTsize];
 
-										setupLUT((window->deltaState == DS_No ? cmp->marshal.maps : (window->deltaState == DS_Delta ? cmp->marshal.indecesDelta : cmp->marshal.indecesDecay))
-											+ (index2port(cmp->marshal.kernel.analyses, mapIndex)->offset + heatmap->values.mapValueIndex) * cmp->marshal.totalVariations,
+										numb* src = cmp->marshal.maps;
+										if (window->deltaState == DS_Delta) src = cmp->marshal.indecesDelta;
+										if (window->deltaState == DS_Decay) src = cmp->marshal.indecesDecay;
+										if (window->deltaState == DS_Lifetime) src = cmp->marshal.indecesDecayLifetime;
+										setupLUT(src + (index2port(cmp->marshal.kernel.analyses, mapIndex)->offset + heatmap->values.mapValueIndex) * cmp->marshal.totalVariations,
 											cmp->marshal.totalVariations, heatmap->paintLUT.lut, heatmap->paintLUT.lutSizes, paintLUTsize,
 											heatmap->values.heatmapMin, heatmap->values.heatmapMax);
 									}
