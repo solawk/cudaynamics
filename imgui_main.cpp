@@ -2268,22 +2268,22 @@ int imgui_main(int, char**)
 					krnl        = &(KERNEL);
 					decayOfFirstIndex = &(window->decay.settings[0]);
 
-					ImGui::Text("Source:"); ImGui::SameLine();
-					if (ImGui::RadioButton(("Index##DTSIndex" + plotName).c_str(), decayOfFirstIndex->source == DTS_Index))
-						for (int i : window->variables) indices[(AnalysisIndex)i].decay.source = DTS_Index;
-					ImGui::SameLine();
-					if (ImGui::RadioButton(("Delta##DTSDelta" + plotName).c_str(), decayOfFirstIndex->source == DTS_Delta))
-						for (int i : window->variables) indices[(AnalysisIndex)i].decay.source = DTS_Delta;
+					for (int i : window->variables)
+					{
+						ImGui::Text(indices[(AnalysisIndex)i].name.c_str());
 
-					ImGui::Text("Mode:"); ImGui::SameLine();
-					if (ImGui::RadioButton(("Less than##DTMLess" + plotName).c_str(), decayOfFirstIndex->mode == DTM_Less))
-						for (int i : window->variables) indices[(AnalysisIndex)i].decay.mode = DTM_Less;
-					ImGui::SameLine();
-					if (ImGui::RadioButton(("More than##DTMMore" + plotName).c_str(), decayOfFirstIndex->mode == DTM_More))
-						for (int i : window->variables) indices[(AnalysisIndex)i].decay.mode = DTM_More;
-					ImGui::SameLine();
-					if (ImGui::RadioButton(("Absolute value more than##DTMAbsMore" + plotName).c_str(), decayOfFirstIndex->mode == DTM_Abs_More))
-						for (int i : window->variables) indices[(AnalysisIndex)i].decay.mode = DTM_Abs_More;
+						ImGui::Text("Source:"); ImGui::SameLine();
+						if (ImGui::RadioButton(("Index##DTSIndex" + plotName + "for" + std::to_string(i)).c_str(), indices[(AnalysisIndex)i].decay.source == DTS_Index)) indices[(AnalysisIndex)i].decay.source = DTS_Index;
+						ImGui::SameLine();
+						if (ImGui::RadioButton(("Delta##DTSDelta" + plotName + "for" + std::to_string(i)).c_str(), indices[(AnalysisIndex)i].decay.source == DTS_Delta)) indices[(AnalysisIndex)i].decay.source = DTS_Delta;
+
+						ImGui::Text("Mode:"); ImGui::SameLine();
+						if (ImGui::RadioButton(("Less than##DTMLess" + plotName + "for" + std::to_string(i)).c_str(), indices[(AnalysisIndex)i].decay.mode == DTM_Less)) indices[(AnalysisIndex)i].decay.mode = DTM_Less;
+						ImGui::SameLine();
+						if (ImGui::RadioButton(("More than##DTMMore" + plotName + "for" + std::to_string(i)).c_str(), indices[(AnalysisIndex)i].decay.mode == DTM_More)) indices[(AnalysisIndex)i].decay.mode = DTM_More;
+						ImGui::SameLine();
+						if (ImGui::RadioButton(("Absolute value more than##DTMAbsMore" + plotName + "for" + std::to_string(i)).c_str(), indices[(AnalysisIndex)i].decay.mode == DTM_Abs_More)) indices[(AnalysisIndex)i].decay.mode = DTM_Abs_More;
+					}
 
 					// Threshold input
 
