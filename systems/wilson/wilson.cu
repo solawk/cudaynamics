@@ -7,7 +7,8 @@ namespace attributes
     enum variables { v, r, i, t };
     enum parameters { C, tau, p0, p1, p2, p3, p4, p5, p6, p7, Idc, Iamp, Ifreq, Idel, Idf, symmetry, signal, method, COUNT };
     enum waveforms { square, sine, triangle };
-    enum methods { ExplicitEuler, SemiExplicitEuler, ImplicitEuler, ExplicitMidpoint, ImplicitMidpoint, ExplicitRungeKutta4, VariableSymmetryCD};
+    enum methods { ExplicitEuler, SemiExplicitEuler, ImplicitEuler, ExplicitMidpoint, ImplicitMidpoint, ExplicitRungeKutta4, VariableSymmetryCD, ExplicitDormandPrince8
+	};
 }
 
 __global__ void gpu_wrapper_(name)(Computation* data, uint64_t variation)
@@ -21,6 +22,9 @@ __host__ __device__ void kernelProgram_(name)(Computation* data, uint64_t variat
 	uint64_t stepStart, variationStart = variation * CUDA_marshal.variationSize;         // Start index to store the modelling data for the variation
 	LOCAL_BUFFERS;
 	LOAD_ATTRIBUTES(false);
+
+	// Custom area (usually) starts here
+
 	TRANSIENT_SKIP_NEW(finiteDifferenceScheme_(name));
 
 	for (int s = 0; s < CUDA_kernel.steps && !data->isHires; s++)
@@ -36,404 +40,1423 @@ __host__ __device__ void kernelProgram_(name)(Computation* data, uint64_t variat
 
 __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* currentV, numb* nextV, numb* parameters, PerThread* pt)
 {
+	const int N = 3;
+	const numb h = H;
+	numb v[N] = {V(v), V(r), V(t)};
+	const numb p[16] = { P(p0), P(p1), P(p2), P(p3), P(p4), P(p5), P(p6), P(p7), P(C), P(tau), P(Idc), P(Iamp), P(Idel), P(Idf), P(Ifreq), P(symmetry) };
+	
 	ifSIGNAL(P(signal), square)
 	{
 		ifMETHOD(P(method), ExplicitEuler)
 		{
-			Vnext(i) = P(Idc) + (fmod((V(t) - P(Idel)) > (numb)0.0 ? (V(t) - P(Idel)) : (P(Idf) / P(Ifreq) + P(Idel) - V(t)), (numb)1.0 / P(Ifreq)) < P(Idf) / P(Ifreq) ? P(Iamp) : (numb)0.0);
-			Vnext(t) = V(t) + H;
-			Vnext(v) = V(v) + H * ((-(P(p0) + P(p1) * V(v) + P(p2) * V(v) * V(v)) * (V(v) - P(p3)) - P(p5) * V(r) * (V(v) - P(p4)) + Vnext(i)) / P(C));
-			Vnext(r) = V(r) + H * (((numb)1.0 / P(tau)) * (-V(r) + P(p6) * V(v) + P(p7)));
+			numb I = p[10] + (fmod((v[2] - p[12]) > (numb)0.0 ? (v[2] - p[12]) : (p[13] / p[14] + p[12] - v[2]), (numb)1.0 / p[14]) < p[13] / p[14] ? p[11] : (numb)0.0);
+			Vnext(t) = v[2] + h;
+			Vnext(v) = v[0] + h * ((-(p[0] + p[1] * v[0] + p[2] * v[0] * v[0]) * (v[0] - p[3]) - p[5] * V(r) * (v[0] - p[4]) + Vnext(i)) / p[8]);
+			Vnext(r) = v[1] + h * (((numb)1.0 / p[9]) * (-v[1] + p[6] * v[0] + p[7]));
+			Vnext(i) = p[10] + (fmod((Vnext(t) - p[12]) > (numb)0.0 ? (Vnext(t) - p[12]) : (p[13] / p[14] + p[12] - Vnext(t)), (numb)1.0 / p[14]) < p[13] / p[14] ? p[11] : (numb)0.0);
 		}
 		ifMETHOD(P(method), SemiExplicitEuler)
 		{
-			Vnext(t) = V(t) + H;
-			Vnext(i) = P(Idc) + (fmod((V(t) - P(Idel)) > (numb)0.0 ? (V(t) - P(Idel)) : (P(Idf) / P(Ifreq) + P(Idel) - V(t)), (numb)1.0 / P(Ifreq)) < P(Idf) / P(Ifreq) ? P(Iamp) : (numb)0.0);
-			Vnext(r) = V(r) + H * (((numb)1.0 / P(tau)) * (-V(r) + P(p6) * V(v) + P(p7)));
-			Vnext(v) = V(v) + H * ((-(P(p0) + P(p1) * V(v) + P(p2) * V(v) * V(v)) * (V(v) - P(p3)) - P(p5) * Vnext(r) * (V(v) - P(p4)) + Vnext(i)) / P(C));
+			numb I = p[10] + (fmod((v[2] - p[12]) > (numb)0.0 ? (v[2] - p[12]) : (p[13] / p[14] + p[12] - v[2]), (numb)1.0 / p[14]) < p[13] / p[14] ? p[11] : (numb)0.0);
+			Vnext(t) = v[2] + h;
+			Vnext(r) = V(r) + H * (((numb)1.0 / p[9]) * (-V(r) + p[6] * V(v) + p[7]));
+			Vnext(v) = V(v) + H * ((-(p[0] + p[1] * V(v) + p[2] * V(v) * V(v)) * (V(v) - p[3]) - p[5] * Vnext(r) * (V(v) - p[4]) + Vnext(i)) / p[8]);
+			Vnext(i) = p[10] + (fmod((Vnext(t) - p[12]) > (numb)0.0 ? (Vnext(t) - p[12]) : (p[13] / p[14] + p[12] - Vnext(t)), (numb)1.0 / p[14]) < p[13] / p[14] ? p[11] : (numb)0.0);
 		}
 		ifMETHOD(P(method), ImplicitEuler)
 		{
-			Vnext(i) = P(Idc) + (fmod((V(t) - P(Idel)) > (numb)0.0 ? (V(t) - P(Idel)) : (P(Idf) / P(Ifreq) + P(Idel) - V(t)), (numb)1.0 / P(Ifreq)) < P(Idf) / P(Ifreq) ? P(Iamp) : (numb)0.0);
-			Vnext(t) = V(t) + H;
-			numb v_guess = V(v) + H * ((-(P(p0) + P(p1) * V(v) + P(p2) * V(v) * V(v)) * (V(v) - P(p3)) - P(p5) * V(r) * (V(v) - P(p4)) + Vnext(i)) / P(C));
-			numb r_guess = V(r) + H * (((numb)1.0 / P(tau)) * (-V(r) + P(p6) * V(v) + P(p7)));
+			const numb h = H;
+			const int N = 3;
+			numb v[N] = { V(v), V(r), V(t) };
 
-			v_guess = V(v) + H * ((-(P(p0) + P(p1) * v_guess + P(p2) * v_guess * v_guess) * (v_guess - P(p3)) - P(p5) * r_guess * (v_guess - P(p4)) + Vnext(i)) / P(C));
-			v_guess = V(v) + H * ((-(P(p0) + P(p1) * v_guess + P(p2) * v_guess * v_guess) * (v_guess - P(p3)) - P(p5) * r_guess * (v_guess - P(p4)) + Vnext(i)) / P(C));
-			v_guess = V(v) + H * ((-(P(p0) + P(p1) * v_guess + P(p2) * v_guess * v_guess) * (v_guess - P(p3)) - P(p5) * r_guess * (v_guess - P(p4)) + Vnext(i)) / P(C));
-			v_guess = V(v) + H * ((-(P(p0) + P(p1) * v_guess + P(p2) * v_guess * v_guess) * (v_guess - P(p3)) - P(p5) * r_guess * (v_guess - P(p4)) + Vnext(i)) / P(C));
-			v_guess = V(v) + H * ((-(P(p0) + P(p1) * v_guess + P(p2) * v_guess * v_guess) * (v_guess - P(p3)) - P(p5) * r_guess * (v_guess - P(p4)) + Vnext(i)) / P(C));
+			ifMETHOD(P(method), ImplicitEuler)
+			{
+				numb Z[N], Zn[N], J[N][N], W[N][N + 1];
 
-			r_guess = V(r) + H * (((numb)1.0 / P(tau)) * (-r_guess + P(p6) * v_guess + P(p7)));
-			r_guess = V(r) + H * (((numb)1.0 / P(tau)) * (-r_guess + P(p6) * v_guess + P(p7)));
-			r_guess = V(r) + H * (((numb)1.0 / P(tau)) * (-r_guess + P(p6) * v_guess + P(p7)));
-			r_guess = V(r) + H * (((numb)1.0 / P(tau)) * (-r_guess + P(p6) * v_guess + P(p7)));
-			r_guess = V(r) + H * (((numb)1.0 / P(tau)) * (-r_guess + P(p6) * v_guess + P(p7)));
+				numb tol = (numb)1e-14, dz = (numb)2e-13;
+				numb I;
+				int nnewtmax = 8, nnewt = 0;
+				int i, j;
 
-			Vnext(v) = v_guess;
-			Vnext(r) = r_guess;
+				J[0][2] = (numb)0.0;
+				J[1][2] = (numb)0.0;
+				J[2][0] = (numb)0.0;
+				J[2][1] = (numb)0.0;
+				J[2][2] = (numb)0.0;
+
+				for (i = 0; i < N; i++)
+					Z[i] = v[i];
+
+				while ((dz > tol) && (nnewt < nnewtmax)) {
+
+					I = p[10] + (fmod((Z[2] - p[12]) > (numb)0.0 ? (Z[2] - p[12]) : (p[13] / p[14] + p[12] - Z[2]), (numb)1.0 / p[14]) < p[13] / p[14] ? p[11] : (numb)0.0);
+					J[0][0] = (-(p[1] + (numb)2.0 * p[2] * Z[0]) * (Z[0] - p[3]) - (p[0] + p[1] * Z[0] + p[2] * Z[0] * Z[0]) - p[5] * Z[1]) / p[8];
+					J[0][1] = -p[5] * (Z[0] - p[4]) / p[8];
+					J[1][0] = p[6] / p[9];
+					J[1][1] = -(numb)1.0 / p[9];
+
+					for (i = 0; i < N; i++) {
+						for (j = 0; j < N; j++) {
+							if (i == j)
+								W[i][j] = (numb)1.0 - h * J[i][j];
+							else
+								W[i][j] = -h * J[i][j];
+						}
+					}
+
+					numb f_v = (-(p[0] + p[1] * Z[0] + p[2] * Z[0] * Z[0]) * (Z[0] - p[3]) - p[5] * Z[1] * (Z[0] - p[4]) + I) / p[8];
+					numb f_r = ((numb)1.0 / p[9]) * (-Z[1] + p[6] * Z[0] + p[7]);
+					numb f_t = (numb)1.0;
+
+					W[0][N] = v[0] - Z[0] + h * f_v;
+					W[1][N] = v[1] - Z[1] + h * f_r;
+					W[2][N] = v[2] - Z[2] + h * f_t;
+
+					int k;
+					numb b, d;
+
+					for (k = 0; k <= N - 2; k++) {
+
+						int l = k;
+
+						for (i = k + 1; i <= N - 1; i++) {
+							if (fabs(W[i][k]) > fabs(W[l][k])) {
+								l = i;
+							}
+						}
+						if (l != k) {
+							for (j = 0; j <= N; j++) {
+								if ((j == 0) || (j >= k)) {
+									b = W[k][j];
+									W[k][j] = W[l][j];
+									W[l][j] = b;
+								}
+							}
+						}
+
+						d = (numb)1.0 / W[k][k];
+						for (i = (k + 1); i <= (N - 1); i++) {
+							if (W[i][k] == (numb)0.0) {
+								continue;
+							}
+							b = W[i][k] * d;
+							for (j = k; j <= N; j++) {
+								if (W[k][j] != (numb)0.0) {
+									W[i][j] = W[i][j] - b * W[k][j];
+								}
+							}
+						}
+					}
+
+					for (i = N; i >= 2; i--) {
+						for (j = 1; j <= i - 1; j++) {
+							b = W[i - j - 1][i - 1] / W[i - 1][i - 1];
+							W[i - j - 1][N] = W[i - j - 1][N] - b * W[i - 1][N];
+						}
+						W[i - 1][N] = W[i - 1][N] / W[i - 1][i - 1];
+					}
+					W[0][N] = W[0][N] / W[0][0];
+
+					for (i = 0; i < N; i++)
+						Zn[i] = Z[i] + W[i][N];
+
+					dz = (numb)0.0;
+					for (i = 0; i < N; i++) {
+						numb diff = Zn[i] - Z[i];
+						dz += diff * diff;
+					}
+					dz = sqrt(dz);
+
+					for (i = 0; i < N; i++)
+						Z[i] = Zn[i];
+
+					nnewt++;
+				}
+
+				Vnext(v) = Z[0];
+				Vnext(r) = Z[1];
+				Vnext(t) = Z[2];
+
+				Vnext(i) = p[10] + (fmod((Vnext(t) - p[12]) > (numb)0.0 ? (Vnext(t) - p[12]) : (p[13] / p[14] + p[12] - Vnext(t)), (numb)1.0 / p[14]) < p[13] / p[14] ? p[11] : (numb)0.0);
+			}
+	
 		}
 
 		ifMETHOD(P(method), ExplicitMidpoint)
 		{
-			numb imp = P(Idc) + (fmod((V(t) - P(Idel)) > (numb)0.0 ? (V(t) - P(Idel)) : (P(Idf) / P(Ifreq) + P(Idel) - V(t)), (numb)1.0 / P(Ifreq)) < P(Idf) / P(Ifreq) ? P(Iamp) : (numb)0.0);
-			numb tmp = V(t) + H * (numb)0.5;
-			numb vmp = V(v) + H * (numb)0.5 * ((-(P(p0) + P(p1) * V(v) + P(p2) * V(v) * V(v)) * (V(v) - P(p3)) - P(p5) * V(r) * (V(v) - P(p4)) + imp) / P(C));
-			numb rmp = V(r) + H * (numb)0.5 * (((numb)1.0 / P(tau)) * (-V(r) + P(p6) * V(v) + P(p7)));
+			numb imp = p[10] + (fmod((v[2] - p[12]) > (numb)0.0 ? (v[2] - p[12]) : (p[13] / p[14] + p[12] - v[2]), (numb)1.0 / p[14]) < p[13] / p[14] ? p[11] : (numb)0.0);
 
-			Vnext(i) = P(Idc) + (fmod((tmp - P(Idel)) > (numb)0.0 ? (tmp - P(Idel)) : (P(Idf) / P(Ifreq) + P(Idel) - tmp), (numb)1.0 / P(Ifreq)) < P(Idf) / P(Ifreq) ? P(Iamp) : (numb)0.0);
-			Vnext(t) = V(t) + H;
-			Vnext(v) = V(v) + H * ((-(P(p0) + P(p1) * vmp + P(p2) * vmp * vmp) * (vmp - P(p3)) - P(p5) * rmp * (vmp - P(p4)) + Vnext(i)) / P(C));
-			Vnext(r) = V(r) + H * (((numb)1.0 / P(tau)) * (-rmp + P(p6) * vmp + P(p7)));
+			numb vmp = v[0] + h * (numb)0.5 * ((-(p[0] + p[1] * v[0] + p[2] * v[0] * v[0]) * (v[0] - p[3]) - p[5] * v[1] * (v[0] - p[4]) + imp) / p[8]);
+			numb rmp = v[1] + h * (numb)0.5 * (((numb)1.0 / p[9]) * (-v[1] + p[6] * v[0] + p[7]));
+			numb tmp = v[2] + h * (numb)0.5;
+
+			numb I = p[10] + (fmod((tmp - p[12]) > (numb)0.0 ? (tmp - p[12]) : (p[13] / p[14] + p[12] - tmp), (numb)1.0 / p[14]) < p[13] / p[14] ? p[11] : (numb)0.0);
+
+			Vnext(v) = v[0] + h * ((-(p[0] + p[1] * vmp + p[2] * vmp * vmp) * (vmp - p[3]) - p[5] * rmp * (vmp - p[4]) + I) / p[8]);
+			Vnext(r) = v[1] + h * (((numb)1.0 / p[9]) * (-rmp + p[6] * vmp + p[7]));
+			Vnext(t) = v[2] + h;
+
+			Vnext(i) = p[10] + (fmod((Vnext(t) - p[12]) > (numb)0.0 ? (Vnext(t) - p[12]) : (p[13] / p[14] + p[12] - Vnext(t)), (numb)1.0 / p[14]) < p[13] / p[14] ? p[11] : (numb)0.0);
 		}
+
+
 		ifMETHOD(P(method), ImplicitMidpoint)
 		{
-			numb imp = P(Idc) + (fmod((V(t) - P(Idel)) > (numb)0.0 ? (V(t) - P(Idel)) : (P(Idf) / P(Ifreq) + P(Idel) - V(t)), (numb)1.0 / P(Ifreq)) < P(Idf) / P(Ifreq) ? P(Iamp) : (numb)0.0);
-			numb tmp = V(t) + (numb)0.5 * H;
-			numb v_mid_guess = V(v) + H * (numb)0.5 * ((-(P(p0) + P(p1) * V(v) + P(p2) * V(v) * V(v)) * (V(v) - P(p3)) - P(p5) * V(r) * (V(v) - P(p4)) + imp) / P(C));
-			numb r_mid_guess = V(r) + H * (numb)0.5 * (((numb)1.0 / P(tau)) * (-V(r) + P(p6) * V(v) + P(p7)));
+			numb a[N], Z[N], Zn[N], J[N][N], W[N][N + 1];
+			numb tol = (numb)1e-14, dz = (numb)2e-13;
+			numb I;
+			int nnewtmax = 8, nnewt = 0;
+			int i, j;
 
-			v_mid_guess = V(v) + H * (numb)0.5 * ((-(P(p0) + P(p1) * v_mid_guess + P(p2) * v_mid_guess * v_mid_guess) * (v_mid_guess - P(p3)) - P(p5) * r_mid_guess * (v_mid_guess - P(p4)) + imp) / P(C));
-			v_mid_guess = V(v) + H * (numb)0.5 * ((-(P(p0) + P(p1) * v_mid_guess + P(p2) * v_mid_guess * v_mid_guess) * (v_mid_guess - P(p3)) - P(p5) * r_mid_guess * (v_mid_guess - P(p4)) + imp) / P(C));
-			v_mid_guess = V(v) + H * (numb)0.5 * ((-(P(p0) + P(p1) * v_mid_guess + P(p2) * v_mid_guess * v_mid_guess) * (v_mid_guess - P(p3)) - P(p5) * r_mid_guess * (v_mid_guess - P(p4)) + imp) / P(C));
-			v_mid_guess = V(v) + H * (numb)0.5 * ((-(P(p0) + P(p1) * v_mid_guess + P(p2) * v_mid_guess * v_mid_guess) * (v_mid_guess - P(p3)) - P(p5) * r_mid_guess * (v_mid_guess - P(p4)) + imp) / P(C));
-			v_mid_guess = V(v) + H * (numb)0.5 * ((-(P(p0) + P(p1) * v_mid_guess + P(p2) * v_mid_guess * v_mid_guess) * (v_mid_guess - P(p3)) - P(p5) * r_mid_guess * (v_mid_guess - P(p4)) + imp) / P(C));
+			J[0][2] = (numb)0.0;
+			J[1][2] = (numb)0.0;
+			J[2][0] = (numb)0.0;
+			J[2][1] = (numb)0.0;
+			J[2][2] = (numb)0.0;
 
-			r_mid_guess = V(r) + H * (numb)0.5 * (((numb)1.0 / P(tau)) * (-r_mid_guess + P(p6) * v_mid_guess + P(p7)));
-			r_mid_guess = V(r) + H * (numb)0.5 * (((numb)1.0 / P(tau)) * (-r_mid_guess + P(p6) * v_mid_guess + P(p7)));
-			r_mid_guess = V(r) + H * (numb)0.5 * (((numb)1.0 / P(tau)) * (-r_mid_guess + P(p6) * v_mid_guess + P(p7)));
-			r_mid_guess = V(r) + H * (numb)0.5 * (((numb)1.0 / P(tau)) * (-r_mid_guess + P(p6) * v_mid_guess + P(p7)));
-			r_mid_guess = V(r) + H * (numb)0.5 * (((numb)1.0 / P(tau)) * (-r_mid_guess + P(p6) * v_mid_guess + P(p7)));
+			for (i = 0; i < N; i++)
+				Z[i] = v[i];
 
-			Vnext(t) = V(t) + H;
-			Vnext(i) = P(Idc) + (fmod((tmp - P(Idel)) > (numb)0.0 ? (tmp - P(Idel)) : (P(Idf) / P(Ifreq) + P(Idel) - tmp), (numb)1.0 / P(Ifreq)) < P(Idf) / P(Ifreq) ? P(Iamp) : (numb)0.0);
-			Vnext(v) = V(v) + H * ((-(P(p0) + P(p1) * v_mid_guess + P(p2) * v_mid_guess * v_mid_guess) * (v_mid_guess - P(p3)) - P(p5) * r_mid_guess * (v_mid_guess - P(p4)) + Vnext(i)) / P(C));
-			Vnext(r) = V(r) + H * (((numb)1.0 / P(tau)) * (-r_mid_guess + P(p6) * v_mid_guess + P(p7)));
+			while ((dz > tol) && (nnewt < nnewtmax)) {
+
+				J[0][0] = (-(p[1] + (numb)2.0 * p[2] * Z[0]) * (Z[0] - p[3]) - (p[0] + p[1] * Z[0] + p[2] * Z[0] * Z[0]) - p[5] * Z[1]) / p[8];
+				J[0][1] = -p[5] * (Z[0] - p[4]) / p[8];
+
+				J[1][0] = p[6] / p[9];
+				J[1][1] = -(numb)1.0 / p[9];
+
+				for (i = 0; i < N; i++) {
+					for (j = 0; j < N; j++) {
+						if (i == j)
+							W[i][j] = (numb)1.0 - (numb)0.5 * h * J[i][j];
+						else
+							W[i][j] = -(numb)0.5 * h * J[i][j];
+					}
+				}
+
+				for (i = 0; i < N; i++)
+					a[i] = (numb)0.5 * (v[i] + Z[i]);
+
+				I = p[10] + (fmod((a[2] - p[12]) > (numb)0.0 ? (a[2] - p[12]) : (p[13] / p[14] + p[12] - a[2]), (numb)1.0 / p[14]) < p[13] / p[14] ? p[11] : (numb)0.0);
+
+				W[0][N] = v[0] - Z[0] + h * ((-(p[0] + p[1] * a[0] + p[2] * a[0] * a[0]) * (a[0] - p[3]) - p[5] * a[1] * (a[0] - p[4]) + I) / p[8]);
+				W[1][N] = v[1] - Z[1] + h * (((numb)1.0 / p[9]) * (-a[1] + p[6] * a[0] + p[7]));
+				W[2][N] = v[2] - Z[2] + h * (numb)1.0;
+
+				int k;
+				numb b, d;
+
+				for (k = 0; k <= N - 2; k++) {
+
+					int l = k;
+
+					for (i = k + 1; i <= N - 1; i++) {
+						if (fabs(W[i][k]) > fabs(W[l][k])) {
+							l = i;
+						}
+					}
+					if (l != k) {
+						for (j = 0; j <= N; j++) {
+							if ((j == 0) || (j >= k)) {
+								b = W[k][j];
+								W[k][j] = W[l][j];
+								W[l][j] = b;
+							}
+						}
+					}
+
+					d = (numb)1.0 / W[k][k];
+					for (i = (k + 1); i <= (N - 1); i++) {
+						if (W[i][k] == (numb)0.0) {
+							continue;
+						}
+						b = W[i][k] * d;
+						for (j = k; j <= N; j++) {
+							if (W[k][j] != (numb)0.0) {
+								W[i][j] = W[i][j] - b * W[k][j];
+							}
+						}
+					}
+				}
+
+				for (i = N; i >= 2; i--) {
+					for (j = 1; j <= i - 1; j++) {
+						b = W[i - j - 1][i - 1] / W[i - 1][i - 1];
+						W[i - j - 1][N] = W[i - j - 1][N] - b * W[i - 1][N];
+					}
+					W[i - 1][N] = W[i - 1][N] / W[i - 1][i - 1];
+				}
+				W[0][N] = W[0][N] / W[0][0];
+
+				for (i = 0; i < N; i++)
+					Zn[i] = Z[i] + W[i][N];
+
+				dz = (numb)0.0;
+				for (i = 0; i < N; i++) {
+					numb diff = Zn[i] - Z[i];
+					dz += diff * diff;
+				}
+				dz = sqrt(dz);
+
+				for (i = 0; i < N; i++)
+					Z[i] = Zn[i];
+
+				nnewt++;
+			}
+
+			Vnext(v) = Z[0];
+			Vnext(r) = Z[1];
+			Vnext(t) = Z[2];
+
+			Vnext(i) = p[10] + (fmod((Vnext(t) - p[12]) > (numb)0.0 ? (Vnext(t) - p[12]) : (p[13] / p[14] + p[12] - Vnext(t)), (numb)1.0 / p[14]) < p[13] / p[14] ? p[11] : (numb)0.0);
 		}
+
+
 		ifMETHOD(P(method), ExplicitRungeKutta4)
 		{
-			numb i1 = P(Idc) + (fmod((V(t) - P(Idel)) > (numb)0.0 ? (V(t) - P(Idel)) : (P(Idf) / P(Ifreq) + P(Idel) - V(t)), (numb)1.0 / P(Ifreq)) < P(Idf) / P(Ifreq) ? P(Iamp) : (numb)0.0);
-			numb kt1 = V(t) + (numb)0.5 * H;
+			numb k[N][4];
+			numb a[N];
+			numb I;
+			int i, j;
 
-			numb kv1 = (-(P(p0) + P(p1) * V(v) + P(p2) * V(v) * V(v)) * (V(v) - P(p3)) - P(p5) * V(r) * (V(v) - P(p4)) + i1) / P(C);
-			numb kr1 = ((numb)1.0 / P(tau)) * (-V(r) + P(p6) * V(v) + P(p7));
+			for (i = 0; i < N; i++)
+				a[i] = v[i];
 
-			numb vmp = V(v) + (numb)0.5 * H * kv1;
-			numb rmp = V(r) + (numb)0.5 * H * kr1;
+			for (j = 0; j < 4; j++) {
 
-			numb i2 = P(Idc) + (fmod((kt1 - P(Idel)) > (numb)0.0 ? (kt1 - P(Idel)) : (P(Idf) / P(Ifreq) + P(Idel) - kt1), (numb)1.0 / P(Ifreq)) < P(Idf) / P(Ifreq) ? P(Iamp) : (numb)0.0);
-			numb kv2 = (-(P(p0) + P(p1) * vmp + P(p2) * vmp * vmp) * (vmp - P(p3)) - P(p5) * rmp * (vmp - P(p4)) + i2) / P(C);
-			numb kr2 = ((numb)1.0 / P(tau)) * (-rmp + P(p6) * vmp + P(p7));
+				I = p[10] + (fmod((a[2] - p[12]) > (numb)0.0 ? (a[2] - p[12]) : (p[13] / p[14] + p[12] - a[2]), (numb)1.0 / p[14]) < p[13] / p[14] ? p[11] : (numb)0.0);
 
-			vmp = V(v) + (numb)0.5 * H * kv2;
-			rmp = V(r) + (numb)0.5 * H * kr2;
+				k[0][j] = (-(p[0] + p[1] * a[0] + p[2] * a[0] * a[0]) * (a[0] - p[3]) - p[5] * a[1] * (a[0] - p[4]) + I) / p[8];
+				k[1][j] = ((numb)1.0 / p[9]) * (-a[1] + p[6] * a[0] + p[7]);
+				k[2][j] = (numb)1.0;
 
-			numb kv3 = (-(P(p0) + P(p1) * vmp + P(p2) * vmp * vmp) * (vmp - P(p3)) - P(p5) * rmp * (vmp - P(p4)) + i2) / P(C);
-			numb kr3 = ((numb)1.0 / P(tau)) * (-rmp + P(p6) * vmp + P(p7));
-			Vnext(t) = V(t) + H;
+				if (j == 3) {
 
-			vmp = V(v) + H * kv3;
-			rmp = V(r) + H * kr3;
+					Vnext(v) = v[0] + h * (k[0][0] + (numb)2.0 * k[0][1] + (numb)2.0 * k[0][2] + k[0][3]) / (numb)6.0;
+					Vnext(r) = v[1] + h * (k[1][0] + (numb)2.0 * k[1][1] + (numb)2.0 * k[1][2] + k[1][3]) / (numb)6.0;
+					Vnext(t) = v[2] + h * (k[2][0] + (numb)2.0 * k[2][1] + (numb)2.0 * k[2][2] + k[2][3]) / (numb)6.0;
+				}
+				else if (j == 2) {
 
-			numb i3 = P(Idc) + (fmod((Vnext(t) - P(Idel)) > (numb)0.0 ? (Vnext(t) - P(Idel)) : (P(Idf) / P(Ifreq) + P(Idel) - Vnext(t)), (numb)1.0 / P(Ifreq)) < P(Idf) / P(Ifreq) ? P(Iamp) : (numb)0.0);
-			numb kv4 = (-(P(p0) + P(p1) * vmp + P(p2) * vmp * vmp) * (vmp - P(p3)) - P(p5) * rmp * (vmp - P(p4)) + i3) / P(C);
-			numb kr4 = ((numb)1.0 / P(tau)) * (-rmp + P(p6) * vmp + P(p7));
+					for (i = 0; i < N; i++)
+						a[i] = v[i] + h * k[i][j];
+				}
+				else {
 
-			Vnext(i) = i3;
-			Vnext(v) = V(v) + H * (kv1 + (numb)2.0 * kv2 + (numb)2.0 * kv3 + kv4) / (numb)6.0;
-			Vnext(r) = V(r) + H * (kr1 + (numb)2.0 * kr2 + (numb)2.0 * kr3 + kr4) / (numb)6.0;
+					for (i = 0; i < N; i++)
+						a[i] = v[i] + (numb)0.5 * h * k[i][j];
+				}
+			}
+
+			Vnext(i) = p[10] + (fmod((Vnext(t) - p[12]) > (numb)0.0 ? (Vnext(t) - p[12]) : (p[13] / p[14] + p[12] - Vnext(t)), (numb)1.0 / p[14]) < p[13] / p[14] ? p[11] : (numb)0.0);
 		}
+
 		ifMETHOD(P(method), VariableSymmetryCD)
 		{
-			numb h1 = (numb)0.5 * H - P(symmetry);
-			numb h2 = (numb)0.5 * H + P(symmetry);
+			numb h1 = (numb)0.5 * h - p[15];
+			numb h2 = (numb)0.5 * h + p[15];
 
-			Vnext(i) = P(Idc) + (fmod((V(t) - P(Idel)) > (numb)0.0 ? (V(t) - P(Idel)) : (P(Idf) / P(Ifreq) + P(Idel) - V(t)), (numb)1.0 / P(Ifreq)) < P(Idf) / P(Ifreq) ? P(Iamp) : (numb)0.0);
-			Vnext(v) = V(v) + h1 * ((-(P(p0) + P(p1) * V(v) + P(p2) * V(v) * V(v)) * (V(v) - P(p3)) - P(p5) * V(r) * (V(v) - P(p4)) + Vnext(i)) / P(C));
-			Vnext(r) = V(r) + h1 * (((numb)1.0 / P(tau)) * (-V(r) + P(p6) * Vnext(v) + P(p7)));
+			numb I = p[10] + (fmod((v[2] - p[12]) > (numb)0.0 ? (v[2] - p[12]) : (p[13] / p[14] + p[12] - v[2]), (numb)1.0 / p[14]) < p[13] / p[14] ? p[11] : (numb)0.0);
 
 
-			numb vmp = Vnext(v);
-			numb rmp = Vnext(r);
+			numb vmp = v[0] + h1 * ((-(p[0] + p[1] * v[0] + p[2] * v[0] * v[0]) * (v[0] - p[3]) - p[5] * v[1] * (v[0] - p[4]) + I) / p[8]);
+			numb rmp = v[1] + h1 * (((numb)1.0 / p[9]) * (-v[1] + p[6] * v[0] + p[7]));
 
-			Vnext(r) = (rmp + (h2 / P(tau)) * (P(p6) * vmp + P(p7))) / ((numb)1.0 + h2 / P(tau));
+			Vnext(t) = v[2] + h;
 
-			Vnext(v) = vmp + h2 * ((-(P(p0) + P(p1) * Vnext(v) + P(p2) * Vnext(v) * Vnext(v)) * (Vnext(v) - P(p3)) - P(p5) * Vnext(r) * (Vnext(v) - P(p4)) + Vnext(i)) / P(C));
-			Vnext(v) = vmp + h2 * ((-(P(p0) + P(p1) * Vnext(v) + P(p2) * Vnext(v) * Vnext(v)) * (Vnext(v) - P(p3)) - P(p5) * Vnext(r) * (Vnext(v) - P(p4)) + Vnext(i)) / P(C));
-			Vnext(v) = vmp + h2 * ((-(P(p0) + P(p1) * Vnext(v) + P(p2) * Vnext(v) * Vnext(v)) * (Vnext(v) - P(p3)) - P(p5) * Vnext(r) * (Vnext(v) - P(p4)) + Vnext(i)) / P(C));
-			Vnext(v) = vmp + h2 * ((-(P(p0) + P(p1) * Vnext(v) + P(p2) * Vnext(v) * Vnext(v)) * (Vnext(v) - P(p3)) - P(p5) * Vnext(r) * (Vnext(v) - P(p4)) + Vnext(i)) / P(C));
-			Vnext(v) = vmp + h2 * ((-(P(p0) + P(p1) * Vnext(v) + P(p2) * Vnext(v) * Vnext(v)) * (Vnext(v) - P(p3)) - P(p5) * Vnext(r) * (Vnext(v) - P(p4)) + Vnext(i)) / P(C));
-			Vnext(v) = vmp + h2 * ((-(P(p0) + P(p1) * Vnext(v) + P(p2) * Vnext(v) * Vnext(v)) * (Vnext(v) - P(p3)) - P(p5) * Vnext(r) * (Vnext(v) - P(p4)) + Vnext(i)) / P(C));
-			Vnext(v) = vmp + h2 * ((-(P(p0) + P(p1) * Vnext(v) + P(p2) * Vnext(v) * Vnext(v)) * (Vnext(v) - P(p3)) - P(p5) * Vnext(r) * (Vnext(v) - P(p4)) + Vnext(i)) / P(C));
-			Vnext(t) = V(t) + H;
+			numb Z[2], Zn[2], J[2][2], W[2][3];
+			numb tol = (numb)1e-14, dz = (numb)2e-13;
+			int nnewtmax = 8, nnewt = 0;
+			int i, j;
+
+			Z[0] = vmp;
+			Z[1] = rmp;
+
+			while ((dz > tol) && (nnewt < nnewtmax)) {
+
+				numb I_next = p[10] + (fmod((Vnext(t) - p[12]) > (numb)0.0 ? (Vnext(t) - p[12]) : (p[13] / p[14] + p[12] - Vnext(t)), (numb)1.0 / p[14]) < p[13] / p[14] ? p[11] : (numb)0.0);
+
+				J[0][0] = (-(p[1] + (numb)2.0 * p[2] * Z[0]) * (Z[0] - p[3]) - (p[0] + p[1] * Z[0] + p[2] * Z[0] * Z[0]) - p[5] * Z[1]) / p[8];
+				J[0][1] = -p[5] * (Z[0] - p[4]) / p[8];
+				J[1][0] = p[6] / p[9];
+				J[1][1] = -(numb)1.0 / p[9];
+
+				for (i = 0; i < 2; i++) {
+					for (j = 0; j < 2; j++) {
+						if (i == j)
+							W[i][j] = (numb)1.0 - h2 * J[i][j];
+						else
+							W[i][j] = -h2 * J[i][j];
+					}
+				}
+
+				numb f_v = (-(p[0] + p[1] * Z[0] + p[2] * Z[0] * Z[0]) * (Z[0] - p[3]) - p[5] * Z[1] * (Z[0] - p[4]) + I_next) / p[8];
+				numb f_r = ((numb)1.0 / p[9]) * (-Z[1] + p[6] * Z[0] + p[7]);
+
+				W[0][2] = vmp - Z[0] + h2 * f_v;
+				W[1][2] = rmp - Z[1] + h2 * f_r;
+
+				numb b, d;
+				for (int k = 0; k <= 0; k++) {
+					int l = k;
+					for (i = k + 1; i <= 1; i++) {
+						if (fabs(W[i][k]) > fabs(W[l][k])) {
+							l = i;
+						}
+					}
+					if (l != k) {
+						for (j = 0; j <= 2; j++) {
+							b = W[k][j];
+							W[k][j] = W[l][j];
+							W[l][j] = b;
+						}
+					}
+
+					d = (numb)1.0 / W[k][k];
+					for (i = (k + 1); i <= 1; i++) {
+						if (W[i][k] == (numb)0.0) {
+							continue;
+						}
+						b = W[i][k] * d;
+						for (j = k; j <= 2; j++) {
+							if (W[k][j] != (numb)0.0) {
+								W[i][j] = W[i][j] - b * W[k][j];
+							}
+						}
+					}
+				}
+
+				W[1][2] = W[1][2] / W[1][1];
+				W[0][2] = (W[0][2] - W[0][1] * W[1][2]) / W[0][0];
+
+				for (i = 0; i < 2; i++)
+					Zn[i] = Z[i] + W[i][2];
+
+				dz = (numb)0.0;
+				for (i = 0; i < 2; i++) {
+					numb diff = Zn[i] - Z[i];
+					dz += diff * diff;
+				}
+				dz = sqrt(dz);
+
+				for (i = 0; i < 2; i++)
+					Z[i] = Zn[i];
+
+				nnewt++;
+			}
+
+			Vnext(v) = Z[0];
+			Vnext(r) = Z[1];
+
+			Vnext(i) = p[10] + (fmod((Vnext(t) - p[12]) > (numb)0.0 ? (Vnext(t) - p[12]) : (p[13] / p[14] + p[12] - Vnext(t)), (numb)1.0 / p[14]) < p[13] / p[14] ? p[11] : (numb)0.0);
 		}
+
+
+		ifMETHOD(P(method), ExplicitDormandPrince8)
+		{
+			const numb M[14][13] = {
+				{(numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0},
+				{(numb)0.05555555555556, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0},
+				{(numb)0.02083333333333, (numb)0.0625, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0},
+				{(numb)0.03125, (numb)0.0, (numb)0.09375, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0},
+				{(numb)0.3125, (numb)0.0, -(numb)1.171875, (numb)1.171875, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0},
+				{(numb)0.0375, (numb)0.0, (numb)0.0, (numb)0.1875, (numb)0.15, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0},
+				{(numb)0.04791013711111, (numb)0.0, (numb)0.0, (numb)0.1122487127778, -(numb)0.02550567377778, (numb)0.01284682388889, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0},
+				{(numb)0.01691798978729, (numb)0.0, (numb)0.0, (numb)0.387848278486, (numb)0.0359773698515, (numb)0.1969702142157, -(numb)0.1727138523405, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0},
+				{(numb)0.06909575335919, (numb)0.0, (numb)0.0, -(numb)0.6342479767289, -(numb)0.1611975752246, (numb)0.1386503094588, (numb)0.9409286140358, (numb)0.2116363264819, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0},
+				{(numb)0.183556996839, (numb)0.0, (numb)0.0, -(numb)2.468768084316, -(numb)0.2912868878163, -(numb)0.02647302023312, (numb)2.847838764193, (numb)0.2813873314699, (numb)0.1237448998633, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0},
+				{-(numb)1.215424817396, (numb)0.0, (numb)0.0, (numb)16.67260866595, (numb)0.9157418284168, -(numb)6.056605804357, -(numb)16.00357359416, (numb)14.8493030863, -(numb)13.37157573529, (numb)5.13418264818, (numb)0.0, (numb)0.0, (numb)0.0},
+				{(numb)0.2588609164383, (numb)0.0, (numb)0.0, -(numb)4.774485785489, -(numb)0.435093013777, -(numb)3.049483332072, (numb)5.577920039936, (numb)6.155831589861, -(numb)5.062104586737, (numb)2.193926173181, (numb)0.1346279986593, (numb)0.0, (numb)0.0},
+				{(numb)0.8224275996265, (numb)0.0, (numb)0.0, -(numb)11.65867325728, -(numb)0.7576221166909, (numb)0.7139735881596, (numb)12.07577498689, -(numb)2.12765911392, (numb)1.990166207049, -(numb)0.234286471544, (numb)0.1758985777079, (numb)0.0, (numb)0.0},
+				{(numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0}
+			};
+
+			const numb b[13] = { (numb)0.04174749114153, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, -(numb)0.05545232861124, (numb)0.2393128072012, (numb)0.7035106694034, -(numb)0.7597596138145, (numb)0.6605630309223, (numb)0.1581874825101, -(numb)0.2381095387529, (numb)0.25 };
+
+			numb y[N], X1[N], X2[N];
+			numb k[N][13];
+			int i = 0, j = 0, l = 0;
+			numb I;
+
+			for (i = 0; i < N; i++)
+				X1[i] = v[i];
+
+			for (i = 0; i < 13; i++) {
+
+				I = p[10] + (fmod((X1[2] - p[12]) > (numb)0.0 ? (X1[2] - p[12]) : (p[13] / p[14] + p[12] - X1[2]), (numb)1.0 / p[14]) < p[13] / p[14] ? p[11] : (numb)0.0);
+
+				k[0][i] = (-(p[0] + p[1] * X1[0] + p[2] * X1[0] * X1[0]) * (X1[0] - p[3]) - p[5] * X1[1] * (X1[0] - p[4]) + I) / p[8];
+				k[1][i] = ((numb)1.0 / p[9]) * (-X1[1] + p[6] * X1[0] + p[7]);
+				k[2][i] = (numb)1.0;
+
+				for (l = 0; l < N; l++)
+					X2[l] = 0;
+
+				for (j = 0; j < i + 1; j++)
+					for (l = 0; l < N; l++)
+						X2[l] += M[i + 1][j] * k[l][j];
+
+				for (l = 0; l < N; l++)
+					X1[l] = v[l] + h * X2[l];
+			}
+
+			for (l = 0; l < N; l++)
+				X2[l] = 0;
+
+			for (i = 0; i < 13; i++)
+				for (l = 0; l < N; l++)
+					X2[l] += b[i] * k[l][i];
+
+			for (l = 0; l < N; l++)
+				y[l] = v[l] + h * X2[l];
+
+			Vnext(v) = y[0];
+			Vnext(r) = y[1];
+			Vnext(t) = y[2];
+
+			Vnext(i) = p[10] + (fmod((Vnext(t) - p[12]) > (numb)0.0 ? (Vnext(t) - p[12]) : (p[13] / p[14] + p[12] - Vnext(t)), (numb)1.0 / p[14]) < p[13] / p[14] ? p[11] : (numb)0.0);
+		}
+
 	}
 	ifSIGNAL(P(signal), sine)
 	{
 		ifMETHOD(P(method), ExplicitEuler)
 		{
-			Vnext(i) = P(Idc) + P(Iamp) * sin((numb)2.0 * (numb)3.141592653589793 * P(Ifreq) * (V(t) - P(Idel)));
-			Vnext(t) = V(t) + H;
-			Vnext(v) = V(v) + H * ((-(P(p0) + P(p1) * V(v) + P(p2) * V(v) * V(v)) * (V(v) - P(p3)) - P(p5) * V(r) * (V(v) - P(p4)) + Vnext(i)) / P(C));
-			Vnext(r) = V(r) + H * (((numb)1.0 / P(tau)) * (-V(r) + P(p6) * V(v) + P(p7)));
+			numb I = p[10] + p[11] * sin((numb)2.0 * (numb)3.141592653589793 * p[14] * (v[2] - p[12]));
+			Vnext(t) = v[2] + h;
+			Vnext(v) = V(v) + h * ((-(p[0] + p[1] * V(v) + p[2] * V(v) * V(v)) * (V(v) - p[3]) - p[5] * V(r) * (V(v) - p[4]) + I) / p[8]);
+			Vnext(r) = V(r) + h * (((numb)1.0 / p[9]) * (-V(r) + p[6] * V(v) + p[7]));
+			Vnext(i) = p[10] + p[11] * sin((numb)2.0 * (numb)3.141592653589793 * p[14] * (Vnext(t) - p[12]));
 		}
 		ifMETHOD(P(method), SemiExplicitEuler)
 		{
-			Vnext(t) = V(t) + H;
-			Vnext(r) = V(r) + H * (((numb)1.0 / P(tau)) * (-V(r) + P(p6) * V(v) + P(p7)));
-			Vnext(i) = P(Idc) + P(Iamp) * sin((numb)2.0 * (numb)3.141592653589793 * P(Ifreq) * (Vnext(t) - P(Idel)));
-			Vnext(v) = V(v) + H * ((-(P(p0) + P(p1) * V(v) + P(p2) * V(v) * V(v)) * (V(v) - P(p3)) - P(p5) * Vnext(r) * (V(v) - P(p4)) + Vnext(i)) / P(C));
+			numb I = p[10] + p[11] * sin((numb)2.0 * (numb)3.141592653589793 * p[14] * (v[2] - p[12]));
+			Vnext(t) = v[2] + h;
+			Vnext(r) = V(r) + h * (((numb)1.0 / p[9]) * (-V(r) + p[6] * V(v) + p[7]));
+			Vnext(v) = V(v) + h * ((-(p[0] + p[1] * V(v) + p[2] * V(v) * V(v)) * (V(v) - p[3]) - p[5] * Vnext(r) * (V(v) - p[4]) + I) / p[8]);
+			Vnext(i) = p[10] + p[11] * sin((numb)2.0 * (numb)3.141592653589793 * p[14] * (Vnext(t) - p[12]));
 		}
+
 		ifMETHOD(P(method), ImplicitEuler)
 		{
-			Vnext(i) = P(Idc) + P(Iamp) * sin((numb)2.0 * (numb)3.141592653589793 * P(Ifreq) * (V(t) - P(Idel)));
-			Vnext(t) = V(t) + H;
-			numb v_guess = V(v) + H * ((-(P(p0) + P(p1) * V(v) + P(p2) * V(v) * V(v)) * (V(v) - P(p3)) - P(p5) * V(r) * (V(v) - P(p4)) + Vnext(i)) / P(C));
-			numb r_guess = V(r) + H * (((numb)1.0 / P(tau)) * (-V(r) + P(p6) * V(v) + P(p7)));
+			numb Z[N], Zn[N], J[N][N], W[N][N + 1];
 
-			v_guess = V(v) + H * ((-(P(p0) + P(p1) * v_guess + P(p2) * v_guess * v_guess) * (v_guess - P(p3)) - P(p5) * r_guess * (v_guess - P(p4)) + Vnext(i)) / P(C));
-			v_guess = V(v) + H * ((-(P(p0) + P(p1) * v_guess + P(p2) * v_guess * v_guess) * (v_guess - P(p3)) - P(p5) * r_guess * (v_guess - P(p4)) + Vnext(i)) / P(C));
-			v_guess = V(v) + H * ((-(P(p0) + P(p1) * v_guess + P(p2) * v_guess * v_guess) * (v_guess - P(p3)) - P(p5) * r_guess * (v_guess - P(p4)) + Vnext(i)) / P(C));
-			v_guess = V(v) + H * ((-(P(p0) + P(p1) * v_guess + P(p2) * v_guess * v_guess) * (v_guess - P(p3)) - P(p5) * r_guess * (v_guess - P(p4)) + Vnext(i)) / P(C));
-			v_guess = V(v) + H * ((-(P(p0) + P(p1) * v_guess + P(p2) * v_guess * v_guess) * (v_guess - P(p3)) - P(p5) * r_guess * (v_guess - P(p4)) + Vnext(i)) / P(C));
+			numb tol = (numb)1e-14, dz = (numb)2e-13;
+			numb I;
+			int nnewtmax = 8, nnewt = 0;
+			int i, j;
 
-			r_guess = V(r) + H * (((numb)1.0 / P(tau)) * (-r_guess + P(p6) * v_guess + P(p7)));
-			r_guess = V(r) + H * (((numb)1.0 / P(tau)) * (-r_guess + P(p6) * v_guess + P(p7)));
-			r_guess = V(r) + H * (((numb)1.0 / P(tau)) * (-r_guess + P(p6) * v_guess + P(p7)));
-			r_guess = V(r) + H * (((numb)1.0 / P(tau)) * (-r_guess + P(p6) * v_guess + P(p7)));
-			r_guess = V(r) + H * (((numb)1.0 / P(tau)) * (-r_guess + P(p6) * v_guess + P(p7)));
+			J[0][2] = (numb)0.0;
+			J[1][2] = (numb)0.0;
+			J[2][0] = (numb)0.0;
+			J[2][1] = (numb)0.0;
+			J[2][2] = (numb)0.0;
 
-			Vnext(v) = v_guess;
-			Vnext(r) = r_guess;
+			for (i = 0; i < N; i++)
+				Z[i] = v[i];
+
+			while ((dz > tol) && (nnewt < nnewtmax)) {
+
+				I = p[10] + p[11] * sin((numb)2.0 * (numb)3.141592653589793 * p[14] * (Z[2] - p[12]));
+				J[0][0] = (-(p[1] + (numb)2.0 * p[2] * Z[0]) * (Z[0] - p[3]) - (p[0] + p[1] * Z[0] + p[2] * Z[0] * Z[0]) - p[5] * Z[1]) / p[8];
+				J[0][1] = -p[5] * (Z[0] - p[4]) / p[8];
+				J[1][0] = p[6] / p[9];
+				J[1][1] = -(numb)1.0 / p[9];
+
+				for (i = 0; i < N; i++) {
+					for (j = 0; j < N; j++) {
+						if (i == j)
+							W[i][j] = (numb)1.0 - h * J[i][j];
+						else
+							W[i][j] = -h * J[i][j];
+					}
+				}
+
+				numb f_v = (-(p[0] + p[1] * Z[0] + p[2] * Z[0] * Z[0]) * (Z[0] - p[3]) - p[5] * Z[1] * (Z[0] - p[4]) + I) / p[8];
+				numb f_r = ((numb)1.0 / p[9]) * (-Z[1] + p[6] * Z[0] + p[7]);
+				numb f_t = (numb)1.0;
+
+				W[0][N] = v[0] - Z[0] + h * f_v;
+				W[1][N] = v[1] - Z[1] + h * f_r;
+				W[2][N] = v[2] - Z[2] + h * f_t;
+
+				int k;
+				numb b, d;
+
+				for (k = 0; k <= N - 2; k++) {
+
+					int l = k;
+
+					for (i = k + 1; i <= N - 1; i++) {
+						if (fabs(W[i][k]) > fabs(W[l][k])) {
+							l = i;
+						}
+					}
+					if (l != k) {
+						for (j = 0; j <= N; j++) {
+							if ((j == 0) || (j >= k)) {
+								b = W[k][j];
+								W[k][j] = W[l][j];
+								W[l][j] = b;
+							}
+						}
+					}
+
+					d = (numb)1.0 / W[k][k];
+					for (i = (k + 1); i <= (N - 1); i++) {
+						if (W[i][k] == (numb)0.0) {
+							continue;
+						}
+						b = W[i][k] * d;
+						for (j = k; j <= N; j++) {
+							if (W[k][j] != (numb)0.0) {
+								W[i][j] = W[i][j] - b * W[k][j];
+							}
+						}
+					}
+				}
+
+				for (i = N; i >= 2; i--) {
+					for (j = 1; j <= i - 1; j++) {
+						b = W[i - j - 1][i - 1] / W[i - 1][i - 1];
+						W[i - j - 1][N] = W[i - j - 1][N] - b * W[i - 1][N];
+					}
+					W[i - 1][N] = W[i - 1][N] / W[i - 1][i - 1];
+				}
+				W[0][N] = W[0][N] / W[0][0];
+
+				for (i = 0; i < N; i++)
+					Zn[i] = Z[i] + W[i][N];
+
+				dz = (numb)0.0;
+				for (i = 0; i < N; i++) {
+					numb diff = Zn[i] - Z[i];
+					dz += diff * diff;
+				}
+				dz = sqrt(dz);
+
+				for (i = 0; i < N; i++)
+					Z[i] = Zn[i];
+
+				nnewt++;
+			}
+
+			Vnext(v) = Z[0];
+			Vnext(r) = Z[1];
+			Vnext(t) = Z[2];
+
+			Vnext(i) = p[10] + p[11] * sin((numb)2.0 * (numb)3.141592653589793 * p[14] * (Vnext(t) - p[12]));
+
 		}
+
 		ifMETHOD(P(method), ExplicitMidpoint)
 		{
-			numb imp = P(Idc) + P(Iamp) * sin((numb)2.0 * (numb)3.141592653589793 * P(Ifreq) * (V(t) - P(Idel)));
-			numb tmp = V(t) + H * (numb)0.5;
-			numb vmp = V(v) + H * (numb)0.5 * ((-(P(p0) + P(p1) * V(v) + P(p2) * V(v) * V(v)) * (V(v) - P(p3)) - P(p5) * V(r) * (V(v) - P(p4)) + imp) / P(C));
-			numb rmp = V(r) + H * (numb)0.5 * (((numb)1.0 / P(tau)) * (-V(r) + P(p6) * V(v) + P(p7)));
+			numb imp = Vnext(i) = p[10] + p[11] * sin((numb)2.0 * (numb)3.141592653589793 * p[14] * (v[2] - p[12]));
 
-			Vnext(i) = P(Idc) + P(Iamp) * sin((numb)2.0 * (numb)3.141592653589793 * P(Ifreq) * (tmp - P(Idel)));
-			Vnext(t) = V(t) + H;
-			Vnext(v) = V(v) + H * ((-(P(p0) + P(p1) * vmp + P(p2) * vmp * vmp) * (vmp - P(p3)) - P(p5) * rmp * (vmp - P(p4)) + Vnext(i)) / P(C));
-			Vnext(r) = V(r) + H * (((numb)1.0 / P(tau)) * (-rmp + P(p6) * vmp + P(p7)));
+			numb vmp = v[0] + h * (numb)0.5 * ((-(p[0] + p[1] * v[0] + p[2] * v[0] * v[0]) * (v[0] - p[3]) - p[5] * v[1] * (v[0] - p[4]) + imp) / p[8]);
+			numb rmp = v[1] + h * (numb)0.5 * (((numb)1.0 / p[9]) * (-v[1] + p[6] * v[0] + p[7]));
+			numb tmp = v[2] + h * (numb)0.5;
+
+			numb I = Vnext(i) = p[10] + p[11] * sin((numb)2.0 * (numb)3.141592653589793 * p[14] * (tmp - p[12]));
+
+			Vnext(v) = v[0] + h * ((-(p[0] + p[1] * vmp + p[2] * vmp * vmp) * (vmp - p[3]) - p[5] * rmp * (vmp - p[4]) + I) / p[8]);
+			Vnext(r) = v[1] + h * (((numb)1.0 / p[9]) * (-rmp + p[6] * vmp + p[7]));
+			Vnext(t) = v[2] + h;
+
+			Vnext(i) = p[10] + p[11] * sin((numb)2.0 * (numb)3.141592653589793 * p[14] * (Vnext(t) - p[12]));
 		}
+
+
 		ifMETHOD(P(method), ImplicitMidpoint)
 		{
-			numb imp = P(Idc) + P(Iamp) * sin((numb)2.0 * (numb)3.141592653589793 * P(Ifreq) * (V(t) - P(Idel)));
-			numb tmp = V(t) + (numb)0.5 * H;
-			numb v_mid_guess = V(v) + H * (numb)0.5 * ((-(P(p0) + P(p1) * V(v) + P(p2) * V(v) * V(v)) * (V(v) - P(p3)) - P(p5) * V(r) * (V(v) - P(p4)) + imp) / P(C));
-			numb r_mid_guess = V(r) + H * (numb)0.5 * (((numb)1.0 / P(tau)) * (-V(r) + P(p6) * V(v) + P(p7)));
+			numb a[N], Z[N], Zn[N], J[N][N], W[N][N + 1];
+			numb tol = (numb)1e-14, dz = (numb)2e-13;
+			numb I;
+			int nnewtmax = 8, nnewt = 0;
+			int i, j;
 
-			v_mid_guess = V(v) + H * (numb)0.5 * ((-(P(p0) + P(p1) * v_mid_guess + P(p2) * v_mid_guess * v_mid_guess) * (v_mid_guess - P(p3)) - P(p5) * r_mid_guess * (v_mid_guess - P(p4)) + imp) / P(C));
-			v_mid_guess = V(v) + H * (numb)0.5 * ((-(P(p0) + P(p1) * v_mid_guess + P(p2) * v_mid_guess * v_mid_guess) * (v_mid_guess - P(p3)) - P(p5) * r_mid_guess * (v_mid_guess - P(p4)) + imp) / P(C));
-			v_mid_guess = V(v) + H * (numb)0.5 * ((-(P(p0) + P(p1) * v_mid_guess + P(p2) * v_mid_guess * v_mid_guess) * (v_mid_guess - P(p3)) - P(p5) * r_mid_guess * (v_mid_guess - P(p4)) + imp) / P(C));
-			v_mid_guess = V(v) + H * (numb)0.5 * ((-(P(p0) + P(p1) * v_mid_guess + P(p2) * v_mid_guess * v_mid_guess) * (v_mid_guess - P(p3)) - P(p5) * r_mid_guess * (v_mid_guess - P(p4)) + imp) / P(C));
-			v_mid_guess = V(v) + H * (numb)0.5 * ((-(P(p0) + P(p1) * v_mid_guess + P(p2) * v_mid_guess * v_mid_guess) * (v_mid_guess - P(p3)) - P(p5) * r_mid_guess * (v_mid_guess - P(p4)) + imp) / P(C));
+			J[0][2] = (numb)0.0;
+			J[1][2] = (numb)0.0;
+			J[2][0] = (numb)0.0;
+			J[2][1] = (numb)0.0;
+			J[2][2] = (numb)0.0;
 
-			r_mid_guess = V(r) + H * (numb)0.5 * (((numb)1.0 / P(tau)) * (-r_mid_guess + P(p6) * v_mid_guess + P(p7)));
-			r_mid_guess = V(r) + H * (numb)0.5 * (((numb)1.0 / P(tau)) * (-r_mid_guess + P(p6) * v_mid_guess + P(p7)));
-			r_mid_guess = V(r) + H * (numb)0.5 * (((numb)1.0 / P(tau)) * (-r_mid_guess + P(p6) * v_mid_guess + P(p7)));
-			r_mid_guess = V(r) + H * (numb)0.5 * (((numb)1.0 / P(tau)) * (-r_mid_guess + P(p6) * v_mid_guess + P(p7)));
-			r_mid_guess = V(r) + H * (numb)0.5 * (((numb)1.0 / P(tau)) * (-r_mid_guess + P(p6) * v_mid_guess + P(p7)));
+			for (i = 0; i < N; i++)
+				Z[i] = v[i];
 
-			Vnext(t) = V(t) + H;
-			Vnext(i) = P(Idc) + P(Iamp) * sin((numb)2.0 * (numb)3.141592653589793 * P(Ifreq) * (tmp - P(Idel)));
-			Vnext(v) = V(v) + H * ((-(P(p0) + P(p1) * v_mid_guess + P(p2) * v_mid_guess * v_mid_guess) * (v_mid_guess - P(p3)) - P(p5) * r_mid_guess * (v_mid_guess - P(p4)) + Vnext(i)) / P(C));
-			Vnext(r) = V(r) + H * (((numb)1.0 / P(tau)) * (-r_mid_guess + P(p6) * v_mid_guess + P(p7)));
+			while ((dz > tol) && (nnewt < nnewtmax)) {
+
+				J[0][0] = (-(p[1] + (numb)2.0 * p[2] * Z[0]) * (Z[0] - p[3]) - (p[0] + p[1] * Z[0] + p[2] * Z[0] * Z[0]) - p[5] * Z[1]) / p[8];
+				J[0][1] = -p[5] * (Z[0] - p[4]) / p[8];
+
+				J[1][0] = p[6] / p[9];
+				J[1][1] = -(numb)1.0 / p[9];
+
+				for (i = 0; i < N; i++) {
+					for (j = 0; j < N; j++) {
+						if (i == j)
+							W[i][j] = (numb)1.0 - (numb)0.5 * h * J[i][j];
+						else
+							W[i][j] = -(numb)0.5 * h * J[i][j];
+					}
+				}
+
+				for (i = 0; i < N; i++)
+					a[i] = (numb)0.5 * (v[i] + Z[i]);
+
+				I = p[10] + p[11] * sin((numb)2.0 * (numb)3.141592653589793 * p[14] * (a[2] - p[12]));
+				 
+				W[0][N] = v[0] - Z[0] + h * ((-(p[0] + p[1] * a[0] + p[2] * a[0] * a[0]) * (a[0] - p[3]) - p[5] * a[1] * (a[0] - p[4]) + I) / p[8]);
+				W[1][N] = v[1] - Z[1] + h * (((numb)1.0 / p[9]) * (-a[1] + p[6] * a[0] + p[7]));
+				W[2][N] = v[2] - Z[2] + h * (numb)1.0;
+
+				int k;
+				numb b, d;
+
+				for (k = 0; k <= N - 2; k++) {
+
+					int l = k;
+
+					for (i = k + 1; i <= N - 1; i++) {
+						if (fabs(W[i][k]) > fabs(W[l][k])) {
+							l = i;
+						}
+					}
+					if (l != k) {
+						for (j = 0; j <= N; j++) {
+							if ((j == 0) || (j >= k)) {
+								b = W[k][j];
+								W[k][j] = W[l][j];
+								W[l][j] = b;
+							}
+						}
+					}
+
+					d = (numb)1.0 / W[k][k];
+					for (i = (k + 1); i <= (N - 1); i++) {
+						if (W[i][k] == (numb)0.0) {
+							continue;
+						}
+						b = W[i][k] * d;
+						for (j = k; j <= N; j++) {
+							if (W[k][j] != (numb)0.0) {
+								W[i][j] = W[i][j] - b * W[k][j];
+							}
+						}
+					}
+				}
+
+				for (i = N; i >= 2; i--) {
+					for (j = 1; j <= i - 1; j++) {
+						b = W[i - j - 1][i - 1] / W[i - 1][i - 1];
+						W[i - j - 1][N] = W[i - j - 1][N] - b * W[i - 1][N];
+					}
+					W[i - 1][N] = W[i - 1][N] / W[i - 1][i - 1];
+				}
+				W[0][N] = W[0][N] / W[0][0];
+
+				for (i = 0; i < N; i++)
+					Zn[i] = Z[i] + W[i][N];
+
+				dz = (numb)0.0;
+				for (i = 0; i < N; i++) {
+					numb diff = Zn[i] - Z[i];
+					dz += diff * diff;
+				}
+				dz = sqrt(dz);
+
+				for (i = 0; i < N; i++)
+					Z[i] = Zn[i];
+
+				nnewt++;
+			}
+
+			Vnext(v) = Z[0];
+			Vnext(r) = Z[1];
+			Vnext(t) = Z[2];
+
+			Vnext(i) = p[10] + p[11] * sin((numb)2.0 * (numb)3.141592653589793 * p[14] * (Vnext(t) - p[12]));
 		}
+
+
 		ifMETHOD(P(method), ExplicitRungeKutta4)
 		{
-			numb i1 = P(Idc) + P(Iamp) * sin((numb)2.0 * (numb)3.141592653589793 * P(Ifreq) * (V(t) - P(Idel)));
-			numb kt1 = V(t) + (numb)0.5 * H;
+			numb k[N][4];
+			numb a[N];
+			numb I;
+			int i, j;
 
-			numb kv1 = (-(P(p0) + P(p1) * V(v) + P(p2) * V(v) * V(v)) * (V(v) - P(p3)) - P(p5) * V(r) * (V(v) - P(p4)) + i1) / P(C);
-			numb kr1 = ((numb)1.0 / P(tau)) * (-V(r) + P(p6) * V(v) + P(p7));
+			for (i = 0; i < N; i++)
+				a[i] = v[i];
 
-			numb vmp = V(v) + (numb)0.5 * H * kv1;
-			numb rmp = V(r) + (numb)0.5 * H * kr1;
+			for (j = 0; j < 4; j++) {
 
-			numb i2 = P(Idc) + P(Iamp) * sin((numb)2.0 * (numb)3.141592653589793 * P(Ifreq) * (kt1 - P(Idel)));
-			numb kv2 = (-(P(p0) + P(p1) * vmp + P(p2) * vmp * vmp) * (vmp - P(p3)) - P(p5) * rmp * (vmp - P(p4)) + i2) / P(C);
-			numb kr2 = ((numb)1.0 / P(tau)) * (-rmp + P(p6) * vmp + P(p7));
+				I = p[10] + p[11] * sin((numb)2.0 * (numb)3.141592653589793 * p[14] * (a[2] - p[12]));
 
-			vmp = V(v) + (numb)0.5 * H * kv2;
-			rmp = V(r) + (numb)0.5 * H * kr2;
+				k[0][j] = (-(p[0] + p[1] * a[0] + p[2] * a[0] * a[0]) * (a[0] - p[3]) - p[5] * a[1] * (a[0] - p[4]) + I) / p[8];
+				k[1][j] = ((numb)1.0 / p[9]) * (-a[1] + p[6] * a[0] + p[7]);
+				k[2][j] = (numb)1.0;
 
-			numb kv3 = (-(P(p0) + P(p1) * vmp + P(p2) * vmp * vmp) * (vmp - P(p3)) - P(p5) * rmp * (vmp - P(p4)) + i2) / P(C);
-			numb kr3 = ((numb)1.0 / P(tau)) * (-rmp + P(p6) * vmp + P(p7));
-			Vnext(t) = V(t) + H;
+				if (j == 3) {
 
-			vmp = V(v) + H * kv3;
-			rmp = V(r) + H * kr3;
+					Vnext(v) = v[0] + h * (k[0][0] + (numb)2.0 * k[0][1] + (numb)2.0 * k[0][2] + k[0][3]) / (numb)6.0;
+					Vnext(r) = v[1] + h * (k[1][0] + (numb)2.0 * k[1][1] + (numb)2.0 * k[1][2] + k[1][3]) / (numb)6.0;
+					Vnext(t) = v[2] + h * (k[2][0] + (numb)2.0 * k[2][1] + (numb)2.0 * k[2][2] + k[2][3]) / (numb)6.0;
+				}
+				else if (j == 2) {
 
-			numb i3 = P(Idc) + P(Iamp) * sin((numb)2.0 * (numb)3.141592653589793 * P(Ifreq) * (Vnext(t) - P(Idel)));
-			numb kv4 = (-(P(p0) + P(p1) * vmp + P(p2) * vmp * vmp) * (vmp - P(p3)) - P(p5) * rmp * (vmp - P(p4)) + i3) / P(C);
-			numb kr4 = ((numb)1.0 / P(tau)) * (-rmp + P(p6) * vmp + P(p7));
+					for (i = 0; i < N; i++)
+						a[i] = v[i] + h * k[i][j];
+				}
+				else {
 
-			Vnext(i) = i3;
-			Vnext(v) = V(v) + H * (kv1 + (numb)2.0 * kv2 + (numb)2.0 * kv3 + kv4) / (numb)6.0;
-			Vnext(r) = V(r) + H * (kr1 + (numb)2.0 * kr2 + (numb)2.0 * kr3 + kr4) / (numb)6.0;
+					for (i = 0; i < N; i++)
+						a[i] = v[i] + (numb)0.5 * h * k[i][j];
+				}
+			}
+
+			Vnext(i) = p[10] + p[11] * sin((numb)2.0 * (numb)3.141592653589793 * p[14] * (Vnext(t) - p[12]));
 		}
+
+
 		ifMETHOD(P(method), VariableSymmetryCD)
 		{
-			numb h1 = (numb)0.5 * H - P(symmetry);
-			numb h2 = (numb)0.5 * H + P(symmetry);
+			numb h1 = (numb)0.5 * h - p[15];
+			numb h2 = (numb)0.5 * h + p[15];
 
-			Vnext(i) = P(Idc) + P(Iamp) * sin((numb)2.0 * (numb)3.141592653589793 * P(Ifreq) * (V(t) - P(Idel)));
-			Vnext(v) = V(v) + h1 * ((-(P(p0) + P(p1) * V(v) + P(p2) * V(v) * V(v)) * (V(v) - P(p3)) - P(p5) * V(r) * (V(v) - P(p4)) + Vnext(i)) / P(C));
-			Vnext(r) = V(r) + h1 * (((numb)1.0 / P(tau)) * (-V(r) + P(p6) * Vnext(v) + P(p7)));
+			numb I = p[10] + p[11] * sin((numb)2.0 * (numb)3.141592653589793 * p[14] * (v[2] - p[12]));
 
+			numb vmp = v[0] + h1 * ((-(p[0] + p[1] * v[0] + p[2] * v[0] * v[0]) * (v[0] - p[3]) - p[5] * v[1] * (v[0] - p[4]) + I) / p[8]);
+			numb rmp = v[1] + h1 * (((numb)1.0 / p[9]) * (-v[1] + p[6] * v[0] + p[7]));
 
-			numb vmp = Vnext(v);
-			numb rmp = Vnext(r);
+			Vnext(t) = v[2] + h;
 
-			Vnext(r) = (rmp + (h2 / P(tau)) * (P(p6) * vmp + P(p7))) / ((numb)1.0 + h2 / P(tau));
+			numb Z[2], Zn[2], J[2][2], W[2][3];
+			numb tol = (numb)1e-14, dz = (numb)2e-13;
+			int nnewtmax = 8, nnewt = 0;
+			int i, j;
 
-			Vnext(v) = vmp + h2 * ((-(P(p0) + P(p1) * Vnext(v) + P(p2) * Vnext(v) * Vnext(v)) * (Vnext(v) - P(p3)) - P(p5) * Vnext(r) * (Vnext(v) - P(p4)) + Vnext(i)) / P(C));
-			Vnext(v) = vmp + h2 * ((-(P(p0) + P(p1) * Vnext(v) + P(p2) * Vnext(v) * Vnext(v)) * (Vnext(v) - P(p3)) - P(p5) * Vnext(r) * (Vnext(v) - P(p4)) + Vnext(i)) / P(C));
-			Vnext(v) = vmp + h2 * ((-(P(p0) + P(p1) * Vnext(v) + P(p2) * Vnext(v) * Vnext(v)) * (Vnext(v) - P(p3)) - P(p5) * Vnext(r) * (Vnext(v) - P(p4)) + Vnext(i)) / P(C));
-			Vnext(v) = vmp + h2 * ((-(P(p0) + P(p1) * Vnext(v) + P(p2) * Vnext(v) * Vnext(v)) * (Vnext(v) - P(p3)) - P(p5) * Vnext(r) * (Vnext(v) - P(p4)) + Vnext(i)) / P(C));
-			Vnext(v) = vmp + h2 * ((-(P(p0) + P(p1) * Vnext(v) + P(p2) * Vnext(v) * Vnext(v)) * (Vnext(v) - P(p3)) - P(p5) * Vnext(r) * (Vnext(v) - P(p4)) + Vnext(i)) / P(C));
-			Vnext(v) = vmp + h2 * ((-(P(p0) + P(p1) * Vnext(v) + P(p2) * Vnext(v) * Vnext(v)) * (Vnext(v) - P(p3)) - P(p5) * Vnext(r) * (Vnext(v) - P(p4)) + Vnext(i)) / P(C));
-			Vnext(v) = vmp + h2 * ((-(P(p0) + P(p1) * Vnext(v) + P(p2) * Vnext(v) * Vnext(v)) * (Vnext(v) - P(p3)) - P(p5) * Vnext(r) * (Vnext(v) - P(p4)) + Vnext(i)) / P(C));
-			Vnext(t) = V(t) + H;
+			Z[0] = vmp;
+			Z[1] = rmp;
+
+			while ((dz > tol) && (nnewt < nnewtmax)) {
+
+				numb I_next = p[10] + p[11] * sin((numb)2.0 * (numb)3.141592653589793 * p[14] * (Vnext(t) - p[12]));
+
+				J[0][0] = (-(p[1] + (numb)2.0 * p[2] * Z[0]) * (Z[0] - p[3]) - (p[0] + p[1] * Z[0] + p[2] * Z[0] * Z[0]) - p[5] * Z[1]) / p[8];
+				J[0][1] = -p[5] * (Z[0] - p[4]) / p[8];
+				J[1][0] = p[6] / p[9];
+				J[1][1] = -(numb)1.0 / p[9];
+
+				for (i = 0; i < 2; i++) {
+					for (j = 0; j < 2; j++) {
+						if (i == j)
+							W[i][j] = (numb)1.0 - h2 * J[i][j];
+						else
+							W[i][j] = -h2 * J[i][j];
+					}
+				}
+
+				numb f_v = (-(p[0] + p[1] * Z[0] + p[2] * Z[0] * Z[0]) * (Z[0] - p[3]) - p[5] * Z[1] * (Z[0] - p[4]) + I_next) / p[8];
+				numb f_r = ((numb)1.0 / p[9]) * (-Z[1] + p[6] * Z[0] + p[7]);
+
+				W[0][2] = vmp - Z[0] + h2 * f_v;
+				W[1][2] = rmp - Z[1] + h2 * f_r;
+
+				numb b, d;
+				for (int k = 0; k <= 0; k++) {
+					int l = k;
+					for (i = k + 1; i <= 1; i++) {
+						if (fabs(W[i][k]) > fabs(W[l][k])) {
+							l = i;
+						}
+					}
+					if (l != k) {
+						for (j = 0; j <= 2; j++) {
+							b = W[k][j];
+							W[k][j] = W[l][j];
+							W[l][j] = b;
+						}
+					}
+
+					d = (numb)1.0 / W[k][k];
+					for (i = (k + 1); i <= 1; i++) {
+						if (W[i][k] == (numb)0.0) {
+							continue;
+						}
+						b = W[i][k] * d;
+						for (j = k; j <= 2; j++) {
+							if (W[k][j] != (numb)0.0) {
+								W[i][j] = W[i][j] - b * W[k][j];
+							}
+						}
+					}
+				}
+
+				W[1][2] = W[1][2] / W[1][1];
+				W[0][2] = (W[0][2] - W[0][1] * W[1][2]) / W[0][0];
+
+				for (i = 0; i < 2; i++)
+					Zn[i] = Z[i] + W[i][2];
+
+				dz = (numb)0.0;
+				for (i = 0; i < 2; i++) {
+					numb diff = Zn[i] - Z[i];
+					dz += diff * diff;
+				}
+				dz = sqrt(dz);
+
+				for (i = 0; i < 2; i++)
+					Z[i] = Zn[i];
+
+				nnewt++;
+			}
+
+			Vnext(v) = Z[0];
+			Vnext(r) = Z[1];
+
+			Vnext(i) = p[10] + p[11] * sin((numb)2.0 * (numb)3.141592653589793 * p[14] * (Vnext(t) - p[12]));
 		}
+
+		ifMETHOD(P(method), ExplicitDormandPrince8)
+		{
+			const numb M[14][13] = {
+				{(numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0},
+				{(numb)0.05555555555556, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0},
+				{(numb)0.02083333333333, (numb)0.0625, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0},
+				{(numb)0.03125, (numb)0.0, (numb)0.09375, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0},
+				{(numb)0.3125, (numb)0.0, -(numb)1.171875, (numb)1.171875, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0},
+				{(numb)0.0375, (numb)0.0, (numb)0.0, (numb)0.1875, (numb)0.15, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0},
+				{(numb)0.04791013711111, (numb)0.0, (numb)0.0, (numb)0.1122487127778, -(numb)0.02550567377778, (numb)0.01284682388889, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0},
+				{(numb)0.01691798978729, (numb)0.0, (numb)0.0, (numb)0.387848278486, (numb)0.0359773698515, (numb)0.1969702142157, -(numb)0.1727138523405, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0},
+				{(numb)0.06909575335919, (numb)0.0, (numb)0.0, -(numb)0.6342479767289, -(numb)0.1611975752246, (numb)0.1386503094588, (numb)0.9409286140358, (numb)0.2116363264819, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0},
+				{(numb)0.183556996839, (numb)0.0, (numb)0.0, -(numb)2.468768084316, -(numb)0.2912868878163, -(numb)0.02647302023312, (numb)2.847838764193, (numb)0.2813873314699, (numb)0.1237448998633, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0},
+				{-(numb)1.215424817396, (numb)0.0, (numb)0.0, (numb)16.67260866595, (numb)0.9157418284168, -(numb)6.056605804357, -(numb)16.00357359416, (numb)14.8493030863, -(numb)13.37157573529, (numb)5.13418264818, (numb)0.0, (numb)0.0, (numb)0.0},
+				{(numb)0.2588609164383, (numb)0.0, (numb)0.0, -(numb)4.774485785489, -(numb)0.435093013777, -(numb)3.049483332072, (numb)5.577920039936, (numb)6.155831589861, -(numb)5.062104586737, (numb)2.193926173181, (numb)0.1346279986593, (numb)0.0, (numb)0.0},
+				{(numb)0.8224275996265, (numb)0.0, (numb)0.0, -(numb)11.65867325728, -(numb)0.7576221166909, (numb)0.7139735881596, (numb)12.07577498689, -(numb)2.12765911392, (numb)1.990166207049, -(numb)0.234286471544, (numb)0.1758985777079, (numb)0.0, (numb)0.0},
+				{(numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0}
+			};
+
+			const numb b[13] = { (numb)0.04174749114153, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, -(numb)0.05545232861124, (numb)0.2393128072012, (numb)0.7035106694034, -(numb)0.7597596138145, (numb)0.6605630309223, (numb)0.1581874825101, -(numb)0.2381095387529, (numb)0.25 };
+
+			numb y[N], X1[N], X2[N];
+			numb k[N][13];
+			int i = 0, j = 0, l = 0;
+			numb I;
+
+			for (i = 0; i < N; i++)
+				X1[i] = v[i];
+
+
+			for (i = 0; i < 13; i++) {
+
+				I = p[10] + p[11] * sin((numb)2.0 * (numb)3.141592653589793 * p[14] * (X1[2] - p[12]));
+
+				k[0][i] = (-(p[0] + p[1] * X1[0] + p[2] * X1[0] * X1[0]) * (X1[0] - p[3]) - p[5] * X1[1] * (X1[0] - p[4]) + I) / p[8];
+				k[1][i] = ((numb)1.0 / p[9]) * (-X1[1] + p[6] * X1[0] + p[7]);
+				k[2][i] = (numb)1.0;
+
+				for (l = 0; l < N; l++)
+					X2[l] = 0;
+
+				for (j = 0; j < i + 1; j++)
+					for (l = 0; l < N; l++)
+						X2[l] += M[i + 1][j] * k[l][j];
+
+				for (l = 0; l < N; l++)
+					X1[l] = v[l] + h * X2[l];
+			}
+
+			for (l = 0; l < N; l++)
+				X2[l] = 0;
+
+			for (i = 0; i < 13; i++)
+				for (l = 0; l < N; l++)
+					X2[l] += b[i] * k[l][i];
+
+			for (l = 0; l < N; l++)
+				y[l] = v[l] + h * X2[l];
+
+			Vnext(v) = y[0];
+			Vnext(r) = y[1];
+			Vnext(t) = y[2];
+
+			Vnext(i) = p[10] + p[11] * sin((numb)2.0 * (numb)3.141592653589793 * p[14] * (Vnext(t) - p[12]));
+		}
+	
+	
 	}
+
 	ifSIGNAL(P(signal), triangle)
 	{
 		ifMETHOD(P(method), ExplicitEuler)
 		{
-			Vnext(i) = P(Idc) + P(Iamp) * (((numb)4.0 * P(Ifreq) * (V(t) - P(Idel)) - (numb)2.0 * floor(((numb)4.0 * P(Ifreq) * (V(t) - P(Idel)) + (numb)1.0) / (numb)2.0)) * ((int)floor(((numb)4.0 * P(Ifreq) * (V(t) - P(Idel)) + (numb)1.0) / (numb)2.0) % 2 == 0 ? (numb)1.0 : (numb)-1.0));
-			Vnext(t) = V(t) + H;
-			Vnext(v) = V(v) + H * ((-(P(p0) + P(p1) * V(v) + P(p2) * V(v) * V(v)) * (V(v) - P(p3)) - P(p5) * V(r) * (V(v) - P(p4)) + Vnext(i)) / P(C));
-			Vnext(r) = V(r) + H * (((numb)1.0 / P(tau)) * (-V(r) + P(p6) * V(v) + P(p7)));
+			numb I = p[10] + p[11] * (((numb)4.0 * p[14] * (v[2] - p[12]) - (numb)2.0 * floor(((numb)4.0 * p[14] * (v[2] - p[12]) + (numb)1.0) / (numb)2.0)) * ((int)floor(((numb)4.0 * p[14] * (v[2] - p[12]) + (numb)1.0) / (numb)2.0) % 2 == 0 ? (numb)1.0 : (numb)-1.0));
+			Vnext(t) = v[2] + h;
+			Vnext(v) = V(v) + h * ((-(p[0] + p[1] * V(v) + p[2] * V(v) * V(v)) * (V(v) - p[3]) - p[5] * V(r) * (V(v) - p[4]) + I) / p[8]);
+			Vnext(r) = V(r) + h * (((numb)1.0 / p[9]) * (-V(r) + p[6] * V(v) + p[7]));
+			Vnext(i) = p[10] + p[11] * (((numb)4.0 * p[14] * (Vnext(t) - p[12]) - (numb)2.0 * floor(((numb)4.0 * p[14] * (Vnext(t) - p[12]) + (numb)1.0) / (numb)2.0)) * ((int)floor(((numb)4.0 * p[14] * (Vnext(t) - p[12]) + (numb)1.0) / (numb)2.0) % 2 == 0 ? (numb)1.0 : (numb)-1.0));
 		}
 		ifMETHOD(P(method), SemiExplicitEuler)
 		{
-			Vnext(t) = V(t) + H;
-			Vnext(r) = V(r) + H * (((numb)1.0 / P(tau)) * (-V(r) + P(p6) * V(v) + P(p7)));
-			Vnext(i) = P(Idc) + P(Iamp) * (((numb)4.0 * P(Ifreq) * (Vnext(t) - P(Idel)) - (numb)2.0 * floor(((numb)4.0 * P(Ifreq) * (Vnext(t) - P(Idel)) + (numb)1.0) / (numb)2.0)) * ((int)floor(((numb)4.0 * P(Ifreq) * (Vnext(t) - P(Idel)) + (numb)1.0) / (numb)2.0) % 2 == 0 ? (numb)1.0 : (numb)-1.0));
-			Vnext(v) = V(v) + H * ((-(P(p0) + P(p1) * V(v) + P(p2) * V(v) * V(v)) * (V(v) - P(p3)) - P(p5) * Vnext(r) * (V(v) - P(p4)) + Vnext(i)) / P(C));
+			numb I = p[10] + p[11] * (((numb)4.0 * p[14] * (v[2] - p[12]) - (numb)2.0 * floor(((numb)4.0 * p[14] * (v[2] - p[12]) + (numb)1.0) / (numb)2.0)) * ((int)floor(((numb)4.0 * p[14] * (v[2] - p[12]) + (numb)1.0) / (numb)2.0) % 2 == 0 ? (numb)1.0 : (numb)-1.0));
+			Vnext(t) = v[2] + h;
+			Vnext(r) = V(r) + h * (((numb)1.0 / p[9]) * (-V(r) + p[6] * V(v) + p[7]));
+			Vnext(v) = V(v) + h * ((-(p[0] + p[1] * V(v) + p[2] * V(v) * V(v)) * (V(v) - p[3]) - p[5] * Vnext(r) * (V(v) - p[4]) + I) / p[8]);
+			Vnext(i) = p[10] + p[11] * (((numb)4.0 * p[14] * (Vnext(t) - p[12]) - (numb)2.0 * floor(((numb)4.0 * p[14] * (Vnext(t) - p[12]) + (numb)1.0) / (numb)2.0)) * ((int)floor(((numb)4.0 * p[14] * (Vnext(t) - p[12]) + (numb)1.0) / (numb)2.0) % 2 == 0 ? (numb)1.0 : (numb)-1.0));
 		}
+
 		ifMETHOD(P(method), ImplicitEuler)
 		{
-			Vnext(i) = P(Idc) + P(Iamp) * (((numb)4.0 * P(Ifreq) * (V(t) - P(Idel)) - (numb)2.0 * floor(((numb)4.0 * P(Ifreq) * (V(t) - P(Idel)) + (numb)1.0) / (numb)2.0)) * ((int)floor(((numb)4.0 * P(Ifreq) * (V(t) - P(Idel)) + (numb)1.0) / (numb)2.0) % 2 == 0 ? (numb)1.0 : (numb)-1.0));
-			Vnext(t) = V(t) + H;
-			numb v_guess = V(v) + H * ((-(P(p0) + P(p1) * V(v) + P(p2) * V(v) * V(v)) * (V(v) - P(p3)) - P(p5) * V(r) * (V(v) - P(p4)) + Vnext(i)) / P(C));
-			numb r_guess = V(r) + H * (((numb)1.0 / P(tau)) * (-V(r) + P(p6) * V(v) + P(p7)));
+			numb Z[N], Zn[N], J[N][N], W[N][N + 1];
 
-			v_guess = V(v) + H * ((-(P(p0) + P(p1) * v_guess + P(p2) * v_guess * v_guess) * (v_guess - P(p3)) - P(p5) * r_guess * (v_guess - P(p4)) + Vnext(i)) / P(C));
-			v_guess = V(v) + H * ((-(P(p0) + P(p1) * v_guess + P(p2) * v_guess * v_guess) * (v_guess - P(p3)) - P(p5) * r_guess * (v_guess - P(p4)) + Vnext(i)) / P(C));
-			v_guess = V(v) + H * ((-(P(p0) + P(p1) * v_guess + P(p2) * v_guess * v_guess) * (v_guess - P(p3)) - P(p5) * r_guess * (v_guess - P(p4)) + Vnext(i)) / P(C));
-			v_guess = V(v) + H * ((-(P(p0) + P(p1) * v_guess + P(p2) * v_guess * v_guess) * (v_guess - P(p3)) - P(p5) * r_guess * (v_guess - P(p4)) + Vnext(i)) / P(C));
-			v_guess = V(v) + H * ((-(P(p0) + P(p1) * v_guess + P(p2) * v_guess * v_guess) * (v_guess - P(p3)) - P(p5) * r_guess * (v_guess - P(p4)) + Vnext(i)) / P(C));
+			numb tol = (numb)1e-14, dz = (numb)2e-13;
+			numb I;
+			int nnewtmax = 8, nnewt = 0;
+			int i, j;
 
-			r_guess = V(r) + H * (((numb)1.0 / P(tau)) * (-r_guess + P(p6) * v_guess + P(p7)));
-			r_guess = V(r) + H * (((numb)1.0 / P(tau)) * (-r_guess + P(p6) * v_guess + P(p7)));
-			r_guess = V(r) + H * (((numb)1.0 / P(tau)) * (-r_guess + P(p6) * v_guess + P(p7)));
-			r_guess = V(r) + H * (((numb)1.0 / P(tau)) * (-r_guess + P(p6) * v_guess + P(p7)));
-			r_guess = V(r) + H * (((numb)1.0 / P(tau)) * (-r_guess + P(p6) * v_guess + P(p7)));
+			J[0][2] = (numb)0.0;
+			J[1][2] = (numb)0.0;
+			J[2][0] = (numb)0.0;
+			J[2][1] = (numb)0.0;
+			J[2][2] = (numb)0.0;
 
-			Vnext(v) = v_guess;
-			Vnext(r) = r_guess;
+			for (i = 0; i < N; i++)
+				Z[i] = v[i];
+
+			while ((dz > tol) && (nnewt < nnewtmax)) {
+
+				I = p[10] + p[11] * (((numb)4.0 * p[14] * (Z[2] - p[12]) - (numb)2.0 * floor(((numb)4.0 * p[14] * (Z[2] - p[12]) + (numb)1.0) / (numb)2.0)) * ((int)floor(((numb)4.0 * p[14] * (Z[2] - p[12]) + (numb)1.0) / (numb)2.0) % 2 == 0 ? (numb)1.0 : (numb)-1.0));
+				J[0][0] = (-(p[1] + (numb)2.0 * p[2] * Z[0]) * (Z[0] - p[3]) - (p[0] + p[1] * Z[0] + p[2] * Z[0] * Z[0]) - p[5] * Z[1]) / p[8];
+				J[0][1] = -p[5] * (Z[0] - p[4]) / p[8];
+				J[1][0] = p[6] / p[9];
+				J[1][1] = -(numb)1.0 / p[9];
+
+				for (i = 0; i < N; i++) {
+					for (j = 0; j < N; j++) {
+						if (i == j)
+							W[i][j] = (numb)1.0 - h * J[i][j];
+						else
+							W[i][j] = -h * J[i][j];
+					}
+				}
+
+				numb f_v = (-(p[0] + p[1] * Z[0] + p[2] * Z[0] * Z[0]) * (Z[0] - p[3]) - p[5] * Z[1] * (Z[0] - p[4]) + I) / p[8];
+				numb f_r = ((numb)1.0 / p[9]) * (-Z[1] + p[6] * Z[0] + p[7]);
+				numb f_t = (numb)1.0;
+
+				W[0][N] = v[0] - Z[0] + h * f_v;
+				W[1][N] = v[1] - Z[1] + h * f_r;
+				W[2][N] = v[2] - Z[2] + h * f_t;
+
+				int k;
+				numb b, d;
+
+				for (k = 0; k <= N - 2; k++) {
+
+					int l = k;
+
+					for (i = k + 1; i <= N - 1; i++) {
+						if (fabs(W[i][k]) > fabs(W[l][k])) {
+							l = i;
+						}
+					}
+					if (l != k) {
+						for (j = 0; j <= N; j++) {
+							if ((j == 0) || (j >= k)) {
+								b = W[k][j];
+								W[k][j] = W[l][j];
+								W[l][j] = b;
+							}
+						}
+					}
+
+					d = (numb)1.0 / W[k][k];
+					for (i = (k + 1); i <= (N - 1); i++) {
+						if (W[i][k] == (numb)0.0) {
+							continue;
+						}
+						b = W[i][k] * d;
+						for (j = k; j <= N; j++) {
+							if (W[k][j] != (numb)0.0) {
+								W[i][j] = W[i][j] - b * W[k][j];
+							}
+						}
+					}
+				}
+
+				for (i = N; i >= 2; i--) {
+					for (j = 1; j <= i - 1; j++) {
+						b = W[i - j - 1][i - 1] / W[i - 1][i - 1];
+						W[i - j - 1][N] = W[i - j - 1][N] - b * W[i - 1][N];
+					}
+					W[i - 1][N] = W[i - 1][N] / W[i - 1][i - 1];
+				}
+				W[0][N] = W[0][N] / W[0][0];
+
+				for (i = 0; i < N; i++)
+					Zn[i] = Z[i] + W[i][N];
+
+				dz = (numb)0.0;
+				for (i = 0; i < N; i++) {
+					numb diff = Zn[i] - Z[i];
+					dz += diff * diff;
+				}
+				dz = sqrt(dz);
+
+				for (i = 0; i < N; i++)
+					Z[i] = Zn[i];
+
+				nnewt++;
+			}
+
+			Vnext(v) = Z[0];
+			Vnext(r) = Z[1];
+			Vnext(t) = Z[2];
+
+			Vnext(i) = p[10] + p[11] * (((numb)4.0 * p[14] * (Vnext(t) - p[12]) - (numb)2.0 * floor(((numb)4.0 * p[14] * (Vnext(t) - p[12]) + (numb)1.0) / (numb)2.0)) * ((int)floor(((numb)4.0 * p[14] * (Vnext(t) - p[12]) + (numb)1.0) / (numb)2.0) % 2 == 0 ? (numb)1.0 : (numb)-1.0));
+
 		}
+
 		ifMETHOD(P(method), ExplicitMidpoint)
 		{
-			numb imp = P(Idc) + P(Iamp) * (((numb)4.0 * P(Ifreq) * (V(t) - P(Idel)) - (numb)2.0 * floor(((numb)4.0 * P(Ifreq) * (V(t) - P(Idel)) + (numb)1.0) / (numb)2.0)) * ((int)floor(((numb)4.0 * P(Ifreq) * (V(t) - P(Idel)) + (numb)1.0) / (numb)2.0) % 2 == 0 ? (numb)1.0 : (numb)-1.0));
-			numb tmp = V(t) + H * (numb)0.5;
-			numb vmp = V(v) + H * (numb)0.5 * ((-(P(p0) + P(p1) * V(v) + P(p2) * V(v) * V(v)) * (V(v) - P(p3)) - P(p5) * V(r) * (V(v) - P(p4)) + imp) / P(C));
-			numb rmp = V(r) + H * (numb)0.5 * (((numb)1.0 / P(tau)) * (-V(r) + P(p6) * V(v) + P(p7)));
+			numb imp = Vnext(i) = p[10] + p[11] * (((numb)4.0 * p[14] * (v[2] - p[12]) - (numb)2.0 * floor(((numb)4.0 * p[14] * (v[2] - p[12]) + (numb)1.0) / (numb)2.0)) * ((int)floor(((numb)4.0 * p[14] * (v[2] - p[12]) + (numb)1.0) / (numb)2.0) % 2 == 0 ? (numb)1.0 : (numb)-1.0));
 
-			Vnext(i) = P(Idc) + P(Iamp) * (((numb)4.0 * P(Ifreq) * (tmp - P(Idel)) - (numb)2.0 * floor(((numb)4.0 * P(Ifreq) * (tmp - P(Idel)) + (numb)1.0) / (numb)2.0)) * ((int)floor(((numb)4.0 * P(Ifreq) * (tmp - P(Idel)) + (numb)1.0) / (numb)2.0) % 2 == 0 ? (numb)1.0 : (numb)-1.0));
-			Vnext(t) = V(t) + H;
-			Vnext(v) = V(v) + H * ((-(P(p0) + P(p1) * vmp + P(p2) * vmp * vmp) * (vmp - P(p3)) - P(p5) * rmp * (vmp - P(p4)) + Vnext(i)) / P(C));
-			Vnext(r) = V(r) + H * (((numb)1.0 / P(tau)) * (-rmp + P(p6) * vmp + P(p7)));
+			numb vmp = v[0] + h * (numb)0.5 * ((-(p[0] + p[1] * v[0] + p[2] * v[0] * v[0]) * (v[0] - p[3]) - p[5] * v[1] * (v[0] - p[4]) + imp) / p[8]);
+			numb rmp = v[1] + h * (numb)0.5 * (((numb)1.0 / p[9]) * (-v[1] + p[6] * v[0] + p[7]));
+			numb tmp = v[2] + h * (numb)0.5;
+
+			numb I = Vnext(i) = p[10] + p[11] * (((numb)4.0 * p[14] * (tmp - p[12]) - (numb)2.0 * floor(((numb)4.0 * p[14] * (tmp - p[12]) + (numb)1.0) / (numb)2.0)) * ((int)floor(((numb)4.0 * p[14] * (tmp - p[12]) + (numb)1.0) / (numb)2.0) % 2 == 0 ? (numb)1.0 : (numb)-1.0));
+
+			Vnext(v) = v[0] + h * ((-(p[0] + p[1] * vmp + p[2] * vmp * vmp) * (vmp - p[3]) - p[5] * rmp * (vmp - p[4]) + I) / p[8]);
+			Vnext(r) = v[1] + h * (((numb)1.0 / p[9]) * (-rmp + p[6] * vmp + p[7]));
+			Vnext(t) = v[2] + h;
+
+			Vnext(i) = p[10] + p[11] * (((numb)4.0 * p[14] * (Vnext(t) - p[12]) - (numb)2.0 * floor(((numb)4.0 * p[14] * (Vnext(t) - p[12]) + (numb)1.0) / (numb)2.0)) * ((int)floor(((numb)4.0 * p[14] * (Vnext(t) - p[12]) + (numb)1.0) / (numb)2.0) % 2 == 0 ? (numb)1.0 : (numb)-1.0));
 		}
+
+
 		ifMETHOD(P(method), ImplicitMidpoint)
 		{
-			numb imp = P(Idc) + P(Iamp) * (((numb)4.0 * P(Ifreq) * (V(t) - P(Idel)) - (numb)2.0 * floor(((numb)4.0 * P(Ifreq) * (V(t) - P(Idel)) + (numb)1.0) / (numb)2.0)) * ((int)floor(((numb)4.0 * P(Ifreq) * (V(t) - P(Idel)) + (numb)1.0) / (numb)2.0) % 2 == 0 ? (numb)1.0 : (numb)-1.0));
-			numb tmp = V(t) + (numb)0.5 * H;
-			numb v_mid_guess = V(v) + H * (numb)0.5 * ((-(P(p0) + P(p1) * V(v) + P(p2) * V(v) * V(v)) * (V(v) - P(p3)) - P(p5) * V(r) * (V(v) - P(p4)) + imp) / P(C));
-			numb r_mid_guess = V(r) + H * (numb)0.5 * (((numb)1.0 / P(tau)) * (-V(r) + P(p6) * V(v) + P(p7)));
+			numb a[N], Z[N], Zn[N], J[N][N], W[N][N + 1];
+			numb tol = (numb)1e-14, dz = (numb)2e-13;
+			numb I;
+			int nnewtmax = 8, nnewt = 0;
+			int i, j;
 
-			v_mid_guess = V(v) + H * (numb)0.5 * ((-(P(p0) + P(p1) * v_mid_guess + P(p2) * v_mid_guess * v_mid_guess) * (v_mid_guess - P(p3)) - P(p5) * r_mid_guess * (v_mid_guess - P(p4)) + imp) / P(C));
-			v_mid_guess = V(v) + H * (numb)0.5 * ((-(P(p0) + P(p1) * v_mid_guess + P(p2) * v_mid_guess * v_mid_guess) * (v_mid_guess - P(p3)) - P(p5) * r_mid_guess * (v_mid_guess - P(p4)) + imp) / P(C));
-			v_mid_guess = V(v) + H * (numb)0.5 * ((-(P(p0) + P(p1) * v_mid_guess + P(p2) * v_mid_guess * v_mid_guess) * (v_mid_guess - P(p3)) - P(p5) * r_mid_guess * (v_mid_guess - P(p4)) + imp) / P(C));
-			v_mid_guess = V(v) + H * (numb)0.5 * ((-(P(p0) + P(p1) * v_mid_guess + P(p2) * v_mid_guess * v_mid_guess) * (v_mid_guess - P(p3)) - P(p5) * r_mid_guess * (v_mid_guess - P(p4)) + imp) / P(C));
-			v_mid_guess = V(v) + H * (numb)0.5 * ((-(P(p0) + P(p1) * v_mid_guess + P(p2) * v_mid_guess * v_mid_guess) * (v_mid_guess - P(p3)) - P(p5) * r_mid_guess * (v_mid_guess - P(p4)) + imp) / P(C));
+			J[0][2] = (numb)0.0;
+			J[1][2] = (numb)0.0;
+			J[2][0] = (numb)0.0;
+			J[2][1] = (numb)0.0;
+			J[2][2] = (numb)0.0;
 
-			r_mid_guess = V(r) + H * (numb)0.5 * (((numb)1.0 / P(tau)) * (-r_mid_guess + P(p6) * v_mid_guess + P(p7)));
-			r_mid_guess = V(r) + H * (numb)0.5 * (((numb)1.0 / P(tau)) * (-r_mid_guess + P(p6) * v_mid_guess + P(p7)));
-			r_mid_guess = V(r) + H * (numb)0.5 * (((numb)1.0 / P(tau)) * (-r_mid_guess + P(p6) * v_mid_guess + P(p7)));
-			r_mid_guess = V(r) + H * (numb)0.5 * (((numb)1.0 / P(tau)) * (-r_mid_guess + P(p6) * v_mid_guess + P(p7)));
-			r_mid_guess = V(r) + H * (numb)0.5 * (((numb)1.0 / P(tau)) * (-r_mid_guess + P(p6) * v_mid_guess + P(p7)));
+			for (i = 0; i < N; i++)
+				Z[i] = v[i];
 
-			Vnext(t) = V(t) + H;
-			Vnext(i) = P(Idc) + P(Iamp) * (((numb)4.0 * P(Ifreq) * (tmp - P(Idel)) - (numb)2.0 * floor(((numb)4.0 * P(Ifreq) * (tmp - P(Idel)) + (numb)1.0) / (numb)2.0)) * ((int)floor(((numb)4.0 * P(Ifreq) * (tmp - P(Idel)) + (numb)1.0) / (numb)2.0) % 2 == 0 ? (numb)1.0 : (numb)-1.0));
-			Vnext(v) = V(v) + H * ((-(P(p0) + P(p1) * v_mid_guess + P(p2) * v_mid_guess * v_mid_guess) * (v_mid_guess - P(p3)) - P(p5) * r_mid_guess * (v_mid_guess - P(p4)) + Vnext(i)) / P(C));
-			Vnext(r) = V(r) + H * (((numb)1.0 / P(tau)) * (-r_mid_guess + P(p6) * v_mid_guess + P(p7)));
+			while ((dz > tol) && (nnewt < nnewtmax)) {
+
+				J[0][0] = (-(p[1] + (numb)2.0 * p[2] * Z[0]) * (Z[0] - p[3]) - (p[0] + p[1] * Z[0] + p[2] * Z[0] * Z[0]) - p[5] * Z[1]) / p[8];
+				J[0][1] = -p[5] * (Z[0] - p[4]) / p[8];
+
+				J[1][0] = p[6] / p[9];
+				J[1][1] = -(numb)1.0 / p[9];
+
+				for (i = 0; i < N; i++) {
+					for (j = 0; j < N; j++) {
+						if (i == j)
+							W[i][j] = (numb)1.0 - (numb)0.5 * h * J[i][j];
+						else
+							W[i][j] = -(numb)0.5 * h * J[i][j];
+					}
+				}
+
+				for (i = 0; i < N; i++)
+					a[i] = (numb)0.5 * (v[i] + Z[i]);
+
+				I = p[10] + p[11] * (((numb)4.0 * p[14] * (a[2] - p[12]) - (numb)2.0 * floor(((numb)4.0 * p[14] * (a[2] - p[12]) + (numb)1.0) / (numb)2.0)) * ((int)floor(((numb)4.0 * p[14] * (a[2] - p[12]) + (numb)1.0) / (numb)2.0) % 2 == 0 ? (numb)1.0 : (numb)-1.0));
+
+				W[0][N] = v[0] - Z[0] + h * ((-(p[0] + p[1] * a[0] + p[2] * a[0] * a[0]) * (a[0] - p[3]) - p[5] * a[1] * (a[0] - p[4]) + I) / p[8]);
+				W[1][N] = v[1] - Z[1] + h * (((numb)1.0 / p[9]) * (-a[1] + p[6] * a[0] + p[7]));
+				W[2][N] = v[2] - Z[2] + h * (numb)1.0;
+
+				int k;
+				numb b, d;
+
+				for (k = 0; k <= N - 2; k++) {
+
+					int l = k;
+
+					for (i = k + 1; i <= N - 1; i++) {
+						if (fabs(W[i][k]) > fabs(W[l][k])) {
+							l = i;
+						}
+					}
+					if (l != k) {
+						for (j = 0; j <= N; j++) {
+							if ((j == 0) || (j >= k)) {
+								b = W[k][j];
+								W[k][j] = W[l][j];
+								W[l][j] = b;
+							}
+						}
+					}
+
+					d = (numb)1.0 / W[k][k];
+					for (i = (k + 1); i <= (N - 1); i++) {
+						if (W[i][k] == (numb)0.0) {
+							continue;
+						}
+						b = W[i][k] * d;
+						for (j = k; j <= N; j++) {
+							if (W[k][j] != (numb)0.0) {
+								W[i][j] = W[i][j] - b * W[k][j];
+							}
+						}
+					}
+				}
+
+				for (i = N; i >= 2; i--) {
+					for (j = 1; j <= i - 1; j++) {
+						b = W[i - j - 1][i - 1] / W[i - 1][i - 1];
+						W[i - j - 1][N] = W[i - j - 1][N] - b * W[i - 1][N];
+					}
+					W[i - 1][N] = W[i - 1][N] / W[i - 1][i - 1];
+				}
+				W[0][N] = W[0][N] / W[0][0];
+
+				for (i = 0; i < N; i++)
+					Zn[i] = Z[i] + W[i][N];
+
+				dz = (numb)0.0;
+				for (i = 0; i < N; i++) {
+					numb diff = Zn[i] - Z[i];
+					dz += diff * diff;
+				}
+				dz = sqrt(dz);
+
+				for (i = 0; i < N; i++)
+					Z[i] = Zn[i];
+
+				nnewt++;
+			}
+
+			Vnext(v) = Z[0];
+			Vnext(r) = Z[1];
+			Vnext(t) = Z[2];
+
+			Vnext(i) = p[10] + p[11] * (((numb)4.0 * p[14] * (Vnext(t) - p[12]) - (numb)2.0 * floor(((numb)4.0 * p[14] * (Vnext(t) - p[12]) + (numb)1.0) / (numb)2.0)) * ((int)floor(((numb)4.0 * p[14] * (Vnext(t) - p[12]) + (numb)1.0) / (numb)2.0) % 2 == 0 ? (numb)1.0 : (numb)-1.0));
 		}
+
+
 		ifMETHOD(P(method), ExplicitRungeKutta4)
 		{
-			numb i1 = P(Idc) + P(Iamp) * (((numb)4.0 * P(Ifreq) * (V(t) - P(Idel)) - (numb)2.0 * floor(((numb)4.0 * P(Ifreq) * (V(t) - P(Idel)) + (numb)1.0) / (numb)2.0)) * ((int)floor(((numb)4.0 * P(Ifreq) * (V(t) - P(Idel)) + (numb)1.0) / (numb)2.0) % 2 == 0 ? (numb)1.0 : (numb)-1.0));
-			numb kt1 = V(t) + (numb)0.5 * H;
+			numb k[N][4];
+			numb a[N];
+			numb I;
+			int i, j;
 
-			numb kv1 = (-(P(p0) + P(p1) * V(v) + P(p2) * V(v) * V(v)) * (V(v) - P(p3)) - P(p5) * V(r) * (V(v) - P(p4)) + i1) / P(C);
-			numb kr1 = ((numb)1.0 / P(tau)) * (-V(r) + P(p6) * V(v) + P(p7));
+			for (i = 0; i < N; i++)
+				a[i] = v[i];
 
-			numb vmp = V(v) + (numb)0.5 * H * kv1;
-			numb rmp = V(r) + (numb)0.5 * H * kr1;
+			for (j = 0; j < 4; j++) {
 
-			numb i2 = P(Idc) + P(Iamp) * (((numb)4.0 * P(Ifreq) * (kt1 - P(Idel)) - (numb)2.0 * floor(((numb)4.0 * P(Ifreq) * (kt1 - P(Idel)) + (numb)1.0) / (numb)2.0)) * ((int)floor(((numb)4.0 * P(Ifreq) * (kt1 - P(Idel)) + (numb)1.0) / (numb)2.0) % 2 == 0 ? (numb)1.0 : (numb)-1.0));
-			numb kv2 = (-(P(p0) + P(p1) * vmp + P(p2) * vmp * vmp) * (vmp - P(p3)) - P(p5) * rmp * (vmp - P(p4)) + i2) / P(C);
-			numb kr2 = ((numb)1.0 / P(tau)) * (-rmp + P(p6) * vmp + P(p7));
+				I = p[10] + p[11] * (((numb)4.0 * p[14] * (a[2] - p[12]) - (numb)2.0 * floor(((numb)4.0 * p[14] * (a[2] - p[12]) + (numb)1.0) / (numb)2.0)) * ((int)floor(((numb)4.0 * p[14] * (a[2] - p[12]) + (numb)1.0) / (numb)2.0) % 2 == 0 ? (numb)1.0 : (numb)-1.0));
 
-			vmp = V(v) + (numb)0.5 * H * kv2;
-			rmp = V(r) + (numb)0.5 * H * kr2;
+				k[0][j] = (-(p[0] + p[1] * a[0] + p[2] * a[0] * a[0]) * (a[0] - p[3]) - p[5] * a[1] * (a[0] - p[4]) + I) / p[8];
+				k[1][j] = ((numb)1.0 / p[9]) * (-a[1] + p[6] * a[0] + p[7]);
+				k[2][j] = (numb)1.0;
 
-			numb kv3 = (-(P(p0) + P(p1) * vmp + P(p2) * vmp * vmp) * (vmp - P(p3)) - P(p5) * rmp * (vmp - P(p4)) + i2) / P(C);
-			numb kr3 = ((numb)1.0 / P(tau)) * (-rmp + P(p6) * vmp + P(p7));
-			Vnext(t) = V(t) + H;
+				if (j == 3) {
 
-			vmp = V(v) + H * kv3;
-			rmp = V(r) + H * kr3;
+					Vnext(v) = v[0] + h * (k[0][0] + (numb)2.0 * k[0][1] + (numb)2.0 * k[0][2] + k[0][3]) / (numb)6.0;
+					Vnext(r) = v[1] + h * (k[1][0] + (numb)2.0 * k[1][1] + (numb)2.0 * k[1][2] + k[1][3]) / (numb)6.0;
+					Vnext(t) = v[2] + h * (k[2][0] + (numb)2.0 * k[2][1] + (numb)2.0 * k[2][2] + k[2][3]) / (numb)6.0;
+				}
+				else if (j == 2) {
 
-			numb i3 = P(Idc) + P(Iamp) * (((numb)4.0 * P(Ifreq) * (Vnext(t) - P(Idel)) - (numb)2.0 * floor(((numb)4.0 * P(Ifreq) * (Vnext(t) - P(Idel)) + (numb)1.0) / (numb)2.0)) * ((int)floor(((numb)4.0 * P(Ifreq) * (Vnext(t) - P(Idel)) + (numb)1.0) / (numb)2.0) % 2 == 0 ? (numb)1.0 : (numb)-1.0));
-			numb kv4 = (-(P(p0) + P(p1) * vmp + P(p2) * vmp * vmp) * (vmp - P(p3)) - P(p5) * rmp * (vmp - P(p4)) + i3) / P(C);
-			numb kr4 = ((numb)1.0 / P(tau)) * (-rmp + P(p6) * vmp + P(p7));
+					for (i = 0; i < N; i++)
+						a[i] = v[i] + h * k[i][j];
+				}
+				else {
 
-			Vnext(t) = V(t) + H;
-			Vnext(i) = i3;
-			Vnext(v) = V(v) + H * (kv1 + (numb)2.0 * kv2 + (numb)2.0 * kv3 + kv4) / (numb)6.0;
-			Vnext(r) = V(r) + H * (kr1 + (numb)2.0 * kr2 + (numb)2.0 * kr3 + kr4) / (numb)6.0;
+					for (i = 0; i < N; i++)
+						a[i] = v[i] + (numb)0.5 * h * k[i][j];
+				}
+			}
 
+			Vnext(i) = p[10] + p[11] * (((numb)4.0 * p[14] * (Vnext(t) - p[12]) - (numb)2.0 * floor(((numb)4.0 * p[14] * (Vnext(t) - p[12]) + (numb)1.0) / (numb)2.0)) * ((int)floor(((numb)4.0 * p[14] * (Vnext(t) - p[12]) + (numb)1.0) / (numb)2.0) % 2 == 0 ? (numb)1.0 : (numb)-1.0));
 		}
+
+
 		ifMETHOD(P(method), VariableSymmetryCD)
 		{
-			numb h1 = (numb)0.5 * H - P(symmetry);
-			numb h2 = (numb)0.5 * H + P(symmetry);
+			numb h1 = (numb)0.5 * h - p[15];
+			numb h2 = (numb)0.5 * h + p[15];
 
-			Vnext(i) = P(Idc) + P(Iamp) * (((numb)4.0 * P(Ifreq) * (V(t) - P(Idel)) - (numb)2.0 * floor(((numb)4.0 * P(Ifreq) * (V(t) - P(Idel)) + (numb)1.0) / (numb)2.0)) * ((int)floor(((numb)4.0 * P(Ifreq) * (V(t) - P(Idel)) + (numb)1.0) / (numb)2.0) % 2 == 0 ? (numb)1.0 : (numb)-1.0));
-			Vnext(v) = V(v) + h1 * ((-(P(p0) + P(p1) * V(v) + P(p2) * V(v) * V(v)) * (V(v) - P(p3)) - P(p5) * V(r) * (V(v) - P(p4)) + Vnext(i)) / P(C));
-			Vnext(r) = V(r) + h1 * (((numb)1.0 / P(tau)) * (-V(r) + P(p6) * Vnext(v) + P(p7)));
+			numb I = p[10] + p[11] * (((numb)4.0 * p[14] * (v[2] - p[12]) - (numb)2.0 * floor(((numb)4.0 * p[14] * (v[2] - p[12]) + (numb)1.0) / (numb)2.0)) * ((int)floor(((numb)4.0 * p[14] * (v[2] - p[12]) + (numb)1.0) / (numb)2.0) % 2 == 0 ? (numb)1.0 : (numb)-1.0));
 
-			numb vmp = Vnext(v);
-			numb rmp = Vnext(r);
+			numb vmp = v[0] + h1 * ((-(p[0] + p[1] * v[0] + p[2] * v[0] * v[0]) * (v[0] - p[3]) - p[5] * v[1] * (v[0] - p[4]) + I) / p[8]);
+			numb rmp = v[1] + h1 * (((numb)1.0 / p[9]) * (-v[1] + p[6] * v[0] + p[7]));
 
-			Vnext(r) = (rmp + (h2 / P(tau)) * (P(p6) * vmp + P(p7))) / ((numb)1.0 + h2 / P(tau));
+			Vnext(t) = v[2] + h;
 
-			Vnext(v) = vmp + h2 * ((-(P(p0) + P(p1) * Vnext(v) + P(p2) * Vnext(v) * Vnext(v)) * (Vnext(v) - P(p3)) - P(p5) * Vnext(r) * (Vnext(v) - P(p4)) + Vnext(i)) / P(C));
-			Vnext(v) = vmp + h2 * ((-(P(p0) + P(p1) * Vnext(v) + P(p2) * Vnext(v) * Vnext(v)) * (Vnext(v) - P(p3)) - P(p5) * Vnext(r) * (Vnext(v) - P(p4)) + Vnext(i)) / P(C));
-			Vnext(v) = vmp + h2 * ((-(P(p0) + P(p1) * Vnext(v) + P(p2) * Vnext(v) * Vnext(v)) * (Vnext(v) - P(p3)) - P(p5) * Vnext(r) * (Vnext(v) - P(p4)) + Vnext(i)) / P(C));
-			Vnext(v) = vmp + h2 * ((-(P(p0) + P(p1) * Vnext(v) + P(p2) * Vnext(v) * Vnext(v)) * (Vnext(v) - P(p3)) - P(p5) * Vnext(r) * (Vnext(v) - P(p4)) + Vnext(i)) / P(C));
-			Vnext(v) = vmp + h2 * ((-(P(p0) + P(p1) * Vnext(v) + P(p2) * Vnext(v) * Vnext(v)) * (Vnext(v) - P(p3)) - P(p5) * Vnext(r) * (Vnext(v) - P(p4)) + Vnext(i)) / P(C));
-			Vnext(v) = vmp + h2 * ((-(P(p0) + P(p1) * Vnext(v) + P(p2) * Vnext(v) * Vnext(v)) * (Vnext(v) - P(p3)) - P(p5) * Vnext(r) * (Vnext(v) - P(p4)) + Vnext(i)) / P(C));
-			Vnext(v) = vmp + h2 * ((-(P(p0) + P(p1) * Vnext(v) + P(p2) * Vnext(v) * Vnext(v)) * (Vnext(v) - P(p3)) - P(p5) * Vnext(r) * (Vnext(v) - P(p4)) + Vnext(i)) / P(C));
-			Vnext(t) = V(t) + H;
+			numb Z[2], Zn[2], J[2][2], W[2][3];
+			numb tol = (numb)1e-14, dz = (numb)2e-13;
+			int nnewtmax = 8, nnewt = 0;
+			int i, j;
+
+			Z[0] = vmp;
+			Z[1] = rmp;
+
+			while ((dz > tol) && (nnewt < nnewtmax)) {
+
+				numb I_next = p[10] + p[11] * (((numb)4.0 * p[14] * (Vnext(t) - p[12]) - (numb)2.0 * floor(((numb)4.0 * p[14] * (Vnext(t) - p[12]) + (numb)1.0) / (numb)2.0)) * ((int)floor(((numb)4.0 * p[14] * (Vnext(t) - p[12]) + (numb)1.0) / (numb)2.0) % 2 == 0 ? (numb)1.0 : (numb)-1.0));
+
+				J[0][0] = (-(p[1] + (numb)2.0 * p[2] * Z[0]) * (Z[0] - p[3]) - (p[0] + p[1] * Z[0] + p[2] * Z[0] * Z[0]) - p[5] * Z[1]) / p[8];
+				J[0][1] = -p[5] * (Z[0] - p[4]) / p[8];
+				J[1][0] = p[6] / p[9];
+				J[1][1] = -(numb)1.0 / p[9];
+
+				for (i = 0; i < 2; i++) {
+					for (j = 0; j < 2; j++) {
+						if (i == j)
+							W[i][j] = (numb)1.0 - h2 * J[i][j];
+						else
+							W[i][j] = -h2 * J[i][j];
+					}
+				}
+
+				numb f_v = (-(p[0] + p[1] * Z[0] + p[2] * Z[0] * Z[0]) * (Z[0] - p[3]) - p[5] * Z[1] * (Z[0] - p[4]) + I_next) / p[8];
+				numb f_r = ((numb)1.0 / p[9]) * (-Z[1] + p[6] * Z[0] + p[7]);
+
+				W[0][2] = vmp - Z[0] + h2 * f_v;
+				W[1][2] = rmp - Z[1] + h2 * f_r;
+
+				numb b, d;
+				for (int k = 0; k <= 0; k++) {
+					int l = k;
+					for (i = k + 1; i <= 1; i++) {
+						if (fabs(W[i][k]) > fabs(W[l][k])) {
+							l = i;
+						}
+					}
+					if (l != k) {
+						for (j = 0; j <= 2; j++) {
+							b = W[k][j];
+							W[k][j] = W[l][j];
+							W[l][j] = b;
+						}
+					}
+
+					d = (numb)1.0 / W[k][k];
+					for (i = (k + 1); i <= 1; i++) {
+						if (W[i][k] == (numb)0.0) {
+							continue;
+						}
+						b = W[i][k] * d;
+						for (j = k; j <= 2; j++) {
+							if (W[k][j] != (numb)0.0) {
+								W[i][j] = W[i][j] - b * W[k][j];
+							}
+						}
+					}
+				}
+
+				W[1][2] = W[1][2] / W[1][1];
+				W[0][2] = (W[0][2] - W[0][1] * W[1][2]) / W[0][0];
+
+				for (i = 0; i < 2; i++)
+					Zn[i] = Z[i] + W[i][2];
+
+				dz = (numb)0.0;
+				for (i = 0; i < 2; i++) {
+					numb diff = Zn[i] - Z[i];
+					dz += diff * diff;
+				}
+				dz = sqrt(dz);
+
+				for (i = 0; i < 2; i++)
+					Z[i] = Zn[i];
+
+				nnewt++;
+			}
+
+			Vnext(v) = Z[0];
+			Vnext(r) = Z[1];
+
+			Vnext(i) = p[10] + p[11] * (((numb)4.0 * p[14] * (Vnext(t) - p[12]) - (numb)2.0 * floor(((numb)4.0 * p[14] * (Vnext(t) - p[12]) + (numb)1.0) / (numb)2.0)) * ((int)floor(((numb)4.0 * p[14] * (Vnext(t) - p[12]) + (numb)1.0) / (numb)2.0) % 2 == 0 ? (numb)1.0 : (numb)-1.0));
 		}
+
+		ifMETHOD(P(method), ExplicitDormandPrince8)
+		{
+			const numb M[14][13] = {
+				{(numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0},
+				{(numb)0.05555555555556, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0},
+				{(numb)0.02083333333333, (numb)0.0625, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0},
+				{(numb)0.03125, (numb)0.0, (numb)0.09375, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0},
+				{(numb)0.3125, (numb)0.0, -(numb)1.171875, (numb)1.171875, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0},
+				{(numb)0.0375, (numb)0.0, (numb)0.0, (numb)0.1875, (numb)0.15, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0},
+				{(numb)0.04791013711111, (numb)0.0, (numb)0.0, (numb)0.1122487127778, -(numb)0.02550567377778, (numb)0.01284682388889, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0},
+				{(numb)0.01691798978729, (numb)0.0, (numb)0.0, (numb)0.387848278486, (numb)0.0359773698515, (numb)0.1969702142157, -(numb)0.1727138523405, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0},
+				{(numb)0.06909575335919, (numb)0.0, (numb)0.0, -(numb)0.6342479767289, -(numb)0.1611975752246, (numb)0.1386503094588, (numb)0.9409286140358, (numb)0.2116363264819, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0},
+				{(numb)0.183556996839, (numb)0.0, (numb)0.0, -(numb)2.468768084316, -(numb)0.2912868878163, -(numb)0.02647302023312, (numb)2.847838764193, (numb)0.2813873314699, (numb)0.1237448998633, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0},
+				{-(numb)1.215424817396, (numb)0.0, (numb)0.0, (numb)16.67260866595, (numb)0.9157418284168, -(numb)6.056605804357, -(numb)16.00357359416, (numb)14.8493030863, -(numb)13.37157573529, (numb)5.13418264818, (numb)0.0, (numb)0.0, (numb)0.0},
+				{(numb)0.2588609164383, (numb)0.0, (numb)0.0, -(numb)4.774485785489, -(numb)0.435093013777, -(numb)3.049483332072, (numb)5.577920039936, (numb)6.155831589861, -(numb)5.062104586737, (numb)2.193926173181, (numb)0.1346279986593, (numb)0.0, (numb)0.0},
+				{(numb)0.8224275996265, (numb)0.0, (numb)0.0, -(numb)11.65867325728, -(numb)0.7576221166909, (numb)0.7139735881596, (numb)12.07577498689, -(numb)2.12765911392, (numb)1.990166207049, -(numb)0.234286471544, (numb)0.1758985777079, (numb)0.0, (numb)0.0},
+				{(numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0}
+			};
+
+			const numb b[13] = { (numb)0.04174749114153, (numb)0.0, (numb)0.0, (numb)0.0, (numb)0.0, -(numb)0.05545232861124, (numb)0.2393128072012, (numb)0.7035106694034, -(numb)0.7597596138145, (numb)0.6605630309223, (numb)0.1581874825101, -(numb)0.2381095387529, (numb)0.25 };
+
+			numb y[N], X1[N], X2[N];
+			numb k[N][13];
+			int i = 0, j = 0, l = 0;
+			numb I;
+
+			for (i = 0; i < N; i++)
+				X1[i] = v[i];
+
+
+			for (i = 0; i < 13; i++) {
+
+				I = p[10] + p[11] * (((numb)4.0 * p[14] * (X1[2] - p[12]) - (numb)2.0 * floor(((numb)4.0 * p[14] * (X1[2] - p[12]) + (numb)1.0) / (numb)2.0)) * ((int)floor(((numb)4.0 * p[14] * (X1[2] - p[12]) + (numb)1.0) / (numb)2.0) % 2 == 0 ? (numb)1.0 : (numb)-1.0));
+
+				k[0][i] = (-(p[0] + p[1] * X1[0] + p[2] * X1[0] * X1[0]) * (X1[0] - p[3]) - p[5] * X1[1] * (X1[0] - p[4]) + I) / p[8];
+				k[1][i] = ((numb)1.0 / p[9]) * (-X1[1] + p[6] * X1[0] + p[7]);
+				k[2][i] = (numb)1.0;
+
+				for (l = 0; l < N; l++)
+					X2[l] = 0;
+
+				for (j = 0; j < i + 1; j++)
+					for (l = 0; l < N; l++)
+						X2[l] += M[i + 1][j] * k[l][j];
+
+				for (l = 0; l < N; l++)
+					X1[l] = v[l] + h * X2[l];
+			}
+
+			for (l = 0; l < N; l++)
+				X2[l] = 0;
+
+			for (i = 0; i < 13; i++)
+				for (l = 0; l < N; l++)
+					X2[l] += b[i] * k[l][i];
+
+			for (l = 0; l < N; l++)
+				y[l] = v[l] + h * X2[l];
+
+			Vnext(v) = y[0];
+			Vnext(r) = y[1];
+			Vnext(t) = y[2];
+
+			Vnext(i) = p[10] + p[11] * (((numb)4.0 * p[14] * (Vnext(t) - p[12]) - (numb)2.0 * floor(((numb)4.0 * p[14] * (Vnext(t) - p[12]) + (numb)1.0) / (numb)2.0)) * ((int)floor(((numb)4.0 * p[14] * (Vnext(t) - p[12]) + (numb)1.0) / (numb)2.0) % 2 == 0 ? (numb)1.0 : (numb)-1.0));
+		}
+
+
 	}
+
+
 }
 
 #undef name

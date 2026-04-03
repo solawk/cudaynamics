@@ -42,7 +42,7 @@ constraint method VariableSymmetryCD
 // Defining enumerated parameters (useful for methods):
 // enum <name> <ranging type> <minimum value> <maximum value> <step> <step count> <normal mean> <normal deviation> <enum names, no spaces>
 enum signal 1square 0sine 0triangle
-enum method 1ExplicitEuler 0SemiExplicitEuler 0ImplicitEuler 0ExplicitMidpoint 0ImplicitMidpoint 0ExplicitRungeKutta4 0VariableSymmetryCD
+enum method 1ExplicitEuler 0SemiExplicitEuler 0ImplicitEuler 0ExplicitMidpoint 0ImplicitMidpoint 0ExplicitRungeKutta4 0VariableSymmetryCD 0ExplicitDormandPrince8
 // Defining maps:
 // map <name> <map settings count (inside its struct)> <map settings, beginning with "n" for numbs and "i" for ints>
 map LLE 1 7 r n0.01 L i50 variableToDeflect i2 norm0 i0 norm1 i1 norm2 i2 norm3 i-1
