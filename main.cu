@@ -428,7 +428,7 @@ void setupAnFuncs(Computation* data)
             CUDA_marshal.indecesDecay = new numb[CUDA_marshal.totalVariations * CUDA_marshal.totalMapValuesPerVariation];
             memset(CUDA_marshal.indecesDecay, 0.0, sizeof(numb) * CUDA_marshal.totalVariations * CUDA_marshal.totalMapValuesPerVariation);
             CUDA_marshal.indecesDecayLifetime = new numb[CUDA_marshal.totalVariations * CUDA_marshal.totalMapValuesPerVariation];
-            memset(CUDA_marshal.indecesDecayLifetime, 0.0, sizeof(numb) * CUDA_marshal.totalVariations * CUDA_marshal.totalMapValuesPerVariation);
+            for (uint64_t v = 0; v < CUDA_marshal.totalVariations * CUDA_marshal.totalMapValuesPerVariation; v++) CUDA_marshal.indecesDecayLifetime[v] = NAN;
         }
     }
 
@@ -447,7 +447,7 @@ void setDecayed(Computation* data, uint64_t v, numb val, numb life)
 {
     CUDA_marshal.indecesDecay[v] = val;
 
-    if (CUDA_marshal.indecesDecayLifetime[v] == 0)
+    if (isnan(CUDA_marshal.indecesDecayLifetime[v]))
         CUDA_marshal.indecesDecayLifetime[v] = life;
 }
 
@@ -473,7 +473,8 @@ void indexDecayPostprocessing(Computation* data)
         int indexStart = port->offset * CUDA_marshal.totalVariations;
         int indexEnd = indexStart + indexPair.second.size * CUDA_marshal.totalVariations;
         DecaySettings* settings = &(indexPair.second.decay);
-        float thresholdCount = settings->thresholds.size();
+        int thresholdCount = (int)settings->thresholds.size();
+        numb lifetime = CUDA_kernel.usingTime ? (data->bufferNo + 1) * CUDA_kernel.time + CUDA_kernel.transientTime : (data->bufferNo + 1) * CUDA_kernel.steps + CUDA_kernel.transientSteps;
 
         if (data->bufferNo >= (settings->source == DTS_Index ? -2 : 1) && port->used)
         {
@@ -487,21 +488,21 @@ void indexDecayPostprocessing(Computation* data)
                     {
                     case DTM_Less:
                         if (settings->source == DTS_Index && CUDA_marshal.maps[v] < settings->thresholds[t] && CUDA_marshal.indecesDecay[v] < decayValue)
-                            setDecayed(data, v, decayValue, data->bufferNo + 1);
+                            setDecayed(data, v, decayValue, lifetime);
                         if (settings->source == DTS_Delta && CUDA_marshal.indecesDelta[v] < settings->thresholds[t] && CUDA_marshal.indecesDecay[v] < decayValue)
-                            setDecayed(data, v, decayValue, data->bufferNo + 1);
+                            setDecayed(data, v, decayValue, lifetime);
                         break;
                     case DTM_More:
                         if (settings->source == DTS_Index && CUDA_marshal.maps[v] > settings->thresholds[t] && CUDA_marshal.indecesDecay[v] < decayValue)
-                            setDecayed(data, v, decayValue, data->bufferNo + 1);
+                            setDecayed(data, v, decayValue, lifetime);
                         if (settings->source == DTS_Delta && CUDA_marshal.indecesDelta[v] > settings->thresholds[t] && CUDA_marshal.indecesDecay[v] < decayValue)
-                            setDecayed(data, v, decayValue, data->bufferNo + 1);
+                            setDecayed(data, v, decayValue, lifetime);
                         break;
                     case DTM_Abs_More:
                         if (settings->source == DTS_Index && abs(CUDA_marshal.maps[v]) > settings->thresholds[t] && CUDA_marshal.indecesDecay[v] < decayValue)
-                            setDecayed(data, v, decayValue, data->bufferNo + 1);
+                            setDecayed(data, v, decayValue, lifetime);
                         if (settings->source == DTS_Delta && abs(CUDA_marshal.indecesDelta[v]) > settings->thresholds[t] && CUDA_marshal.indecesDecay[v] < decayValue)
-                            setDecayed(data, v, decayValue, data->bufferNo + 1);
+                            setDecayed(data, v, decayValue, lifetime);
                         break;
                     }
                 }
