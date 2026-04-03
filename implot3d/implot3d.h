@@ -290,6 +290,11 @@ enum ImPlot3DColormap_ {
     ImPlot3DColormap_Spectral = 14, // Same as matplotlib "Spectral"
     ImPlot3DColormap_Greys = 15,    // White/black
     ImPlot3DColormap_Turbo = 16,
+    ImPlot3DColormap_PinkGreen = 17,
+    ImPlot3DColormap_Spring = 18,
+    ImPlot3DColormap_Summer = 19,
+    ImPlot3DColormap_Autumn = 20,
+    ImPlot3DColormap_Winter = 21,
 };
 
 //-----------------------------------------------------------------------------

@@ -505,11 +505,11 @@ void plotWindowMenu_HeatmapColors(PlotWindow* window)
 		bool isHires = window->isTheHiresWindow(hiresIndex);
 		HeatmapProperties* heatmap = isHires ? &window->hireshmp : &window->hmp;
 
-		std::string colormapStrings[] = { "Deep", "Dark", "Pastel", "Paired", "Viridis", "Plasma", "Hot", "Cool", "Pink", "Jet", "Twilight", "RdBu", "BrBG", "PiYG", "Spectral", "Greys", "Turbo" };
+		std::string colormapStrings[] = { "Deep", "Dark", "Pastel", "Paired", "Viridis", "Plasma", "Hot", "Cool", "Pink", "Jet", "Twilight", "RdBu", "BrBG", "PiYG", "Spectral", "Greys", "Turbo", "PinkGreen", "Spring", "Summer", "Autumn", "Winter" };
 		ImGui::PushItemFlag(ImGuiItemFlags_AutoClosePopups, false);
 		if (ImGui::BeginCombo(("##" + windowName + "colormap").c_str(), (colormapStrings[heatmap->colormap]).c_str()))
 		{
-			for (int i = 0; i < 17; i++)
+			for (int i = 0; i < 22; i++)
 				if (ImGui::Selectable(colormapStrings[i].c_str(), heatmap->colormap == i))
 				{
 					heatmap->colormap = i;
@@ -555,11 +555,11 @@ void plotWindowMenu_MetricPlot(PlotWindow*window) {
 			ImGui::ColorEdit4(("##" + windowName + "_lineColor").c_str(), (float*)(&(window->markerColor)));		ImGui::SameLine(); ImGui::Text("Line color");
 		}
 		else {
-			std::string colormapStrings[] = {"Deep", "Dark", "Pastel", "Paired", "Viridis", "Plasma", "Hot", "Cool", "Pink", "Jet", "Twilight", "RdBu", "BrBG", "PiYG", "Spectral", "Greys", "Turbo" };
+			std::string colormapStrings[] = {"Deep", "Dark", "Pastel", "Paired", "Viridis", "Plasma", "Hot", "Cool", "Pink", "Jet", "Twilight", "RdBu", "BrBG", "PiYG", "Spectral", "Greys", "Turbo", "PinkGreen", "Spring", "Summer", "Autumn", "Winter" };
 			ImGui::PushItemFlag(ImGuiItemFlags_AutoClosePopups, false);
 			if (ImGui::BeginCombo(("##" + windowName + "colormap").c_str(), (colormapStrings[window->colormap]).c_str()))
 			{
-				for (int i = 0; i < 17; i++)
+				for (int i = 0; i < 22; i++)
 					if (ImGui::Selectable(colormapStrings[i].c_str(), window->colormap == i))
 					{
 						window->colormap = i;
@@ -596,11 +596,11 @@ void plotWindowMenu_SeriesPlot(PlotWindow* window) {
 			ImGui::ColorEdit4(("##" + windowName + "_lineColor").c_str(), (float*)(&(window->markerColor)));		ImGui::SameLine(); ImGui::Text("Line color");
 		}
 		else {
-			std::string colormapStrings[] = { "Deep", "Dark", "Pastel", "Paired", "Viridis", "Plasma", "Hot", "Cool", "Pink", "Jet", "Twilight", "RdBu", "BrBG", "PiYG", "Spectral", "Greys", "Turbo" };
+			std::string colormapStrings[] = { "Deep", "Dark", "Pastel", "Paired", "Viridis", "Plasma", "Hot", "Cool", "Pink", "Jet", "Twilight", "RdBu", "BrBG", "PiYG", "Spectral", "Greys", "Turbo", "PinkGreen", "Spring", "Summer", "Autumn", "Winter" };
 			ImGui::PushItemFlag(ImGuiItemFlags_AutoClosePopups, false);
 			if (ImGui::BeginCombo(("##" + windowName + "colormap").c_str(), (colormapStrings[window->colormap]).c_str()))
 			{
-				for (int i = 0; i < 17; i++)
+				for (int i = 0; i < 22; i++)
 					if (ImGui::Selectable(colormapStrings[i].c_str(), window->colormap == i))
 					{
 						window->colormap = i;
@@ -628,11 +628,11 @@ void plotWindowMenu_IndSeriesPlot(PlotWindow* window) {
 			ImGui::ColorEdit4(("##" + windowName + "_lineColor").c_str(), (float*)(&(window->markerColor)));		ImGui::SameLine(); ImGui::Text("Line color");
 		}
 		else {
-			std::string colormapStrings[] = { "Deep", "Dark", "Pastel", "Paired", "Viridis", "Plasma", "Hot", "Cool", "Pink", "Jet", "Twilight", "RdBu", "BrBG", "PiYG", "Spectral", "Greys", "Turbo" };
+			std::string colormapStrings[] = { "Deep", "Dark", "Pastel", "Paired", "Viridis", "Plasma", "Hot", "Cool", "Pink", "Jet", "Twilight", "RdBu", "BrBG", "PiYG", "Spectral", "Greys", "Turbo", "PinkGreen", "Spring", "Summer", "Autumn", "Winter" };
 			ImGui::PushItemFlag(ImGuiItemFlags_AutoClosePopups, false);
 			if (ImGui::BeginCombo(("##" + windowName + "colormap").c_str(), (colormapStrings[window->colormap]).c_str()))
 			{
-				for (int i = 0; i < 17; i++)
+				for (int i = 0; i < 22; i++)
 					if (ImGui::Selectable(colormapStrings[i].c_str(), window->colormap == i))
 					{
 						window->colormap = i;
