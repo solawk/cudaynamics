@@ -429,10 +429,10 @@ void plotWindowMenu_HeatmapPlot(PlotWindow* window)
 
 		plotWindowMenu_CommonPlot(window, windowName);
 
-		std::string deltaStateStrings[] = { "Index", "Delta", "Decay" };
+		std::string deltaStateStrings[] = { "Index", "Delta", "Decay", "Lifetime" };
 		if (ImGui::BeginCombo(("##" + windowName + "_DeltaState").c_str(), (deltaStateStrings[window->deltaState]).c_str(), 0))
 		{
-			for (int t = 0; t < 3; t++)
+			for (int t = 0; t < 4; t++)
 			{
 				bool isSelected = window->deltaState == t;
 				ImGuiSelectableFlags selectableFlags = 0;

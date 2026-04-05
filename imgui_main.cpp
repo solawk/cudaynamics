@@ -2268,22 +2268,22 @@ int imgui_main(int, char**)
 					krnl        = &(KERNEL);
 					decayOfFirstIndex = &(window->decay.settings[0]);
 
-					ImGui::Text("Source:"); ImGui::SameLine();
-					if (ImGui::RadioButton(("Index##DTSIndex" + plotName).c_str(), decayOfFirstIndex->source == DTS_Index))
-						for (int i : window->variables) indices[(AnalysisIndex)i].decay.source = DTS_Index;
-					ImGui::SameLine();
-					if (ImGui::RadioButton(("Delta##DTSDelta" + plotName).c_str(), decayOfFirstIndex->source == DTS_Delta))
-						for (int i : window->variables) indices[(AnalysisIndex)i].decay.source = DTS_Delta;
+					for (int i : window->variables)
+					{
+						ImGui::Text(indices[(AnalysisIndex)i].name.c_str());
 
-					ImGui::Text("Mode:"); ImGui::SameLine();
-					if (ImGui::RadioButton(("Less than##DTMLess" + plotName).c_str(), decayOfFirstIndex->mode == DTM_Less))
-						for (int i : window->variables) indices[(AnalysisIndex)i].decay.mode = DTM_Less;
-					ImGui::SameLine();
-					if (ImGui::RadioButton(("More than##DTMMore" + plotName).c_str(), decayOfFirstIndex->mode == DTM_More))
-						for (int i : window->variables) indices[(AnalysisIndex)i].decay.mode = DTM_More;
-					ImGui::SameLine();
-					if (ImGui::RadioButton(("Absolute value more than##DTMAbsMore" + plotName).c_str(), decayOfFirstIndex->mode == DTM_Abs_More))
-						for (int i : window->variables) indices[(AnalysisIndex)i].decay.mode = DTM_Abs_More;
+						ImGui::Text("Source:"); ImGui::SameLine();
+						if (ImGui::RadioButton(("Index##DTSIndex" + plotName + "for" + std::to_string(i)).c_str(), indices[(AnalysisIndex)i].decay.source == DTS_Index)) indices[(AnalysisIndex)i].decay.source = DTS_Index;
+						ImGui::SameLine();
+						if (ImGui::RadioButton(("Delta##DTSDelta" + plotName + "for" + std::to_string(i)).c_str(), indices[(AnalysisIndex)i].decay.source == DTS_Delta)) indices[(AnalysisIndex)i].decay.source = DTS_Delta;
+
+						ImGui::Text("Mode:"); ImGui::SameLine();
+						if (ImGui::RadioButton(("Less than##DTMLess" + plotName + "for" + std::to_string(i)).c_str(), indices[(AnalysisIndex)i].decay.mode == DTM_Less)) indices[(AnalysisIndex)i].decay.mode = DTM_Less;
+						ImGui::SameLine();
+						if (ImGui::RadioButton(("More than##DTMMore" + plotName + "for" + std::to_string(i)).c_str(), indices[(AnalysisIndex)i].decay.mode == DTM_More)) indices[(AnalysisIndex)i].decay.mode = DTM_More;
+						ImGui::SameLine();
+						if (ImGui::RadioButton(("Absolute value more than##DTMAbsMore" + plotName + "for" + std::to_string(i)).c_str(), indices[(AnalysisIndex)i].decay.mode == DTM_Abs_More)) indices[(AnalysisIndex)i].decay.mode = DTM_Abs_More;
+					}
 
 					// Threshold input
 
@@ -2749,8 +2749,11 @@ int imgui_main(int, char**)
 									{
 										if (!isMC)
 										{
-											extractMap((window->deltaState == DS_No ? cmp->marshal.maps : (window->deltaState == DS_Delta ? cmp->marshal.indecesDelta : cmp->marshal.indecesDecay))
-												+ (index2port(cmp->marshal.kernel.analyses, mapIndex)->offset + heatmap->values.mapValueIndex) * cmp->marshal.totalVariations,
+											numb* src = cmp->marshal.maps;
+											if (window->deltaState == DS_Delta) src = cmp->marshal.indecesDelta;
+											if (window->deltaState == DS_Decay) src = cmp->marshal.indecesDecay;
+											if (window->deltaState == DS_Lifetime) src = cmp->marshal.indecesDecayLifetime;
+											extractMap(src + (index2port(cmp->marshal.kernel.analyses, mapIndex)->offset + heatmap->values.mapValueIndex) * cmp->marshal.totalVariations,
 												heatmap->values.valueBuffer, heatmap->indexBuffer, &(avi->data()[0]),
 												sizing.hmp->typeX == MDT_Parameter ? sizing.hmp->indexX + krnl->VAR_COUNT : sizing.hmp->indexX,
 												sizing.hmp->typeY == MDT_Parameter ? sizing.hmp->indexY + krnl->VAR_COUNT : sizing.hmp->indexY,
@@ -2823,8 +2826,11 @@ int imgui_main(int, char**)
 										for (int i = 0; i < paintLUTsize; i++) heatmap->paintLUT.lut[i] = new int[cmp->marshal.totalVariations];
 										heatmap->paintLUT.lutSizes = new int[paintLUTsize];
 
-										setupLUT((window->deltaState == DS_No ? cmp->marshal.maps : (window->deltaState == DS_Delta ? cmp->marshal.indecesDelta : cmp->marshal.indecesDecay))
-											+ (index2port(cmp->marshal.kernel.analyses, mapIndex)->offset + heatmap->values.mapValueIndex) * cmp->marshal.totalVariations,
+										numb* src = cmp->marshal.maps;
+										if (window->deltaState == DS_Delta) src = cmp->marshal.indecesDelta;
+										if (window->deltaState == DS_Decay) src = cmp->marshal.indecesDecay;
+										if (window->deltaState == DS_Lifetime) src = cmp->marshal.indecesDecayLifetime;
+										setupLUT(src + (index2port(cmp->marshal.kernel.analyses, mapIndex)->offset + heatmap->values.mapValueIndex) * cmp->marshal.totalVariations,
 											cmp->marshal.totalVariations, heatmap->paintLUT.lut, heatmap->paintLUT.lutSizes, paintLUTsize,
 											heatmap->values.heatmapMin, heatmap->values.heatmapMax);
 									}
