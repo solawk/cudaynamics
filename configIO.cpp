@@ -14,6 +14,7 @@ json::jobject saveCfg(bool saveHires, bool saveNew)
     json::jobject cfg;
     cfg["system"] = selectedKernel; // 1
     cfg["index"] = hiresIndex != IND_NONE ? indices[hiresIndex].name : ""; // 2
+    cfg["varPerParallelization"] = applicationSettings.varPerParallelization;
     cfg["usingTime"].set_boolean(k->usingTime); // 3
     // 4
     if (k->usingTime)
