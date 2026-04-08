@@ -8,6 +8,7 @@
 #include "../indices_map.h"
 #include <fstream>
 #include "../configIO.h"
+#include <filesystem>
 
 extern json::jobject launchConfig;
 extern std::string exportPath;

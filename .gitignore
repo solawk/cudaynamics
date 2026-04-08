@@ -366,4 +366,5 @@ imguiCopy
 *.config
 *.ini
 export
+export_console
 applicationSettings.json
