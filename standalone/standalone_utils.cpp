@@ -49,12 +49,12 @@ void exportHires()
     std::string basePath;
     if (launchedAsOneShot && exportPath.empty())
     {
-        std::filesystem::create_directories("export_console");
+        std::filesystem::create_directories("export_terminal");
         std::string system = launchConfig.has_key("system")
             ? (std::string)launchConfig["system"] : "hires";
         std::string index = launchConfig.has_key("index")
             ? (std::string)launchConfig["index"] : "matrix";
-        basePath = "export_console/" + system + "_" + index;
+        basePath = "export_terminal/" + system + "_" + index;
     }
     else if (!exportPath.empty())
     {
@@ -173,7 +173,7 @@ void exportHires()
                 basePath.substr(basePath.find_last_of("/\\") + 1) +
                 "_" + std::to_string(rows) + "x" + std::to_string(cols) +
                 sliceIndices + ".csv";
-            std::string fullPath = "export_console/" + fileName;
+            std::string fullPath = "export_terminal/" + fileName;
 
             if (exportMatrixSlice(s, fullPath))
                 printf("[%d/%d] Exported %s\n", s + 1, sliceCount, fileName.c_str());
