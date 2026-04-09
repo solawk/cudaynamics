@@ -35,3 +35,18 @@ void steps2Variation(uint64_t* variation, int* steps, Kernel* kernel)
         attrStride *= stepCount;
     }
 }
+
+void steps2Variation(uint64_t* variation, int* steps, MarshalledKernel* kernel)
+{
+    *variation = 0;
+    int attrStride = 1;
+    for (int i = kernel->VAR_COUNT + kernel->PARAM_COUNT - 1; i >= 0; i--)
+    {
+        int stepCount = i >= kernel->VAR_COUNT ? (kernel->parameters[i - kernel->VAR_COUNT].TrueStepCount()) : (kernel->variables[i].TrueStepCount());
+
+        if (stepCount == 0) continue;
+
+        *variation += steps[i] * attrStride;
+        attrStride *= stepCount;
+    }
+}

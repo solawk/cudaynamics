@@ -67,124 +67,121 @@ void exportHires()
         basePath = "hiresOutput";
     }
 
-    auto& m = computationHires.marshal;
-    numb* values = m.maps;
-    int total = m.totalVariations;
-    if (!values || total <= 0) { printf("FAIL: No data\n"); return; }
+    Marshal* marshal = &(computationHires.marshal);
+    MarshalledKernel* kernel = &(marshal->kernel);
+    numb* values = marshal->maps;
+    int totalVariations = marshal->totalVariations;
+    if (!values || totalVariations <= 0) { printf("FAIL: No data\n"); return; }
 
-    struct AxisInfo {
-        std::string name;
+    struct AxisInfo 
+    {
+        bool isParameter;
+        int index;
         int stepCount;
-        numb min;
-        numb step;
     };
-    std::vector<AxisInfo> axes;
-    auto& k = m.kernel;
+    // Only for ranged axes
+    std::vector<AxisInfo> rangedAxes;
 
-    auto collectAxis = [&](Attribute& attr) {
-        if (attr.rangingType != RT_None) {
-            axes.push_back({ attr.name, attr.TrueStepCount(), attr.min, attr.step });
-        }
-        };
-    for (int i = 0; i < k.VAR_COUNT; ++i) collectAxis(k.variables[i]);
-    for (int i = 0; i < k.PARAM_COUNT; ++i) collectAxis(k.parameters[i]);
+    for (int i = 0; i < kernel->VAR_COUNT; ++i)
+    {
+        if (kernel->variables[i].rangingType != RT_None) rangedAxes.push_back({ false, i, kernel->variables[i].TrueStepCount() });
+    }
+    for (int i = 0; i < kernel->PARAM_COUNT; ++i)
+    {
+        if (kernel->parameters[i].rangingType != RT_None) rangedAxes.push_back({ true, i, kernel->parameters[i].TrueStepCount() });
+    }
 
-    std::sort(axes.begin(), axes.end(), [](const AxisInfo& a, const AxisInfo& b) {
-        return a.stepCount > b.stepCount;
+    std::sort(rangedAxes.begin(), rangedAxes.end(), [](const AxisInfo& a, const AxisInfo& b) 
+        {
+            return a.stepCount > b.stepCount;
         });
 
-    std::string nameX = "X", nameY = "Y";
-    numb minX = 0, stepX = 1, minY = 0, stepY = 1;
+    std::string nameX = "-", nameY = "-";
     int cols = 1, rows = 1;
 
-    std::vector<AxisInfo> sliceAxes;
-    for (size_t i = 2; i < axes.size(); ++i) {
-        if (axes[i].stepCount > 1) {
-            sliceAxes.push_back(axes[i]);
-        }
+    if (rangedAxes.size() >= 1)
+    {
+        nameX = !rangedAxes[0].isParameter ? kernel->variables[rangedAxes[0].index].name : kernel->parameters[rangedAxes[0].index].name;
+        cols = rangedAxes[0].stepCount;
     }
-
-    if (axes.size() >= 1) { nameX = axes[0].name; minX = axes[0].min; stepX = axes[0].step; cols = axes[0].stepCount; }
-    if (axes.size() >= 2) {
-        nameY = axes[1].name; minY = axes[1].min; stepY = axes[1].step; rows = axes[1].stepCount;
-        if (axes[0].stepCount > axes[1].stepCount) {
-            std::swap(nameX, nameY); std::swap(minX, minY); std::swap(stepX, stepY); std::swap(cols, rows);
-        }
-    }
-
-    if (axes.size() < 2) {
-        for (int a = static_cast<int>(sqrt(total)); a >= 1; --a)
-            if (total % a == 0) { rows = a; cols = total / a; break; }
-        printf("INFO: Fallback dimensions %dx%d\n", rows, cols);
+    if (rangedAxes.size() >= 2)
+    {
+        nameY = !rangedAxes[1].isParameter ? kernel->variables[rangedAxes[1].index].name : kernel->parameters[rangedAxes[1].index].name;
+        rows = rangedAxes[1].stepCount;
     }
 
     int sliceCount = 1;
-    for (const auto& sa : sliceAxes) { sliceCount *= sa.stepCount; }
+    for (int i = 2; i < rangedAxes.size(); i++) sliceCount *= rangedAxes[i].stepCount;
 
-    int expectedTotal = rows * cols * sliceCount;
-    if (expectedTotal != total) {
-        printf("WARNING: Expected %d values, got %d. Adjusting...\n", expectedTotal, total);
-        if (!sliceAxes.empty()) {
-            if (total % (rows * cols) == 0) {
-                sliceCount = total / (rows * cols);
-                printf("Adjusted sliceCount to %d\n", sliceCount);
-            }
-        }
-    }
+    // For ALL attributes
+    std::vector<int> avi;
+    for (int i = 0; i < kernel->VAR_COUNT + kernel->PARAM_COUNT; i++) avi.push_back(0);
 
     printf("Exporting: %s(%d) \\ %s(%d)", nameY.c_str(), rows, nameX.c_str(), cols);
-    if (!sliceAxes.empty()) printf(" x %d slices", sliceCount);
-    printf(", %d total values\n", total);
+    if (sliceCount > 1) printf(" x %d slices", sliceCount);
+    printf(", %d total values\n", totalVariations);
 
-    auto exportMatrixSlice = [&](int sliceIdx, const std::string& filePath) {
-        std::ofstream file(filePath);
-        if (!file.is_open()) { printf("FAIL: Can't open %s\n", filePath.c_str()); return false; }
+    for (int s = 0; s < sliceCount; s++)
+    {
+        //printf("avi: ");
+        //for (int i = 0; i < kernel->VAR_COUNT + kernel->PARAM_COUNT; i++) printf("%i_", avi[i]);
+        //printf("\n");
 
+        std::string sliceAVIstring = "";
+        for (int a = 2; a < rangedAxes.size(); a++)
+        {
+            int aIndex = !rangedAxes[a].isParameter ? rangedAxes[a].index : kernel->VAR_COUNT + rangedAxes[a].index;
+            sliceAVIstring += "_" + std::to_string(avi[aIndex]);
+        }
+        std::string fileName = std::to_string(s + 1) + "_" +
+            basePath.substr(basePath.find_last_of("/\\") + 1) +
+            "_" + std::to_string(rows) + "x" + std::to_string(cols) +
+            sliceAVIstring + ".csv";
+        std::string fullPath = "export_terminal/" + fileName;
+        std::ofstream file(fullPath);
+        if (!file.is_open()) { printf("FAIL: Can't open %s for writing\n", fullPath.c_str()); }
+        //printf("slice\n");
+
+        numb* valuesOfAxis = !rangedAxes[0].isParameter ? kernel->variables[rangedAxes[0].index].values : kernel->parameters[rangedAxes[0].index].values;
+        //printf("%s\\%s", nameY.c_str(), nameX.c_str());
+        //for (int x = 0; x < cols; x++) printf(",%f", (float)valuesOfAxis[x]);
+        //printf("\n");
         file << nameY << "\\" << nameX;
-        for (int x = 0; x < cols; ++x)
-            file << ',' << (minX + stepX * static_cast<numb>(x));
+        for (int x = 0; x < cols; x++) file << ',' << valuesOfAxis[x];
         file << '\n';
 
-        size_t sliceOffset = static_cast<size_t>(sliceIdx) * static_cast<size_t>(rows) * static_cast<size_t>(cols);
-        for (int y = 0; y < rows; ++y) {
-            file << (minY + stepY * static_cast<numb>(y));
-            size_t base = sliceOffset + static_cast<size_t>(y) * static_cast<size_t>(cols);
-            for (int x = 0; x < cols; ++x)
-                file << ',' << values[base + x];
+        uint64_t variation;
+        int* aviData = avi.data();
+        int aviX = !rangedAxes[0].isParameter ? rangedAxes[0].index : rangedAxes[0].index + kernel->VAR_COUNT;
+        int aviY = !rangedAxes[1].isParameter ? rangedAxes[1].index : rangedAxes[1].index + kernel->VAR_COUNT;
+
+        valuesOfAxis = !rangedAxes[1].isParameter ? kernel->variables[rangedAxes[1].index].values : kernel->parameters[rangedAxes[1].index].values;
+        for (int y = 0; y < rows; y++)
+        {
+            file << valuesOfAxis[y];
+            //printf("%f", (float)valuesOfAxis[y]);
+            for (int x = 0; x < cols; x++)
+            {
+                avi[aviX] = x;
+                avi[aviY] = y;
+                
+                steps2Variation(&variation, aviData, kernel);
+
+                file << ',' << values[variation];
+                //printf(",%f", (float)values[variation]);
+            }
             file << '\n';
+            //printf("\n");
         }
         file.close();
-        return true;
-        };
 
-    if (!sliceAxes.empty())
-    {
-        for (int s = 0; s < sliceCount; ++s)
+        // Selecting next slice
+        for (int a = (int)rangedAxes.size() - 1; a >= 2; a--)
         {
-            std::string sliceIndices = "";
-            int remaining = s;
-            for (int i = (int)sliceAxes.size() - 1; i >= 0; --i) {
-                int idx = remaining % sliceAxes[i].stepCount;
-                sliceIndices = "_" + std::to_string(idx) + sliceIndices;
-                remaining /= sliceAxes[i].stepCount;
-            }
-
-            std::string fileName = std::to_string(s + 1) + "_" +
-                basePath.substr(basePath.find_last_of("/\\") + 1) +
-                "_" + std::to_string(rows) + "x" + std::to_string(cols) +
-                sliceIndices + ".csv";
-            std::string fullPath = "export_terminal/" + fileName;
-
-            if (exportMatrixSlice(s, fullPath))
-                printf("[%d/%d] Exported %s\n", s + 1, sliceCount, fileName.c_str());
+            int aIndex = !rangedAxes[a].isParameter ? rangedAxes[a].index : kernel->VAR_COUNT + rangedAxes[a].index;
+            avi[aIndex]++;
+            if (avi[aIndex] < rangedAxes[a].stepCount) break;
+            avi[aIndex] = 0;
         }
-    }
-    else
-    {
-        std::string path = basePath +
-            "_" + std::to_string(rows) + "x" + std::to_string(cols) +
-            ".csv";
-        if (exportMatrixSlice(0, path))
-            printf("Exported %s\n", path.c_str());
     }
 }

@@ -10,3 +10,4 @@
 
 // Steps to variation
 void steps2Variation(uint64_t* variation, int* steps, Kernel* kernel);
+void steps2Variation(uint64_t* variation, int* steps, MarshalledKernel* kernel);
