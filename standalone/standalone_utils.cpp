@@ -84,11 +84,11 @@ void exportHires()
 
     for (int i = 0; i < kernel->VAR_COUNT; ++i)
     {
-        if (kernel->variables[i].rangingType != RT_None) rangedAxes.push_back({ false, i, kernel->variables[i].TrueStepCount() });
+        if (kernel->variables[i].TrueStepCount() > 1) rangedAxes.push_back({ false, i, kernel->variables[i].TrueStepCount() });
     }
     for (int i = 0; i < kernel->PARAM_COUNT; ++i)
     {
-        if (kernel->parameters[i].rangingType != RT_None) rangedAxes.push_back({ true, i, kernel->parameters[i].TrueStepCount() });
+        if (kernel->parameters[i].TrueStepCount() > 1) rangedAxes.push_back({ true, i, kernel->parameters[i].TrueStepCount() });
     }
 
     std::sort(rangedAxes.begin(), rangedAxes.end(), [](const AxisInfo& a, const AxisInfo& b) 
@@ -121,20 +121,36 @@ void exportHires()
     if (sliceCount > 1) printf(" x %d slices", sliceCount);
     printf(", %d total values\n", totalVariations);
 
+    struct SliceIndexInfo
+    {
+        int aviIndex;
+        int orderIndex;
+    };
+    std::vector<SliceIndexInfo> sliceIndeces;
+
     for (int s = 0; s < sliceCount; s++)
     {
         //printf("avi: ");
         //for (int i = 0; i < kernel->VAR_COUNT + kernel->PARAM_COUNT; i++) printf("%i_", avi[i]);
         //printf("\n");
 
-        std::string sliceAVIstring = "";
-        for (int a = 2; a < rangedAxes.size(); a++)
+        sliceIndeces.clear();
+        for (int a = 2; a < (int)rangedAxes.size(); a++)
         {
             int aIndex = !rangedAxes[a].isParameter ? rangedAxes[a].index : kernel->VAR_COUNT + rangedAxes[a].index;
-            sliceAVIstring += "_" + std::to_string(avi[aIndex]);
+            sliceIndeces.push_back({ avi[aIndex], aIndex });
         }
-        std::string fileName = std::to_string(s + 1) + "_" +
-            basePath.substr(basePath.find_last_of("/\\") + 1) +
+        std::sort(sliceIndeces.begin(), sliceIndeces.end(), [](const SliceIndexInfo& a, const SliceIndexInfo& b)
+            {
+                return a.orderIndex < b.orderIndex;
+            });
+
+        std::string sliceAVIstring = "";
+        for (int a = 0; a < (int)sliceIndeces.size(); a++)
+        {
+            sliceAVIstring += "_" + std::to_string(sliceIndeces[a].aviIndex);
+        }
+        std::string fileName = basePath.substr(basePath.find_last_of("/\\") + 1) +
             "_" + std::to_string(rows) + "x" + std::to_string(cols) +
             sliceAVIstring + ".csv";
         std::string fullPath = "export_terminal/" + fileName;
