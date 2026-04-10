@@ -2452,8 +2452,38 @@ int imgui_main(int, char**)
 						if (window->deltaState == DS_Decay && cmp->bufferNo < 2) TEXT_AND_BREAK("Delta not ready yet")
 					}
 
-					Attribute* axisX = heatmap->typeX == MDT_Variable ? &(krnl->variables[heatmap->indexX]) : &(krnl->parameters[heatmap->indexX]);
-					Attribute* axisY = heatmap->typeY == MDT_Variable ? &(krnl->variables[heatmap->indexY]) : &(krnl->parameters[heatmap->indexY]);
+					Attribute* axisX;
+					Attribute* axisY;
+
+					if (heatmap->typeX == MDT_Variable)
+					{
+						if (heatmap->indexX < (int)krnl->variables.size())
+							axisX = &(krnl->variables[heatmap->indexX]);
+						else
+							break;
+					}
+					else
+					{
+						if (heatmap->indexX < (int)krnl->parameters.size())
+							axisX = &(krnl->parameters[heatmap->indexX]);
+						else
+							break;
+					}
+
+					if (heatmap->typeY == MDT_Variable)
+					{
+						if (heatmap->indexY < (int)krnl->variables.size())
+							axisY = &(krnl->variables[heatmap->indexY]);
+						else
+							break;
+					}
+					else
+					{
+						if (heatmap->indexY < (int)krnl->parameters.size())
+							axisY = &(krnl->parameters[heatmap->indexY]);
+						else
+							break;
+					}
 
 					bool toBreak = false;
 					if (axisX->TrueStepCount() <= 1)	{ ImGui::Text(("Axis " + axisX->name + " is fixed").c_str()); toBreak = true; }

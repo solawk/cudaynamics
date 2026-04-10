@@ -210,6 +210,14 @@ bool loadCfg(json::jobject cfg, bool switchSystem, bool cleanStart, bool needPri
             }
         }
     }
+
+    if (k->usingTime)
+    {
+        numb stepSize = k->GetStepSize();
+        k->steps = (int)(k->time / stepSize);
+        k->transientSteps = (int)(k->transientTime / stepSize);
+    }
+
     if (needPrints) printf("No setup problems occured\n");
 
     return true;

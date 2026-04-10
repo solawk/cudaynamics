@@ -140,6 +140,8 @@ void exportHires()
         std::string fullPath = "export_terminal/" + fileName;
         std::ofstream file(fullPath);
         if (!file.is_open()) { printf("FAIL: Can't open %s for writing\n", fullPath.c_str()); }
+        file.imbue(std::locale::classic());
+        file << std::fixed << std::setprecision(9);
         //printf("slice\n");
 
         numb* valuesOfAxis = !rangedAxes[0].isParameter ? kernel->variables[rangedAxes[0].index].values : kernel->parameters[rangedAxes[0].index].values;

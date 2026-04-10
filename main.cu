@@ -193,9 +193,6 @@ int compute(Computation* data)
     bool hasFailed = false;
     cudaError_t cudaStatus;
 
-#define IS_CPU_BENCHMARKING 1
-#define IS_CPU_NOT_OPENMP 0
-
     //printf(data->isGPU ? "GPU mode\n" : "CPU mode\n");
 
     // Execution
