@@ -189,6 +189,30 @@ public:
 		//memcpy(mapSettings, kernel->mapSettings, MAX_MAP_SETTINGS * sizeof(numb));
 	}
 
+	void CopyFrom(MarshalledKernel* kernel)
+	{
+		name = kernel->name;
+		steps = kernel->steps;
+		transientSteps = kernel->transientSteps;
+		time = kernel->time;
+		transientTime = kernel->transientTime;
+		usingTime = kernel->usingTime;
+		mapWeight = kernel->mapWeight;
+		stepType = kernel->stepType;
+
+		for (int i = 0; i < kernel->VAR_COUNT; i++)
+			variables[i] = kernel->variables[i];
+		for (int i = 0; i < kernel->PARAM_COUNT; i++)
+			parameters[i] = kernel->parameters[i];
+
+		VAR_COUNT = kernel->VAR_COUNT;
+		PARAM_COUNT = kernel->PARAM_COUNT;
+
+		analyses = kernel->analyses;
+
+		//memcpy(mapSettings, kernel->mapSettings, MAX_MAP_SETTINGS * sizeof(numb));
+	}
+
 	void CopyTo(Kernel* kernel)
 	{
 		kernel->name = name;

@@ -120,6 +120,7 @@ std::string exportHeatmapCSV(const std::string& mapName,
     if (!f.is_open()) return {};
 
     // Header
+    // TODO: Use computation values for axes!!!
     f << nameY << "\\" << nameX;
     for (int x = 0; x < s.xSize; ++x)
         f << ',' << (s.minX + s.stepX * (numb)x);

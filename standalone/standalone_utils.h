@@ -8,6 +8,8 @@
 #include "../indices_map.h"
 #include <fstream>
 #include "../configIO.h"
+#include <filesystem>
+#include "../variationSteps.h"
 
 extern json::jobject launchConfig;
 extern std::string exportPath;
