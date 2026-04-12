@@ -24,7 +24,7 @@
 #include "systems/fitzhugh_nagumo/fitzhugh_nagumo.h"
 #include "systems/mixed/mixed.h"
 #include "systems/ostrovskii/ostrovskii.h"
-#include "systems/ostrovskii_modified/ostrovskii_modified.h"
+#include "systems/khanov/khanov.h"
 #include "systems/hodgkin_huxley/hodgkin_huxley.h"
 #include "systems/sang26/sang26.h"
 #include "systems/pala_machaczek/pala_machaczek.h"

@@ -7,7 +7,6 @@
 #include "main.h"
 #include "cuda_macros.h"
 #include <objects.h>
-#include "benchmarking/cpu_bm.h"
 #include "indices_map.h"
 #include "index2port.h"
 

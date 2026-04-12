@@ -35,7 +35,7 @@ void common_main()
     addKernel(mishchenko);
     addKernel(mixed);
     addKernel(ostrovskii);
-    addKernel(ostrovskii_modified);
+    addKernel(khanov);
     addKernel(hodgkin_huxley);
     addKernel(sang26);
     addKernel(pala_machaczek);

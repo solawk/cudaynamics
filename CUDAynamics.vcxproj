@@ -126,7 +126,6 @@
   <ItemGroup>
     <ClCompile Include="anfunc2indices.cpp" />
     <ClCompile Include="anfunc_names.cpp" />
-    <ClCompile Include="benchmarking\cpu_bm.cpp" />
     <ClCompile Include="configIO.cpp" />
     <ClCompile Include="file_export.cpp" />
     <ClCompile Include="fonts.cpp" />
@@ -189,7 +188,6 @@
     <ClInclude Include="anfuncs.h" />
     <ClInclude Include="anfunc_names.h" />
     <ClInclude Include="attribute_struct.h" />
-    <ClInclude Include="benchmarking\cpu_bm.h" />
     <ClInclude Include="colorLUT_struct.h" />
     <ClInclude Include="computation_struct.h" />
     <ClInclude Include="configIO.h" />
@@ -281,16 +279,14 @@
     <CudaCompile Include="systems\izhikevich\izhikevich.cu" />
     <CudaCompile Include="systems\jj_mcrls\jj_mcrls.cu" />
     <CudaCompile Include="systems\jj_rcls\jj_rcls.cu" />
+    <CudaCompile Include="systems\khanov\khanov.cu" />
     <CudaCompile Include="systems\langford\langford.cu" />
     <CudaCompile Include="systems\lorenz84\lorenz84.cu" />
     <CudaCompile Include="systems\lorenzVar\lorenzVar.cu" />
-    <CudaCompile Include="systems\lorenz\lorenz.cu">
-      <FastMath Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</FastMath>
-    </CudaCompile>
+    <CudaCompile Include="systems\lorenz\lorenz.cu" />
     <CudaCompile Include="systems\mishchenko\mishchenko.cu" />
     <CudaCompile Include="systems\mixed\mixed.cu" />
     <CudaCompile Include="systems\ostrovskii\ostrovskii.cu" />
-    <CudaCompile Include="systems\ostrovskii_modified\ostrovskii_modified.cu" />
     <CudaCompile Include="systems\pala_machaczek\pala_machaczek.cu" />
     <CudaCompile Include="systems\rabinovich_fabrikant\rabinovich_fabrikant.cu" />
     <CudaCompile Include="systems\resonate_and_fire\resonate_and_fire.cu" />
