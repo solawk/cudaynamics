@@ -96,7 +96,6 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
 
 			numb kn2 = (P(k3) * ((nmp >= -P(Nmax) && nmp <= P(Nmax)) ? (numb)1.0 - abs(nmp / P(Nmax)) : (numb)0.0) * imp);
 			nmp = V(n) + H * (numb)0.5 * kn2;
-			tmp = V(t) + H * (numb)0.5;
 
 			vmp = P(Vdc) + (fmod((tmp - P(Vdel)) > (numb)0.0 ? (tmp - P(Vdel)) : (P(Vdf) / P(Vfreq) + P(Vdel) - tmp), (numb)1.0 / P(Vfreq)) < P(Vdf) / P(Vfreq) ? P(Vamp) : -P(Vamp));
 			imp = (vmp - (P(k1) * (nmp / (xmp + P(a))))) / ((P(Ron) * xmp) + (P(Roff) * ((numb)1.0 - xmp)));
@@ -124,8 +123,6 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
 		}
 		ifMETHOD(P(method), VariableSymmetryCD)
 		{
-
-			
 			numb h1 = (numb)0.5 * H - P(symmetry);
 			numb h2 = (numb)0.5 * H + P(symmetry);
 
@@ -152,15 +149,16 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
 			if (Vnext(x) > (numb)1.0) Vnext(x) = (numb)1.0;
 
 			Vnext(i) = (Vnext(v) - (P(k1) * (nmp / (Vnext(x) + P(a))))) / ((P(Ron) * Vnext(x)) + (P(Roff) * ((numb)1.0 - Vnext(x))));
+			Vnext(x) = xmp + h2 * (P(k2) * Vnext(i));
+
+			if (Vnext(x) < (numb)0.0) Vnext(x) = (numb)0.0;
+			if (Vnext(x) > (numb)1.0) Vnext(x) = (numb)1.0;
+
+			Vnext(i) = (Vnext(v) - (P(k1) * (nmp / (Vnext(x) + P(a))))) / ((P(Ron) * Vnext(x)) + (P(Roff) * ((numb)1.0 - Vnext(x))));
 			Vnext(n) = nmp + h2 * (P(k3) * ((nmp >= -P(Nmax) && nmp <= P(Nmax)) ? (numb)1.0 - abs(nmp / P(Nmax)) : (numb)0.0) * Vnext(i));
 
 			Vnext(i) = (Vnext(v) - (P(k1) * (Vnext(n) / (Vnext(x) + P(a))))) / ((P(Ron) * Vnext(x)) + (P(Roff) * ((numb)1.0 - Vnext(x))));
 			Vnext(n) = nmp + h2 * (P(k3) * ((Vnext(n) >= -P(Nmax) && Vnext(n) <= P(Nmax)) ? (numb)1.0 - abs(Vnext(n) / P(Nmax)) : (numb)0.0) * Vnext(i));
-			Vnext(i) = (Vnext(v) - (P(k1) * (Vnext(n) / (Vnext(x) + P(a))))) / ((P(Ron) * Vnext(x)) + (P(Roff) * ((numb)1.0 - Vnext(x))));
-			Vnext(n) = nmp + h2 * (P(k3) * ((Vnext(n) >= -P(Nmax) && Vnext(n) <= P(Nmax)) ? (numb)1.0 - abs(Vnext(n) / P(Nmax)) : (numb)0.0) * Vnext(i));
-			Vnext(i) = (Vnext(v) - (P(k1) * (Vnext(n) / (Vnext(x) + P(a))))) / ((P(Ron) * Vnext(x)) + (P(Roff) * ((numb)1.0 - Vnext(x))));
-			Vnext(n) = nmp + h2 * (P(k3) * ((Vnext(n) >= -P(Nmax) && Vnext(n) <= P(Nmax)) ? (numb)1.0 - abs(Vnext(n) / P(Nmax)) : (numb)0.0) * Vnext(i));
-
 		}
 	}
 	ifSIGNAL(P(signal), sine)
@@ -223,7 +221,6 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
 
 			numb kn2 = (P(k3) * ((nmp >= -P(Nmax) && nmp <= P(Nmax)) ? (numb)1.0 - abs(nmp / P(Nmax)) : (numb)0.0) * imp);
 			nmp = V(n) + H * (numb)0.5 * kn2;
-			tmp = V(t) + H * (numb)0.5;
 
 			vmp = P(Vdc) + P(Vamp) * sin((numb)2.0 * (numb)3.141592653589793 * P(Vfreq) * (tmp - P(Vdel)));
 			imp = (vmp - (P(k1) * (nmp / (xmp + P(a))))) / ((P(Ron) * xmp) + (P(Roff) * ((numb)1.0 - xmp)));
@@ -251,7 +248,6 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
 		}
 		ifMETHOD(P(method), VariableSymmetryCD)
 		{
-
 			numb h1 = (numb)0.5 * H - P(symmetry);
 			numb h2 = (numb)0.5 * H + P(symmetry);
 
@@ -278,15 +274,17 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
 			if (Vnext(x) > (numb)1.0) Vnext(x) = (numb)1.0;
 
 			Vnext(i) = (Vnext(v) - (P(k1) * (nmp / (Vnext(x) + P(a))))) / ((P(Ron) * Vnext(x)) + (P(Roff) * ((numb)1.0 - Vnext(x))));
+
+			Vnext(x) = xmp + h2 * (P(k2) * Vnext(i));
+
+			if (Vnext(x) < (numb)0.0) Vnext(x) = (numb)0.0;
+			if (Vnext(x) > (numb)1.0) Vnext(x) = (numb)1.0;
+
+			Vnext(i) = (Vnext(v) - (P(k1) * (nmp / (Vnext(x) + P(a))))) / ((P(Ron) * Vnext(x)) + (P(Roff) * ((numb)1.0 - Vnext(x))));
 			Vnext(n) = nmp + h2 * (P(k3) * ((nmp >= -P(Nmax) && nmp <= P(Nmax)) ? (numb)1.0 - abs(nmp / P(Nmax)) : (numb)0.0) * Vnext(i));
 
 			Vnext(i) = (Vnext(v) - (P(k1) * (Vnext(n) / (Vnext(x) + P(a))))) / ((P(Ron) * Vnext(x)) + (P(Roff) * ((numb)1.0 - Vnext(x))));
 			Vnext(n) = nmp + h2 * (P(k3) * ((Vnext(n) >= -P(Nmax) && Vnext(n) <= P(Nmax)) ? (numb)1.0 - abs(Vnext(n) / P(Nmax)) : (numb)0.0) * Vnext(i));
-			Vnext(i) = (Vnext(v) - (P(k1) * (Vnext(n) / (Vnext(x) + P(a))))) / ((P(Ron) * Vnext(x)) + (P(Roff) * ((numb)1.0 - Vnext(x))));
-			Vnext(n) = nmp + h2 * (P(k3) * ((Vnext(n) >= -P(Nmax) && Vnext(n) <= P(Nmax)) ? (numb)1.0 - abs(Vnext(n) / P(Nmax)) : (numb)0.0) * Vnext(i));
-			Vnext(i) = (Vnext(v) - (P(k1) * (Vnext(n) / (Vnext(x) + P(a))))) / ((P(Ron) * Vnext(x)) + (P(Roff) * ((numb)1.0 - Vnext(x))));
-			Vnext(n) = nmp + h2 * (P(k3) * ((Vnext(n) >= -P(Nmax) && Vnext(n) <= P(Nmax)) ? (numb)1.0 - abs(Vnext(n) / P(Nmax)) : (numb)0.0) * Vnext(i));
-
 		}
 	}
 	ifSIGNAL(P(signal), triangle)
@@ -349,7 +347,6 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
 
 			numb kn2 = (P(k3) * ((nmp >= -P(Nmax) && nmp <= P(Nmax)) ? (numb)1.0 - abs(nmp / P(Nmax)) : (numb)0.0) * imp);
 			nmp = V(n) + H * (numb)0.5 * kn2;
-			//tmp = V(t) + H * (numb)0.5;
 
 			vmp = P(Vdc) + P(Vamp) * (((numb)4.0 * P(Vfreq) * (tmp - P(Vdel)) - (numb)2.0 * floor(((numb)4.0 * P(Vfreq) * (tmp - P(Vdel)) + (numb)1.0) / (numb)2.0)) * ((int)floor(((numb)4.0 * P(Vfreq) * (tmp - P(Vdel)) + (numb)1.0) / (numb)2.0) % 2 == 0 ? (numb)1.0 : (numb)-1.0));
 			imp = (vmp - (P(k1) * (nmp / (xmp + P(a))))) / ((P(Ron) * xmp) + (P(Roff) * ((numb)1.0 - xmp)));
@@ -374,13 +371,9 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
 			numb kn4 = (P(k3) * ((nmp >= -P(Nmax) && nmp <= P(Nmax)) ? (numb)1.0 - abs(nmp / P(Nmax)) : (numb)0.0) * Vnext(i));
 			Vnext(n) = V(n) + H * (kn1 + kn2 * (numb)2.0 + kn3 * (numb)2.0 + kn4) / (numb)6.0;
 			Vnext(t) = tmp;
-
 		}
 		ifMETHOD(P(method), VariableSymmetryCD)
 		{
-
-			///
-
 			numb h1 = (numb)0.5 * H - P(symmetry);
 			numb h2 = (numb)0.5 * H + P(symmetry);
 
@@ -407,16 +400,17 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
 			if (Vnext(x) > (numb)1.0) Vnext(x) = (numb)1.0;
 
 			Vnext(i) = (Vnext(v) - (P(k1) * (nmp / (Vnext(x) + P(a))))) / ((P(Ron) * Vnext(x)) + (P(Roff) * ((numb)1.0 - Vnext(x))));
+
+			Vnext(x) = xmp + h2 * (P(k2) * Vnext(i));
+
+			if (Vnext(x) < (numb)0.0) Vnext(x) = (numb)0.0;
+			if (Vnext(x) > (numb)1.0) Vnext(x) = (numb)1.0;
+
+			Vnext(i) = (Vnext(v) - (P(k1) * (nmp / (Vnext(x) + P(a))))) / ((P(Ron) * Vnext(x)) + (P(Roff) * ((numb)1.0 - Vnext(x))));
 			Vnext(n) = nmp + h2 * (P(k3) * ((nmp >= -P(Nmax) && nmp <= P(Nmax)) ? (numb)1.0 - abs(nmp / P(Nmax)) : (numb)0.0) * Vnext(i));
 
 			Vnext(i) = (Vnext(v) - (P(k1) * (Vnext(n) / (Vnext(x) + P(a))))) / ((P(Ron) * Vnext(x)) + (P(Roff) * ((numb)1.0 - Vnext(x))));
 			Vnext(n) = nmp + h2 * (P(k3) * ((Vnext(n) >= -P(Nmax) && Vnext(n) <= P(Nmax)) ? (numb)1.0 - abs(Vnext(n) / P(Nmax)) : (numb)0.0) * Vnext(i));
-			Vnext(i) = (Vnext(v) - (P(k1) * (Vnext(n) / (Vnext(x) + P(a))))) / ((P(Ron) * Vnext(x)) + (P(Roff) * ((numb)1.0 - Vnext(x))));
-			Vnext(n) = nmp + h2 * (P(k3) * ((Vnext(n) >= -P(Nmax) && Vnext(n) <= P(Nmax)) ? (numb)1.0 - abs(Vnext(n) / P(Nmax)) : (numb)0.0) * Vnext(i));
-			Vnext(i) = (Vnext(v) - (P(k1) * (Vnext(n) / (Vnext(x) + P(a))))) / ((P(Ron) * Vnext(x)) + (P(Roff) * ((numb)1.0 - Vnext(x))));
-			Vnext(n) = nmp + h2 * (P(k3) * ((Vnext(n) >= -P(Nmax) && Vnext(n) <= P(Nmax)) ? (numb)1.0 - abs(Vnext(n) / P(Nmax)) : (numb)0.0) * Vnext(i));
-
 		}
-
 	}
 }
