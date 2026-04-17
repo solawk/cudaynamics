@@ -2176,7 +2176,16 @@ int imgui_main(int, char**)
 						Computation* cmp =  &(computations[playedBufferIndex]);
 						Attribute* axis = window->typeX == MDT_Variable ? &(krnl->variables[window->indexX]) : &(krnl->parameters[window->indexX]);
 						bool axisIsRanging = axis->TrueStepCount() > 1;
-						if (axisIsRanging) {
+						bool axisHasValues = axis->values != nullptr;
+						bool cmpHasMaps = cmp->marshal.maps != nullptr;
+
+						bool noErrors = true;
+						if (!axisIsRanging) noErrors = false;
+						if (!axisHasValues) noErrors = false;
+						if (!cmpHasMaps) noErrors = false;
+
+						if (noErrors)
+						{
 							//numb minX, stepX, maxX;
 							//int xSize;
 							
@@ -2198,17 +2207,20 @@ int imgui_main(int, char**)
 										ImPlot::SetupAxis(3+i, indices[(AnalysisIndex)window->variables[i]].name.c_str(), 0);
 									}
 								}
-								for (int j = 0; j < window->variableCount; j++) {
+
+								for (int j = 0; j < window->variableCount; j++) 
+								{
 									mapIndex = (AnalysisIndex)window->variables[j];
 									numb* MapSlice = cmp->marshal.maps + index2port(cmp->marshal.kernel.analyses, mapIndex)->offset * cmp->marshal.totalVariations;
 									numb* Xaxis = new numb[axis->stepCount];
 									numb* Yaxis = new numb[axis->stepCount];
 									std::vector<int> tempattributeValueIndices = attributeValueIndices;
-									for (int i = 0; i < axis->stepCount; i++) {
+									for (int i = 0; i < axis->stepCount; i++) 
+									{
 										if (window->typeX == MDT_Variable)tempattributeValueIndices[window->indexX] = i;
 										else tempattributeValueIndices[window->indexX + krnl->VAR_COUNT] = i;
 										steps2Variation(&variation, &(tempattributeValueIndices.data()[0]), &KERNEL);
-										Xaxis[i] = axis->min + axis->step * i;
+										Xaxis[i] = axis->values[i];
 										Yaxis[i] = MapSlice[variation];
 									}
 									if (window->ShowMultAxes) {
@@ -2222,16 +2234,26 @@ int imgui_main(int, char**)
 									ImPlot::PlotLine(indices[(AnalysisIndex)window->variables[j]].name.c_str(), Xaxis, Yaxis, axis->stepCount);
 									delete[] Xaxis;
 									delete[] Yaxis;
-									
 								}
+
 								if (ImGui::IsMouseDown(0) && ImGui::IsKeyPressed(ImGuiMod_Shift) && ImGui::IsMouseHoveringRect(plot->PlotRect.Min, plot->PlotRect.Max) && plot->ContextLocked || plot->shiftClicked) {
 									numb MousePosX = (numb)ImPlot::GetPlotMousePos().x;
+
 									if (axis->min > MousePosX)window->typeX == MDT_Variable ? attributeValueIndices[window->indexX] = 0 : attributeValueIndices[window->indexX + krnl->VAR_COUNT] = 0;
 									else if (axis->max < MousePosX)window->typeX == MDT_Variable ? attributeValueIndices[window->indexX] = axis->stepCount - 1 : attributeValueIndices[window->indexX + krnl->VAR_COUNT] = axis->stepCount - 1;
-									else {
-										numb NotRoundedIndex = (MousePosX - axis->min) / (axis->max - axis->min) * axis->stepCount;
-										int index = static_cast<int>(std::round(NotRoundedIndex)); if (index > axis->stepCount - 1)index = axis->stepCount - 1;
-										window->typeX == MDT_Variable ? attributeValueIndices[window->indexX] = index : attributeValueIndices[window->indexX + krnl->VAR_COUNT] = index;
+									else 
+									{
+										numb v;
+										for (int j = axis->stepCount - 1; j >= 0; j--)
+										{
+											v = axis->values[j];
+											if (MousePosX >= v)
+											{
+												window->typeX == MDT_Variable ? attributeValueIndices[window->indexX] = j : attributeValueIndices[window->indexX + krnl->VAR_COUNT] = j;
+												break;
+											}
+										}
+										
 									}
 								}
 								if (plot->shiftSelected) {
@@ -2239,8 +2261,9 @@ int imgui_main(int, char**)
 									kernelNew.parameters[window->orbit.xIndex].max = plot->shiftSelect2Location.x;
 									if (window->orbit.isAutoComputeOn) computeAfterShiftSelect = true;
 								}
-								if (window->orbit.showParLines) {
-									double value = axis->min + axis->step * attributeValueIndices[window->typeX == MDT_Variable ? window->indexX : window->indexX + krnl->VAR_COUNT];
+								if (window->orbit.showParLines) 
+								{
+									double value = axis->values[attributeValueIndices[window->typeX == MDT_Variable ? window->indexX : window->indexX + krnl->VAR_COUNT]];
 									ImPlot::DragLineX(0, &value, window->orbit.markerColor, window->orbit.markerWidth, ImPlotDragToolFlags_NoInputs);
 								}
 								ImPlot::EndPlot();
@@ -2248,8 +2271,11 @@ int imgui_main(int, char**)
 							
 							
 						}
-						else {
-							ImGui::Text(("Axis " + axis->name + " is fixed").c_str());
+						else 
+						{
+							if (!axisIsRanging) ImGui::Text(("Axis " + axis->name + " is fixed").c_str());
+							else if (!axisHasValues) ImGui::Text("Not computed yet");
+							else if (!cmpHasMaps) ImGui::Text("Not computed yet");
 						}
 						if (window->whiteBg)
 							ImPlot::PopStyleColor();
