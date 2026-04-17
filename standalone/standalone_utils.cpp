@@ -44,7 +44,7 @@ bool readLaunchOptions(int argc, char** argv)
     return true;
 }
 
-void exportHires()
+bool exportHires()
 {
     std::string basePath;
     if (launchedAsOneShot && exportPath.empty())
@@ -71,7 +71,7 @@ void exportHires()
     MarshalledKernel* kernel = &(marshal->kernel);
     numb* values = marshal->maps;
     int totalVariations = marshal->totalVariations;
-    if (!values || totalVariations <= 0) { printf("FAIL: No data\n"); return; }
+    if (!values || totalVariations <= 0) { printf("FAIL: No data\n"); return false; }
 
     struct AxisInfo 
     {
@@ -153,7 +153,7 @@ void exportHires()
         std::string fileName = basePath.substr(basePath.find_last_of("/\\") + 1) +
             "_" + std::to_string(rows) + "x" + std::to_string(cols) +
             sliceAVIstring + ".csv";
-        std::string fullPath = "export_terminal/" + fileName;
+        std::string fullPath = (launchedAsOneShot ? "export_terminal/" : "export/") + fileName;
         std::ofstream file(fullPath);
         if (!file.is_open()) { printf("FAIL: Can't open %s for writing\n", fullPath.c_str()); }
         file.imbue(std::locale::classic());
@@ -202,4 +202,7 @@ void exportHires()
             avi[aIndex] = 0;
         }
     }
+
+    printf("Exported successfully!\n");
+    return true;
 }

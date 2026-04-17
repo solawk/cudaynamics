@@ -19,4 +19,4 @@ std::map<std::string, std::string> launchOptions(int argc, char** argv);
 
 bool readLaunchOptions(int argc, char** argv);
 
-void exportHires();
+bool exportHires();

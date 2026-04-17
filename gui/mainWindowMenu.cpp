@@ -30,6 +30,39 @@ void mainWindowMenu()
                 }
             }
 
+            bool allowHiresExport = computationHires.ready && computationHires.marshal.maps != nullptr && hiresIndex != IND_NONE;
+            if (allowHiresExport)
+            {
+                if (ImGui::MenuItem("Export Hi-Res to .csv"))
+                {
+                    std::string systemName = kernels[selectedKernel].name;
+
+                    Index* index = &(indices[hiresIndex]);
+                    std::string indexName = index->name;
+
+                    char ts[32];
+                    std::time_t t = std::time(nullptr);
+                    std::tm tm{};
+                    localtime_s(&tm, &t);
+                    std::snprintf(ts, sizeof(ts), "%04d-%02d-%02d_%02d-%02d-%02d",
+                        tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday,
+                        tm.tm_hour, tm.tm_min, tm.tm_sec);
+                    std::string timestamp = (std::string)ts;
+
+                    exportPath = systemName + "_" + indexName + "_" + timestamp;
+
+                    if (exportHires())
+                    {
+                        MessageBoxA(NULL, ("Exported succesfully to " + exportPath).c_str(), "Export", MB_OK | MB_ICONINFORMATION);
+                    }
+                    else
+                    {
+                        MessageBoxA(NULL, "Export failed (empty data or I/O error)", "Export", MB_OK | MB_ICONERROR);
+                    }
+                }
+                TOOLTIP("Save with edited fields preserved")
+            }
+
             ImGui::EndMenu();
         }
 
