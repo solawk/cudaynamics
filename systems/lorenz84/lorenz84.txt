@@ -20,13 +20,20 @@ Execute on launch: yes
 var x Linear -5 1.8 1.0 50 0.0 0.0
 var y Linear -4.0 8.0 0.1 50 0.0 0.0
 var z Fixed -1.8 3.2 0.1 0 0.0 0.0
+var t Fixed 0.0 0.0 0.1 0 0.0 0.0
 param a Fixed 0.95 29.0 0.1 0 0.0 0.0
 param b Fixed 7.91 29.0 0.1 0 0.0 0.0
-param f Fixed 4.83 29.0 0.1 0 0.0 0.0
+param f0 Fixed 4.83 29.0 0.1 0 0.0 0.0
+param fA Fixed 2.0 3.0 0.1 0 0.0 0.0
+constraint signal sine
+param fw Fixed 0.08607 1.0 0.1 0 0.0 0.0
+constraint signal sine
 param g Fixed 4.66 29.0 0.1 0 0.0 0.0
 param symmetry Fixed 0.0 1.0 0.01 100 0.0 0.0
+constraint method VariableSymmetryCD
 // Defining enumerated parameters (useful for methods):
 // enum <name> <ranging type> <minimum value> <maximum value> <step> <step count> <normal mean> <normal deviation> <enum names, no spaces>
+enum signal 1constant 0sine
 enum method 0ExplicitEuler 0ExplicitMidpoint 0ExplicitRungeKutta4 1VariableSymmetryCD
 //
 // Defining maps:

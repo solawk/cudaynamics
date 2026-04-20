@@ -4,8 +4,9 @@
 
 namespace attributes
 {
-    enum variables { x, y, z };
-    enum parameters { a, b, f, g, symmetry, method, COUNT };
+    enum variables { x, y, z, t };
+    enum parameters { a, b, f0, fA, fw, g, symmetry, signal, method, COUNT };
+    enum waveforms { constant, sine };
     enum methods { ExplicitEuler, ExplicitMidpoint, ExplicitRungeKutta4, VariableSymmetryCD };
 }
 
@@ -37,32 +38,40 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
 {
     ifMETHOD(P(method), ExplicitEuler)
     {
-        Vnext(x) = V(x) + H * (-P(a) * V(x) - V(y)*V(y) - V(z)*V(z) + P(a) * P(f));
+        numb f = P(f0); ifSIGNAL(P(signal), sine) f += P(fA) * sin(P(fw) * V(t));
+        Vnext(x) = V(x) + H * (-P(a) * V(x) - V(y)*V(y) - V(z)*V(z) + P(a) * f);
         Vnext(y) = V(y) + H * (-V(y) + V(x) * V(y) - P(b) * V(x) * V(z) + P(g));
         Vnext(z) = V(z) + H * (-V(z) + P(b) * V(x) * V(y) + V(x) * V(z));
+        Vnext(t) = V(t) + H;
     }
 
     ifMETHOD(P(method), ExplicitMidpoint)
     {
-        numb xmp = V(x) + H * (numb)0.5 * (-P(a) * V(x) - V(y) * V(y) - V(z) * V(z) + P(a) * P(f));
+        numb f = P(f0); ifSIGNAL(P(signal), sine) f += P(fA) * sin(P(fw) * V(t));
+        numb xmp = V(x) + H * (numb)0.5 * (-P(a) * V(x) - V(y) * V(y) - V(z) * V(z) + P(a) * f);
         numb ymp = V(y) + H * (numb)0.5 * (-V(y) + V(x) * V(y) - P(b) * V(x) * V(z) + P(g));
         numb zmp = V(z) + H * (numb)0.5 * (-V(z) + P(b) * V(x) * V(y) + V(x) * V(z));
+        numb tmp = V(t) + H * (numb)0.5;
 
-        Vnext(x) = V(x) + H * (-P(a) * xmp - ymp*ymp - zmp*zmp + P(a) * P(f));
+        numb fmp = P(f0); ifSIGNAL(P(signal), sine) fmp += P(fA) * sin(P(fw) * tmp);
+        Vnext(x) = V(x) + H * (-P(a) * xmp - ymp*ymp - zmp*zmp + P(a) * fmp);
         Vnext(y) = V(y) + H * (-ymp + xmp * ymp - P(b) * xmp * zmp + P(g));
         Vnext(z) = V(z) + H * (-zmp + P(b) * xmp * ymp + xmp * zmp);
     }
+
+    // TODO: Edit for RK4 and VSCD
     ifMETHOD(P(method), ExplicitRungeKutta4)
     {
-        numb kx1 = -P(a) * V(x) - V(y) * V(y) - V(z) * V(z) + P(a) * P(f);
+        numb kx1 = -P(a) * V(x) - V(y) * V(y) - V(z) * V(z) + P(a) * P(f0);
         numb ky1 = -V(y) + V(x) * V(y) - P(b) * V(x) * V(z) + P(g);
         numb kz1 = -V(z) + P(b) * V(x) * V(y) + V(x) * V(z);
 
         numb xmp = V(x) + (numb)0.5 * H * kx1;
         numb ymp = V(y) + (numb)0.5 * H * ky1;
         numb zmp = V(z) + (numb)0.5 * H * kz1;
+        numb tmp = V(t) + (numb)0.5 * H;
 
-        numb kx2 = -P(a) * xmp - ymp * ymp - zmp * zmp + P(a) * P(f);
+        numb kx2 = -P(a) * xmp - ymp * ymp - zmp * zmp + P(a) * P(f0);
         numb ky2 = -ymp + xmp * ymp - P(b) * xmp * zmp + P(g);
         numb kz2 = -zmp + P(b) * xmp * ymp + xmp * zmp;
 
@@ -70,7 +79,7 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
         ymp = V(y) + (numb)0.5 * H * ky2;
         zmp = V(z) + (numb)0.5 * H * kz2;
 
-        numb kx3 = -P(a) * xmp - ymp * ymp - zmp * zmp + P(a) * P(f);
+        numb kx3 = -P(a) * xmp - ymp * ymp - zmp * zmp + P(a) * P(f0);
         numb ky3 = -ymp + xmp * ymp - P(b) * xmp * zmp + P(g);
         numb kz3 = -zmp + P(b) * xmp * ymp + xmp * zmp;
 
@@ -78,7 +87,7 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
         ymp = V(y) + H * ky3;
         zmp = V(z) + H * kz3;
 
-        numb kx4 = -P(a) * xmp - ymp * ymp - zmp * zmp + P(a) * P(f);
+        numb kx4 = -P(a) * xmp - ymp * ymp - zmp * zmp + P(a) * P(f0);
         numb ky4 = -ymp + xmp * ymp - P(b) * xmp * zmp + P(g);
         numb kz4 = -zmp + P(b) * xmp * ymp + xmp * zmp;
 
@@ -86,14 +95,16 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
         Vnext(y) = V(y) + H * (ky1 + (numb)2.0 * ky2 + (numb)2.0 * ky3 + ky4) / (numb)6.0;
         Vnext(z) = V(z) + H * (kz1 + (numb)2.0 * kz2 + (numb)2.0 * kz3 + kz4) / (numb)6.0;
     }
+
     ifMETHOD(P(method), VariableSymmetryCD)
     {
         numb h1 = (numb)0.5 * H - P(symmetry);
         numb h2 = (numb)0.5 * H + P(symmetry);
 
-        numb xmp = V(x) + h1 * (-P(a) * V(x) - V(y) * V(y) - V(z) * V(z) + P(a) * P(f));
+        numb xmp = V(x) + h1 * (-P(a) * V(x) - V(y) * V(y) - V(z) * V(z) + P(a) * P(f0));
         numb ymp = V(y) + h1 * (-V(y) + xmp * V(y) - P(b) * xmp * V(z) + P(g));
         numb zmp = V(z) + h1 * (-V(z) + P(b) * xmp * ymp + xmp * V(z));
+        numb tmp = V(t) + h1;
 
         numb denom_z = ((numb)1.0 + h2 - h2 * xmp);
         if (abs(denom_z) < (numb)1e-6) denom_z = copysign((numb)1e-6, denom_z);
@@ -105,7 +116,7 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
 
         numb denom_x = ((numb)1.0 + h2 * P(a));
         if (abs(denom_x) < (numb)1e-6) denom_x = copysign((numb)1e-6, denom_x);
-        Vnext(x) = (xmp - h2 * Vnext(y)*Vnext(y) - h2 * Vnext(z) * Vnext(z) + h2 * P(a) * P(f)) / denom_x;
+        Vnext(x) = (xmp - h2 * Vnext(y)*Vnext(y) - h2 * Vnext(z) * Vnext(z) + h2 * P(a) * P(f0)) / denom_x;
     }
 }
 
