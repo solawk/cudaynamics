@@ -271,6 +271,7 @@
     <CudaCompile Include="systems\bolshakov\bolshakov.cu" />
     <CudaCompile Include="systems\chen_lee\chen_lee.cu" />
     <CudaCompile Include="systems\dadras_momeni\dadras_momeni.cu" />
+    <CudaCompile Include="systems\de_pitta\de_pitta.cu" />
     <CudaCompile Include="systems\fitzhugh_nagumo\fitzhugh_nagumo.cu" />
     <CudaCompile Include="systems\fourwing\fourwing.cu" />
     <CudaCompile Include="systems\halvorsen\halvorsen.cu" />

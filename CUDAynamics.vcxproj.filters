@@ -391,9 +391,9 @@
     <CudaCompile Include="systems\ullah\ullah.cu">
       <Filter>systems</Filter>
     </CudaCompile>
-    <CudaCompile Include="systems\ostrovskii_modified\ostrovskii_modified.cu" />
     <CudaCompile Include="systems\resonate_and_fire\resonate_and_fire.cu" />
     <CudaCompile Include="systems\khanov\khanov.cu" />
+    <CudaCompile Include="systems\de_pitta\de_pitta.cu" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="CUDAynamics.rc" />

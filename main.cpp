@@ -41,6 +41,7 @@ void common_main()
     addKernel(pala_machaczek);
     addKernel(ullah);
     addKernel(resonate_and_fire);
+    addKernel(de_pitta);
 
     //selectKernel(kernels.begin()->first);
     selectKernel(lorenz);

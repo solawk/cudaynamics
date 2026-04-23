@@ -30,3 +30,4 @@
 #include "systems/pala_machaczek/pala_machaczek.h"
 #include "systems/ullah/ullah.h"
 #include "systems/resonate_and_fire/resonate_and_fire.h"
+#include "systems/de_pitta/de_pitta.h"
