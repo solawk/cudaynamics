@@ -1,4 +1,4 @@
-Name: De Pitta
+Name: De Pitta astrocyte
 Steps: 10000
 Transient: 0
 // Defining step:
