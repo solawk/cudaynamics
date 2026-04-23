@@ -1,0 +1,74 @@
+Name: De Pitta
+Steps: 10000
+Transient: 0
+// Defining step:
+// parameter/variable/discrete
+// Then, unless it is discrete, provide its name and define it like an attribute
+// If it is discrete, add nothing after
+Step type: parameter h Fixed 0.01 0.1 0.01 100 0.0 0.0
+// Compute on CUDAynamics launch: yes/no
+Execute on launch: yes
+// Ranging types:
+// Fixed (single <minimum value>)
+// Linear (<step count> values uniformly distributed between <minimum value> and <maximum value>, inclusively)
+// Step (values are picked from <minimum value> to <maximum value> with a step <step>, including minimum, including maximum if it ends up as a picked value)
+// Random (<step count> values randomly picked from <minimum value> to <maximum value>)
+// Normal (normal distribution of <step count> values, defined by <normal mean> and <normal deviation>
+//
+// Defining variables/parameters:
+// var/param <name> <ranging type> <minimum value> <maximum value> <step> <step count> <normal mean> <normal deviation>
+// If a variable/parameter is to be constrained (only shown when specific enums has specific options on):
+// constraint <enum0 name> <option of enum0> <enum1 name> <option of enum1> ...
+// Constraints are a disjunction clause ("display if constraint0 OR constraint1 OR constraint2 ...")
+var GammaA Fixed 0.0 1.0 0.01 0 0.0 0.0
+var I Fixed 0.16 5.0 0.01 0 0.0 0.0
+var C Fixed 0.1 2.0 0.01 0 0.0 0.0
+var hGate Fixed 0.9 1.0 0.01 0 0.0 0.0
+var YS Fixed 0.0 500.0 1.0 0 0.0 0.0
+var t Fixed 0.0 100.0 0.1 0 0.0 0.0
+param O_N Fixed 0.3 0.3 0.0 0 0.0 0.0
+param Omega_N Fixed 0.5 0.5 0.0 0 0.0 0.0
+param zeta Fixed 10.0 10.0 0.0 0 0.0 0.0
+param K_KC Fixed 0.5 0.5 0.0 0 0.0 0.0
+param O_beta Fixed 5.0 1.0 0.0 0 0.0 0.0
+param O_delta Fixed 0.2 0.6 0.0 0 0.0 0.0
+param kappa_delta Fixed 1.5 1.5 0.0 0 0.0 0.0
+param K_delta Fixed 0.3 0.1 0.0 0 0.0 0.0
+param O_3K Fixed 4.5 4.5 0.0 0 0.0 0.0
+param K_D Fixed 0.5 0.7 0.0 0 0.0 0.0
+param K_3K Fixed 1.0 1.0 0.0 0 0.0 0.0
+param Omega_5P Fixed 0.1 0.05 0.0 0 0.0 0.0
+param F_ex Fixed 0.09 2.0 0.0 0 0.0 0.0
+param I_Theta Fixed 0.3 0.3 0.0 0 0.0 0.0
+param omega_I Fixed 0.05 0.05 0.0 0 0.0 0.0
+param I_bias Fixed 0.0 0.0 0.0 0 0.0 0.0
+param Omega_C Fixed 6.0 6.0 0.0 0 0.0 0.0
+param Omega_L Fixed 0.1 0.1 0.0 0 0.0 0.0
+param O_P Fixed 0.9 0.9 0.0 0 0.0 0.0
+param K_P Fixed 0.1 0.05 0.0 0 0.0 0.0
+param C_T Fixed 2.0 2.0 0.0 0 0.0 0.0
+param rho_A Fixed 0.18 0.18 0.0 0 0.0 0.0
+param O_2 Fixed 0.2 0.2 0.0 0 0.0 0.0
+param d1 Fixed 0.13 0.13 0.0 0 0.0 0.0
+param d2 Fixed 1.05 1.05 0.0 0 0.0 0.0
+param d3 Fixed 0.9434 0.9434 0.0 0 0.0 0.0
+param d5 Fixed 0.08 0.08 0.0 0 0.0 0.0
+param rho_C Fixed 0.001 0.08 0.0 0 0.0 0.0
+param Y_T Fixed 500 0.0 0.0 0 0.0 0.0
+param Omega_C_YS Fixed 40 0.0 0.0 0 0.0 0.0
+param YSfreq Fixed 0.5 0.1 0.0 0 0.0 0.0
+param YSdel Fixed 0.0 0.1 0.0 0 0.0 0.0
+constraint signal exp_attenuation
+param symmetry Fixed 0.0 1.0 0.01 100 0.0 0.0
+// "symmetry" parameter will only be displayed if method equals VariableSymmetryCD
+constraint method VariableSymmetryCD
+// Defining enumerated parameters (useful for methods):
+// enum <name> <ranging type> <minimum value> <maximum value> <step> <step count> <normal mean> <normal deviation> <enum names, no spaces>
+enum signal 1exp_attenuation
+enum method 1ExplicitEuler 0ExplicitMidpoint 0ExplicitRungeKutta4 0VariableSymmetryCD
+//
+// Defining settings for analysis functions:
+// analysis <name from "anfunc_names.cpp"> settings <values, must exactly match the settings struct>
+analysis Minimum-maximum settings 1 2
+analysis Largest Lyapunov exponent settings 0.01 1000 1 1 2 3 -1
+analysis Periodicity settings 1.0 1 5.0 15.0 10000.0 0.001 0.99 -inf
