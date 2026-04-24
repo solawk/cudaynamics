@@ -662,7 +662,7 @@ int imgui_main(int, char**)
 		if (playingParticles) PUSH_DISABLED_FRAME
 		popStyle = false;
 
-		float stepSize = KERNELNEWCURRENT.GetStepSize();
+		numb stepSize = KERNELNEWCURRENT.GetStepSize();
 
 		if ((!KERNELNEWCURRENT.usingTime && KERNELNEWCURRENT.steps != KERNELSAVEDCURRENT.steps) || (KERNELNEWCURRENT.usingTime && KERNELNEWCURRENT.time != KERNELSAVEDCURRENT.time))
 		{
@@ -748,7 +748,7 @@ int imgui_main(int, char**)
 
 			// PARTICLES MODE
 			ImGui::SetNextItemWidth(200.0f);
-			ImGui::DragFloat("Animation speed, steps/s", &(particleSpeed), 1.0f);
+			ImGui::DragFloat("Playback speed, steps/s", &(particleSpeed), 1.0f);
 			TOOLTIP("Playback speed of the evolution in Particles mode");
 			if (particleSpeed < 0.0f) particleSpeed = 0.0f;
 
@@ -766,9 +766,9 @@ int imgui_main(int, char**)
 			TOOLTIP("Predicted speed that allows for seamless playback");
 
 			ImGui::SetNextItemWidth(200.0f);
-			ImGui::DragInt("##Animation step", &(particleStep), 1.0f, 0, KERNEL.steps);
-			ImGui::SameLine();
-			ImGui::Text(("Animation step" + (continuousComputingEnabled ? " (total step " + std::to_string(bufferNo * KERNEL.steps + particleStep) + ")" : "")).c_str());
+			uint64_t totalStep = bufferNo * KERNEL.steps + particleStep;
+			std::string bufferStepText = "Buffer step" + (continuousComputingEnabled ? " (total " + std::to_string(totalStep) + " steps, T = " + std::to_string(totalStep * stepSize) + ")" : "");
+			ImGui::DragInt((bufferStepText + "##Buffer step").c_str(), &(particleStep), 1.0f, 0, KERNEL.steps);
 
 			if (ImGui::Button("Reset to step 0")) particleStep = 0;
 
