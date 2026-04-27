@@ -26,6 +26,7 @@ var C Fixed 0.1 2.0 0.01 0 0.0 0.0
 var hGate Fixed 0.9 1.0 0.01 0 0.0 0.0
 var YS Fixed 0.0 500.0 1.0 0 0.0 0.0
 var t Fixed 0.0 100.0 0.1 0 0.0 0.0
+var YSphase Fixed 0.0 0.0 0.0 0 0.0 0.0
 param O_N Fixed 0.3 0.3 0.0 0 0.0 0.0
 param Omega_N Fixed 0.5 0.5 0.0 0 0.0 0.0
 param zeta Fixed 10.0 10.0 0.0 0 0.0 0.0
