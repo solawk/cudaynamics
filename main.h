@@ -36,4 +36,4 @@ void fillAttributeBuffers(Computation* data, int* attributeStepIndices, uint64_t
 
 void setupAnFuncs(Computation*);
 
-void indexDecayPostprocessing(Computation*);
+void indexDecayPostprocessing(Computation*, int);

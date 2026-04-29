@@ -289,6 +289,7 @@ int compute(Computation* data)
 
                 if (cudaStatus != cudaSuccess) { fprintf(stderr, "execute failed!\n"); hasFailed = true; break; }
                 data->isFirst = false;
+                if (data->calculateDeltaDecay && data->buffersPerVariation > 1) indexDecayPostprocessing(data, b);
 
                 std::chrono::steady_clock::time_point hiresAfter = std::chrono::steady_clock::now();
                 std::chrono::steady_clock::duration hiresElapsed = hiresAfter - hiresBefore;
@@ -304,7 +305,7 @@ int compute(Computation* data)
 
     // Output
 
-    if (!data->isHires && data->calculateDeltaDecay) indexDecayPostprocessing(data);
+    if (!data->isHires && data->calculateDeltaDecay) indexDecayPostprocessing(data, -1);
     after = std::chrono::steady_clock::now();
     std::chrono::steady_clock::duration elapsed = after - before;
     auto timeElapsed = std::chrono::duration_cast<std::chrono::milliseconds>(elapsed).count();
@@ -418,7 +419,7 @@ void setupAnFuncs(Computation* data)
     {
         CUDA_marshal.maps = new numb[CUDA_marshal.totalVariations * CUDA_marshal.totalMapValuesPerVariation];
 
-        if (!data->isHires)
+        if (data->buffersPerVariation > 1)
         {
             CUDA_marshal.indecesDelta = new numb[CUDA_marshal.totalVariations * CUDA_marshal.totalMapValuesPerVariation];
             CUDA_marshal.indecesDecay = new numb[CUDA_marshal.totalVariations * CUDA_marshal.totalMapValuesPerVariation];
@@ -447,7 +448,7 @@ void setDecayed(Computation* data, uint64_t v, numb val, numb life)
         CUDA_marshal.indecesDecayLifetime[v] = life;
 }
 
-void indexDecayPostprocessing(Computation* data)
+void indexDecayPostprocessing(Computation* data, int buffer)
 {
     // Calculate the delta if it's not the first launch
     if (data->isFirst)
@@ -470,11 +471,13 @@ void indexDecayPostprocessing(Computation* data)
         int indexEnd = indexStart + indexPair.second.size * CUDA_marshal.totalVariations;
         DecaySettings* settings = &(indexPair.second.decay);
         int thresholdCount = (int)settings->thresholds.size();
-        numb lifetime = CUDA_kernel.usingTime ? (data->bufferNo + 1) * CUDA_kernel.time + CUDA_kernel.transientTime : (data->bufferNo + 1) * CUDA_kernel.steps + CUDA_kernel.transientSteps;
+        int bufferNo = buffer < 0 ? data->bufferNo : buffer;
+        numb lifetime = CUDA_kernel.usingTime ? (bufferNo + 1) * CUDA_kernel.time + CUDA_kernel.transientTime : (bufferNo + 1) * CUDA_kernel.steps + CUDA_kernel.transientSteps;
 
-        if (data->bufferNo >= (settings->source == DTS_Index ? -2 : 1) && port->used)
+        if (bufferNo >= (settings->source == DTS_Index ? -2 : 1) && port->used)
         {
-            for (uint64_t v = indexStart; v < indexEnd; v++)
+#pragma omp parallel for
+            for (int64_t v = indexStart; v < indexEnd; v++)
             {
                 for (int t = 0; t < thresholdCount; t++)
                 {
