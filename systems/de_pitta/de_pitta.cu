@@ -15,6 +15,7 @@ namespace attributes
         hGate,       // IP3R deinactivation gate
         YS,      // external neurotransmitter signal YS(t) (uM)
         t,
+        YSphase
     };
 
     // ----------------------------
@@ -81,9 +82,9 @@ __host__ __device__ void kernelProgram_(name)(Computation* data, uint64_t variat
 __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* currentV, numb* nextV, numb* parameters,  PerThread* pt)
 {
     const numb h = H;
-    const int N = 6;
+    const int N = 7;
     const numb p[33] = { P(O_N), P(Omega_N), P(zeta), P(K_KC), P(O_beta), P(O_delta), P(kappa_delta), P(K_delta), P(O_3K), P(K_D), P(K_3K), P(Omega_5P), P(F_ex), P(I_Theta), P(omega_I), P(I_bias), P(Omega_C), P(Omega_L), P(O_P), P(K_P), P(C_T), P(rho_A), P(O_2), P(d1), P(d2), P(d3), P(d5), P(rho_C), P(Y_T), P(Omega_C_YS), P(YSfreq), P(YSdel), P(symmetry) };
-    numb v[N] = { V(GammaA), V(I), V(C), V(hGate), V(YS), V(t) };
+    numb v[N] = { V(GammaA), V(I), V(C), V(hGate), V(YS), V(t), V(YSphase) };
 
     ifSIGNAL(P(signal), exp_attenuation)
     {
@@ -735,207 +736,143 @@ __host__ __device__ __forceinline__ void finiteDifferenceScheme_(name)(numb* cur
                 v[3] + h * (kh1 + (numb)2.0 * kh2 + (numb)2.0 * kh3 + kh4) / (numb)6.0;
         }
 
-       /* ifMETHOD(P(method), VariableSymmetryCD)
+       ifMETHOD(P(method), VariableSymmetryCD)
         {
-            numb h1 = (numb)0.5 * h - p[32];
-            numb h2 = (numb)0.5 * h + p[32];
+           const numb h1 = (numb)0.5 * h - p[32];
+           const numb h2 = (numb)0.5 * h + p[32];
 
-            // time points
-            numb t0 = v[5];
-            numb t_mid = v[5] + h1;
-            numb t1 = v[5] + h;
+           const numb a = h1 / h;
+           const numb b2 = (numb)1.0 / ((numb)2.0 * a);
+           const numb b1 = (numb)1.0 - b2;
 
-            // spikes on subintervals
-            const int n_spikes_01 =
-                (p[30] > (numb)0.0)
-                ? ((int)floor((t_mid - p[31]) * p[30])
-                    - (int)floor((t0 - p[31]) * p[30]))
-                : 0;
+           numb ys = v[4];
+           numb phase = v[6];
 
-            const int n_spikes_12 =
-                (p[30] > (numb)0.0)
-                ? ((int)floor((t1 - p[31]) * p[30])
-                    - (int)floor((t_mid - p[31]) * p[30]))
-                : 0;
+           ys = ys * exp(-p[29] * h1 * (numb)0.5);
 
-            // YS values 
-            numb ys_t0 = v[4];
+           phase = phase + p[30] * h1;
+           int n01 = (int)phase;
+           phase = phase - (numb)n01;
 
-            numb ys_t_mid =
-                ys_t0 * exp(-p[29] * h1)
-                + ((n_spikes_01 > 0)
-                    ? ((numb)n_spikes_01 * (p[27] * p[28] * (numb)1000.0))
-                    : (numb)0.0);
+           ys = ys + (n01 > 0 ? (numb)n01 * p[27] * p[28] * (numb)1000.0 : (numb)0.0);
 
-            numb ys_t1 =
-                ys_t_mid * exp(-p[29] * h2)
-                + ((n_spikes_12 > 0)
-                    ? ((numb)n_spikes_12 * (p[27] * p[28] * (numb)1000.0))
-                    : (numb)0.0);
+           ys = ys * exp(-p[29] * h1 * (numb)0.5);
 
-            // RHS at current state (first substep)
-            numb dGammaA =
-                p[0] * ys_t0 * ((numb)1.0 - v[0])
-                - p[1] * ((numb)1.0 + p[2] * (v[2] / (v[2] + p[3]))) * v[0];
+           numb ys_tmid = ys;
 
-            numb J_beta =
-                p[4] * v[0];
+           ys = ys * exp(-p[29] * h2 * (numb)0.5);
 
-            numb J_delta =
-                p[5] *
-                (p[6] / (p[6] + v[1])) *
-                ((v[2] * v[2]) / (v[2] * v[2] + p[7] * p[7]));
+           phase = phase + p[30] * h2;
+           int n12 = (int)phase;
+           phase = phase - (numb)n12;
 
-            numb J_3K =
-                p[8] *
-                ((v[2] * v[2] * v[2] * v[2]) /
-                    (v[2] * v[2] * v[2] * v[2] + p[9] * p[9] * p[9] * p[9])) *
-                (v[1] / (v[1] + p[10]));
+           ys = ys + (n12 > 0 ? (numb)n12 * p[27] * p[28] * (numb)1000.0 : (numb)0.0);
 
-            numb J_5P =
-                p[11] * v[1];
+           ys = ys * exp(-p[29] * h2 * (numb)0.5);
 
-            numb delta_I =
-                v[1] - p[15];
+           numb ys_t1 = ys;
 
-            numb J_ex =
-                -p[12] * (numb)0.5 *
-                ((numb)1.0 + tanh((fabs(delta_I) - p[13]) / p[14])) *
-                (delta_I > (numb)0.0 ? (numb)1.0 : (delta_I < (numb)0.0 ? (numb)-1.0 : (numb)0.0));
+           numb dGammaA_1 =
+               p[0] * v[4] * ((numb)1.0 - v[0])
+               - p[1] * ((numb)1.0 + p[2] * (v[2] / (v[2] + p[3]))) * v[0];
 
-            numb dI =
-                J_beta + J_delta - J_3K - J_5P + J_ex;
+           numb dI_1 =
+               p[4] * v[0]
+               + p[5] * (p[6] / (p[6] + v[1])) *
+               ((v[2] * v[2]) / (v[2] * v[2] + p[7] * p[7]))
+               - p[8] *
+               ((v[2] * v[2] * v[2] * v[2]) /
+                   (v[2] * v[2] * v[2] * v[2] + p[9] * p[9] * p[9] * p[9])) *
+               (v[1] / (v[1] + p[10]))
+               - p[11] * v[1]
+               - p[12] * (numb)0.5 *
+               ((numb)1.0 + tanh((fabs(v[1] - p[15]) - p[13]) / p[14])) *
+               ((v[1] - p[15]) > (numb)0.0 ? (numb)1.0 :
+                   ((v[1] - p[15]) < (numb)0.0 ? (numb)-1.0 : (numb)0.0));
 
-            numb Q_2 =
-                p[24] * (v[1] + p[23]) / (v[1] + p[25]);
+           numb dC_1 =
+               p[16] *
+               (
+                   ((v[1] / (v[1] + p[23])) * (v[2] / (v[2] + p[26]))) *
+                   ((v[1] / (v[1] + p[23])) * (v[2] / (v[2] + p[26]))) *
+                   ((v[1] / (v[1] + p[23])) * (v[2] / (v[2] + p[26])))
+                   ) *
+               (
+                   ((v[3] < (numb)0.0 ? (numb)0.0 : (v[3] > (numb)1.0 ? (numb)1.0 : v[3])) *
+                       (v[3] < (numb)0.0 ? (numb)0.0 : (v[3] > (numb)1.0 ? (numb)1.0 : v[3])) *
+                       (v[3] < (numb)0.0 ? (numb)0.0 : (v[3] > (numb)1.0 ? (numb)1.0 : v[3])))
+                   ) *
+               (p[20] - ((numb)1.0 + p[21]) * v[2])
+               + p[17] * (p[20] - ((numb)1.0 + p[21]) * v[2])
+               - p[18] * ((v[2] * v[2]) / (v[2] * v[2] + p[19] * p[19]));
 
-            numb m_inf =
-                (v[1] / (v[1] + p[23])) * (v[2] / (v[2] + p[26]));
+           numb dh_1 =
+               (
+                   (p[24] * (v[1] + p[23]) / (v[1] + p[25])) /
+                   (p[24] * (v[1] + p[23]) / (v[1] + p[25]) + v[2])
+                   - (v[3] < (numb)0.0 ? (numb)0.0 : (v[3] > (numb)1.0 ? (numb)1.0 : v[3]))
+                   )
+               /
+               ((numb)1.0 / (p[22] * (p[24] * (v[1] + p[23]) / (v[1] + p[25]) + v[2])));
 
-            numb h_clipped =
-                fmin(fmax(v[3], (numb)0.0), (numb)1.0);
+           numb GammaAmp = v[0] + h1 * dGammaA_1;
+           numb Imp = v[1] + h1 * dI_1;
+           numb Cmp = v[2] + h1 * dC_1;
+           numb hmp = v[3] + h1 * dh_1;
 
-            numb drive =
-                p[20] - ((numb)1.0 + p[21]) * v[2];
+           numb dGammaA_2 =
+               p[0] * ys_tmid * ((numb)1.0 - GammaAmp)
+               - p[1] * ((numb)1.0 + p[2] * (Cmp / (Cmp + p[3]))) * GammaAmp;
 
-            numb J_r =
-                p[16] *
-                (m_inf * m_inf * m_inf) *
-                (h_clipped * h_clipped * h_clipped) *
-                drive;
+           numb dI_2 =
+               p[4] * GammaAmp
+               + p[5] * (p[6] / (p[6] + Imp)) *
+               ((Cmp * Cmp) / (Cmp * Cmp + p[7] * p[7]))
+               - p[8] *
+               ((Cmp * Cmp * Cmp * Cmp) /
+                   (Cmp * Cmp * Cmp * Cmp + p[9] * p[9] * p[9] * p[9])) *
+               (Imp / (Imp + p[10]))
+               - p[11] * Imp
+               - p[12] * (numb)0.5 *
+               ((numb)1.0 + tanh((fabs(Imp - p[15]) - p[13]) / p[14])) *
+               ((Imp - p[15]) > (numb)0.0 ? (numb)1.0 :
+                   ((Imp - p[15]) < (numb)0.0 ? (numb)-1.0 : (numb)0.0));
 
-            numb J_l =
-                p[17] * drive;
+           numb dC_2 =
+               p[16] *
+               (
+                   ((Imp / (Imp + p[23])) * (Cmp / (Cmp + p[26]))) *
+                   ((Imp / (Imp + p[23])) * (Cmp / (Cmp + p[26]))) *
+                   ((Imp / (Imp + p[23])) * (Cmp / (Cmp + p[26])))
+                   ) *
+               (
+                   ((hmp < (numb)0.0 ? (numb)0.0 : (hmp > (numb)1.0 ? (numb)1.0 : hmp)) *
+                       (hmp < (numb)0.0 ? (numb)0.0 : (hmp > (numb)1.0 ? (numb)1.0 : hmp)) *
+                       (hmp < (numb)0.0 ? (numb)0.0 : (hmp > (numb)1.0 ? (numb)1.0 : hmp)))
+                   ) *
+               (p[20] - ((numb)1.0 + p[21]) * Cmp)
+               + p[17] * (p[20] - ((numb)1.0 + p[21]) * Cmp)
+               - p[18] * ((Cmp * Cmp) / (Cmp * Cmp + p[19] * p[19]));
 
-            numb J_p =
-                p[18] *
-                ((v[2] * v[2]) / (v[2] * v[2] + p[19] * p[19]));
 
-            numb dC =
-                J_r + J_l - J_p;
+           numb dh_2 =
+               (
+                   (p[24] * (Imp + p[23]) / (Imp + p[25])) /
+                   (p[24] * (Imp + p[23]) / (Imp + p[25]) + Cmp)
+                   - (hmp < (numb)0.0 ? (numb)0.0 : (hmp > (numb)1.0 ? (numb)1.0 : hmp))
+                   )
+               /
+               ((numb)1.0 / (p[22] * (p[24] * (Imp + p[23]) / (Imp + p[25]) + Cmp)));
 
-            numb h_inf =
-                Q_2 / (Q_2 + v[2]);
+           Vnext(t) = v[5] + h;
+           Vnext(YS) = ys_t1;
+           Vnext(YSphase) = phase;
 
-            numb tau_h =
-                (numb)1.0 / (p[22] * (Q_2 + v[2]));
-
-            numb dh =
-                (h_inf - h_clipped) / tau_h;
-
-            // first asymmetric substep
-            numb GammaAmp =
-                v[0] + h1 * dGammaA;
-            numb Imp =
-                v[1] + h1 * dI;
-            numb Cmp =
-                v[2] + h1 * dC;
-            numb hmp =
-                v[3] + h1 * dh;
-
-            // RHS at intermediate state (second substep)
-            dGammaA =
-                p[0] * ys_t_mid * ((numb)1.0 - GammaAmp)
-                - p[1] * ((numb)1.0 + p[2] * (Cmp / (Cmp + p[3]))) * GammaAmp;
-
-            J_beta =
-                p[4] * GammaAmp;
-
-            J_delta =
-                p[5] *
-                (p[6] / (p[6] + Imp)) *
-                ((Cmp * Cmp) / (Cmp * Cmp + p[7] * p[7]));
-
-            J_3K =
-                p[8] *
-                ((Cmp * Cmp * Cmp * Cmp) /
-                    (Cmp * Cmp * Cmp * Cmp + p[9] * p[9] * p[9] * p[9])) *
-                (Imp / (Imp + p[10]));
-
-            J_5P =
-                p[11] * Imp;
-
-            delta_I =
-                Imp - p[15];
-
-            J_ex =
-                -p[12] * (numb)0.5 *
-                ((numb)1.0 + tanh((fabs(delta_I) - p[13]) / p[14])) *
-                (delta_I > (numb)0.0 ? (numb)1.0 : (delta_I < (numb)0.0 ? (numb)-1.0 : (numb)0.0));
-
-            dI =
-                J_beta + J_delta - J_3K - J_5P + J_ex;
-
-            Q_2 =
-                p[24] * (Imp + p[23]) / (Imp + p[25]);
-
-            m_inf =
-                (Imp / (Imp + p[23])) * (Cmp / (Cmp + p[26]));
-
-            h_clipped =
-                fmin(fmax(hmp, (numb)0.0), (numb)1.0);
-
-            drive =
-                p[20] - ((numb)1.0 + p[21]) * Cmp;
-
-            J_r =
-                p[16] *
-                (m_inf * m_inf * m_inf) *
-                (h_clipped * h_clipped * h_clipped) *
-                drive;
-
-            J_l =
-                p[17] * drive;
-
-            J_p =
-                p[18] *
-                ((Cmp * Cmp) / (Cmp * Cmp + p[19] * p[19]));
-
-            dC =
-                J_r + J_l - J_p;
-
-            h_inf =
-                Q_2 / (Q_2 + Cmp);
-
-            tau_h =
-                (numb)1.0 / (p[22] * (Q_2 + Cmp));
-
-            dh =
-                (h_inf - h_clipped) / tau_h;
-
-            // second asymmetric substep to final state
-            Vnext(t) = t1;
-            Vnext(YS) = ys_t1;
-
-            Vnext(GammaA) =
-                GammaAmp + h2 * dGammaA;
-            Vnext(I) =
-                Imp + h2 * dI;
-            Vnext(C) =
-                Cmp + h2 * dC;
-            Vnext(hGate) =
-                hmp + h2 * dh;
-        }*/
+           Vnext(GammaA) = v[0] + h * (b1 * dGammaA_1 + b2 * dGammaA_2);
+           Vnext(I) = v[1] + h * (b1 * dI_1 + b2 * dI_2);
+           Vnext(C) = v[2] + h * (b1 * dC_1 + b2 * dC_2);
+           Vnext(hGate) = v[3] + h * (b1 * dh_1 + b2 * dh_2);
+        }
     }
 }
 
