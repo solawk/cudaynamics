@@ -2516,6 +2516,7 @@ int imgui_main(int, char**)
 					if (axisY->TrueStepCount() <= 1)	{ ImGui::Text(("Axis " + axisY->name + " is fixed").c_str()); toBreak = true; }
 					if (axisX == axisY)					{ ImGui::Text("X and Y axis are the same"); toBreak = true; }
 					if (window->deltaState != DS_No && !cmp->calculateDeltaDecay) { ImGui::Text("Delta and decay calculation is disabled"); toBreak = true; }
+					if (window->deltaState != DS_No && cmp->isHires && cmp->buffersPerVariation == 1) { ImGui::Text("Delta, decay and lifetime is available if computing more than 1 buffer"); toBreak = true; }
 					if (toBreak) break;
 
 					if (ImGui::BeginTable((plotName + "_table").c_str(), showLegend ? 2 : 1, ImGuiTableFlags_Reorderable, ImVec2(-1, 0)))

@@ -476,7 +476,7 @@ void indexDecayPostprocessing(Computation* data, int buffer)
 
         if (bufferNo >= (settings->source == DTS_Index ? -2 : 1) && port->used)
         {
-//#pragma omp parallel for
+#pragma omp parallel for
             for (int64_t v = indexStart; v < indexEnd; v++)
             {
                 for (int t = 0; t < thresholdCount; t++)
