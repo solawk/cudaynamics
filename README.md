@@ -3,6 +3,11 @@ CUDAynamics is designed for accelerated numerical modeling and analysis of dynam
 
 The key difference between CUDAynamics and similar programs is its high interactivity: the user interacts with a single integrated environment, allowing them to select a dynamic system, set its initial conditions and parameters, and visualize the results as interconnected diagrams. The program dynamically responds to changes, instantly updating all related views without the need for relaunching, while calculations, analysis, and visualization are performed within a single application.
 
+# Support and Citation
+CUDAynamics is a result of an academic research initiative. To support the continued development and maintenance of the project, please consider to star the repository and cite our accompanying publication:
+- https://doi.org/10.1016/j.chaos.2026.118397
+
+
 # Usage
 When the program is launched, three windows open (as shown below): the main window (“CUDAynamics”), the analysis settings window (“Analysis Settings”), and the graph and chart building window (“Graph Builder”).
 <p align = "center">
