@@ -142,7 +142,7 @@ The following diagram was achieved for the "Josephson MCRL-shunted junction" sys
 As seen after a transient chaotic system the systems solution becomes stable.
 
 ## Decay Plot
-Decay plot can be used to analyze the dynamics of multiple variations of a system. This plot reurns how many variations have an index value less/more then the specified value. Using Orbit diagram to build continuation diagrams or heatmap periodicity diagram, we can see that for the chosen configuration (as seen in configuration in RGB heatmap) the "Josephson MCRL-shunted junction" system has two attractors in the secified space one with period of 2 and the second with 4.
+Decay plot can be used to analyze the dynamics of multiple variations of a system. This plot reurns how many variations have an index value less/more then the specified value. Using Orbit diagram to build continuation diagrams or heatmap periodicity diagram, we can see that for the chosen configuration (as seen in configuration in RGB heatmap) the "Josephson MCRL-shunted junction" system has two attractors in the specified space one with period of 2 and the second with 4.
 
 In the "Decay Plot" window, one can set a second limit value by clicking the "+" button. In the resulting drop-down list, enter the limit values in descending order; in this case, 5 and 3 are specified, so 1 more than periodicity values for attractors. To display the values in the diagram, the program needs to read new buffers, so for the diagram to work, one must manually click the "Next buffer" button or enable buffer playback mode by clicking the "Play" button.
 <p align = "center">
