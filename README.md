@@ -159,9 +159,9 @@ Alexander Khanov, Ivan Guitor, Nikita Belyaev, Ksenia Shinkar, Maxim Gozhan, Ana
 Valerii Ostrovskii
 
 ## Dependencies
-Dear ImGUi by Omar Cornut
+Dear ImGUi by Omar Cornut: https://github.com/ocornut/imgui
 
-Implot by Evan Pezent
+Implot by Evan Pezent: https://github.com/epezent/implot
 
 CUDA Toolkit 12.6.2 by NVIDIA
 
