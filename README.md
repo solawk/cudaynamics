@@ -11,7 +11,7 @@ CUDAynamics is a result of an academic research initiative. To support the conti
 # Usage
 When the program is launched, three windows open (as shown below): the main window (“CUDAynamics”), the analysis settings window (“Analysis Settings”), and the graph and chart building window (“Graph Builder”).
 <p align = "center">
-<img width="400" height="500" alt="image" src="https://github.com/user-attachments/assets/c4c6a54c-1828-4eeb-b7e9-0667b475aa6d" />
+<img width="541" height="654" alt="image" src="https://github.com/user-attachments/assets/3c19d9e0-626d-4d04-a013-a7b3014ecdbe" />
 </p>
 In the first half of the main window, one can select a system from the library of systems added to CUDAynamics using the drop-down list. When selecting the Rössler system, the system state variables, simulation step, and system parameters are listed, including the symmetry parameter used in the "VariableSymmetryCD" compositional diagonal modeling method. The drop-down list also allows one to select the numerical integration methods used to derive the finite-difference schemes.
 
@@ -32,7 +32,9 @@ In the Graph Builder window, one can select which graph to build and by which pa
 
 By selecting the “Variable time series” diagram type for the Rössler system and choosing all three variables we get:
 <p align = "center">
-<img width="500" height="400" alt="image" src="https://github.com/user-attachments/assets/fdb7b28f-2527-4d79-ba5a-9f0085364f10" />
+<img width="570" height="470" alt="image" src="https://github.com/user-attachments/assets/dfab04ba-717a-4ff9-a163-4e4d930110ee" />
+
+
 </p>
 
 ## Phase diagram
@@ -69,11 +71,12 @@ Orbit diagrams can also be built for specific variations, therefore making a pla
 <img width="500" height="400" alt="image" src="https://github.com/user-attachments/assets/38e71adb-f1d2-4918-b4aa-9417b9676c15" />
 </p>
 
-Orbit diagrams can also be used to build continuation diagrams.
+Orbit diagrams can also be used to build continuation diagrams. The diagrams below were achieved using the Rossler system with different parameters and variables. The difference in forward and backward continuation diagrams with b around 0.23 shows multistability of the system with those set parameter values.
 <p align = "center">
-<img width="800" height="450" alt="image" src="https://github.com/user-attachments/assets/f0c0ba4f-754c-4aac-ba6a-830e4a80db6a" />
-<img width="500" height="425" alt="image" src="https://github.com/user-attachments/assets/460f6106-1a39-4494-84f0-5c36df79fe5f" />
-<img width="500" height="425" alt="image" src="https://github.com/user-attachments/assets/e6a03402-4b06-47d2-b124-dabf5b502d11" />
+<img width="691" height="508" alt="image" src="https://github.com/user-attachments/assets/0f19ff9e-e77b-4901-a0d0-1434c2fb1dfa" />
+<img width="691" height="508" alt="image" src="https://github.com/user-attachments/assets/4e6ba0e8-b827-4a34-8e4e-c46a26b47196" />
+<img width="690" height="502" alt="image" src="https://github.com/user-attachments/assets/6ae3e86e-12ae-4572-949f-e4cd7d928aa0" />
+
 </p>
 
 Orbit diagram windows (as all other diagram windows) have options for diagram output in the "Plot" tab. In the case of orbit diagram point size, shape and color can be changed as can be the type of orbit diagram shown.
@@ -84,31 +87,33 @@ Orbit diagram windows (as all other diagram windows) have options for diagram ou
 ## Heatmap
 The Heatmap can be used to make diagrams of relativity of the value of a systems characteristic (indeces, gotten in the result of analysis). 
 
-For efficient and high resolution diagrams the "Hi-Res Mode" option should be checked in the Heatmap Diagram window. The interface will change color when this mode is active.
+For efficient and high resolution diagrams the "Hi-Res Mode" option should be checked in the Heatmap Diagram window. The interface will change color when this mode is active. Shown below is the parameter Heatmap diagram of LLE metric for Rossler system.
 <p align = "center">
-<img width="900" height="600" alt="image" src="https://github.com/user-attachments/assets/5c63aefc-a2af-4ad3-b0c0-9256bfbf5274" />
+<img width="870" height="510" alt="image" src="https://github.com/user-attachments/assets/e4124c56-b857-4c22-90de-02ce47bf7db0" />
+
 </p>
 
-By holding RMB while in some diagrams we can zoom in to a particular section of the diagram, but while holding SHIFT+RMB we can not only zoom in, but set bounds for a new diagram.
+By holding RMB while in some diagrams we can zoom in to a particular section of the diagram, but while holding SHIFT+RMB we can not only zoom in, but set bounds for a new diagram. Example is shown on the parameter Heatmap diagram of Periodicity metric for Rossler system.
 <p align = "center">
-<img width="450" height="400" alt="image" src="https://github.com/user-attachments/assets/82f4f191-9bd4-4bf1-a466-735689a87276" />
-<img width="450" height="400" alt="image" src="https://github.com/user-attachments/assets/4a901583-c9b0-467c-96da-6f6a2982d384" />
+<img width="870" height="510" alt="image" src="https://github.com/user-attachments/assets/4d43fd54-40fd-47dd-81f1-58d67df050c9" />
+<img width="870" height="510" alt="image" src="https://github.com/user-attachments/assets/bca92a6f-43d4-41f6-947e-818f4a1b4eec" />
+
 </p>
 
-The heatmap diagram also has a crosshair that selects a specific variation
+The heatmap diagram also has a crosshair that selects a specific variation. The following heatmaps were made with the same parameter values that were used for continuation diagrams shown above.
 <p align = "center">
-<img width="900" height="600" alt="image" src="https://github.com/user-attachments/assets/33d1ab90-5895-4315-a9da-4dcd683eaedd" />
-<img width="900" height="600" alt="image" src="https://github.com/user-attachments/assets/d591aa91-f5d5-4392-b54e-d53d134c6e70" />
+<img width="760" height="450" alt="image" src="https://github.com/user-attachments/assets/64037253-e69c-4015-9205-c9846c6c7ce0" />
+<img width="760" height="450" alt="image" src="https://github.com/user-attachments/assets/f3bb31b1-2ff4-4a23-8dfe-85158a7560ca" />
 </p>
 
 The Heatmap diagram can also be used for coloring in particles and trajectories in the phase diagrams. This can be done by choosing the appropriate option in the "Colors" tab of the heatmap window.
 <p align = "center">
-<img width="900" height="400" alt="image" src="https://github.com/user-attachments/assets/cc7fd6e1-92a7-4bf1-b9f0-f3672fcae3d0" />
+<img width="870" height="450" alt="image" src="https://github.com/user-attachments/assets/1d117e86-4ddc-4852-9399-d6ee61ddc7e9" />
 </p>
 
 The heatmap plot settings are as shown:
 <p align = "center">
-<img width="500" height="480" alt="image" src="https://github.com/user-attachments/assets/f7d75bae-3d2d-4038-ae20-c83611755b50" />
+<img width="600" height="550" alt="image" src="https://github.com/user-attachments/assets/c954769b-76fc-4b24-bdc9-66580dca87d6" />
 </p>
 
 ## RGB Heatmap
