@@ -68,7 +68,7 @@ public:
 	bool showRuler;
 	bool showGrid;
 
-	bool isFullscreen, isFullscreenEnd;
+	bool isFullscreen, isFullscreenEnd, isFullscreenStarted;
 	ImVec2 originalPos, originalSize;
 
 	///// Orbit settings
