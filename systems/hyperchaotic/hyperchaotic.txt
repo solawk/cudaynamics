@@ -1,0 +1,34 @@
+Name: Hyperchaotic system
+Steps: 10000
+Transient: 10000
+// Defining step: 
+// parameter/variable/discrete
+// Then, unless it is discrete, provide its name and define it like an attribute
+// If it is discrete, add nothing after
+Step type: parameter h Fixed 0.001 0.1 0.01 100 0.0 0.0
+// Compute on CUDAynamics launch: yes/no
+Execute on launch: yes
+// Ranging types:
+// Fixed (single <minimum value>)
+// Linear (<step count> values uniformly distributed between <minimum value> and <maximum value>, inclusively)
+// Step (values are picked from <minimum value> to <maximum value> with a step <step>, including minimum, including maximum if it ends up as a picked value)
+// Random (<step count> values randomly picked from <minimum value> to <maximum value>)
+// Normal (normal distribution of <step count> values, defined by <normal mean> and <normal deviation>
+//
+// Defining variables/parameters:
+// var/param <name> <ranging type> <minimum value> <maximum value> <step> <step count> <normal mean> <normal deviation>
+var x Fixed 1.0 10.0 1.0 50 0.0 0.0
+var y Fixed 1.0 10.0 1.0 50 0.0 0.0
+var z Fixed 1.0 10.0 1.0 50 0.0 0.0
+var w Fixed 1.0 10.0 1.0 50 0.0 0.0
+param a Fixed 8.0 10.0 1.0 50 0.0 0.0
+param b Fixed 40.0 10.0 1.0 50 0.0 0.0
+param c Fixed 15.0 10.0 1.0 50 0.0 0.0
+param d Fixed -0.1 10.0 1.0 50 0.0 0.0
+// Defining enumerated parameters (useful for methods):
+// enum <name> <ranging type> <minimum value> <maximum value> <step> <step count> <normal mean> <normal deviation> <enum names, no spaces>
+enum method 0ExplicitEuler 0SemiExplicitEuler 0ExplicitMidpoint 1ExplicitRungeKutta4 0ExplicitDormandPrince8
+// Defining settings for analysis functions:
+// analysis <name from "anfunc_names.cpp"> settings <values, must exactly match the settings struct> 
+analysis Minimum / maximum settings 2 2
+analysis Largest Lyapunov exponent settings 0.01 30 0 0 1 2 -1

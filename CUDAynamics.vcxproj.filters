@@ -293,6 +293,9 @@
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="main.cu" />
+    <CudaCompile Include="systems\hyperchaotic\hyperchaotic.cu">
+      <Filter>systems</Filter>
+    </CudaCompile>
     <CudaCompile Include="systems\halvorsen\halvorsen.cu">
       <Filter>systems</Filter>
     </CudaCompile>

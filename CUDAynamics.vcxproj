@@ -268,6 +268,7 @@
     <CudaCompile Include="analysis\period\period.cu" />
     <CudaCompile Include="analysis\phaseVolume\phaseVolume.cu" />
     <CudaCompile Include="gpu_variation.cu" />
+    <CudaCompile Include="systems\hyperchaotic\hyperchaotic.cu" />
     <CudaCompile Include="systems\bolshakov\bolshakov.cu" />
     <CudaCompile Include="systems\chen_lee\chen_lee.cu" />
     <CudaCompile Include="systems\dadras_momeni\dadras_momeni.cu" />

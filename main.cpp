@@ -44,6 +44,7 @@ void common_main()
     addKernel(de_pitta);
 
     //selectKernel(kernels.begin()->first);
+    addKernel(hyperchaotic);
     selectKernel(lorenz);
 
     // Indices
