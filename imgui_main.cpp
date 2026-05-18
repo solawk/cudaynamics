@@ -849,15 +849,8 @@ int imgui_main(int, char**)
 				int index = (*rangingAVI)[i];
 				ImGui::SetNextItemWidth(150.0f);
 
-				if (applicationSettings.sliderRanging)
-					ImGui::SliderInt(("##RangingNo_" + std::to_string(i)).c_str(), &index, 0, attr->stepCount - 1, "Step: %d");
-				else
-				{
-					ImGui::Text(" Step:"); ImGui::SameLine();
-					ImGui::InputInt(("##RangingNo_" + std::to_string(i)).c_str(), &index, 1, 100, 0);
-					if (index < 0) index = 0;
-					if (index > attr->stepCount - 1) index = attr->stepCount - 1;
-				}
+				ImGui::SliderInt(("##RangingNo_" + std::to_string(i)).c_str(), &index, 0, attr->stepCount - 1, "Step: %d");
+				TOOLTIP("LCtrl + LMB click to enter directly");
 
 				(*rangingAVI)[i] = index;
 
