@@ -95,6 +95,21 @@ Index of this file:
 static const float          DRAGDROP_HOLD_TO_OPEN_TIMER = 0.70f;    // Time for drag-hold to activate items accepting the ImGuiButtonFlags_PressedOnDragDropHold button behavior.
 static const float          DRAG_MOUSE_THRESHOLD_FACTOR = 0.50f;    // Multiplier for the default value of io.MouseDragThreshold to make DragFloat/DragInt react faster to mouse drags.
 
+
+
+struct SnapLayoutState
+{
+    ImGuiID ActiveButtonID = 0;   
+    double  HoverStartTime = 0.0; 
+    bool    ShowLayoutMenu = false;
+    ImRect  LayoutWindowRect;
+};
+
+
+// SnapState
+static SnapLayoutState SnapState;   // единственный экземпл€р
+
+
 // Those MIN/MAX values are not define because we need to point to them
 static const signed char    IM_S8_MIN  = -128;
 static const signed char    IM_S8_MAX  = 127;
@@ -870,8 +885,16 @@ bool ImGui::CloseButton(ImGuiID id, const ImVec2& pos)
 }
 
 
+
+
+
+
+
+
+
+
 // fullscreen button used for single window while not in dock
-bool ImGui::FullscreenButton(ImGuiID id, const ImVec2& pos)
+bool ImGui::FullscreenButton(ImGuiID id, const ImVec2& pos, bool* want_snap, int* snap_option)
 {
     ImGuiContext& g = *GImGui;
     ImGuiWindow* window = g.CurrentWindow;
@@ -893,12 +916,431 @@ bool ImGui::FullscreenButton(ImGuiID id, const ImVec2& pos)
     if (is_clipped)
         return pressed;
 
-    // Render
+
+    const double snap_delay = 0.5;
+
+    if (SnapState.ShowLayoutMenu && SnapState.LayoutWindowRect.GetArea() > 0.0f && SnapState.ActiveButtonID==id)
+    {
+        ImVec2 mouse = g.IO.MousePos;
+        if (!bb_interact.Contains(mouse) && !SnapState.LayoutWindowRect.Contains(mouse)) {
+            SnapState.ShowLayoutMenu = false;
+            SnapState.ActiveButtonID = 0;
+            SnapState.HoverStartTime = 0.0;
+            SnapState.LayoutWindowRect = ImRect();
+        }
+    }
+
+    
+    if (hovered)
+    {
+        if (SnapState.ActiveButtonID != id)
+        {
+            SnapState.ActiveButtonID = id;
+            SnapState.HoverStartTime = g.Time;
+            SnapState.ShowLayoutMenu = false;
+        }
+        else
+        {
+            double elapsed = g.Time - SnapState.HoverStartTime;
+            if (!SnapState.ShowLayoutMenu && elapsed >= snap_delay)
+            {
+                SnapState.ShowLayoutMenu = true;
+            }
+        }
+    }
+    else
+    {
+        if (SnapState.ActiveButtonID == id && !SnapState.ShowLayoutMenu)
+        {
+            SnapState.ActiveButtonID = 0;
+            SnapState.HoverStartTime = 0.0;
+        }
+    }
+
+    
     ImU32 bg_col = GetColorU32(held ? ImGuiCol_ButtonActive : ImGuiCol_ButtonHovered);
+    ImU32 cross_col = GetColorU32(ImGuiCol_Text);
+    float button_width = bb_interact.GetWidth();
+    float snap_button_width_10th = bb_interact.GetWidth()/5;
+
+    if (SnapState.ShowLayoutMenu && SnapState.ActiveButtonID == id)
+    {
+
+        ImGui::SetNextWindowPos(ImVec2(bb_interact.Min.x - button_width * 4, bb_interact.Max.y));
+        ImGui::SetNextWindowSize(ImVec2(button_width*6, button_width*6));
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(4, 4));
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 4.0f);
+        ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(4, 4));
+
+        ImGuiWindowFlags layout_flags =
+            ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar |
+            ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing; 
+
+        if (ImGui::Begin("##SnapLayout", NULL, layout_flags))   
+        {
+            ImGuiWindow* snap_window = g.CurrentWindow;
+            ImRect snap_window_rect = snap_window->Rect();
+            SnapState.LayoutWindowRect = ImRect(snap_window_rect.Min.x, bb_interact.Min.y, snap_window_rect.Max.x, snap_window_rect.Max.y);
+            ImRect snap_buttons[9] = {};
+            snap_buttons[0] = ImRect(snap_window_rect.Min.x, snap_window_rect.Min.y, snap_window_rect.Min.x + button_width * 2, snap_window_rect.Min.y + button_width * 2);
+            snap_buttons[1] = ImRect(snap_buttons[0].Max.x, snap_buttons[0].Min.y, snap_buttons[0].Max.x + button_width * 2, snap_buttons[0].Max.y);
+            snap_buttons[2] = ImRect(snap_buttons[1].Max.x, snap_buttons[0].Min.y, snap_buttons[1].Max.x + button_width * 2, snap_buttons[0].Max.y);
+
+            snap_buttons[3] = ImRect(snap_buttons[0].Min.x, snap_buttons[0].Max.y, snap_buttons[0].Max.x, snap_buttons[0].Max.y + button_width * 2);
+            snap_buttons[4] = ImRect(snap_buttons[3].Max.x, snap_buttons[3].Min.y, snap_buttons[3].Max.x + button_width * 2, snap_buttons[3].Max.y);
+            snap_buttons[5] = ImRect(snap_buttons[4].Max.x, snap_buttons[3].Min.y, snap_buttons[4].Max.x + button_width * 2, snap_buttons[3].Max.y);
+
+            snap_buttons[6] = ImRect(snap_buttons[0].Min.x, snap_buttons[3].Max.y, snap_buttons[0].Max.x, snap_buttons[3].Max.y + button_width * 2);
+            snap_buttons[7] = ImRect(snap_buttons[6].Max.x, snap_buttons[6].Min.y, snap_buttons[6].Max.x + button_width * 2, snap_buttons[6].Max.y);
+            snap_buttons[8] = ImRect(snap_buttons[7].Max.x, snap_buttons[6].Min.y, snap_buttons[7].Max.x + button_width * 2, snap_buttons[6].Max.y);
+            bool snap_pressed[30] = {};
+            bool snap_hovered[30] = {};
+
+            // First Snap Button
+            if (ImGui::IsMouseHoveringRect(snap_buttons[0].Min, snap_buttons[0].Max)) {
+                snap_window->DrawList->AddRectFilled(snap_buttons[0].Min, snap_buttons[0].Max, bg_col);
+            }
+            // Left Part
+            ImGui::SetCursorScreenPos(ImVec2(snap_buttons[0].Min.x + snap_button_width_10th, snap_buttons[0].Min.y + snap_button_width_10th));
+            snap_pressed[0] = ImGui::InvisibleButton("##snap_0_left", ImVec2(3.5 * snap_button_width_10th, 8 * snap_button_width_10th));
+            if (ImGui::IsItemHovered()) {
+                snap_window->DrawList->AddRectFilled(ImVec2(snap_buttons[0].Min.x + snap_button_width_10th, snap_buttons[0].Min.y + snap_button_width_10th), ImVec2(snap_buttons[0].Min.x + 4.5* snap_button_width_10th, snap_buttons[0].Max.y - snap_button_width_10th), cross_col);
+            }
+            else {
+                snap_window->DrawList->AddRect(ImVec2(snap_buttons[0].Min.x + snap_button_width_10th, snap_buttons[0].Min.y + snap_button_width_10th), ImVec2(snap_buttons[0].Min.x + 4.5 * snap_button_width_10th, snap_buttons[0].Max.y - snap_button_width_10th), cross_col);
+            }
+            // Right Part
+            ImGui::SetCursorScreenPos(ImVec2(snap_buttons[0].Min.x + 5.5*snap_button_width_10th, snap_buttons[0].Min.y + snap_button_width_10th));
+            snap_pressed[1] = ImGui::InvisibleButton("##snap_0_right", ImVec2(3.5 * snap_button_width_10th, 8 * snap_button_width_10th));
+            if (ImGui::IsItemHovered()) {
+                snap_window->DrawList->AddRectFilled(ImVec2(snap_buttons[0].Min.x + 5.5*snap_button_width_10th, snap_buttons[0].Min.y + snap_button_width_10th), ImVec2(snap_buttons[0].Max.x - snap_button_width_10th, snap_buttons[0].Max.y - snap_button_width_10th), cross_col);
+            }
+            else {
+                snap_window->DrawList->AddRect(ImVec2(snap_buttons[0].Min.x + 5.5 * snap_button_width_10th, snap_buttons[0].Min.y + snap_button_width_10th), ImVec2(snap_buttons[0].Max.x - snap_button_width_10th, snap_buttons[0].Max.y - snap_button_width_10th), cross_col);
+            }
+
+
+            // Second Snap Button
+            if (ImGui::IsMouseHoveringRect(snap_buttons[1].Min, snap_buttons[1].Max)) {
+                snap_window->DrawList->AddRectFilled(snap_buttons[1].Min, snap_buttons[1].Max, bg_col);
+            }
+            // Up Part
+            ImGui::SetCursorScreenPos(ImVec2(snap_buttons[1].Min.x + snap_button_width_10th, snap_buttons[1].Min.y + snap_button_width_10th));
+            snap_pressed[2] = ImGui::InvisibleButton("##snap_1_up", ImVec2(8 * snap_button_width_10th, 3.5 * snap_button_width_10th));
+            if (ImGui::IsItemHovered()) {
+                snap_window->DrawList->AddRectFilled(ImVec2(snap_buttons[1].Min.x + snap_button_width_10th, snap_buttons[1].Min.y + snap_button_width_10th), ImVec2(snap_buttons[1].Max.x - snap_button_width_10th, snap_buttons[1].Min.y + 4.5 * snap_button_width_10th), cross_col);
+            }
+            else {
+                snap_window->DrawList->AddRect(ImVec2(snap_buttons[1].Min.x + snap_button_width_10th, snap_buttons[1].Min.y + snap_button_width_10th), ImVec2(snap_buttons[1].Max.x - snap_button_width_10th, snap_buttons[1].Min.y + 4.5 * snap_button_width_10th), cross_col);
+            }
+            // Down Part
+            ImGui::SetCursorScreenPos(ImVec2(snap_buttons[1].Min.x + snap_button_width_10th, snap_buttons[1].Min.y + 5.5*snap_button_width_10th));
+            snap_pressed[3] = ImGui::InvisibleButton("##snap_1_down", ImVec2(8 * snap_button_width_10th, 3.5 * snap_button_width_10th));
+            if (ImGui::IsItemHovered()) {
+                snap_window->DrawList->AddRectFilled(ImVec2(snap_buttons[1].Min.x + snap_button_width_10th, snap_buttons[1].Min.y + 5.5*snap_button_width_10th), ImVec2(snap_buttons[1].Max.x - snap_button_width_10th, snap_buttons[1].Max.y - snap_button_width_10th), cross_col);
+            }
+            else {
+                snap_window->DrawList->AddRect(ImVec2(snap_buttons[1].Min.x + snap_button_width_10th, snap_buttons[1].Min.y + 5.5*snap_button_width_10th), ImVec2(snap_buttons[1].Max.x - snap_button_width_10th, snap_buttons[1].Max.y - snap_button_width_10th), cross_col);
+            }
+
+            // Third Snap Button
+            if (ImGui::IsMouseHoveringRect(snap_buttons[2].Min, snap_buttons[2].Max)) {
+                snap_window->DrawList->AddRectFilled(snap_buttons[2].Min, snap_buttons[2].Max, bg_col);
+            }
+            // Up Left Part
+            ImGui::SetCursorScreenPos(ImVec2(snap_buttons[2].Min.x + snap_button_width_10th, snap_buttons[2].Min.y + snap_button_width_10th));
+            snap_pressed[4] = ImGui::InvisibleButton("##snap_2_up_left", ImVec2(3.5 * snap_button_width_10th, 3.5 * snap_button_width_10th));
+            if (ImGui::IsItemHovered()) {
+                snap_window->DrawList->AddRectFilled(ImVec2(snap_buttons[2].Min.x + snap_button_width_10th, snap_buttons[2].Min.y + snap_button_width_10th), ImVec2(snap_buttons[2].Min.x + 4.5*snap_button_width_10th, snap_buttons[2].Min.y + 4.5 * snap_button_width_10th), cross_col);
+            }
+            else {
+                snap_window->DrawList->AddRect(ImVec2(snap_buttons[2].Min.x + snap_button_width_10th, snap_buttons[2].Min.y + snap_button_width_10th), ImVec2(snap_buttons[2].Min.x + 4.5 * snap_button_width_10th, snap_buttons[2].Min.y + 4.5 * snap_button_width_10th), cross_col);
+            }
+            // Up Right Part
+            ImGui::SetCursorScreenPos(ImVec2(snap_buttons[2].Min.x + 5.5*snap_button_width_10th, snap_buttons[2].Min.y + snap_button_width_10th));
+            snap_pressed[5] = ImGui::InvisibleButton("##snap_2_up_right", ImVec2(3.5 * snap_button_width_10th, 3.5 * snap_button_width_10th));
+            if (ImGui::IsItemHovered()) {
+                snap_window->DrawList->AddRectFilled(ImVec2(snap_buttons[2].Min.x + 5.5*snap_button_width_10th, snap_buttons[2].Min.y + snap_button_width_10th), ImVec2(snap_buttons[2].Max.x - snap_button_width_10th, snap_buttons[2].Min.y + 4.5*snap_button_width_10th), cross_col);
+            }
+            else {
+                snap_window->DrawList->AddRect(ImVec2(snap_buttons[2].Min.x + 5.5 * snap_button_width_10th, snap_buttons[2].Min.y + snap_button_width_10th), ImVec2(snap_buttons[2].Max.x - snap_button_width_10th, snap_buttons[2].Min.y + 4.5 * snap_button_width_10th), cross_col);
+            }
+            // Down Right Part
+            ImGui::SetCursorScreenPos(ImVec2(snap_buttons[2].Min.x + 5.5*snap_button_width_10th, snap_buttons[2].Min.y + 5.5*snap_button_width_10th));
+            snap_pressed[6] = ImGui::InvisibleButton("##snap_2_down_right", ImVec2(3.5 * snap_button_width_10th, 3.5 * snap_button_width_10th));
+            if (ImGui::IsItemHovered()) {
+                snap_window->DrawList->AddRectFilled(ImVec2(snap_buttons[2].Min.x + 5.5*snap_button_width_10th, snap_buttons[2].Min.y + 5.5*snap_button_width_10th), ImVec2(snap_buttons[2].Max.x - snap_button_width_10th, snap_buttons[2].Max.y - snap_button_width_10th), cross_col);
+            }
+            else {
+                snap_window->DrawList->AddRect(ImVec2(snap_buttons[2].Min.x + 5.5 * snap_button_width_10th, snap_buttons[2].Min.y + 5.5 * snap_button_width_10th), ImVec2(snap_buttons[2].Max.x - snap_button_width_10th, snap_buttons[2].Max.y - snap_button_width_10th), cross_col);
+            }
+            // Down Left Part
+            ImGui::SetCursorScreenPos(ImVec2(snap_buttons[2].Min.x + snap_button_width_10th, snap_buttons[2].Min.y + 5.5 * snap_button_width_10th));
+            snap_pressed[7] = ImGui::InvisibleButton("##snap_2_down_left", ImVec2(3.5 * snap_button_width_10th, 3.5 * snap_button_width_10th));
+            if (ImGui::IsItemHovered()) {
+                snap_window->DrawList->AddRectFilled(ImVec2(snap_buttons[2].Min.x + snap_button_width_10th, snap_buttons[2].Min.y + 5.5 * snap_button_width_10th), ImVec2(snap_buttons[2].Min.x +4.5*snap_button_width_10th, snap_buttons[2].Max.y - snap_button_width_10th), cross_col);
+            }
+            else {
+                snap_window->DrawList->AddRect(ImVec2(snap_buttons[2].Min.x + snap_button_width_10th, snap_buttons[2].Min.y + 5.5 * snap_button_width_10th), ImVec2(snap_buttons[2].Min.x + 4.5 * snap_button_width_10th, snap_buttons[2].Max.y - snap_button_width_10th), cross_col);
+            }
+
+
+            // Fourth Snap Button
+            if (ImGui::IsMouseHoveringRect(snap_buttons[3].Min, snap_buttons[3].Max)) {
+                snap_window->DrawList->AddRectFilled(snap_buttons[3].Min, snap_buttons[3].Max, bg_col);
+            }
+            // Left Part
+            ImGui::SetCursorScreenPos(ImVec2(snap_buttons[3].Min.x + snap_button_width_10th, snap_buttons[3].Min.y + snap_button_width_10th));
+            snap_pressed[8] = ImGui::InvisibleButton("##snap_3_left", ImVec2(2 * snap_button_width_10th, 8 * snap_button_width_10th));
+            if (ImGui::IsItemHovered()) {
+                snap_window->DrawList->AddRectFilled(ImVec2(snap_buttons[3].Min.x + snap_button_width_10th, snap_buttons[3].Min.y + snap_button_width_10th), ImVec2(snap_buttons[3].Min.x + 3 * snap_button_width_10th, snap_buttons[3].Max.y - snap_button_width_10th), cross_col);
+            }
+            else {
+                snap_window->DrawList->AddRect(ImVec2(snap_buttons[3].Min.x + snap_button_width_10th, snap_buttons[3].Min.y + snap_button_width_10th), ImVec2(snap_buttons[3].Min.x + 3 * snap_button_width_10th, snap_buttons[3].Max.y - snap_button_width_10th), cross_col);
+            }
+            // Middle Part
+            ImGui::SetCursorScreenPos(ImVec2(snap_buttons[3].Min.x + 4 * snap_button_width_10th, snap_buttons[3].Min.y + snap_button_width_10th));
+            snap_pressed[9] = ImGui::InvisibleButton("##snap_3_middle", ImVec2(2 * snap_button_width_10th, 8 * snap_button_width_10th));
+            if (ImGui::IsItemHovered()) {
+                snap_window->DrawList->AddRectFilled(ImVec2(snap_buttons[3].Min.x + 4 * snap_button_width_10th, snap_buttons[3].Min.y + snap_button_width_10th), ImVec2(snap_buttons[3].Min.x + 6 * snap_button_width_10th, snap_buttons[3].Max.y - snap_button_width_10th), cross_col);
+            }
+            else {
+                snap_window->DrawList->AddRect(ImVec2(snap_buttons[3].Min.x + 4 * snap_button_width_10th, snap_buttons[3].Min.y + snap_button_width_10th), ImVec2(snap_buttons[3].Min.x + 6 * snap_button_width_10th, snap_buttons[3].Max.y - snap_button_width_10th), cross_col);
+            }
+            // Right Part
+            ImGui::SetCursorScreenPos(ImVec2(snap_buttons[3].Min.x + 7 * snap_button_width_10th, snap_buttons[3].Min.y + snap_button_width_10th));
+            snap_pressed[10] = ImGui::InvisibleButton("##snap_3_right", ImVec2(2 * snap_button_width_10th, 8 * snap_button_width_10th));
+            if (ImGui::IsItemHovered()) {
+                snap_window->DrawList->AddRectFilled(ImVec2(snap_buttons[3].Min.x + 7 * snap_button_width_10th, snap_buttons[3].Min.y + snap_button_width_10th), ImVec2(snap_buttons[3].Max.x - snap_button_width_10th, snap_buttons[3].Max.y - snap_button_width_10th), cross_col);
+            }
+            else {
+                snap_window->DrawList->AddRect(ImVec2(snap_buttons[3].Min.x + 7 * snap_button_width_10th, snap_buttons[3].Min.y + snap_button_width_10th), ImVec2(snap_buttons[3].Max.x - snap_button_width_10th, snap_buttons[3].Max.y - snap_button_width_10th), cross_col);
+            }
+
+
+            // Fifth Snap Button
+            if (ImGui::IsMouseHoveringRect(snap_buttons[4].Min, snap_buttons[4].Max)) {
+                snap_window->DrawList->AddRectFilled(snap_buttons[4].Min, snap_buttons[4].Max, bg_col);
+            }
+            // Big Part Left
+            ImGui::SetCursorScreenPos(ImVec2(snap_buttons[4].Min.x + snap_button_width_10th, snap_buttons[4].Min.y + snap_button_width_10th));
+            snap_pressed[11] = ImGui::InvisibleButton("##snap_4_big_left", ImVec2(5 * snap_button_width_10th, 8 * snap_button_width_10th));
+            if (ImGui::IsItemHovered()) {
+                snap_window->DrawList->AddRectFilled(ImVec2(snap_buttons[4].Min.x + snap_button_width_10th, snap_buttons[4].Min.y + snap_button_width_10th), ImVec2(snap_buttons[4].Min.x + 6 * snap_button_width_10th, snap_buttons[4].Max.y - snap_button_width_10th), cross_col);
+            }
+            else {
+                snap_window->DrawList->AddRect(ImVec2(snap_buttons[4].Min.x + snap_button_width_10th, snap_buttons[4].Min.y + snap_button_width_10th), ImVec2(snap_buttons[4].Min.x + 6 * snap_button_width_10th, snap_buttons[4].Max.y - snap_button_width_10th), cross_col);
+            }
+
+            // Small Up Part
+            ImGui::SetCursorScreenPos(ImVec2(snap_buttons[4].Min.x + 7 * snap_button_width_10th, snap_buttons[4].Min.y + snap_button_width_10th));
+            snap_pressed[12] = ImGui::InvisibleButton("##snap_4_small_up", ImVec2(2 * snap_button_width_10th, 2 * snap_button_width_10th));
+            if (ImGui::IsItemHovered()) {
+                snap_window->DrawList->AddRectFilled(ImVec2(snap_buttons[4].Min.x + 7* snap_button_width_10th, snap_buttons[4].Min.y + snap_button_width_10th), ImVec2(snap_buttons[4].Max.x - snap_button_width_10th, snap_buttons[4].Min.y + 3* snap_button_width_10th), cross_col);
+            }
+            else {
+                snap_window->DrawList->AddRect(ImVec2(snap_buttons[4].Min.x + 7 * snap_button_width_10th, snap_buttons[4].Min.y + snap_button_width_10th), ImVec2(snap_buttons[4].Max.x - snap_button_width_10th, snap_buttons[4].Min.y + 3 * snap_button_width_10th), cross_col);
+            }
+
+            // Small Middle Part
+            ImGui::SetCursorScreenPos(ImVec2(snap_buttons[4].Min.x + 7 * snap_button_width_10th, snap_buttons[4].Min.y + 4 * snap_button_width_10th));
+            snap_pressed[13] = ImGui::InvisibleButton("##snap_4_small_middle", ImVec2(2 * snap_button_width_10th, 2 * snap_button_width_10th));
+            if (ImGui::IsItemHovered()) {
+                snap_window->DrawList->AddRectFilled(ImVec2(snap_buttons[4].Min.x + 7 * snap_button_width_10th, snap_buttons[4].Min.y + 4 * snap_button_width_10th), ImVec2(snap_buttons[4].Max.x - snap_button_width_10th, snap_buttons[4].Min.y + 6 * snap_button_width_10th), cross_col);
+            }
+            else {
+                snap_window->DrawList->AddRect(ImVec2(snap_buttons[4].Min.x + 7 * snap_button_width_10th, snap_buttons[4].Min.y + 4 * snap_button_width_10th), ImVec2(snap_buttons[4].Max.x - snap_button_width_10th, snap_buttons[4].Min.y + 6 * snap_button_width_10th), cross_col);
+            }
+            // Small Down Part
+            ImGui::SetCursorScreenPos(ImVec2(snap_buttons[4].Min.x + 7 * snap_button_width_10th, snap_buttons[4].Min.y + 7 * snap_button_width_10th));
+            snap_pressed[14] = ImGui::InvisibleButton("##snap_4_small_down", ImVec2(2 * snap_button_width_10th, 2 * snap_button_width_10th));
+            if (ImGui::IsItemHovered()) {
+                snap_window->DrawList->AddRectFilled(ImVec2(snap_buttons[4].Min.x + 7 * snap_button_width_10th, snap_buttons[4].Min.y + 7 * snap_button_width_10th), ImVec2(snap_buttons[4].Max.x - snap_button_width_10th, snap_buttons[4].Max.y - snap_button_width_10th), cross_col);
+            }
+            else {
+                snap_window->DrawList->AddRect(ImVec2(snap_buttons[4].Min.x + 7 * snap_button_width_10th, snap_buttons[4].Min.y + 7 * snap_button_width_10th), ImVec2(snap_buttons[4].Max.x - snap_button_width_10th, snap_buttons[4].Max.y - snap_button_width_10th), cross_col);
+            }
+
+
+
+            // Sixth Snap Button
+            if (ImGui::IsMouseHoveringRect(snap_buttons[5].Min, snap_buttons[5].Max)) {
+                snap_window->DrawList->AddRectFilled(snap_buttons[5].Min, snap_buttons[5].Max, bg_col);
+            }
+            // Small Up Part
+            ImGui::SetCursorScreenPos(ImVec2(snap_buttons[5].Min.x + snap_button_width_10th, snap_buttons[5].Min.y + snap_button_width_10th));
+            snap_pressed[15] = ImGui::InvisibleButton("##snap_5_small_up", ImVec2(2 * snap_button_width_10th, 2 * snap_button_width_10th));
+            if (ImGui::IsItemHovered()) {
+                snap_window->DrawList->AddRectFilled(ImVec2(snap_buttons[5].Min.x + snap_button_width_10th, snap_buttons[5].Min.y + snap_button_width_10th), ImVec2(snap_buttons[5].Min.x + 3 * snap_button_width_10th, snap_buttons[5].Min.y + 3 * snap_button_width_10th), cross_col);
+            }
+            else {
+                snap_window->DrawList->AddRect(ImVec2(snap_buttons[5].Min.x + snap_button_width_10th, snap_buttons[5].Min.y + snap_button_width_10th), ImVec2(snap_buttons[5].Min.x + 3 * snap_button_width_10th, snap_buttons[5].Min.y + 3 * snap_button_width_10th), cross_col);
+            }
+
+            // Small Middle Part
+            ImGui::SetCursorScreenPos(ImVec2(snap_buttons[5].Min.x + snap_button_width_10th, snap_buttons[5].Min.y + 4 * snap_button_width_10th));
+            snap_pressed[16] = ImGui::InvisibleButton("##snap_5_small_middle", ImVec2(2 * snap_button_width_10th, 2 * snap_button_width_10th));
+            if (ImGui::IsItemHovered()) {
+                snap_window->DrawList->AddRectFilled(ImVec2(snap_buttons[5].Min.x + snap_button_width_10th, snap_buttons[5].Min.y + 4 * snap_button_width_10th), ImVec2(snap_buttons[5].Min.x + 3 * snap_button_width_10th, snap_buttons[5].Min.y + 6 * snap_button_width_10th), cross_col);
+            }
+            else {
+                snap_window->DrawList->AddRect(ImVec2(snap_buttons[5].Min.x + snap_button_width_10th, snap_buttons[5].Min.y + 4 * snap_button_width_10th), ImVec2(snap_buttons[5].Min.x + 3 * snap_button_width_10th, snap_buttons[5].Min.y + 6 * snap_button_width_10th), cross_col);
+            }
+            // Small Down Part
+            ImGui::SetCursorScreenPos(ImVec2(snap_buttons[5].Min.x + snap_button_width_10th, snap_buttons[5].Min.y + 7 * snap_button_width_10th));
+            snap_pressed[17] = ImGui::InvisibleButton("##snap_5_small_down", ImVec2(2 * snap_button_width_10th, 2 * snap_button_width_10th));
+            if (ImGui::IsItemHovered()) {
+                snap_window->DrawList->AddRectFilled(ImVec2(snap_buttons[5].Min.x + snap_button_width_10th, snap_buttons[5].Min.y + 7 * snap_button_width_10th), ImVec2(snap_buttons[5].Min.x + 3* snap_button_width_10th, snap_buttons[5].Max.y - snap_button_width_10th), cross_col);
+            }
+            else {
+                snap_window->DrawList->AddRect(ImVec2(snap_buttons[5].Min.x + snap_button_width_10th, snap_buttons[5].Min.y + 7 * snap_button_width_10th), ImVec2(snap_buttons[5].Min.x + 3 * snap_button_width_10th, snap_buttons[5].Max.y - snap_button_width_10th), cross_col);
+            }
+            // Big Part Right
+            ImGui::SetCursorScreenPos(ImVec2(snap_buttons[5].Min.x + 4 * snap_button_width_10th, snap_buttons[5].Min.y + snap_button_width_10th));
+            snap_pressed[18] = ImGui::InvisibleButton("##snap_5_big_right", ImVec2(5 * snap_button_width_10th, 8 * snap_button_width_10th));
+            if (ImGui::IsItemHovered()) {
+                snap_window->DrawList->AddRectFilled(ImVec2(snap_buttons[5].Min.x + 4 * snap_button_width_10th, snap_buttons[5].Min.y + snap_button_width_10th), ImVec2(snap_buttons[5].Max.x - snap_button_width_10th, snap_buttons[5].Max.y - snap_button_width_10th), cross_col);
+            }
+            else {
+                snap_window->DrawList->AddRect(ImVec2(snap_buttons[5].Min.x + 4 * snap_button_width_10th, snap_buttons[5].Min.y + snap_button_width_10th), ImVec2(snap_buttons[5].Max.x - snap_button_width_10th, snap_buttons[5].Max.y - snap_button_width_10th), cross_col);
+            }
+
+
+            // Seventh Snap Button
+            if (ImGui::IsMouseHoveringRect(snap_buttons[6].Min, snap_buttons[6].Max)) {
+                snap_window->DrawList->AddRectFilled(snap_buttons[6].Min, snap_buttons[6].Max, bg_col);
+            }
+            // Up Part
+            ImGui::SetCursorScreenPos(ImVec2(snap_buttons[6].Min.x + snap_button_width_10th, snap_buttons[6].Min.y + snap_button_width_10th));
+            snap_pressed[19] = ImGui::InvisibleButton("##snap_6_up", ImVec2(8 * snap_button_width_10th, 2 * snap_button_width_10th));
+            if (ImGui::IsItemHovered()) {
+                snap_window->DrawList->AddRectFilled(ImVec2(snap_buttons[6].Min.x + snap_button_width_10th, snap_buttons[6].Min.y + snap_button_width_10th), ImVec2(snap_buttons[6].Max.x - snap_button_width_10th, snap_buttons[6].Min.y + 3*snap_button_width_10th), cross_col);
+            }
+            else {
+                snap_window->DrawList->AddRect(ImVec2(snap_buttons[6].Min.x + snap_button_width_10th, snap_buttons[6].Min.y + snap_button_width_10th), ImVec2(snap_buttons[6].Max.x - snap_button_width_10th, snap_buttons[6].Min.y + 3 * snap_button_width_10th), cross_col);
+            }
+            // Middle Part
+            ImGui::SetCursorScreenPos(ImVec2(snap_buttons[6].Min.x + snap_button_width_10th, snap_buttons[6].Min.y + 4*snap_button_width_10th));
+            snap_pressed[20] = ImGui::InvisibleButton("##snap_6_middle", ImVec2(8 * snap_button_width_10th, 2 * snap_button_width_10th));
+            if (ImGui::IsItemHovered()) {
+                snap_window->DrawList->AddRectFilled(ImVec2(snap_buttons[6].Min.x + snap_button_width_10th, snap_buttons[6].Min.y + 4* snap_button_width_10th), ImVec2(snap_buttons[6].Max.x - snap_button_width_10th, snap_buttons[6].Min.y + 6* snap_button_width_10th), cross_col);
+            }
+            else {
+                snap_window->DrawList->AddRect(ImVec2(snap_buttons[6].Min.x + snap_button_width_10th, snap_buttons[6].Min.y + 4 * snap_button_width_10th), ImVec2(snap_buttons[6].Max.x - snap_button_width_10th, snap_buttons[6].Min.y + 6 * snap_button_width_10th), cross_col);
+            }
+            // Down Part
+            ImGui::SetCursorScreenPos(ImVec2(snap_buttons[6].Min.x + snap_button_width_10th, snap_buttons[6].Min.y + 7* snap_button_width_10th));
+            snap_pressed[21] = ImGui::InvisibleButton("##snap_6_down", ImVec2(8 * snap_button_width_10th, 2 * snap_button_width_10th));
+            if (ImGui::IsItemHovered()) {
+                snap_window->DrawList->AddRectFilled(ImVec2(snap_buttons[6].Min.x + snap_button_width_10th, snap_buttons[6].Min.y + 7 * snap_button_width_10th), ImVec2(snap_buttons[6].Max.x - snap_button_width_10th, snap_buttons[6].Max.y - snap_button_width_10th), cross_col);
+            }
+            else {
+                snap_window->DrawList->AddRect(ImVec2(snap_buttons[6].Min.x + snap_button_width_10th, snap_buttons[6].Min.y + 7 * snap_button_width_10th), ImVec2(snap_buttons[6].Max.x - snap_button_width_10th, snap_buttons[6].Max.y - snap_button_width_10th), cross_col);
+            }
+
+
+            // Eighth Snap Button
+            if (ImGui::IsMouseHoveringRect(snap_buttons[7].Min, snap_buttons[7].Max)) {
+                snap_window->DrawList->AddRectFilled(snap_buttons[7].Min, snap_buttons[7].Max, bg_col);
+            }
+            // Big Part Up
+            ImGui::SetCursorScreenPos(ImVec2(snap_buttons[7].Min.x + snap_button_width_10th, snap_buttons[7].Min.y + snap_button_width_10th));
+            snap_pressed[22] = ImGui::InvisibleButton("##snap_7_big_up", ImVec2(8 * snap_button_width_10th, 5 * snap_button_width_10th));
+            if (ImGui::IsItemHovered()) {
+                snap_window->DrawList->AddRectFilled(ImVec2(snap_buttons[7].Min.x + snap_button_width_10th, snap_buttons[7].Min.y + snap_button_width_10th), ImVec2(snap_buttons[7].Max.x - snap_button_width_10th, snap_buttons[7].Min.y + 6 * snap_button_width_10th), cross_col);
+            }
+            else {
+                snap_window->DrawList->AddRect(ImVec2(snap_buttons[7].Min.x + snap_button_width_10th, snap_buttons[7].Min.y + snap_button_width_10th), ImVec2(snap_buttons[7].Max.x - snap_button_width_10th, snap_buttons[7].Min.y + 6 * snap_button_width_10th), cross_col);
+            }
+            // Small Left Part
+            ImGui::SetCursorScreenPos(ImVec2(snap_buttons[7].Min.x + snap_button_width_10th, snap_buttons[7].Min.y + 7 * snap_button_width_10th));
+            snap_pressed[23] = ImGui::InvisibleButton("##snap_7_small_left", ImVec2(2 * snap_button_width_10th, 2 * snap_button_width_10th));
+            if (ImGui::IsItemHovered()) {
+                snap_window->DrawList->AddRectFilled(ImVec2(snap_buttons[7].Min.x + snap_button_width_10th, snap_buttons[7].Min.y + 7 * snap_button_width_10th), ImVec2(snap_buttons[7].Min.x + 3 * snap_button_width_10th, snap_buttons[7].Max.y - snap_button_width_10th), cross_col);
+            }
+            else {
+                snap_window->DrawList->AddRect(ImVec2(snap_buttons[7].Min.x + snap_button_width_10th, snap_buttons[7].Min.y + 7 * snap_button_width_10th), ImVec2(snap_buttons[7].Min.x + 3 * snap_button_width_10th, snap_buttons[7].Max.y - snap_button_width_10th), cross_col);
+            }
+
+            // Small Middle Part
+            ImGui::SetCursorScreenPos(ImVec2(snap_buttons[7].Min.x + 4 * snap_button_width_10th, snap_buttons[7].Min.y + 7 * snap_button_width_10th));
+            snap_pressed[24] = ImGui::InvisibleButton("##snap_7_small_middle", ImVec2(2 * snap_button_width_10th, 2 * snap_button_width_10th));
+            if (ImGui::IsItemHovered()) {
+                snap_window->DrawList->AddRectFilled(ImVec2(snap_buttons[7].Min.x + 4 * snap_button_width_10th, snap_buttons[7].Min.y + 7 * snap_button_width_10th), ImVec2(snap_buttons[7].Min.x + 6 * snap_button_width_10th, snap_buttons[7].Max.y - snap_button_width_10th), cross_col);
+            }
+            else {
+                snap_window->DrawList->AddRect(ImVec2(snap_buttons[7].Min.x + 4 * snap_button_width_10th, snap_buttons[7].Min.y + 7 * snap_button_width_10th), ImVec2(snap_buttons[7].Min.x + 6 * snap_button_width_10th, snap_buttons[7].Max.y - snap_button_width_10th), cross_col);
+            }
+            // Small Right Part
+            ImGui::SetCursorScreenPos(ImVec2(snap_buttons[7].Min.x + 7 * snap_button_width_10th, snap_buttons[7].Min.y + 7 * snap_button_width_10th));
+            snap_pressed[25] = ImGui::InvisibleButton("##snap_7_small_right", ImVec2(2 * snap_button_width_10th, 2 * snap_button_width_10th));
+            if (ImGui::IsItemHovered()) {
+                snap_window->DrawList->AddRectFilled(ImVec2(snap_buttons[7].Min.x + 7 * snap_button_width_10th, snap_buttons[7].Min.y + 7 * snap_button_width_10th), ImVec2(snap_buttons[7].Max.x - snap_button_width_10th, snap_buttons[7].Max.y - snap_button_width_10th), cross_col);
+            }
+            else {
+                snap_window->DrawList->AddRect(ImVec2(snap_buttons[7].Min.x + 7 * snap_button_width_10th, snap_buttons[7].Min.y + 7 * snap_button_width_10th), ImVec2(snap_buttons[7].Max.x - snap_button_width_10th, snap_buttons[7].Max.y - snap_button_width_10th), cross_col);
+            }
+
+
+            // Ninth Snap Button
+            if (ImGui::IsMouseHoveringRect(snap_buttons[8].Min, snap_buttons[8].Max)) {
+                snap_window->DrawList->AddRectFilled(snap_buttons[8].Min, snap_buttons[8].Max, bg_col);
+            }
+            // Small Left Part
+            ImGui::SetCursorScreenPos(ImVec2(snap_buttons[8].Min.x + snap_button_width_10th, snap_buttons[8].Min.y + snap_button_width_10th));
+            snap_pressed[26] = ImGui::InvisibleButton("##snap_8_small_left", ImVec2(2 * snap_button_width_10th, 2 * snap_button_width_10th));
+            if (ImGui::IsItemHovered()) {
+                snap_window->DrawList->AddRectFilled(ImVec2(snap_buttons[8].Min.x + snap_button_width_10th, snap_buttons[8].Min.y + snap_button_width_10th), ImVec2(snap_buttons[8].Min.x + 3 * snap_button_width_10th, snap_buttons[8].Min.y + 3 * snap_button_width_10th), cross_col);
+            }
+            else {
+                snap_window->DrawList->AddRect(ImVec2(snap_buttons[8].Min.x + snap_button_width_10th, snap_buttons[8].Min.y + snap_button_width_10th), ImVec2(snap_buttons[8].Min.x + 3 * snap_button_width_10th, snap_buttons[8].Min.y + 3 * snap_button_width_10th), cross_col);
+            }
+
+            // Small Middle Part
+            ImGui::SetCursorScreenPos(ImVec2(snap_buttons[8].Min.x + 4 * snap_button_width_10th, snap_buttons[8].Min.y + snap_button_width_10th));
+            snap_pressed[27] = ImGui::InvisibleButton("##snap_8_small_middle", ImVec2(2 * snap_button_width_10th, 2 * snap_button_width_10th));
+            if (ImGui::IsItemHovered()) {
+                snap_window->DrawList->AddRectFilled(ImVec2(snap_buttons[8].Min.x + 4 * snap_button_width_10th, snap_buttons[8].Min.y + snap_button_width_10th), ImVec2(snap_buttons[8].Min.x + 6 * snap_button_width_10th, snap_buttons[8].Min.y + 3 * snap_button_width_10th), cross_col);
+            }
+            else {
+                snap_window->DrawList->AddRect(ImVec2(snap_buttons[8].Min.x + 4 * snap_button_width_10th, snap_buttons[8].Min.y + snap_button_width_10th), ImVec2(snap_buttons[8].Min.x + 6 * snap_button_width_10th, snap_buttons[8].Min.y + 3 * snap_button_width_10th), cross_col);
+            }
+            // Small Right Part
+            ImGui::SetCursorScreenPos(ImVec2(snap_buttons[8].Min.x + 7 * snap_button_width_10th, snap_buttons[8].Min.y + snap_button_width_10th));
+            snap_pressed[28] = ImGui::InvisibleButton("##snap_8_small_right", ImVec2(2 * snap_button_width_10th, 2 * snap_button_width_10th));
+            if (ImGui::IsItemHovered()) {
+                snap_window->DrawList->AddRectFilled(ImVec2(snap_buttons[8].Min.x + 7 * snap_button_width_10th, snap_buttons[8].Min.y + snap_button_width_10th), ImVec2(snap_buttons[8].Max.x - snap_button_width_10th, snap_buttons[8].Min.y + 3 * snap_button_width_10th), cross_col);
+            }
+            else {
+                snap_window->DrawList->AddRect(ImVec2(snap_buttons[8].Min.x + 7 * snap_button_width_10th, snap_buttons[8].Min.y + snap_button_width_10th), ImVec2(snap_buttons[8].Max.x - snap_button_width_10th, snap_buttons[8].Min.y + 3 * snap_button_width_10th), cross_col);
+            }
+            // Big Part Down
+            ImGui::SetCursorScreenPos(ImVec2(snap_buttons[8].Min.x + snap_button_width_10th, snap_buttons[8].Min.y + 4 * snap_button_width_10th));
+            snap_pressed[29] = ImGui::InvisibleButton("##snap_8_big_down", ImVec2(8 * snap_button_width_10th, 5 * snap_button_width_10th));
+            if (ImGui::IsItemHovered()) {
+                snap_window->DrawList->AddRectFilled(ImVec2(snap_buttons[8].Min.x + snap_button_width_10th, snap_buttons[8].Min.y + 4 * snap_button_width_10th), ImVec2(snap_buttons[8].Max.x - snap_button_width_10th, snap_buttons[8].Max.y - snap_button_width_10th), cross_col);
+            }
+            else {
+                snap_window->DrawList->AddRect(ImVec2(snap_buttons[8].Min.x + snap_button_width_10th, snap_buttons[8].Min.y + 4 * snap_button_width_10th), ImVec2(snap_buttons[8].Max.x - snap_button_width_10th, snap_buttons[8].Max.y - snap_button_width_10th), cross_col);
+            }
+
+            // Out Snap Choice
+            for (int i = 0; i < 30; i++) {
+                if (snap_pressed[i]) {
+                    *want_snap = true;
+                    *snap_option = i;
+                }
+            }
+        }
+        ImGui::End();
+        ImGui::PopStyleVar(3);
+    }
+
+
+    // Render
     if (hovered)
         window->DrawList->AddRectFilled(bb.Min, bb.Max, bg_col);
     RenderNavCursor(bb, id, ImGuiNavRenderCursorFlags_Compact);
-    ImU32 cross_col = GetColorU32(ImGuiCol_Text);
     ImVec2 cross_center = bb.GetCenter() - ImVec2(0.5f, 0.5f);
     float cross_extent = g.FontSize * 0.5f * 0.7071f - 1.0f;
 
@@ -920,11 +1362,15 @@ bool ImGui::FullscreenButton(ImGuiID id, const ImVec2& pos)
         window->DrawList->AddLine(cross_center + ImVec2(-cross_extent, +cross_extent), cross_center + ImVec2(-cross_extent, -cross_extent * 0.5f), cross_col, 1.0f);
         window->DrawList->AddLine(cross_center + ImVec2(-cross_extent, -cross_extent * 0.5f), cross_center + ImVec2(-cross_extent * 0.5f, -cross_extent * 0.5f), cross_col, 1.0f);
     }
+
+
     return pressed;
 }
 
+
+
 // fullscreen button used in host window while docked
-bool ImGui::FullscreenButtonForNode(ImGuiID id, const ImVec2& pos, ImGuiDockNode* node)
+bool ImGui::FullscreenButtonForNode(ImGuiID id, const ImVec2& pos, ImGuiDockNode* node, bool* want_snap, int* snap_option)
 {
     ImGuiContext& g = *GImGui;
     ImGuiWindow* window = g.CurrentWindow;
@@ -946,12 +1392,430 @@ bool ImGui::FullscreenButtonForNode(ImGuiID id, const ImVec2& pos, ImGuiDockNode
     if (is_clipped)
         return pressed;
 
-    // Render
+    const double snap_delay = 0.5;
+
+    if (SnapState.ShowLayoutMenu && SnapState.LayoutWindowRect.GetArea() > 0.0f && SnapState.ActiveButtonID == id)
+    {
+        ImVec2 mouse = g.IO.MousePos;
+        if (!bb_interact.Contains(mouse) && !SnapState.LayoutWindowRect.Contains(mouse)) {
+            SnapState.ShowLayoutMenu = false;
+            SnapState.ActiveButtonID = 0;
+            SnapState.HoverStartTime = 0.0;
+            SnapState.LayoutWindowRect = ImRect();
+        }
+    }
+
+
+    if (hovered)
+    {
+        if (SnapState.ActiveButtonID != id)
+        {
+            SnapState.ActiveButtonID = id;
+            SnapState.HoverStartTime = g.Time;
+            SnapState.ShowLayoutMenu = false;
+        }
+        else
+        {
+            double elapsed = g.Time - SnapState.HoverStartTime;
+            if (!SnapState.ShowLayoutMenu && elapsed >= snap_delay)
+            {
+                SnapState.ShowLayoutMenu = true;
+            }
+        }
+    }
+    else
+    {
+        if (SnapState.ActiveButtonID == id && !SnapState.ShowLayoutMenu)
+        {
+            SnapState.ActiveButtonID = 0;
+            SnapState.HoverStartTime = 0.0;
+        }
+    }
+
+
     ImU32 bg_col = GetColorU32(held ? ImGuiCol_ButtonActive : ImGuiCol_ButtonHovered);
+    ImU32 cross_col = GetColorU32(ImGuiCol_Text);
+    float button_width = bb_interact.GetWidth();
+    float snap_button_width_10th = bb_interact.GetWidth() / 5;
+
+    if (SnapState.ShowLayoutMenu && SnapState.ActiveButtonID == id)
+    {
+
+        ImGui::SetNextWindowPos(ImVec2(bb_interact.Min.x - button_width * 4, bb_interact.Max.y));
+        ImGui::SetNextWindowSize(ImVec2(button_width * 6, button_width * 6));
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(4, 4));
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 4.0f);
+        ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(4, 4));
+
+        ImGuiWindowFlags layout_flags =
+            ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar |
+            ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing;
+
+        if (ImGui::Begin("##SnapLayout", NULL, layout_flags))
+        {
+            ImGuiWindow* snap_window = g.CurrentWindow;
+            ImRect snap_window_rect = snap_window->Rect();
+            SnapState.LayoutWindowRect = ImRect(snap_window_rect.Min.x, bb_interact.Min.y, snap_window_rect.Max.x, snap_window_rect.Max.y);
+            ImRect snap_buttons[9] = {};
+            snap_buttons[0] = ImRect(snap_window_rect.Min.x, snap_window_rect.Min.y, snap_window_rect.Min.x + button_width * 2, snap_window_rect.Min.y + button_width * 2);
+            snap_buttons[1] = ImRect(snap_buttons[0].Max.x, snap_buttons[0].Min.y, snap_buttons[0].Max.x + button_width * 2, snap_buttons[0].Max.y);
+            snap_buttons[2] = ImRect(snap_buttons[1].Max.x, snap_buttons[0].Min.y, snap_buttons[1].Max.x + button_width * 2, snap_buttons[0].Max.y);
+
+            snap_buttons[3] = ImRect(snap_buttons[0].Min.x, snap_buttons[0].Max.y, snap_buttons[0].Max.x, snap_buttons[0].Max.y + button_width * 2);
+            snap_buttons[4] = ImRect(snap_buttons[3].Max.x, snap_buttons[3].Min.y, snap_buttons[3].Max.x + button_width * 2, snap_buttons[3].Max.y);
+            snap_buttons[5] = ImRect(snap_buttons[4].Max.x, snap_buttons[3].Min.y, snap_buttons[4].Max.x + button_width * 2, snap_buttons[3].Max.y);
+
+            snap_buttons[6] = ImRect(snap_buttons[0].Min.x, snap_buttons[3].Max.y, snap_buttons[0].Max.x, snap_buttons[3].Max.y + button_width * 2);
+            snap_buttons[7] = ImRect(snap_buttons[6].Max.x, snap_buttons[6].Min.y, snap_buttons[6].Max.x + button_width * 2, snap_buttons[6].Max.y);
+            snap_buttons[8] = ImRect(snap_buttons[7].Max.x, snap_buttons[6].Min.y, snap_buttons[7].Max.x + button_width * 2, snap_buttons[6].Max.y);
+            bool snap_pressed[30] = {};
+            bool snap_hovered[30] = {};
+
+            // First Snap Button
+            if (ImGui::IsMouseHoveringRect(snap_buttons[0].Min, snap_buttons[0].Max)) {
+                snap_window->DrawList->AddRectFilled(snap_buttons[0].Min, snap_buttons[0].Max, bg_col);
+            }
+            // Left Part
+            ImGui::SetCursorScreenPos(ImVec2(snap_buttons[0].Min.x + snap_button_width_10th, snap_buttons[0].Min.y + snap_button_width_10th));
+            snap_pressed[0] = ImGui::InvisibleButton("##snap_0_left", ImVec2(3.5 * snap_button_width_10th, 8 * snap_button_width_10th));
+            if (ImGui::IsItemHovered()) {
+                snap_window->DrawList->AddRectFilled(ImVec2(snap_buttons[0].Min.x + snap_button_width_10th, snap_buttons[0].Min.y + snap_button_width_10th), ImVec2(snap_buttons[0].Min.x + 4.5 * snap_button_width_10th, snap_buttons[0].Max.y - snap_button_width_10th), cross_col);
+            }
+            else {
+                snap_window->DrawList->AddRect(ImVec2(snap_buttons[0].Min.x + snap_button_width_10th, snap_buttons[0].Min.y + snap_button_width_10th), ImVec2(snap_buttons[0].Min.x + 4.5 * snap_button_width_10th, snap_buttons[0].Max.y - snap_button_width_10th), cross_col);
+            }
+            // Right Part
+            ImGui::SetCursorScreenPos(ImVec2(snap_buttons[0].Min.x + 5.5 * snap_button_width_10th, snap_buttons[0].Min.y + snap_button_width_10th));
+            snap_pressed[1] = ImGui::InvisibleButton("##snap_0_right", ImVec2(3.5 * snap_button_width_10th, 8 * snap_button_width_10th));
+            if (ImGui::IsItemHovered()) {
+                snap_window->DrawList->AddRectFilled(ImVec2(snap_buttons[0].Min.x + 5.5 * snap_button_width_10th, snap_buttons[0].Min.y + snap_button_width_10th), ImVec2(snap_buttons[0].Max.x - snap_button_width_10th, snap_buttons[0].Max.y - snap_button_width_10th), cross_col);
+            }
+            else {
+                snap_window->DrawList->AddRect(ImVec2(snap_buttons[0].Min.x + 5.5 * snap_button_width_10th, snap_buttons[0].Min.y + snap_button_width_10th), ImVec2(snap_buttons[0].Max.x - snap_button_width_10th, snap_buttons[0].Max.y - snap_button_width_10th), cross_col);
+            }
+
+
+            // Second Snap Button
+            if (ImGui::IsMouseHoveringRect(snap_buttons[1].Min, snap_buttons[1].Max)) {
+                snap_window->DrawList->AddRectFilled(snap_buttons[1].Min, snap_buttons[1].Max, bg_col);
+            }
+            // Up Part
+            ImGui::SetCursorScreenPos(ImVec2(snap_buttons[1].Min.x + snap_button_width_10th, snap_buttons[1].Min.y + snap_button_width_10th));
+            snap_pressed[2] = ImGui::InvisibleButton("##snap_1_up", ImVec2(8 * snap_button_width_10th, 3.5 * snap_button_width_10th));
+            if (ImGui::IsItemHovered()) {
+                snap_window->DrawList->AddRectFilled(ImVec2(snap_buttons[1].Min.x + snap_button_width_10th, snap_buttons[1].Min.y + snap_button_width_10th), ImVec2(snap_buttons[1].Max.x - snap_button_width_10th, snap_buttons[1].Min.y + 4.5 * snap_button_width_10th), cross_col);
+            }
+            else {
+                snap_window->DrawList->AddRect(ImVec2(snap_buttons[1].Min.x + snap_button_width_10th, snap_buttons[1].Min.y + snap_button_width_10th), ImVec2(snap_buttons[1].Max.x - snap_button_width_10th, snap_buttons[1].Min.y + 4.5 * snap_button_width_10th), cross_col);
+            }
+            // Down Part
+            ImGui::SetCursorScreenPos(ImVec2(snap_buttons[1].Min.x + snap_button_width_10th, snap_buttons[1].Min.y + 5.5 * snap_button_width_10th));
+            snap_pressed[3] = ImGui::InvisibleButton("##snap_1_down", ImVec2(8 * snap_button_width_10th, 3.5 * snap_button_width_10th));
+            if (ImGui::IsItemHovered()) {
+                snap_window->DrawList->AddRectFilled(ImVec2(snap_buttons[1].Min.x + snap_button_width_10th, snap_buttons[1].Min.y + 5.5 * snap_button_width_10th), ImVec2(snap_buttons[1].Max.x - snap_button_width_10th, snap_buttons[1].Max.y - snap_button_width_10th), cross_col);
+            }
+            else {
+                snap_window->DrawList->AddRect(ImVec2(snap_buttons[1].Min.x + snap_button_width_10th, snap_buttons[1].Min.y + 5.5 * snap_button_width_10th), ImVec2(snap_buttons[1].Max.x - snap_button_width_10th, snap_buttons[1].Max.y - snap_button_width_10th), cross_col);
+            }
+
+            // Third Snap Button
+            if (ImGui::IsMouseHoveringRect(snap_buttons[2].Min, snap_buttons[2].Max)) {
+                snap_window->DrawList->AddRectFilled(snap_buttons[2].Min, snap_buttons[2].Max, bg_col);
+            }
+            // Up Left Part
+            ImGui::SetCursorScreenPos(ImVec2(snap_buttons[2].Min.x + snap_button_width_10th, snap_buttons[2].Min.y + snap_button_width_10th));
+            snap_pressed[4] = ImGui::InvisibleButton("##snap_2_up_left", ImVec2(3.5 * snap_button_width_10th, 3.5 * snap_button_width_10th));
+            if (ImGui::IsItemHovered()) {
+                snap_window->DrawList->AddRectFilled(ImVec2(snap_buttons[2].Min.x + snap_button_width_10th, snap_buttons[2].Min.y + snap_button_width_10th), ImVec2(snap_buttons[2].Min.x + 4.5 * snap_button_width_10th, snap_buttons[2].Min.y + 4.5 * snap_button_width_10th), cross_col);
+            }
+            else {
+                snap_window->DrawList->AddRect(ImVec2(snap_buttons[2].Min.x + snap_button_width_10th, snap_buttons[2].Min.y + snap_button_width_10th), ImVec2(snap_buttons[2].Min.x + 4.5 * snap_button_width_10th, snap_buttons[2].Min.y + 4.5 * snap_button_width_10th), cross_col);
+            }
+            // Up Right Part
+            ImGui::SetCursorScreenPos(ImVec2(snap_buttons[2].Min.x + 5.5 * snap_button_width_10th, snap_buttons[2].Min.y + snap_button_width_10th));
+            snap_pressed[5] = ImGui::InvisibleButton("##snap_2_up_right", ImVec2(3.5 * snap_button_width_10th, 3.5 * snap_button_width_10th));
+            if (ImGui::IsItemHovered()) {
+                snap_window->DrawList->AddRectFilled(ImVec2(snap_buttons[2].Min.x + 5.5 * snap_button_width_10th, snap_buttons[2].Min.y + snap_button_width_10th), ImVec2(snap_buttons[2].Max.x - snap_button_width_10th, snap_buttons[2].Min.y + 4.5 * snap_button_width_10th), cross_col);
+            }
+            else {
+                snap_window->DrawList->AddRect(ImVec2(snap_buttons[2].Min.x + 5.5 * snap_button_width_10th, snap_buttons[2].Min.y + snap_button_width_10th), ImVec2(snap_buttons[2].Max.x - snap_button_width_10th, snap_buttons[2].Min.y + 4.5 * snap_button_width_10th), cross_col);
+            }
+            // Down Right Part
+            ImGui::SetCursorScreenPos(ImVec2(snap_buttons[2].Min.x + 5.5 * snap_button_width_10th, snap_buttons[2].Min.y + 5.5 * snap_button_width_10th));
+            snap_pressed[6] = ImGui::InvisibleButton("##snap_2_down_right", ImVec2(3.5 * snap_button_width_10th, 3.5 * snap_button_width_10th));
+            if (ImGui::IsItemHovered()) {
+                snap_window->DrawList->AddRectFilled(ImVec2(snap_buttons[2].Min.x + 5.5 * snap_button_width_10th, snap_buttons[2].Min.y + 5.5 * snap_button_width_10th), ImVec2(snap_buttons[2].Max.x - snap_button_width_10th, snap_buttons[2].Max.y - snap_button_width_10th), cross_col);
+            }
+            else {
+                snap_window->DrawList->AddRect(ImVec2(snap_buttons[2].Min.x + 5.5 * snap_button_width_10th, snap_buttons[2].Min.y + 5.5 * snap_button_width_10th), ImVec2(snap_buttons[2].Max.x - snap_button_width_10th, snap_buttons[2].Max.y - snap_button_width_10th), cross_col);
+            }
+            // Down Left Part
+            ImGui::SetCursorScreenPos(ImVec2(snap_buttons[2].Min.x + snap_button_width_10th, snap_buttons[2].Min.y + 5.5 * snap_button_width_10th));
+            snap_pressed[7] = ImGui::InvisibleButton("##snap_2_down_left", ImVec2(3.5 * snap_button_width_10th, 3.5 * snap_button_width_10th));
+            if (ImGui::IsItemHovered()) {
+                snap_window->DrawList->AddRectFilled(ImVec2(snap_buttons[2].Min.x + snap_button_width_10th, snap_buttons[2].Min.y + 5.5 * snap_button_width_10th), ImVec2(snap_buttons[2].Min.x + 4.5 * snap_button_width_10th, snap_buttons[2].Max.y - snap_button_width_10th), cross_col);
+            }
+            else {
+                snap_window->DrawList->AddRect(ImVec2(snap_buttons[2].Min.x + snap_button_width_10th, snap_buttons[2].Min.y + 5.5 * snap_button_width_10th), ImVec2(snap_buttons[2].Min.x + 4.5 * snap_button_width_10th, snap_buttons[2].Max.y - snap_button_width_10th), cross_col);
+            }
+
+
+            // Fourth Snap Button
+            if (ImGui::IsMouseHoveringRect(snap_buttons[3].Min, snap_buttons[3].Max)) {
+                snap_window->DrawList->AddRectFilled(snap_buttons[3].Min, snap_buttons[3].Max, bg_col);
+            }
+            // Left Part
+            ImGui::SetCursorScreenPos(ImVec2(snap_buttons[3].Min.x + snap_button_width_10th, snap_buttons[3].Min.y + snap_button_width_10th));
+            snap_pressed[8] = ImGui::InvisibleButton("##snap_3_left", ImVec2(2 * snap_button_width_10th, 8 * snap_button_width_10th));
+            if (ImGui::IsItemHovered()) {
+                snap_window->DrawList->AddRectFilled(ImVec2(snap_buttons[3].Min.x + snap_button_width_10th, snap_buttons[3].Min.y + snap_button_width_10th), ImVec2(snap_buttons[3].Min.x + 3 * snap_button_width_10th, snap_buttons[3].Max.y - snap_button_width_10th), cross_col);
+            }
+            else {
+                snap_window->DrawList->AddRect(ImVec2(snap_buttons[3].Min.x + snap_button_width_10th, snap_buttons[3].Min.y + snap_button_width_10th), ImVec2(snap_buttons[3].Min.x + 3 * snap_button_width_10th, snap_buttons[3].Max.y - snap_button_width_10th), cross_col);
+            }
+            // Middle Part
+            ImGui::SetCursorScreenPos(ImVec2(snap_buttons[3].Min.x + 4 * snap_button_width_10th, snap_buttons[3].Min.y + snap_button_width_10th));
+            snap_pressed[9] = ImGui::InvisibleButton("##snap_3_middle", ImVec2(2 * snap_button_width_10th, 8 * snap_button_width_10th));
+            if (ImGui::IsItemHovered()) {
+                snap_window->DrawList->AddRectFilled(ImVec2(snap_buttons[3].Min.x + 4 * snap_button_width_10th, snap_buttons[3].Min.y + snap_button_width_10th), ImVec2(snap_buttons[3].Min.x + 6 * snap_button_width_10th, snap_buttons[3].Max.y - snap_button_width_10th), cross_col);
+            }
+            else {
+                snap_window->DrawList->AddRect(ImVec2(snap_buttons[3].Min.x + 4 * snap_button_width_10th, snap_buttons[3].Min.y + snap_button_width_10th), ImVec2(snap_buttons[3].Min.x + 6 * snap_button_width_10th, snap_buttons[3].Max.y - snap_button_width_10th), cross_col);
+            }
+            // Right Part
+            ImGui::SetCursorScreenPos(ImVec2(snap_buttons[3].Min.x + 7 * snap_button_width_10th, snap_buttons[3].Min.y + snap_button_width_10th));
+            snap_pressed[10] = ImGui::InvisibleButton("##snap_3_right", ImVec2(2 * snap_button_width_10th, 8 * snap_button_width_10th));
+            if (ImGui::IsItemHovered()) {
+                snap_window->DrawList->AddRectFilled(ImVec2(snap_buttons[3].Min.x + 7 * snap_button_width_10th, snap_buttons[3].Min.y + snap_button_width_10th), ImVec2(snap_buttons[3].Max.x - snap_button_width_10th, snap_buttons[3].Max.y - snap_button_width_10th), cross_col);
+            }
+            else {
+                snap_window->DrawList->AddRect(ImVec2(snap_buttons[3].Min.x + 7 * snap_button_width_10th, snap_buttons[3].Min.y + snap_button_width_10th), ImVec2(snap_buttons[3].Max.x - snap_button_width_10th, snap_buttons[3].Max.y - snap_button_width_10th), cross_col);
+            }
+
+
+            // Fifth Snap Button
+            if (ImGui::IsMouseHoveringRect(snap_buttons[4].Min, snap_buttons[4].Max)) {
+                snap_window->DrawList->AddRectFilled(snap_buttons[4].Min, snap_buttons[4].Max, bg_col);
+            }
+            // Big Part Left
+            ImGui::SetCursorScreenPos(ImVec2(snap_buttons[4].Min.x + snap_button_width_10th, snap_buttons[4].Min.y + snap_button_width_10th));
+            snap_pressed[11] = ImGui::InvisibleButton("##snap_4_big_left", ImVec2(5 * snap_button_width_10th, 8 * snap_button_width_10th));
+            if (ImGui::IsItemHovered()) {
+                snap_window->DrawList->AddRectFilled(ImVec2(snap_buttons[4].Min.x + snap_button_width_10th, snap_buttons[4].Min.y + snap_button_width_10th), ImVec2(snap_buttons[4].Min.x + 6 * snap_button_width_10th, snap_buttons[4].Max.y - snap_button_width_10th), cross_col);
+            }
+            else {
+                snap_window->DrawList->AddRect(ImVec2(snap_buttons[4].Min.x + snap_button_width_10th, snap_buttons[4].Min.y + snap_button_width_10th), ImVec2(snap_buttons[4].Min.x + 6 * snap_button_width_10th, snap_buttons[4].Max.y - snap_button_width_10th), cross_col);
+            }
+
+            // Small Up Part
+            ImGui::SetCursorScreenPos(ImVec2(snap_buttons[4].Min.x + 7 * snap_button_width_10th, snap_buttons[4].Min.y + snap_button_width_10th));
+            snap_pressed[12] = ImGui::InvisibleButton("##snap_4_small_up", ImVec2(2 * snap_button_width_10th, 2 * snap_button_width_10th));
+            if (ImGui::IsItemHovered()) {
+                snap_window->DrawList->AddRectFilled(ImVec2(snap_buttons[4].Min.x + 7 * snap_button_width_10th, snap_buttons[4].Min.y + snap_button_width_10th), ImVec2(snap_buttons[4].Max.x - snap_button_width_10th, snap_buttons[4].Min.y + 3 * snap_button_width_10th), cross_col);
+            }
+            else {
+                snap_window->DrawList->AddRect(ImVec2(snap_buttons[4].Min.x + 7 * snap_button_width_10th, snap_buttons[4].Min.y + snap_button_width_10th), ImVec2(snap_buttons[4].Max.x - snap_button_width_10th, snap_buttons[4].Min.y + 3 * snap_button_width_10th), cross_col);
+            }
+
+            // Small Middle Part
+            ImGui::SetCursorScreenPos(ImVec2(snap_buttons[4].Min.x + 7 * snap_button_width_10th, snap_buttons[4].Min.y + 4 * snap_button_width_10th));
+            snap_pressed[13] = ImGui::InvisibleButton("##snap_4_small_middle", ImVec2(2 * snap_button_width_10th, 2 * snap_button_width_10th));
+            if (ImGui::IsItemHovered()) {
+                snap_window->DrawList->AddRectFilled(ImVec2(snap_buttons[4].Min.x + 7 * snap_button_width_10th, snap_buttons[4].Min.y + 4 * snap_button_width_10th), ImVec2(snap_buttons[4].Max.x - snap_button_width_10th, snap_buttons[4].Min.y + 6 * snap_button_width_10th), cross_col);
+            }
+            else {
+                snap_window->DrawList->AddRect(ImVec2(snap_buttons[4].Min.x + 7 * snap_button_width_10th, snap_buttons[4].Min.y + 4 * snap_button_width_10th), ImVec2(snap_buttons[4].Max.x - snap_button_width_10th, snap_buttons[4].Min.y + 6 * snap_button_width_10th), cross_col);
+            }
+            // Small Down Part
+            ImGui::SetCursorScreenPos(ImVec2(snap_buttons[4].Min.x + 7 * snap_button_width_10th, snap_buttons[4].Min.y + 7 * snap_button_width_10th));
+            snap_pressed[14] = ImGui::InvisibleButton("##snap_4_small_down", ImVec2(2 * snap_button_width_10th, 2 * snap_button_width_10th));
+            if (ImGui::IsItemHovered()) {
+                snap_window->DrawList->AddRectFilled(ImVec2(snap_buttons[4].Min.x + 7 * snap_button_width_10th, snap_buttons[4].Min.y + 7 * snap_button_width_10th), ImVec2(snap_buttons[4].Max.x - snap_button_width_10th, snap_buttons[4].Max.y - snap_button_width_10th), cross_col);
+            }
+            else {
+                snap_window->DrawList->AddRect(ImVec2(snap_buttons[4].Min.x + 7 * snap_button_width_10th, snap_buttons[4].Min.y + 7 * snap_button_width_10th), ImVec2(snap_buttons[4].Max.x - snap_button_width_10th, snap_buttons[4].Max.y - snap_button_width_10th), cross_col);
+            }
+
+
+
+            // Sixth Snap Button
+            if (ImGui::IsMouseHoveringRect(snap_buttons[5].Min, snap_buttons[5].Max)) {
+                snap_window->DrawList->AddRectFilled(snap_buttons[5].Min, snap_buttons[5].Max, bg_col);
+            }
+            // Small Up Part
+            ImGui::SetCursorScreenPos(ImVec2(snap_buttons[5].Min.x + snap_button_width_10th, snap_buttons[5].Min.y + snap_button_width_10th));
+            snap_pressed[15] = ImGui::InvisibleButton("##snap_5_small_up", ImVec2(2 * snap_button_width_10th, 2 * snap_button_width_10th));
+            if (ImGui::IsItemHovered()) {
+                snap_window->DrawList->AddRectFilled(ImVec2(snap_buttons[5].Min.x + snap_button_width_10th, snap_buttons[5].Min.y + snap_button_width_10th), ImVec2(snap_buttons[5].Min.x + 3 * snap_button_width_10th, snap_buttons[5].Min.y + 3 * snap_button_width_10th), cross_col);
+            }
+            else {
+                snap_window->DrawList->AddRect(ImVec2(snap_buttons[5].Min.x + snap_button_width_10th, snap_buttons[5].Min.y + snap_button_width_10th), ImVec2(snap_buttons[5].Min.x + 3 * snap_button_width_10th, snap_buttons[5].Min.y + 3 * snap_button_width_10th), cross_col);
+            }
+
+            // Small Middle Part
+            ImGui::SetCursorScreenPos(ImVec2(snap_buttons[5].Min.x + snap_button_width_10th, snap_buttons[5].Min.y + 4 * snap_button_width_10th));
+            snap_pressed[16] = ImGui::InvisibleButton("##snap_5_small_middle", ImVec2(2 * snap_button_width_10th, 2 * snap_button_width_10th));
+            if (ImGui::IsItemHovered()) {
+                snap_window->DrawList->AddRectFilled(ImVec2(snap_buttons[5].Min.x + snap_button_width_10th, snap_buttons[5].Min.y + 4 * snap_button_width_10th), ImVec2(snap_buttons[5].Min.x + 3 * snap_button_width_10th, snap_buttons[5].Min.y + 6 * snap_button_width_10th), cross_col);
+            }
+            else {
+                snap_window->DrawList->AddRect(ImVec2(snap_buttons[5].Min.x + snap_button_width_10th, snap_buttons[5].Min.y + 4 * snap_button_width_10th), ImVec2(snap_buttons[5].Min.x + 3 * snap_button_width_10th, snap_buttons[5].Min.y + 6 * snap_button_width_10th), cross_col);
+            }
+            // Small Down Part
+            ImGui::SetCursorScreenPos(ImVec2(snap_buttons[5].Min.x + snap_button_width_10th, snap_buttons[5].Min.y + 7 * snap_button_width_10th));
+            snap_pressed[17] = ImGui::InvisibleButton("##snap_5_small_down", ImVec2(2 * snap_button_width_10th, 2 * snap_button_width_10th));
+            if (ImGui::IsItemHovered()) {
+                snap_window->DrawList->AddRectFilled(ImVec2(snap_buttons[5].Min.x + snap_button_width_10th, snap_buttons[5].Min.y + 7 * snap_button_width_10th), ImVec2(snap_buttons[5].Min.x + 3 * snap_button_width_10th, snap_buttons[5].Max.y - snap_button_width_10th), cross_col);
+            }
+            else {
+                snap_window->DrawList->AddRect(ImVec2(snap_buttons[5].Min.x + snap_button_width_10th, snap_buttons[5].Min.y + 7 * snap_button_width_10th), ImVec2(snap_buttons[5].Min.x + 3 * snap_button_width_10th, snap_buttons[5].Max.y - snap_button_width_10th), cross_col);
+            }
+            // Big Part Right
+            ImGui::SetCursorScreenPos(ImVec2(snap_buttons[5].Min.x + 4 * snap_button_width_10th, snap_buttons[5].Min.y + snap_button_width_10th));
+            snap_pressed[18] = ImGui::InvisibleButton("##snap_5_big_right", ImVec2(5 * snap_button_width_10th, 8 * snap_button_width_10th));
+            if (ImGui::IsItemHovered()) {
+                snap_window->DrawList->AddRectFilled(ImVec2(snap_buttons[5].Min.x + 4 * snap_button_width_10th, snap_buttons[5].Min.y + snap_button_width_10th), ImVec2(snap_buttons[5].Max.x - snap_button_width_10th, snap_buttons[5].Max.y - snap_button_width_10th), cross_col);
+            }
+            else {
+                snap_window->DrawList->AddRect(ImVec2(snap_buttons[5].Min.x + 4 * snap_button_width_10th, snap_buttons[5].Min.y + snap_button_width_10th), ImVec2(snap_buttons[5].Max.x - snap_button_width_10th, snap_buttons[5].Max.y - snap_button_width_10th), cross_col);
+            }
+
+
+            // Seventh Snap Button
+            if (ImGui::IsMouseHoveringRect(snap_buttons[6].Min, snap_buttons[6].Max)) {
+                snap_window->DrawList->AddRectFilled(snap_buttons[6].Min, snap_buttons[6].Max, bg_col);
+            }
+            // Up Part
+            ImGui::SetCursorScreenPos(ImVec2(snap_buttons[6].Min.x + snap_button_width_10th, snap_buttons[6].Min.y + snap_button_width_10th));
+            snap_pressed[19] = ImGui::InvisibleButton("##snap_6_up", ImVec2(8 * snap_button_width_10th, 2 * snap_button_width_10th));
+            if (ImGui::IsItemHovered()) {
+                snap_window->DrawList->AddRectFilled(ImVec2(snap_buttons[6].Min.x + snap_button_width_10th, snap_buttons[6].Min.y + snap_button_width_10th), ImVec2(snap_buttons[6].Max.x - snap_button_width_10th, snap_buttons[6].Min.y + 3 * snap_button_width_10th), cross_col);
+            }
+            else {
+                snap_window->DrawList->AddRect(ImVec2(snap_buttons[6].Min.x + snap_button_width_10th, snap_buttons[6].Min.y + snap_button_width_10th), ImVec2(snap_buttons[6].Max.x - snap_button_width_10th, snap_buttons[6].Min.y + 3 * snap_button_width_10th), cross_col);
+            }
+            // Middle Part
+            ImGui::SetCursorScreenPos(ImVec2(snap_buttons[6].Min.x + snap_button_width_10th, snap_buttons[6].Min.y + 4 * snap_button_width_10th));
+            snap_pressed[20] = ImGui::InvisibleButton("##snap_6_middle", ImVec2(8 * snap_button_width_10th, 2 * snap_button_width_10th));
+            if (ImGui::IsItemHovered()) {
+                snap_window->DrawList->AddRectFilled(ImVec2(snap_buttons[6].Min.x + snap_button_width_10th, snap_buttons[6].Min.y + 4 * snap_button_width_10th), ImVec2(snap_buttons[6].Max.x - snap_button_width_10th, snap_buttons[6].Min.y + 6 * snap_button_width_10th), cross_col);
+            }
+            else {
+                snap_window->DrawList->AddRect(ImVec2(snap_buttons[6].Min.x + snap_button_width_10th, snap_buttons[6].Min.y + 4 * snap_button_width_10th), ImVec2(snap_buttons[6].Max.x - snap_button_width_10th, snap_buttons[6].Min.y + 6 * snap_button_width_10th), cross_col);
+            }
+            // Down Part
+            ImGui::SetCursorScreenPos(ImVec2(snap_buttons[6].Min.x + snap_button_width_10th, snap_buttons[6].Min.y + 7 * snap_button_width_10th));
+            snap_pressed[21] = ImGui::InvisibleButton("##snap_6_down", ImVec2(8 * snap_button_width_10th, 2 * snap_button_width_10th));
+            if (ImGui::IsItemHovered()) {
+                snap_window->DrawList->AddRectFilled(ImVec2(snap_buttons[6].Min.x + snap_button_width_10th, snap_buttons[6].Min.y + 7 * snap_button_width_10th), ImVec2(snap_buttons[6].Max.x - snap_button_width_10th, snap_buttons[6].Max.y - snap_button_width_10th), cross_col);
+            }
+            else {
+                snap_window->DrawList->AddRect(ImVec2(snap_buttons[6].Min.x + snap_button_width_10th, snap_buttons[6].Min.y + 7 * snap_button_width_10th), ImVec2(snap_buttons[6].Max.x - snap_button_width_10th, snap_buttons[6].Max.y - snap_button_width_10th), cross_col);
+            }
+
+
+            // Eighth Snap Button
+            if (ImGui::IsMouseHoveringRect(snap_buttons[7].Min, snap_buttons[7].Max)) {
+                snap_window->DrawList->AddRectFilled(snap_buttons[7].Min, snap_buttons[7].Max, bg_col);
+            }
+            // Big Part Up
+            ImGui::SetCursorScreenPos(ImVec2(snap_buttons[7].Min.x + snap_button_width_10th, snap_buttons[7].Min.y + snap_button_width_10th));
+            snap_pressed[22] = ImGui::InvisibleButton("##snap_7_big_up", ImVec2(8 * snap_button_width_10th, 5 * snap_button_width_10th));
+            if (ImGui::IsItemHovered()) {
+                snap_window->DrawList->AddRectFilled(ImVec2(snap_buttons[7].Min.x + snap_button_width_10th, snap_buttons[7].Min.y + snap_button_width_10th), ImVec2(snap_buttons[7].Max.x - snap_button_width_10th, snap_buttons[7].Min.y + 6 * snap_button_width_10th), cross_col);
+            }
+            else {
+                snap_window->DrawList->AddRect(ImVec2(snap_buttons[7].Min.x + snap_button_width_10th, snap_buttons[7].Min.y + snap_button_width_10th), ImVec2(snap_buttons[7].Max.x - snap_button_width_10th, snap_buttons[7].Min.y + 6 * snap_button_width_10th), cross_col);
+            }
+            // Small Left Part
+            ImGui::SetCursorScreenPos(ImVec2(snap_buttons[7].Min.x + snap_button_width_10th, snap_buttons[7].Min.y + 7 * snap_button_width_10th));
+            snap_pressed[23] = ImGui::InvisibleButton("##snap_7_small_left", ImVec2(2 * snap_button_width_10th, 2 * snap_button_width_10th));
+            if (ImGui::IsItemHovered()) {
+                snap_window->DrawList->AddRectFilled(ImVec2(snap_buttons[7].Min.x + snap_button_width_10th, snap_buttons[7].Min.y + 7 * snap_button_width_10th), ImVec2(snap_buttons[7].Min.x + 3 * snap_button_width_10th, snap_buttons[7].Max.y - snap_button_width_10th), cross_col);
+            }
+            else {
+                snap_window->DrawList->AddRect(ImVec2(snap_buttons[7].Min.x + snap_button_width_10th, snap_buttons[7].Min.y + 7 * snap_button_width_10th), ImVec2(snap_buttons[7].Min.x + 3 * snap_button_width_10th, snap_buttons[7].Max.y - snap_button_width_10th), cross_col);
+            }
+
+            // Small Middle Part
+            ImGui::SetCursorScreenPos(ImVec2(snap_buttons[7].Min.x + 4 * snap_button_width_10th, snap_buttons[7].Min.y + 7 * snap_button_width_10th));
+            snap_pressed[24] = ImGui::InvisibleButton("##snap_7_small_middle", ImVec2(2 * snap_button_width_10th, 2 * snap_button_width_10th));
+            if (ImGui::IsItemHovered()) {
+                snap_window->DrawList->AddRectFilled(ImVec2(snap_buttons[7].Min.x + 4 * snap_button_width_10th, snap_buttons[7].Min.y + 7 * snap_button_width_10th), ImVec2(snap_buttons[7].Min.x + 6 * snap_button_width_10th, snap_buttons[7].Max.y - snap_button_width_10th), cross_col);
+            }
+            else {
+                snap_window->DrawList->AddRect(ImVec2(snap_buttons[7].Min.x + 4 * snap_button_width_10th, snap_buttons[7].Min.y + 7 * snap_button_width_10th), ImVec2(snap_buttons[7].Min.x + 6 * snap_button_width_10th, snap_buttons[7].Max.y - snap_button_width_10th), cross_col);
+            }
+            // Small Right Part
+            ImGui::SetCursorScreenPos(ImVec2(snap_buttons[7].Min.x + 7 * snap_button_width_10th, snap_buttons[7].Min.y + 7 * snap_button_width_10th));
+            snap_pressed[25] = ImGui::InvisibleButton("##snap_7_small_right", ImVec2(2 * snap_button_width_10th, 2 * snap_button_width_10th));
+            if (ImGui::IsItemHovered()) {
+                snap_window->DrawList->AddRectFilled(ImVec2(snap_buttons[7].Min.x + 7 * snap_button_width_10th, snap_buttons[7].Min.y + 7 * snap_button_width_10th), ImVec2(snap_buttons[7].Max.x - snap_button_width_10th, snap_buttons[7].Max.y - snap_button_width_10th), cross_col);
+            }
+            else {
+                snap_window->DrawList->AddRect(ImVec2(snap_buttons[7].Min.x + 7 * snap_button_width_10th, snap_buttons[7].Min.y + 7 * snap_button_width_10th), ImVec2(snap_buttons[7].Max.x - snap_button_width_10th, snap_buttons[7].Max.y - snap_button_width_10th), cross_col);
+            }
+
+
+            // Ninth Snap Button
+            if (ImGui::IsMouseHoveringRect(snap_buttons[8].Min, snap_buttons[8].Max)) {
+                snap_window->DrawList->AddRectFilled(snap_buttons[8].Min, snap_buttons[8].Max, bg_col);
+            }
+            // Small Left Part
+            ImGui::SetCursorScreenPos(ImVec2(snap_buttons[8].Min.x + snap_button_width_10th, snap_buttons[8].Min.y + snap_button_width_10th));
+            snap_pressed[26] = ImGui::InvisibleButton("##snap_8_small_left", ImVec2(2 * snap_button_width_10th, 2 * snap_button_width_10th));
+            if (ImGui::IsItemHovered()) {
+                snap_window->DrawList->AddRectFilled(ImVec2(snap_buttons[8].Min.x + snap_button_width_10th, snap_buttons[8].Min.y + snap_button_width_10th), ImVec2(snap_buttons[8].Min.x + 3 * snap_button_width_10th, snap_buttons[8].Min.y + 3 * snap_button_width_10th), cross_col);
+            }
+            else {
+                snap_window->DrawList->AddRect(ImVec2(snap_buttons[8].Min.x + snap_button_width_10th, snap_buttons[8].Min.y + snap_button_width_10th), ImVec2(snap_buttons[8].Min.x + 3 * snap_button_width_10th, snap_buttons[8].Min.y + 3 * snap_button_width_10th), cross_col);
+            }
+
+            // Small Middle Part
+            ImGui::SetCursorScreenPos(ImVec2(snap_buttons[8].Min.x + 4 * snap_button_width_10th, snap_buttons[8].Min.y + snap_button_width_10th));
+            snap_pressed[27] = ImGui::InvisibleButton("##snap_8_small_middle", ImVec2(2 * snap_button_width_10th, 2 * snap_button_width_10th));
+            if (ImGui::IsItemHovered()) {
+                snap_window->DrawList->AddRectFilled(ImVec2(snap_buttons[8].Min.x + 4 * snap_button_width_10th, snap_buttons[8].Min.y + snap_button_width_10th), ImVec2(snap_buttons[8].Min.x + 6 * snap_button_width_10th, snap_buttons[8].Min.y + 3 * snap_button_width_10th), cross_col);
+            }
+            else {
+                snap_window->DrawList->AddRect(ImVec2(snap_buttons[8].Min.x + 4 * snap_button_width_10th, snap_buttons[8].Min.y + snap_button_width_10th), ImVec2(snap_buttons[8].Min.x + 6 * snap_button_width_10th, snap_buttons[8].Min.y + 3 * snap_button_width_10th), cross_col);
+            }
+            // Small Right Part
+            ImGui::SetCursorScreenPos(ImVec2(snap_buttons[8].Min.x + 7 * snap_button_width_10th, snap_buttons[8].Min.y + snap_button_width_10th));
+            snap_pressed[28] = ImGui::InvisibleButton("##snap_8_small_right", ImVec2(2 * snap_button_width_10th, 2 * snap_button_width_10th));
+            if (ImGui::IsItemHovered()) {
+                snap_window->DrawList->AddRectFilled(ImVec2(snap_buttons[8].Min.x + 7 * snap_button_width_10th, snap_buttons[8].Min.y + snap_button_width_10th), ImVec2(snap_buttons[8].Max.x - snap_button_width_10th, snap_buttons[8].Min.y + 3 * snap_button_width_10th), cross_col);
+            }
+            else {
+                snap_window->DrawList->AddRect(ImVec2(snap_buttons[8].Min.x + 7 * snap_button_width_10th, snap_buttons[8].Min.y + snap_button_width_10th), ImVec2(snap_buttons[8].Max.x - snap_button_width_10th, snap_buttons[8].Min.y + 3 * snap_button_width_10th), cross_col);
+            }
+            // Big Part Down
+            ImGui::SetCursorScreenPos(ImVec2(snap_buttons[8].Min.x + snap_button_width_10th, snap_buttons[8].Min.y + 4 * snap_button_width_10th));
+            snap_pressed[29] = ImGui::InvisibleButton("##snap_8_big_down", ImVec2(8 * snap_button_width_10th, 5 * snap_button_width_10th));
+            if (ImGui::IsItemHovered()) {
+                snap_window->DrawList->AddRectFilled(ImVec2(snap_buttons[8].Min.x + snap_button_width_10th, snap_buttons[8].Min.y + 4 * snap_button_width_10th), ImVec2(snap_buttons[8].Max.x - snap_button_width_10th, snap_buttons[8].Max.y - snap_button_width_10th), cross_col);
+            }
+            else {
+                snap_window->DrawList->AddRect(ImVec2(snap_buttons[8].Min.x + snap_button_width_10th, snap_buttons[8].Min.y + 4 * snap_button_width_10th), ImVec2(snap_buttons[8].Max.x - snap_button_width_10th, snap_buttons[8].Max.y - snap_button_width_10th), cross_col);
+            }
+
+
+            // Out Snap Choice
+            for (int i = 0; i < 30; i++) {
+                if (snap_pressed[i]) {
+                    *want_snap = true;
+                    *snap_option = i+1;
+                }
+            }
+        }
+        ImGui::End();
+        ImGui::PopStyleVar(3);
+    }
+
+    // Render
     if (hovered)
         window->DrawList->AddRectFilled(bb.Min, bb.Max, bg_col);
     RenderNavCursor(bb, id, ImGuiNavRenderCursorFlags_Compact);
-    ImU32 cross_col = GetColorU32(ImGuiCol_Text);
     ImVec2 cross_center = bb.GetCenter() - ImVec2(0.5f, 0.5f);
     float cross_extent = g.FontSize * 0.5f * 0.7071f - 1.0f;
 
@@ -978,7 +1842,7 @@ bool ImGui::FullscreenButtonForNode(ImGuiID id, const ImVec2& pos, ImGuiDockNode
 }
 
 // fullscreen button used in each tab
-bool ImGui::FullscreenButtonForTab(ImGuiID id, const ImVec2& pos)
+bool ImGui::FullscreenButtonForTab(ImGuiID id, const ImVec2& pos, ImGuiWindow* tab_window)
 {
     ImGuiContext& g = *GImGui;
     ImGuiWindow* window = g.CurrentWindow;
@@ -1000,19 +1864,41 @@ bool ImGui::FullscreenButtonForTab(ImGuiID id, const ImVec2& pos)
     if (is_clipped)
         return pressed;
 
-    // Render
+
     ImU32 bg_col = GetColorU32(held ? ImGuiCol_ButtonActive : ImGuiCol_ButtonHovered);
+    ImU32 cross_col = GetColorU32(ImGuiCol_Text);
+    // Render
     if (hovered)
         window->DrawList->AddRectFilled(bb.Min, bb.Max, bg_col);
     RenderNavCursor(bb, id, ImGuiNavRenderCursorFlags_Compact);
-    ImU32 cross_col = GetColorU32(ImGuiCol_Text);
     ImVec2 cross_center = bb.GetCenter() - ImVec2(0.5f, 0.5f);
     float cross_extent = g.FontSize * 0.5f * 0.7071f - 1.0f;
 
-    window->DrawList->AddLine(cross_center + ImVec2(+cross_extent, +cross_extent), cross_center + ImVec2(+cross_extent, -cross_extent), cross_col, 1.0f);
-    window->DrawList->AddLine(cross_center + ImVec2(+cross_extent, -cross_extent), cross_center + ImVec2(-cross_extent, -cross_extent), cross_col, 1.0f);
-    window->DrawList->AddLine(cross_center + ImVec2(-cross_extent, -cross_extent), cross_center + ImVec2(-cross_extent, +cross_extent), cross_col, 1.0f);
-    window->DrawList->AddLine(cross_center + ImVec2(-cross_extent, +cross_extent), cross_center + ImVec2(+cross_extent, +cross_extent), cross_col, 1.0f);
+    if (window->IsFullscreen) {
+        window->DrawList->AddLine(cross_center + ImVec2(+cross_extent * 0.5f, +cross_extent * 0.5f), cross_center + ImVec2(+cross_extent, +cross_extent * 0.5f), cross_col, 1.0f);
+        window->DrawList->AddLine(cross_center + ImVec2(+cross_extent, +cross_extent * 0.5f), cross_center + ImVec2(+cross_extent, -cross_extent), cross_col, 1.0f);
+        window->DrawList->AddLine(cross_center + ImVec2(+cross_extent, -cross_extent), cross_center + ImVec2(-cross_extent * 0.5f, -cross_extent), cross_col, 1.0f);
+        window->DrawList->AddLine(cross_center + ImVec2(-cross_extent * 0.5f, -cross_extent), cross_center + ImVec2(-cross_extent * 0.5f, -cross_extent * 0.5f), cross_col, 1.0f);
+        window->DrawList->AddLine(cross_center + ImVec2(-cross_extent * 0.5f, -cross_extent * 0.5f), cross_center + ImVec2(+cross_extent * 0.5f, -cross_extent * 0.5f), cross_col, 1.0f);
+        window->DrawList->AddLine(cross_center + ImVec2(+cross_extent * 0.5f, -cross_extent * 0.5f), cross_center + ImVec2(+cross_extent * 0.5f, +cross_extent), cross_col, 1.0f);
+        window->DrawList->AddLine(cross_center + ImVec2(+cross_extent * 0.5f, +cross_extent), cross_center + ImVec2(-cross_extent, +cross_extent), cross_col, 1.0f);
+        window->DrawList->AddLine(cross_center + ImVec2(-cross_extent, +cross_extent), cross_center + ImVec2(-cross_extent, -cross_extent * 0.5f), cross_col, 1.0f);
+        window->DrawList->AddLine(cross_center + ImVec2(-cross_extent, -cross_extent * 0.5f), cross_center + ImVec2(-cross_extent * 0.5f, -cross_extent * 0.5f), cross_col, 1.0f);
+        
+    }
+    else {
+        window->DrawList->AddLine(cross_center + ImVec2(+cross_extent, +cross_extent), cross_center + ImVec2(+cross_extent, -cross_extent), cross_col, 1.0f);
+        window->DrawList->AddLine(cross_center + ImVec2(+cross_extent, -cross_extent), cross_center + ImVec2(-cross_extent, -cross_extent), cross_col, 1.0f);
+        window->DrawList->AddLine(cross_center + ImVec2(-cross_extent, -cross_extent), cross_center + ImVec2(-cross_extent, +cross_extent), cross_col, 1.0f);
+        window->DrawList->AddLine(cross_center + ImVec2(-cross_extent, +cross_extent), cross_center + ImVec2(+cross_extent, +cross_extent), cross_col, 1.0f);
+    }
+
+
+    if (pressed) {
+        window->WantFullscreenToggle = true;
+        FocusWindow(tab_window);
+    }
+    
 
     return pressed;
 }
@@ -10427,7 +11313,7 @@ bool    ImGui::TabItemEx(ImGuiTabBar* tab_bar, const char* label, bool* p_open, 
     bool just_closed;
     bool just_fullscreen;      // check if fullscreen button was pressed on the tab
     bool text_clipped;
-    TabItemLabelAndCloseButton(display_draw_list, bb, tab_just_unsaved ? (flags & ~ImGuiTabItemFlags_UnsavedDocument) : flags, tab_bar->FramePadding, label, id, close_button_id, tab_contents_visible, &just_closed, &text_clipped, fullscreen_button_id, &just_fullscreen);
+    TabItemLabelAndCloseButton(display_draw_list, bb, tab_just_unsaved ? (flags & ~ImGuiTabItemFlags_UnsavedDocument) : flags, tab_bar->FramePadding, label, id, close_button_id, tab_contents_visible, &just_closed, &text_clipped, fullscreen_button_id, &just_fullscreen, tab->Window);
     if (just_closed && p_open != NULL)
     {
         *p_open = false;
@@ -10534,7 +11420,7 @@ void ImGui::TabItemBackground(ImDrawList* draw_list, const ImRect& bb, ImGuiTabI
 
 // Render text label (with custom clipping) + Unsaved Document marker + Close Button logic
 // We tend to lock style.FramePadding for a given tab-bar, hence the 'frame_padding' parameter.
-void ImGui::TabItemLabelAndCloseButton(ImDrawList* draw_list, const ImRect& bb, ImGuiTabItemFlags flags, ImVec2 frame_padding, const char* label, ImGuiID tab_id, ImGuiID close_button_id, bool is_contents_visible, bool* out_just_closed, bool* out_text_clipped, ImGuiID fullscreen_button_id, bool* out_just_fullscreen)
+void ImGui::TabItemLabelAndCloseButton(ImDrawList* draw_list, const ImRect& bb, ImGuiTabItemFlags flags, ImVec2 frame_padding, const char* label, ImGuiID tab_id, ImGuiID close_button_id, bool is_contents_visible, bool* out_just_closed, bool* out_text_clipped, ImGuiID fullscreen_button_id, bool* out_just_fullscreen, ImGuiWindow* tab_window)
 {
     ImGuiContext& g = *GImGui;
     ImVec2 label_size = CalcTextSize(label, NULL, true);
@@ -10587,7 +11473,7 @@ void ImGui::TabItemLabelAndCloseButton(ImDrawList* draw_list, const ImRect& bb, 
     if (close_button_visible)
     {
 
-        if (FullscreenButtonForTab(fullscreen_button_id, button_pos - ImVec2(button_sz, 0))) {      // fullscreen button on the Tab
+        if (FullscreenButtonForTab(fullscreen_button_id, button_pos - ImVec2(button_sz, 0), tab_window)) {      // fullscreen button on the Tab
             *out_just_fullscreen = true;
         }
 

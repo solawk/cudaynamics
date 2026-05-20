@@ -1077,6 +1077,7 @@ CODE
 #include "imgui.h"
 #ifndef IMGUI_DISABLE
 #include "imgui_internal.h"
+#include "../gui/fullscreen_funcs.h"
 
 // System includes
 #include <stdio.h>      // vsnprintf, sscanf, printf
@@ -5088,6 +5089,7 @@ void ImGui::UpdateMouseMovingWindowEndFrame()
         bool hovered_window_above_modal = g.HoveredWindow && (modal == NULL || IsWindowAbove(g.HoveredWindow, modal));
         ClosePopupsOverWindow(hovered_window_above_modal ? g.HoveredWindow : modal, true);
     }
+
 }
 
 // This is called during NewFrame()->UpdateViewportsNewFrame() only.
@@ -7187,12 +7189,16 @@ void ImGui::RenderWindowTitleBarContents(ImGuiWindow* window, const ImRect& titl
         if (CloseButton(window->GetID("#CLOSE"), close_button_pos))
             *p_open = false;
 
+    bool want_snap;
+    int snap_option;
     // Fullscreen button
-    if(has_fullscreen_button)
-        if (FullscreenButton(window->GetID("#FULLSCREEN"), close_button_pos - ImVec2(button_sz, 0))) {
-            window->IsFullscreen = !window->IsFullscreen;
-            window->IsFullscreenButtonPressed = true;
+    if (has_fullscreen_button) {
+        if (FullscreenButton(window->GetID("#FULLSCREEN"), close_button_pos - ImVec2(button_sz, 0), &want_snap, &snap_option)) {
+            window->WantFullscreenToggle = true;
         }
+        window->WantSnapToggle = want_snap;
+        window->SnapOption = snap_option;
+    }
        
 
     window->DC.NavLayerCurrent = ImGuiNavLayer_Main;
@@ -7678,6 +7684,9 @@ bool ImGui::Begin(const char* name, bool* p_open, ImGuiWindowFlags flags)
         }
         window->WantCollapseToggle = false;
 
+
+
+
         // SIZE
 
         // Outer Decoration Sizes
@@ -7723,9 +7732,11 @@ bool ImGui::Begin(const char* name, bool* p_open, ImGuiWindowFlags flags)
                 MarkIniSettingsDirty(window);
         }
 
+
         // Apply minimum/maximum window size constraints and final size
-        window->SizeFull = CalcWindowSizeAfterConstraint(window, window->SizeFull);
+         window->SizeFull = CalcWindowSizeAfterConstraint(window, window->SizeFull);
         window->Size = window->Collapsed && !(flags & ImGuiWindowFlags_ChildWindow) ? window->TitleBarRect().GetSize() : window->SizeFull;
+
 
         // POSITION
 
@@ -7810,6 +7821,172 @@ bool ImGui::Begin(const char* name, bool* p_open, ImGuiWindowFlags flags)
             }
         }
         window->Pos = ImTrunc(window->Pos);
+
+
+
+
+        // fullscreen toggle logic for one window
+        if (window->WantFullscreenToggle) {
+            window->IsFullscreen = !window->IsFullscreen;
+            if (window->IsFullscreen)
+            {
+                window->OriginalPos = window->Pos;
+                window->OriginalSize = window->Size;
+
+                window->Pos = ImVec2(0, 0);
+                window->Size = window->SizeFull = ImVec2((float)GetSystemMetrics(SM_CXSCREEN), (float)GetSystemMetrics(SM_CYSCREEN));
+            }
+            else
+            {
+                window->Pos = window->OriginalPos;
+                if (window->OriginalSize != ImVec2(0, 0)) {
+                    window->Size = window->SizeFull = window->OriginalSize;
+                }
+                else window->Size = window->SizeFull = ImVec2((float)GetSystemMetrics(SM_CXSCREEN) / 2, (float)GetSystemMetrics(SM_CYSCREEN) / 2);
+            }
+            window->WantFullscreenToggle = false;
+        }
+
+
+        // fullscreen logic from mouse movement
+        if (window->Size == ImVec2((float)GetSystemMetrics(SM_CXSCREEN), (float)GetSystemMetrics(SM_CYSCREEN)) && window->Pos == ImVec2(0, 0)) {
+            window->IsFullscreen = true;
+        }
+        else if (window->IsFullscreen && (window->Size != ImVec2((float)GetSystemMetrics(SM_CXSCREEN), (float)GetSystemMetrics(SM_CYSCREEN)) || window->Pos != ImVec2(0, 0))) {
+            window->IsFullscreen = false;
+        }
+
+
+        // Snap logic 
+        if (window->WantSnapToggle && window->SnapOption >= 0 && window->SnapOption < 30) {
+            //printf("Snap option %d, active id %d, window id %d\n", window->SnapOption, g.ActiveId, window->ID);
+            switch (window->SnapOption)
+            {
+                case(0):
+                    window->Size = window->SizeFull = ImVec2((float)GetSystemMetrics(SM_CXSCREEN) / 2, (float)GetSystemMetrics(SM_CYSCREEN));
+                    window->Pos = ImVec2(0, 0);
+                    break;
+                case(1):
+                    window->Size = window->SizeFull = ImVec2((float)GetSystemMetrics(SM_CXSCREEN) / 2, (float)GetSystemMetrics(SM_CYSCREEN));
+                    window->Pos = ImVec2((float)GetSystemMetrics(SM_CXSCREEN) / 2, 0);
+                    break;
+                case(2):
+                    window->Size = window->SizeFull = ImVec2((float)GetSystemMetrics(SM_CXSCREEN), (float)GetSystemMetrics(SM_CYSCREEN)/2);
+                    window->Pos = ImVec2(0, 0);
+                    break;
+                case(3):
+                    window->Size = window->SizeFull = ImVec2((float)GetSystemMetrics(SM_CXSCREEN), (float)GetSystemMetrics(SM_CYSCREEN)/2);
+                    window->Pos = ImVec2(0, (float)GetSystemMetrics(SM_CYSCREEN) / 2);
+                    break;
+                case(4):
+                    window->Size = window->SizeFull = ImVec2((float)GetSystemMetrics(SM_CXSCREEN)/2, (float)GetSystemMetrics(SM_CYSCREEN) / 2);
+                    window->Pos = ImVec2(0, 0);
+                    break;
+                case(5):
+                    window->Size = window->SizeFull = ImVec2((float)GetSystemMetrics(SM_CXSCREEN) / 2, (float)GetSystemMetrics(SM_CYSCREEN) / 2);
+                    window->Pos = ImVec2((float)GetSystemMetrics(SM_CXSCREEN) / 2, 0);
+                    break;
+                case(6):
+                    window->Size = window->SizeFull = ImVec2((float)GetSystemMetrics(SM_CXSCREEN) / 2, (float)GetSystemMetrics(SM_CYSCREEN) / 2);
+                    window->Pos = ImVec2((float)GetSystemMetrics(SM_CXSCREEN) / 2, (float)GetSystemMetrics(SM_CYSCREEN) / 2);
+                    break;
+                case(7):
+                    window->Size = window->SizeFull = ImVec2((float)GetSystemMetrics(SM_CXSCREEN) / 2, (float)GetSystemMetrics(SM_CYSCREEN) / 2);
+                    window->Pos = ImVec2(0, (float)GetSystemMetrics(SM_CYSCREEN) / 2);
+                    break;
+                case(8):
+                    window->Size = window->SizeFull = ImVec2((float)GetSystemMetrics(SM_CXSCREEN) / 3, (float)GetSystemMetrics(SM_CYSCREEN));
+                    window->Pos = ImVec2(0, 0);
+                    break;
+                case(9):
+                    window->Size = window->SizeFull = ImVec2((float)GetSystemMetrics(SM_CXSCREEN) / 3, (float)GetSystemMetrics(SM_CYSCREEN));
+                    window->Pos = ImVec2((float)GetSystemMetrics(SM_CXSCREEN) / 3, 0);
+                    break;
+                case(10):
+                    window->Size = window->SizeFull = ImVec2((float)GetSystemMetrics(SM_CXSCREEN) / 3, (float)GetSystemMetrics(SM_CYSCREEN));
+                    window->Pos = ImVec2(2*(float)GetSystemMetrics(SM_CXSCREEN) / 3, 0);
+                    break;
+                case(11):
+                    window->Size = window->SizeFull = ImVec2(2*(float)GetSystemMetrics(SM_CXSCREEN) / 3, (float)GetSystemMetrics(SM_CYSCREEN));
+                    window->Pos = ImVec2(0, 0);
+                    break;
+                case(12):
+                    window->Size = window->SizeFull = ImVec2((float)GetSystemMetrics(SM_CXSCREEN) / 3, (float)GetSystemMetrics(SM_CYSCREEN) / 3);
+                    window->Pos = ImVec2(2 * (float)GetSystemMetrics(SM_CXSCREEN) / 3, 0);
+                    break;
+                case(13):
+                    window->Size = window->SizeFull = ImVec2((float)GetSystemMetrics(SM_CXSCREEN) / 3, (float)GetSystemMetrics(SM_CYSCREEN) / 3);
+                    window->Pos = ImVec2(2 * (float)GetSystemMetrics(SM_CXSCREEN) / 3, (float)GetSystemMetrics(SM_CYSCREEN) / 3);
+                    break;
+                case(14):
+                    window->Size = window->SizeFull = ImVec2((float)GetSystemMetrics(SM_CXSCREEN) / 3, (float)GetSystemMetrics(SM_CYSCREEN) / 3);
+                    window->Pos = ImVec2(2 * (float)GetSystemMetrics(SM_CXSCREEN) / 3, 2*(float)GetSystemMetrics(SM_CYSCREEN) / 3);
+                    break;
+                case(15):
+                    window->Size = window->SizeFull = ImVec2((float)GetSystemMetrics(SM_CXSCREEN) / 3, (float)GetSystemMetrics(SM_CYSCREEN) / 3);
+                    window->Pos = ImVec2(0, 0);
+                    break;
+                case(16):
+                    window->Size = window->SizeFull = ImVec2((float)GetSystemMetrics(SM_CXSCREEN) / 3, (float)GetSystemMetrics(SM_CYSCREEN) / 3);
+                    window->Pos = ImVec2(0, (float)GetSystemMetrics(SM_CYSCREEN) / 3);
+                    break;
+                case(17):
+                    window->Size = window->SizeFull = ImVec2((float)GetSystemMetrics(SM_CXSCREEN) / 3, (float)GetSystemMetrics(SM_CYSCREEN) / 3);
+                    window->Pos = ImVec2(0, 2 * (float)GetSystemMetrics(SM_CYSCREEN) / 3);
+                    break;
+                case(18):
+                    window->Size = window->SizeFull = ImVec2(2*(float)GetSystemMetrics(SM_CXSCREEN) / 3, (float)GetSystemMetrics(SM_CYSCREEN));
+                    window->Pos = ImVec2((float)GetSystemMetrics(SM_CXSCREEN) / 3, 0);
+                    break;
+                case(19):
+                    window->Size = window->SizeFull = ImVec2((float)GetSystemMetrics(SM_CXSCREEN), (float)GetSystemMetrics(SM_CYSCREEN)/3);
+                    window->Pos = ImVec2(0, 0);
+                    break;
+                case(20):
+                    window->Size = window->SizeFull = ImVec2((float)GetSystemMetrics(SM_CXSCREEN), (float)GetSystemMetrics(SM_CYSCREEN) / 3);
+                    window->Pos = ImVec2(0, (float)GetSystemMetrics(SM_CYSCREEN) / 3);
+                    break;
+                case(21):
+                    window->Size = window->SizeFull = ImVec2((float)GetSystemMetrics(SM_CXSCREEN), (float)GetSystemMetrics(SM_CYSCREEN) / 3);
+                    window->Pos = ImVec2(0, 2* (float)GetSystemMetrics(SM_CYSCREEN) / 3);
+                    break;
+                case(22):
+                    window->Size = window->SizeFull = ImVec2((float)GetSystemMetrics(SM_CXSCREEN), 2*(float)GetSystemMetrics(SM_CYSCREEN) / 3);
+                    window->Pos = ImVec2(0, 0);
+                    break;
+                case(23):
+                    window->Size = window->SizeFull = ImVec2((float)GetSystemMetrics(SM_CXSCREEN) / 3, (float)GetSystemMetrics(SM_CYSCREEN)/3);
+                    window->Pos = ImVec2(0, 2*(float)GetSystemMetrics(SM_CYSCREEN) / 3);
+                    break;
+                case(24):
+                    window->Size = window->SizeFull = ImVec2((float)GetSystemMetrics(SM_CXSCREEN) / 3, (float)GetSystemMetrics(SM_CYSCREEN) / 3);
+                    window->Pos = ImVec2((float)GetSystemMetrics(SM_CXSCREEN) / 3, 2 * (float)GetSystemMetrics(SM_CYSCREEN) / 3);
+                    break;
+                case(25):
+                    window->Size = window->SizeFull = ImVec2((float)GetSystemMetrics(SM_CXSCREEN) / 3, (float)GetSystemMetrics(SM_CYSCREEN) / 3);
+                    window->Pos = ImVec2(2*(float)GetSystemMetrics(SM_CXSCREEN) / 3, 2 * (float)GetSystemMetrics(SM_CYSCREEN) / 3);
+                    break;
+                case(26):
+                    window->Size = window->SizeFull = ImVec2((float)GetSystemMetrics(SM_CXSCREEN) / 3, (float)GetSystemMetrics(SM_CYSCREEN) / 3);
+                    window->Pos = ImVec2(0, 0);
+                    break;
+                case(27):
+                    window->Size = window->SizeFull = ImVec2((float)GetSystemMetrics(SM_CXSCREEN) / 3, (float)GetSystemMetrics(SM_CYSCREEN) / 3);
+                    window->Pos = ImVec2((float)GetSystemMetrics(SM_CXSCREEN) / 3, 0);
+                    break;
+                case(28):
+                    window->Size = window->SizeFull = ImVec2((float)GetSystemMetrics(SM_CXSCREEN) / 3, (float)GetSystemMetrics(SM_CYSCREEN) / 3);
+                    window->Pos = ImVec2(2*(float)GetSystemMetrics(SM_CXSCREEN) / 3, 0);
+                    break;
+                case(29):
+                    window->Size = window->SizeFull = ImVec2((float)GetSystemMetrics(SM_CXSCREEN), 2 * (float)GetSystemMetrics(SM_CYSCREEN) / 3);
+                    window->Pos = ImVec2(0, (float)GetSystemMetrics(SM_CYSCREEN) / 3);
+                    break;
+            }
+            window->WantSnapToggle = false;
+        }
+        
+
 
         // Lock window rounding for the frame (so that altering them doesn't cause inconsistencies)
         // Large values tend to lead to variety of artifacts and are not recommended.
@@ -17823,12 +18000,6 @@ static void ImGui::DockNodeUpdate(ImGuiDockNode* node)
         }
     }
 
-    if (node->First) {
-        node->IsFullscreen = false;
-        node->IsFullscreenEnded = false;        // turn bools to false by default
-        node->First = false;
-    }
-
     node->CentralNode = node->OnlyNodeWithWindows = NULL;
     if (node->IsRootNode())
         DockNodeUpdateForRootNode(node);
@@ -17941,49 +18112,187 @@ static void ImGui::DockNodeUpdate(ImGuiDockNode* node)
         if (node->IsRootNode() && node->IsVisible)
         {
             ImGuiWindow* ref_window = (node->Windows.Size > 0) ? node->Windows[0] : NULL;
+            
 
             // Sync Pos
             if (node->AuthorityForPos == ImGuiDataAuthority_Window && ref_window)
                 SetNextWindowPos(ref_window->Pos);
             else if (node->AuthorityForPos == ImGuiDataAuthority_DockNode)
                 SetNextWindowPos(node->Pos);
-            else if (node->IsFullscreen) {                                          // sets fullscreen pos
-                SetNextWindowPos(ImVec2(0, 0));
-            }
-            else if (node->IsFullscreenEnded) {
-                SetNextWindowPos(node->OriginalPos);                                    // restores original pos
-            }
-            else if (node->OnParent) {
-                if (node->TopMostParentNode->IsFullscreen) {                                          // sets fullscreen pos of the main node parent
-                    SetNextWindowPos(ImVec2(0, 0));
-                }
-                else if (node->TopMostParentNode->IsFullscreenEnded) {
-                    SetNextWindowPos(node->TopMostParentNode->OriginalPos);                                    // restores original pos of the main node parent
-                }
-            }
-                
 
             // Sync Size
             if (node->AuthorityForSize == ImGuiDataAuthority_Window && ref_window)
                 SetNextWindowSize(ref_window->SizeFull);
             else if (node->AuthorityForSize == ImGuiDataAuthority_DockNode)
                 SetNextWindowSize(node->Size);
-            else if (node->IsFullscreen) {                                                                      
-                SetNextWindowSize(ImVec2((float)GetSystemMetrics(SM_CXSCREEN), (float)GetSystemMetrics(SM_CYSCREEN)));            // sets fullscreen size
-            }
-            else if (node->IsFullscreenEnded) {
-                node->IsFullscreenEnded = false;
-                SetNextWindowSize(node->OriginalSize);                                                              // restores original size
-            }
-            else if (node->OnParent) {
-                if (node->TopMostParentNode->IsFullscreen) {
-                    SetNextWindowSize(ImVec2((float)GetSystemMetrics(SM_CXSCREEN), (float)GetSystemMetrics(SM_CYSCREEN)));            // sets fullscreen size of the main node parent
+
+
+            //fullscreen toggle logic for node
+            if (node->WantFullscreenToggle) {
+                node->IsFullscreen = !node->IsFullscreen;
+                if (node->IsFullscreen) {
+                    node->OriginalPos = node->Pos;
+                    node->OriginalSize = node->Size;
+
+                    SetNextWindowPos(ImVec2(0, 0));
+                    SetNextWindowSize(ImVec2((float)GetSystemMetrics(SM_CXSCREEN), (float)GetSystemMetrics(SM_CYSCREEN)));
                 }
-                else if (node->TopMostParentNode->IsFullscreenEnded) {
-                    node->TopMostParentNode->IsFullscreenEnded = false;
-                    SetNextWindowSize(node->TopMostParentNode->OriginalSize);                                          // restores original size of the main node parent
+                else {
+                    SetNextWindowPos(node->OriginalPos);
+                    if (node->OriginalSize != ImVec2(0, 0)) {
+                        SetNextWindowSize(node->OriginalSize);
+                    }
+                    else {
+                        SetNextWindowSize(ImVec2((float)GetSystemMetrics(SM_CXSCREEN)/2, (float)GetSystemMetrics(SM_CYSCREEN))/2);
+                    }
                 }
+                node->WantFullscreenToggle = false;
             }
+            
+
+            //fullscreen action by mouse movement
+            if (node->Size == ImVec2((float)GetSystemMetrics(SM_CXSCREEN), (float)GetSystemMetrics(SM_CYSCREEN)) && node->Pos == ImVec2(0, 0)) {
+                node->IsFullscreen = true;
+            }
+            else if (node->IsFullscreen && (node->Size != ImVec2((float)GetSystemMetrics(SM_CXSCREEN), (float)GetSystemMetrics(SM_CYSCREEN)) || node->Pos != ImVec2(0, 0))) {
+                node->IsFullscreen = false;
+            }
+
+
+
+
+            // Snap logic 
+            if (node->WantSnapToggle && node->SnapOption > 0 && node->SnapOption < 31) {
+                //printf("Snap option %d, active id %d, node id %d\n", node->SnapOption, g.ActiveId, node->ID);
+                switch (node->SnapOption)
+                {
+                case(1):
+                    SetNextWindowSize(ImVec2((float)GetSystemMetrics(SM_CXSCREEN) / 2, (float)GetSystemMetrics(SM_CYSCREEN)));
+                    SetNextWindowPos(ImVec2(0, 0));
+                    break;
+                case(2):
+                    SetNextWindowSize(ImVec2((float)GetSystemMetrics(SM_CXSCREEN) / 2, (float)GetSystemMetrics(SM_CYSCREEN)));
+                    SetNextWindowPos(ImVec2((float)GetSystemMetrics(SM_CXSCREEN) / 2, 0));
+                    break;
+                case(3):
+                    SetNextWindowSize(ImVec2((float)GetSystemMetrics(SM_CXSCREEN), (float)GetSystemMetrics(SM_CYSCREEN) / 2));
+                    SetNextWindowPos(ImVec2(0, 0));
+                    break;
+                case(4):
+                    SetNextWindowSize(ImVec2((float)GetSystemMetrics(SM_CXSCREEN), (float)GetSystemMetrics(SM_CYSCREEN) / 2));
+                    SetNextWindowPos(ImVec2(0, (float)GetSystemMetrics(SM_CYSCREEN) / 2));
+                    break;
+                case(5):
+                    SetNextWindowSize(ImVec2((float)GetSystemMetrics(SM_CXSCREEN) / 2, (float)GetSystemMetrics(SM_CYSCREEN) / 2));
+                    SetNextWindowPos(ImVec2(0, 0));
+                    break;
+                case(6):
+                    SetNextWindowSize(ImVec2((float)GetSystemMetrics(SM_CXSCREEN) / 2, (float)GetSystemMetrics(SM_CYSCREEN) / 2));
+                    SetNextWindowPos(ImVec2((float)GetSystemMetrics(SM_CXSCREEN) / 2, 0));
+                    break;
+                case(7):
+                    SetNextWindowSize(ImVec2((float)GetSystemMetrics(SM_CXSCREEN) / 2, (float)GetSystemMetrics(SM_CYSCREEN) / 2));
+                    SetNextWindowPos(ImVec2((float)GetSystemMetrics(SM_CXSCREEN) / 2, (float)GetSystemMetrics(SM_CYSCREEN) / 2));
+                    break;
+                case(8):
+                    SetNextWindowSize(ImVec2((float)GetSystemMetrics(SM_CXSCREEN) / 2, (float)GetSystemMetrics(SM_CYSCREEN) / 2));
+                    SetNextWindowPos(ImVec2(0, (float)GetSystemMetrics(SM_CYSCREEN) / 2));
+                    break;
+                case(9):
+                    SetNextWindowSize(ImVec2((float)GetSystemMetrics(SM_CXSCREEN) / 3, (float)GetSystemMetrics(SM_CYSCREEN)));
+                    SetNextWindowPos(ImVec2(0, 0));
+                    break;
+                case(10):
+                    SetNextWindowSize(ImVec2((float)GetSystemMetrics(SM_CXSCREEN) / 3, (float)GetSystemMetrics(SM_CYSCREEN)));
+                    SetNextWindowPos(ImVec2((float)GetSystemMetrics(SM_CXSCREEN) / 3, 0));
+                    break;
+                case(11):
+                    SetNextWindowSize(ImVec2((float)GetSystemMetrics(SM_CXSCREEN) / 3, (float)GetSystemMetrics(SM_CYSCREEN)));
+                    SetNextWindowPos(ImVec2(2 * (float)GetSystemMetrics(SM_CXSCREEN) / 3, 0));
+                    break;
+                case(12):
+                    SetNextWindowSize(ImVec2(2 * (float)GetSystemMetrics(SM_CXSCREEN) / 3, (float)GetSystemMetrics(SM_CYSCREEN)));
+                    SetNextWindowPos(ImVec2(0, 0));
+                    break;
+                case(13):
+                    SetNextWindowSize(ImVec2((float)GetSystemMetrics(SM_CXSCREEN) / 3, (float)GetSystemMetrics(SM_CYSCREEN) / 3));
+                    SetNextWindowPos(ImVec2(2 * (float)GetSystemMetrics(SM_CXSCREEN) / 3, 0));
+                    break;
+                case(14):
+                    SetNextWindowSize(ImVec2((float)GetSystemMetrics(SM_CXSCREEN) / 3, (float)GetSystemMetrics(SM_CYSCREEN) / 3));
+                    SetNextWindowPos(ImVec2(2 * (float)GetSystemMetrics(SM_CXSCREEN) / 3, (float)GetSystemMetrics(SM_CYSCREEN) / 3));
+                    break;
+                case(15):
+                    SetNextWindowSize(ImVec2((float)GetSystemMetrics(SM_CXSCREEN) / 3, (float)GetSystemMetrics(SM_CYSCREEN) / 3));
+                    SetNextWindowPos(ImVec2(2 * (float)GetSystemMetrics(SM_CXSCREEN) / 3, 2 * (float)GetSystemMetrics(SM_CYSCREEN) / 3));
+                    break;
+                case(16):
+                    SetNextWindowSize(ImVec2((float)GetSystemMetrics(SM_CXSCREEN) / 3, (float)GetSystemMetrics(SM_CYSCREEN) / 3));
+                    SetNextWindowPos(ImVec2(0, 0));
+                    break;
+                case(17):
+                    SetNextWindowSize(ImVec2((float)GetSystemMetrics(SM_CXSCREEN) / 3, (float)GetSystemMetrics(SM_CYSCREEN) / 3));
+                    SetNextWindowPos(ImVec2(0, (float)GetSystemMetrics(SM_CYSCREEN) / 3));
+                    break;
+                case(18):
+                    SetNextWindowSize(ImVec2((float)GetSystemMetrics(SM_CXSCREEN) / 3, (float)GetSystemMetrics(SM_CYSCREEN) / 3));
+                    SetNextWindowPos(ImVec2(0, 2 * (float)GetSystemMetrics(SM_CYSCREEN) / 3));
+                    break;
+                case(19):
+                    SetNextWindowSize(ImVec2(2 * (float)GetSystemMetrics(SM_CXSCREEN) / 3, (float)GetSystemMetrics(SM_CYSCREEN)));
+                    SetNextWindowPos(ImVec2((float)GetSystemMetrics(SM_CXSCREEN) / 3, 0));
+                    break;
+                case(20):
+                    SetNextWindowSize(ImVec2((float)GetSystemMetrics(SM_CXSCREEN), (float)GetSystemMetrics(SM_CYSCREEN) / 3));
+                    SetNextWindowPos(ImVec2(0, 0));
+                    break;
+                case(21):
+                    SetNextWindowSize(ImVec2((float)GetSystemMetrics(SM_CXSCREEN), (float)GetSystemMetrics(SM_CYSCREEN) / 3));
+                    SetNextWindowPos(ImVec2(0, (float)GetSystemMetrics(SM_CYSCREEN) / 3));
+                    break;
+                case(22):
+                    SetNextWindowSize(ImVec2((float)GetSystemMetrics(SM_CXSCREEN), (float)GetSystemMetrics(SM_CYSCREEN) / 3));
+                    SetNextWindowPos(ImVec2(0, 2 * (float)GetSystemMetrics(SM_CYSCREEN) / 3));
+                    break;
+                case(23):
+                    SetNextWindowSize(ImVec2((float)GetSystemMetrics(SM_CXSCREEN), 2 * (float)GetSystemMetrics(SM_CYSCREEN) / 3));
+                    SetNextWindowPos(ImVec2(0, 0));
+                    break;
+                case(24):
+                    SetNextWindowSize(ImVec2((float)GetSystemMetrics(SM_CXSCREEN) / 3, (float)GetSystemMetrics(SM_CYSCREEN) / 3));
+                    SetNextWindowPos(ImVec2(0, 2 * (float)GetSystemMetrics(SM_CYSCREEN) / 3));
+                    break;
+                case(25):
+                    SetNextWindowSize(ImVec2((float)GetSystemMetrics(SM_CXSCREEN) / 3, (float)GetSystemMetrics(SM_CYSCREEN) / 3));
+                    SetNextWindowPos(ImVec2((float)GetSystemMetrics(SM_CXSCREEN) / 3, 2 * (float)GetSystemMetrics(SM_CYSCREEN) / 3));
+                    break;
+                case(26):
+                    SetNextWindowSize(ImVec2((float)GetSystemMetrics(SM_CXSCREEN) / 3, (float)GetSystemMetrics(SM_CYSCREEN) / 3));
+                    SetNextWindowPos(ImVec2(2 * (float)GetSystemMetrics(SM_CXSCREEN) / 3, 2 * (float)GetSystemMetrics(SM_CYSCREEN) / 3));
+                    break;
+                case(27):
+                    SetNextWindowSize(ImVec2((float)GetSystemMetrics(SM_CXSCREEN) / 3, (float)GetSystemMetrics(SM_CYSCREEN) / 3));
+                    SetNextWindowPos(ImVec2(0, 0));
+                    break;
+                case(28):
+                    SetNextWindowSize(ImVec2((float)GetSystemMetrics(SM_CXSCREEN) / 3, (float)GetSystemMetrics(SM_CYSCREEN) / 3));
+                    SetNextWindowPos(ImVec2((float)GetSystemMetrics(SM_CXSCREEN) / 3, 0));
+                    break;
+                case(29):
+                    SetNextWindowSize(ImVec2((float)GetSystemMetrics(SM_CXSCREEN) / 3, (float)GetSystemMetrics(SM_CYSCREEN) / 3));
+                    SetNextWindowPos(ImVec2(2 * (float)GetSystemMetrics(SM_CXSCREEN) / 3, 0));
+                    break;
+                case(30):
+                    SetNextWindowSize(ImVec2((float)GetSystemMetrics(SM_CXSCREEN), 2 * (float)GetSystemMetrics(SM_CYSCREEN) / 3));
+                    SetNextWindowPos(ImVec2(0, (float)GetSystemMetrics(SM_CYSCREEN) / 3));
+                    break;
+                }
+                node->WantSnapToggle = false;
+            }
+
+
+
+
 
             // Sync Collapsed
             if (node->AuthorityForSize == ImGuiDataAuthority_Window && ref_window)
@@ -18494,30 +18803,34 @@ static void ImGui::DockNodeUpdateTabBar(ImGuiDockNode* node, ImGuiWindow* host_w
             PopItemFlag();
         }
     }
+
+    bool want_snap;
+    int snap_option;
+    if (node->OnParent) {
+        node->TopMostParentNode = node->ParentNode;
+        while (node->TopMostParentNode->ParentNode != NULL) {
+            node->TopMostParentNode = node->TopMostParentNode->ParentNode;
+        }
+    }
     if (fullscreen_button_is_visible) {
-        if (FullscreenButtonForNode(host_window->GetID("#FULLSCREEN"), close_button_pos - ImVec2(g.FontSize, 0), node))     // main fullscreen button when docked
-        {
-            if (!node->OnParent) {
-                node->IsFullscreen = !node->IsFullscreen;
-                if (!node->IsFullscreen) node->IsFullscreenEnded = true;
-                else {
-                    node->OriginalPos = node->Pos;
-                    node->OriginalSize = node->Size;
-                }
+        if (FullscreenButtonForNode(host_window->GetID("#FULLSCREEN"), close_button_pos - ImVec2(g.FontSize, 0), node, &want_snap, &snap_option))     // main fullscreen button when docked
+        {  
+            if (node->OnParent) {
+                node->TopMostParentNode->WantFullscreenToggle = true;
             }
             else {
-                node->TopMostParentNode = node->ParentNode;
-                while (node->TopMostParentNode->ParentNode != NULL) {
-                    node->TopMostParentNode = node->TopMostParentNode->ParentNode;
-                }
-                node->TopMostParentNode->IsFullscreen = !node->TopMostParentNode->IsFullscreen;
-                if (!node->TopMostParentNode->IsFullscreen) node->TopMostParentNode->IsFullscreenEnded = true;
-                else {
-                    node->TopMostParentNode->OriginalPos = node->TopMostParentNode->Pos;
-                    node->TopMostParentNode->OriginalSize = node->TopMostParentNode->Size;
-                }
+                node->WantFullscreenToggle = true;
             }
         }
+        if (node->OnParent) {
+            node->TopMostParentNode->WantSnapToggle = want_snap;
+            node->TopMostParentNode->SnapOption = snap_option;
+        }
+        else {
+            node->WantSnapToggle = want_snap;
+            node->SnapOption = snap_option;
+        }
+       
     }
 
 
@@ -18927,7 +19240,7 @@ static void ImGui::DockNodePreviewDockRender(ImGuiWindow* host_window, ImGuiDock
                 if (!tab_bar_rect.Contains(tab_bb))
                     overlay_draw_lists[overlay_n]->PushClipRect(tab_bar_rect.Min, tab_bar_rect.Max);
                 TabItemBackground(overlay_draw_lists[overlay_n], tab_bb, tab_flags, overlay_col_tabs);
-                TabItemLabelAndCloseButton(overlay_draw_lists[overlay_n], tab_bb, tab_flags, g.Style.FramePadding, payload_window->Name, 0, 0, false, NULL, NULL, 0, 0);
+                TabItemLabelAndCloseButton(overlay_draw_lists[overlay_n], tab_bb, tab_flags, g.Style.FramePadding, payload_window->Name, 0, 0, false, NULL, NULL, 0, 0, payload_window);
                 if (!tab_bar_rect.Contains(tab_bb))
                     overlay_draw_lists[overlay_n]->PopClipRect();
             }
