@@ -767,8 +767,10 @@ int imgui_main(int, char**)
 
 			ImGui::SetNextItemWidth(200.0f);
 			uint64_t totalStep = bufferNo * KERNEL.steps + particleStep;
-			std::string bufferStepText = "Buffer step" + (continuousComputingEnabled ? " (total " + std::to_string(totalStep) + " steps, T = " + std::to_string(totalStep * stepSize) + ")" : "");
-			ImGui::DragInt((bufferStepText + "##Buffer step").c_str(), &(particleStep), 1.0f, 0, KERNEL.steps);
+			std::string bufferStepText = "Buffer step" + (continuousComputingEnabled ? " (total " + std::to_string(totalStep) + " steps, T = " + std::to_string(totalStep * stepSize) + ")" : "");		
+			ImGui::DragInt("##Buffer step", &(particleStep), 1.0f, 0, KERNEL.steps);
+			ImGui::SameLine();
+			ImGui::Text(bufferStepText.c_str());
 
 			if (ImGui::Button("Reset to step 0")) particleStep = 0;
 
