@@ -15,10 +15,10 @@ __host__ __device__ void Period(Computation* data, uint64_t variation, void(*fin
 #endif
 
     uint64_t stepStart = variationStart;
-    long long s = -1;
     numb variablesPrev[MAX_ATTRIBUTES]{ 0 }, variablesCurr[MAX_ATTRIBUTES]{ 0 }; // variables will store "next" values, variablesPrev – "prev", variablesCurr – "curr"
     // When using hi-res (with no trajectory buffer available), one trajectory steps is precomputed, making first "prev" and "curr" values
     // Each next computed step will be a "next" one
+    int s = 0;
     for (int v = 0; v < varCount; v++) variablesPrev[v] = variables[v];
     NORMAL_STEP_IN_ANALYSIS_IF_HIRES;
     for (int v = 0; v < varCount; v++) variablesCurr[v] = variables[v];
@@ -54,17 +54,19 @@ __host__ __device__ void Period(Computation* data, uint64_t variation, void(*fin
     numb sumPeak = 0, sumInterval = 0; // the sums of counted peaks and intervals for meanPeak and meanInterval analysis
     
     //  Peak finder
-    for (int i = 1; i < (variationSize / varCount) - 1 /* && peakCount < MAX_PEAKS*/; i++)
+    for (s = 1; s < (variationSize / varCount)/* - 1*/ /* && peakCount < MAX_PEAKS*/; s++)
     {
         NORMAL_STEP_IN_ANALYSIS_IF_HIRES;
+
+        if (s == (variationSize / varCount) - 1) continue;
 
         numb prev, curr, next;
 
         if (!data->isHires)
         {
-            prev = computedVariation[analysedVariable + varCount * i - varCount];
-            curr = computedVariation[analysedVariable + varCount * i];
-            next = computedVariation[analysedVariable + varCount * i + varCount];
+            prev = computedVariation[analysedVariable + varCount * s - varCount];
+            curr = computedVariation[analysedVariable + varCount * s];
+            next = computedVariation[analysedVariable + varCount * s + varCount];
         }
         else
         {
@@ -102,23 +104,23 @@ __host__ __device__ void Period(Computation* data, uint64_t variation, void(*fin
                 if (firstpeakreached == false)
                 {
                     firstpeakreached = true;
-                    temppeakindex = (float)i;
+                    temppeakindex = (float)s;
                 }
                 else
                 {
                     if (WritingData) {
                         peakAmplitudes[peakCount] = curr;
-                        peakIntervals[peakCount] = (i - temppeakindex) * stepSize;
+                        peakIntervals[peakCount] = (s - temppeakindex) * stepSize;
                         sumPeak += peakAmplitudes[peakCount];
                         sumInterval += peakIntervals[peakCount];
                         peakCount++;
                     }
                    
-                    temppeakindex = (float)i;
+                    temppeakindex = (float)s;
                 }
             }
             else if (curr == next && curr > prev) { // found a possible peak solved as a line by finiteDifferenceScheme
-                tempPeakFound = true; tempPeakAmp = curr; tempPeakTime = i;
+                tempPeakFound = true; tempPeakAmp = curr; tempPeakTime = s;
             }
             else if (curr < next) {    // case in which the line was likely not a peak
                 tempPeakFound = false;

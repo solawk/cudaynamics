@@ -48,6 +48,6 @@ void hiresComputationSetup()
     computationHires.ready = false;
     computationHires.isFirst = true;
     computationHires.mapIndex = hiresIndex;
-    computationHires.marshal.kernel.mapWeight = 0.0f;
+    computationHires.marshal.kernel.mapWeight = 1.0f;
     computationHires.threadsPerBlock = 32;
 }

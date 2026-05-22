@@ -444,8 +444,10 @@ void setDecayed(Computation* data, uint64_t v, numb val, numb life)
 {
     CUDA_marshal.indecesDecay[v] = val;
 
-    if (isnan(CUDA_marshal.indecesDecayLifetime[v]))
+    if (val > 0)
         CUDA_marshal.indecesDecayLifetime[v] = life;
+    else
+        CUDA_marshal.indecesDecayLifetime[v] = NAN;
 }
 
 void indexDecayPostprocessing(Computation* data, int buffer)
@@ -473,12 +475,15 @@ void indexDecayPostprocessing(Computation* data, int buffer)
         int thresholdCount = (int)settings->thresholds.size();
         int bufferNo = buffer < 0 ? data->bufferNo : buffer;
         numb lifetime = CUDA_kernel.usingTime ? (bufferNo + 1) * CUDA_kernel.time + CUDA_kernel.transientTime : (bufferNo + 1) * CUDA_kernel.steps + CUDA_kernel.transientSteps;
+        numb previousDecay, finalDecay;
 
         if (bufferNo >= (settings->source == DTS_Index ? -2 : 1) && port->used)
         {
-#pragma omp parallel for
             for (int64_t v = indexStart; v < indexEnd; v++)
             {
+                previousDecay = CUDA_marshal.indecesDecay[v];
+                finalDecay = 0; // Final decay for the variation in this processing
+
                 for (int t = 0; t < thresholdCount; t++)
                 {
                     numb decayValue = (numb)(t + 1);
@@ -486,25 +491,27 @@ void indexDecayPostprocessing(Computation* data, int buffer)
                     switch (settings->mode)
                     {
                     case DTM_Less:
-                        if (settings->source == DTS_Index && CUDA_marshal.maps[v] < settings->thresholds[t] && CUDA_marshal.indecesDecay[v] < decayValue)
-                            setDecayed(data, v, decayValue, lifetime);
-                        if (settings->source == DTS_Delta && CUDA_marshal.indecesDelta[v] < settings->thresholds[t] && CUDA_marshal.indecesDecay[v] < decayValue)
-                            setDecayed(data, v, decayValue, lifetime);
+                        if (settings->source == DTS_Index && CUDA_marshal.maps[v] < settings->thresholds[t])
+                            finalDecay = decayValue;
+                        if (settings->source == DTS_Delta && CUDA_marshal.indecesDelta[v] < settings->thresholds[t])
+                            finalDecay = decayValue;
                         break;
                     case DTM_More:
-                        if (settings->source == DTS_Index && CUDA_marshal.maps[v] > settings->thresholds[t] && CUDA_marshal.indecesDecay[v] < decayValue)
-                            setDecayed(data, v, decayValue, lifetime);
-                        if (settings->source == DTS_Delta && CUDA_marshal.indecesDelta[v] > settings->thresholds[t] && CUDA_marshal.indecesDecay[v] < decayValue)
-                            setDecayed(data, v, decayValue, lifetime);
+                        if (settings->source == DTS_Index && CUDA_marshal.maps[v] > settings->thresholds[t])
+                            finalDecay = decayValue;
+                        if (settings->source == DTS_Delta && CUDA_marshal.indecesDelta[v] > settings->thresholds[t])
+                            finalDecay = decayValue;
                         break;
                     case DTM_Abs_More:
-                        if (settings->source == DTS_Index && abs(CUDA_marshal.maps[v]) > settings->thresholds[t] && CUDA_marshal.indecesDecay[v] < decayValue)
-                            setDecayed(data, v, decayValue, lifetime);
-                        if (settings->source == DTS_Delta && abs(CUDA_marshal.indecesDelta[v]) > settings->thresholds[t] && CUDA_marshal.indecesDecay[v] < decayValue)
-                            setDecayed(data, v, decayValue, lifetime);
+                        if (settings->source == DTS_Index && abs(CUDA_marshal.maps[v]) > settings->thresholds[t])
+                            finalDecay = decayValue;
+                        if (settings->source == DTS_Delta && abs(CUDA_marshal.indecesDelta[v]) > settings->thresholds[t])
+                            finalDecay = decayValue;
                         break;
                     }
                 }
+
+                if (finalDecay != previousDecay) setDecayed(data, v, finalDecay, lifetime);
             }
         }
     }

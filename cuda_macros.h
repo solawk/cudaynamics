@@ -99,7 +99,7 @@
                         else for (int i = 0; i < CUDA_kernel.VAR_COUNT; i++) \
                         {   \
                             variables[i] = variablesNext[i];    \
-                            if (s == CUDA_kernel.steps - 1) CUDA_marshal.variableInits[variation * CUDA_kernel.VAR_COUNT + i] = variables[i];   \
+                            if (s == CUDA_kernel.steps - 1) CUDA_marshal.variableInits[variation * CUDA_kernel.VAR_COUNT + i] = variables[i];  \
                         }
 
 #define NORMAL_STEP_IN_ANALYSIS_IF_HIRES    if (data->isHires) { finiteDifferenceScheme(FDS_ARGUMENTS); RECORD_STEP; }
