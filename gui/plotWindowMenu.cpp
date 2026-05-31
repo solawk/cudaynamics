@@ -11,6 +11,7 @@ void plotWindowMenu_MetricPlot(PlotWindow* window);
 void plotWindowMenu_SeriesPlot(PlotWindow* window);
 void plotWindowMenu_IndSeriesPlot(PlotWindow* window);
 
+PlotWindow* lastExportedWindow = nullptr;
 extern bool enabledParticles;
 extern bool autofitHeatmap;
 extern PlotWindow* colorsLUTfrom;
@@ -94,124 +95,8 @@ void plotWindowMenu_File(PlotWindow* window)
 	{
 		if (ImGui::MenuItem("Export to .csv", nullptr, false, true))
 		{
-			std::string savedPath;
-			bool attempted = false; 
-
-			switch (window->type)
-			{
-				// === HEATMAP (LLE / MAX / ...) ===
-			case Heatmap:
-			{
-				const bool isHires = window->isTheHiresWindow(hiresIndex);
-				const HeatmapProperties* heatmap = isHires ? &window->hireshmp : &window->hmp;
-				Kernel* krnl = isHires ? &kernelHiresComputed : &(KERNEL);
-
-				const int valuesCount = isHires ? window->hireshmp.lastBufferSize
-					: window->hmp.lastBufferSize;
-				if (!heatmap->values.valueBuffer) {
-					MessageBoxA(NULL, "Export failed: Heatmap buffer is null.", "Export", MB_OK | MB_ICONERROR);
-					break;
-				}
-				if (valuesCount <= 0) {
-					MessageBoxA(NULL, "Export failed: Heatmap buffer is empty.", "Export", MB_OK | MB_ICONERROR);
-					break;
-				}
-				if (window->variables.empty()) {
-					MessageBoxA(NULL, "Export failed: no map selected (window->variables is empty).", "Export", MB_OK | MB_ICONERROR);
-					break;
-				}
-				const AnalysisIndex mapIdx = (AnalysisIndex)window->variables[0];
-				if (mapIdx < 0 || mapIdx >= indices.size()) {
-					MessageBoxA(NULL, "Export failed: map index out of range.", "Export", MB_OK | MB_ICONERROR);
-					break;
-				}
-
-				HeatmapSizing sizing;
-				sizing.loadPointers(krnl, const_cast<HeatmapProperties*>(heatmap));
-				sizing.initValues();
-
-				const std::string mapName = indices[mapIdx].name;
-				savedPath = exportHeatmapCSV(mapName, sizing, heatmap);
-				attempted = true;
-				break;
-			}
-
-			// === TIME SERIES ===
-			case VarSeries:
-			{
-				savedPath = exportTimeSeriesCSV(window);
-				attempted = true;
-				break;
-			}
-
-			case Decay:
-			{
-				savedPath = exportDecayCSV(window);
-				attempted = true;
-				break;
-			}
-
-			case Orbit:
-			{
-				savedPath = exportOrbitCSV(window);
-				attempted = true;
-				break;
-			}
-
-			case IndSeries:
-			{
-				savedPath = exportIndicesSeriesCSV(window);
-				attempted = true;
-				break;
-			}
-
-			case Phase2D:
-			{
-				savedPath = exportPhase2DCSV(window);
-				attempted = true;
-				break;
-			}
-
-			case Phase:
-			{
-				savedPath = exportPhase3DCSV(window);
-				attempted = true;
-				break;
-			}
-
-			case MCHeatmap:
-			{
-				savedPath = exportMCHeatmapCSV(window);
-
-
-				attempted = true;
-				break;
-			}
-
-			case Metric:
-			{
-				savedPath = exportMetricCSV(window);
-				attempted = true;
-				break;
-			}
-
-			default:
-			{
-				MessageBoxA(NULL, "Export not supported for this plot type.", "Export", MB_OK | MB_ICONWARNING);
-				break;
-			}
-			}
-
-			// Single notification block for success
-			if (attempted) {
-				if (!savedPath.empty()) {
-					std::string msg = "CSV saved to:\n" + savedPath;
-					MessageBoxA(NULL, msg.c_str(), "Export", MB_OK | MB_ICONINFORMATION);
-				}
-				else {
-					MessageBoxA(NULL, "Export failed (empty data or I/O error).", "Export", MB_OK | MB_ICONERROR);
-				}
-			}
+			exportWindow(window);
+			lastExportedWindow = window;
 		}
 
 		ImGui::EndMenu();
@@ -648,5 +533,127 @@ void plotWindowMenu_IndSeriesPlot(PlotWindow* window) {
 		ImGui::Checkbox("Show multiple axes", &window->ShowMultAxes);
 
 		ImGui::EndMenu();
+	}
+}
+
+void exportWindow(PlotWindow* window)
+{
+	std::string savedPath;
+	bool attempted = false;
+
+	switch (window->type)
+	{
+		// === HEATMAP (LLE / MAX / ...) ===
+	case Heatmap:
+	{
+		const bool isHires = window->isTheHiresWindow(hiresIndex);
+		const HeatmapProperties* heatmap = isHires ? &window->hireshmp : &window->hmp;
+		Kernel* krnl = isHires ? &kernelHiresComputed : &(KERNEL);
+
+		const int valuesCount = isHires ? window->hireshmp.lastBufferSize
+			: window->hmp.lastBufferSize;
+		if (!heatmap->values.valueBuffer) {
+			MessageBoxA(NULL, "Export failed: Heatmap buffer is null.", "Export", MB_OK | MB_ICONERROR);
+			break;
+		}
+		if (valuesCount <= 0) {
+			MessageBoxA(NULL, "Export failed: Heatmap buffer is empty.", "Export", MB_OK | MB_ICONERROR);
+			break;
+		}
+		if (window->variables.empty()) {
+			MessageBoxA(NULL, "Export failed: no map selected (window->variables is empty).", "Export", MB_OK | MB_ICONERROR);
+			break;
+		}
+		const AnalysisIndex mapIdx = (AnalysisIndex)window->variables[0];
+		if (mapIdx < 0 || mapIdx >= indices.size()) {
+			MessageBoxA(NULL, "Export failed: map index out of range.", "Export", MB_OK | MB_ICONERROR);
+			break;
+		}
+
+		HeatmapSizing sizing;
+		sizing.loadPointers(krnl, const_cast<HeatmapProperties*>(heatmap));
+		sizing.initValues();
+
+		const std::string mapName = indices[mapIdx].name;
+		savedPath = exportHeatmapCSV(mapName, sizing, heatmap);
+		attempted = true;
+		break;
+	}
+
+	// === TIME SERIES ===
+	case VarSeries:
+	{
+		savedPath = exportTimeSeriesCSV(window);
+		attempted = true;
+		break;
+	}
+
+	case Decay:
+	{
+		savedPath = exportDecayCSV(window);
+		attempted = true;
+		break;
+	}
+
+	case Orbit:
+	{
+		savedPath = exportOrbitCSV(window);
+		attempted = true;
+		break;
+	}
+
+	case IndSeries:
+	{
+		savedPath = exportIndicesSeriesCSV(window);
+		attempted = true;
+		break;
+	}
+
+	case Phase2D:
+	{
+		savedPath = exportPhase2DCSV(window);
+		attempted = true;
+		break;
+	}
+
+	case Phase:
+	{
+		savedPath = exportPhase3DCSV(window);
+		attempted = true;
+		break;
+	}
+
+	case MCHeatmap:
+	{
+		savedPath = exportMCHeatmapCSV(window);
+
+
+		attempted = true;
+		break;
+	}
+
+	case Metric:
+	{
+		savedPath = exportMetricCSV(window);
+		attempted = true;
+		break;
+	}
+
+	default:
+	{
+		MessageBoxA(NULL, "Export not supported for this plot type.", "Export", MB_OK | MB_ICONWARNING);
+		break;
+	}
+	}
+
+	// Single notification block for success
+	if (attempted) {
+		if (!savedPath.empty()) {
+			std::string msg = "CSV saved to:\n" + savedPath;
+			MessageBoxA(NULL, msg.c_str(), "Export", MB_OK | MB_ICONINFORMATION);
+		}
+		else {
+			MessageBoxA(NULL, "Export failed (empty data or I/O error).", "Export", MB_OK | MB_ICONERROR);
+		}
 	}
 }
