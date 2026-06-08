@@ -61,8 +61,8 @@ void heatmapRangingSelection(PlotWindow* window, ImPlotPlot* plot, HeatmapSizing
 void hiresShiftClickCompute();
 
 extern ApplicationSettings applicationSettings;
-
 extern Kernel kernelNew;
+extern PlotWindow* lastExportedWindow;
 
 
 #define DONT_CLOSE_ON_CLICK_PUSH	ImGui::PushItemFlag(ImGuiItemFlags_AutoClosePopups, false);

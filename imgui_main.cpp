@@ -531,6 +531,14 @@ int imgui_main(int, char**)
 
 		if (particleStep > computedSteps) particleStep = computedSteps;
 
+		// KEY PRESSES
+
+		if (io.KeyCtrl && io.KeyShift && ImGui::IsKeyPressed(ImGuiKey_E, false))
+		{
+			if (lastExportedWindow != nullptr)
+				exportWindow(lastExportedWindow);
+		}
+
 		// MAIN WINDOW
 
 		style.WindowMenuButtonPosition = ImGuiDir_Left;
