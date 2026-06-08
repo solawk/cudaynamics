@@ -1,5 +1,7 @@
 #include "mainWindowMenu.h"
 
+extern bool captureLifeend;
+
 void mainWindowMenu()
 {
 	if (ImGui::BeginMenuBar())
@@ -144,6 +146,9 @@ void mainWindowMenu()
             ImGui::Checkbox("Calculate delta and decay", &tempCalcDeltaDecay);
             TOOLTIP("Calculate index delta and decay maps");
             applicationSettings.calculateDeltaDecay = tempCalcDeltaDecay;
+
+            ImGui::Checkbox("EXP: Display lifeend", &captureLifeend);
+            TOOLTIP("Experimental: Capture and display lifeend trajectories");
 
             ImGui::EndMenu();
         }

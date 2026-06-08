@@ -109,6 +109,11 @@ std::set<int> selectedPlotMapDecay;
 	selectedPlotMapMetric = 0; \
 	selectedPlotMapDecay.clear();
 
+// Lifeend trajectories
+bool captureLifeend = false;
+numb* lifeendTrajectories = nullptr;
+bool* lifeendFlags = nullptr;
+
 void deleteBuffers(bool deleteHires)
 {
 	if (!deleteHires)
@@ -183,6 +188,42 @@ int asyncComputation()
 		plotWindows[i].hmp.initClickedLocation = true;
 		plotWindows[i].hmp.areValuesDirty = true;
 		plotWindows[i].hireshmp.areValuesDirty = true;
+	}
+
+	// Lifeend
+	if (captureLifeend)
+	{
+		int variations = computations[bufferToFillIndex].marshal.totalVariations;
+		int variationSize = computations[bufferToFillIndex].marshal.variationSize;
+
+		if (lifeendTrajectories == nullptr)
+		{
+			lifeendFlags = new bool[variations];
+			for (int v = 0; v < variations; v++) lifeendFlags[v] = false;
+			lifeendTrajectories = new numb[variations * variationSize];
+		}
+
+		//numb lifetime = computations[bufferToFillIndex].marshal.kernel.usingTime ? (bufferNo + 1) * computations[bufferToFillIndex].marshal.kernel.time + computations[bufferToFillIndex].marshal.kernel.transientTime :
+		//	(bufferNo + 1) * computations[bufferToFillIndex].marshal.kernel.steps + computations[bufferToFillIndex].marshal.kernel.transientSteps;
+
+		for (int v = 0; v < variations; v++)
+			for (unsigned int m = 0; m < computations[bufferToFillIndex].marshal.totalMapValuesPerVariation; m++)
+			{
+				if (!isnan(computations[bufferToFillIndex].marshal.indecesDecayLifetime[m * variations + v]))
+				{
+					printf("ended %i because lifetime was %f\n", v, computations[bufferToFillIndex].marshal.indecesDecayLifetime[m * variations + v]);
+					lifeendFlags[v] = true;
+					memcpy(&(lifeendTrajectories[v * variationSize]), &(computations[bufferToFillIndex].marshal.trajectory[v * variationSize]), variationSize * sizeof(numb));
+				}
+			}
+	}
+	else
+	{
+		if (lifeendTrajectories != nullptr)
+		{
+			delete[] lifeendTrajectories; lifeendTrajectories = nullptr;
+			delete[] lifeendFlags; lifeendFlags = nullptr;
+		}
 	}
 
 	if (continuousComputingEnabled) bufferToFillIndex = 1 - bufferToFillIndex;
@@ -1779,6 +1820,12 @@ int imgui_main(int, char**)
 							{
 								numb* computedVariation =
 									computations[playedBufferIndex].marshal.trajectory + (computations[playedBufferIndex].marshal.variationSize * (window->drawAllTrajectories ? drawnVariation : variation));
+
+								bool drawingLifeend = captureLifeend && window->drawAllTrajectories && lifeendFlags != nullptr && lifeendFlags[drawnVariation] == true;
+								if (drawingLifeend)
+								{
+									computedVariation = &(lifeendTrajectories[computations[playedBufferIndex].marshal.variationSize * drawnVariation]);
+								}
 								
 								switch (subtype)
 								{
@@ -1800,6 +1847,7 @@ int imgui_main(int, char**)
 										clr.w = window->plotColor.w;
 										ImPlot::SetNextLineStyle(clr);
 									}
+									if (drawingLifeend) ImPlot::SetNextLineStyle(ImVec4(1.0f, 1.0f, 1.0f, window->plotColor.w));
 									ImPlot::PlotLine(plotName.c_str(),
 										subtype == Phase3D ? &(dataBuffer[0]) : &(computedVariation[window->variables[0]]),
 										subtype == Phase3D ? &(dataBuffer[1]) : &(computedVariation[window->variables[1]]),
@@ -2299,6 +2347,8 @@ int imgui_main(int, char**)
 						if (ImGui::RadioButton(("Delta##DTSDelta" + plotName + "for" + std::to_string(i)).c_str(), indices[(AnalysisIndex)i].decay.source == DTS_Delta)) indices[(AnalysisIndex)i].decay.source = DTS_Delta;
 
 						ImGui::Text("Mode:"); ImGui::SameLine();
+						if (ImGui::RadioButton(("X##DTMDisabled" + plotName + "for" + std::to_string(i)).c_str(), indices[(AnalysisIndex)i].decay.mode == DTM_Disabled)) indices[(AnalysisIndex)i].decay.mode = DTM_Disabled;
+						ImGui::SameLine();
 						if (ImGui::RadioButton(("Less than##DTMLess" + plotName + "for" + std::to_string(i)).c_str(), indices[(AnalysisIndex)i].decay.mode == DTM_Less)) indices[(AnalysisIndex)i].decay.mode = DTM_Less;
 						ImGui::SameLine();
 						if (ImGui::RadioButton(("More than##DTMMore" + plotName + "for" + std::to_string(i)).c_str(), indices[(AnalysisIndex)i].decay.mode == DTM_More)) indices[(AnalysisIndex)i].decay.mode = DTM_More;

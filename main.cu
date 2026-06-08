@@ -472,6 +472,7 @@ void indexDecayPostprocessing(Computation* data, int buffer)
         int indexStart = port->offset * CUDA_marshal.totalVariations;
         int indexEnd = indexStart + indexPair.second.size * CUDA_marshal.totalVariations;
         DecaySettings* settings = &(indexPair.second.decay);
+        if (settings->mode == DTM_Disabled) continue;
         int thresholdCount = (int)settings->thresholds.size();
         int bufferNo = buffer < 0 ? data->bufferNo : buffer;
         numb lifetime = CUDA_kernel.usingTime ? (bufferNo + 1) * CUDA_kernel.time + CUDA_kernel.transientTime : (bufferNo + 1) * CUDA_kernel.steps + CUDA_kernel.transientSteps;
@@ -511,6 +512,7 @@ void indexDecayPostprocessing(Computation* data, int buffer)
                     }
                 }
 
+                if (finalDecay > 0) printf("var %i maps %f value %f\n", v, CUDA_marshal.maps[v], finalDecay);
                 if (finalDecay != previousDecay) setDecayed(data, v, finalDecay, lifetime);
             }
         }
