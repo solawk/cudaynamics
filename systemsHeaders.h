@@ -25,11 +25,12 @@
 #include "systems/mixed/mixed.h"
 #include "systems/ostrovskii/ostrovskii.h"
 #include "systems/khanov/khanov.h"
+#include "systems/khanov_mod/khanov_mod.h"
 #include "systems/hodgkin_huxley/hodgkin_huxley.h"
 #include "systems/sang26/sang26.h"
 #include "systems/pala_machaczek/pala_machaczek.h"
 #include "systems/ullah/ullah.h"
 #include "systems/resonate_and_fire/resonate_and_fire.h"
 #include "systems/de_pitta/de_pitta.h"
-
 #include "systems/hyperchaotic/hyperchaotic.h"
+#include "systems/henon_heiles/henon_heiles.h"

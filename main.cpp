@@ -36,15 +36,17 @@ void common_main()
     addKernel(mixed);
     addKernel(ostrovskii);
     addKernel(khanov);
+    addKernel(khanov_mod);
     addKernel(hodgkin_huxley);
     addKernel(sang26);
     addKernel(pala_machaczek);
     addKernel(ullah);
     addKernel(resonate_and_fire);
     addKernel(de_pitta);
+    addKernel(henon_heiles);
+    addKernel(hyperchaotic);
 
     //selectKernel(kernels.begin()->first);
-    addKernel(hyperchaotic);
     selectKernel(lorenz);
 
     // Indices

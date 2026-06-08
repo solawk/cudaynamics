@@ -259,6 +259,8 @@
     <ClInclude Include="computations.h" />
     <ClInclude Include="standalone\standalone_utils.h" />
     <ClInclude Include="systemsHeaders.h" />
+    <ClInclude Include="systems\henon_heiles\henon_heiles.h" />
+    <ClInclude Include="systems\khanov_mod\khanov_mod.h" />
     <ClInclude Include="variationSteps.h" />
   </ItemGroup>
   <ItemGroup>
@@ -268,6 +270,7 @@
     <CudaCompile Include="analysis\period\period.cu" />
     <CudaCompile Include="analysis\phaseVolume\phaseVolume.cu" />
     <CudaCompile Include="gpu_variation.cu" />
+    <CudaCompile Include="systems\henon_heiles\henon_heiles.cu" />
     <CudaCompile Include="systems\hyperchaotic\hyperchaotic.cu" />
     <CudaCompile Include="systems\bolshakov\bolshakov.cu" />
     <CudaCompile Include="systems\chen_lee\chen_lee.cu" />
@@ -282,6 +285,7 @@
     <CudaCompile Include="systems\jj_mcrls\jj_mcrls.cu" />
     <CudaCompile Include="systems\jj_rcls\jj_rcls.cu" />
     <CudaCompile Include="systems\khanov\khanov.cu" />
+    <CudaCompile Include="systems\khanov_mod\khanov_mod.cu" />
     <CudaCompile Include="systems\langford\langford.cu" />
     <CudaCompile Include="systems\lorenz84\lorenz84.cu" />
     <CudaCompile Include="systems\lorenzVar\lorenzVar.cu" />
@@ -307,6 +311,10 @@
   </ItemGroup>
   <ItemGroup>
     <Image Include="icon.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="systems\henon_heiles\henon_heiles.txt" />
+    <Text Include="systems\khanov_mod\khanov_mod.txt" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

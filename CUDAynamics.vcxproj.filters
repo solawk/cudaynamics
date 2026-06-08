@@ -290,6 +290,8 @@
     <ClInclude Include="gui\hwnd.h" />
     <ClInclude Include="gui\ui_strings.h" />
     <ClInclude Include="perthread_struct.h" />
+    <ClInclude Include="systems\henon_heiles\henon_heiles.h" />
+    <ClInclude Include="systems\khanov_mod\khanov_mod.h" />
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="main.cu" />
@@ -397,11 +399,17 @@
     <CudaCompile Include="systems\resonate_and_fire\resonate_and_fire.cu" />
     <CudaCompile Include="systems\khanov\khanov.cu" />
     <CudaCompile Include="systems\de_pitta\de_pitta.cu" />
+    <CudaCompile Include="systems\henon_heiles\henon_heiles.cu" />
+    <CudaCompile Include="systems\khanov_mod\khanov_mod.cu" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="CUDAynamics.rc" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="icon.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="systems\henon_heiles\henon_heiles.txt" />
+    <Text Include="systems\khanov_mod\khanov_mod.txt" />
   </ItemGroup>
 </Project>
