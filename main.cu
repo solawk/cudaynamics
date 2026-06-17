@@ -512,7 +512,7 @@ void indexDecayPostprocessing(Computation* data, int buffer)
                     }
                 }
 
-                if (finalDecay > 0) printf("var %i maps %f value %f\n", v, CUDA_marshal.maps[v], finalDecay);
+                //if (finalDecay > 0) printf("var %i maps %f value %f\n", v, CUDA_marshal.maps[v], finalDecay);
                 if (finalDecay != previousDecay) setDecayed(data, v, finalDecay, lifetime);
             }
         }

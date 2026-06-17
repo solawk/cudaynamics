@@ -11,7 +11,7 @@ namespace attributes
 		// Tunnel diode
 		Is, Vt, Vp, Ip, Iv, D, E, Vq, sq,
 		// Volatile memristor
-		Ron_p, Ron_n, Vth_p, Vh_p, Vth_n, Vh_n, tau_s, tau_r, Vs, Vr, A, Ds, Dr, Ilk, 
+		Ron_p, Ron_n, Roff_p, Vth_p, Vh_p, Vth_n, Vh_n, tau_s, tau_r, Vs, Vr, A, Ds, Dr, Ilk, Icc,
 		// Input signal
 		Idc, Iamp, Ifreq, Idel, Idf, Ispc, Inum, Iinc, signal, 
         // Numerical integration
@@ -105,6 +105,21 @@ __host__ __device__ __forceinline__ numb memristor_current(numb v, numb x, numb*
         : du * x / P(Ron_n) - P(Ilk);
 }
 
+__host__ __device__ __forceinline__ numb new_current(numb v, numb x, numb* parameters)
+{
+    numb du = -v + P(Uvm);
+    numb i;
+    if (du > (numb)0.0)
+        i = (du * du) * x / P(Ron_p) + (du * du) * (1.0 - x) / P(Roff_p) + P(Ilk);
+    else
+        i = (du * du) / P(Ron_n) + P(Ilk);
+
+    if (i > P(Icc))         i = P(Icc);
+    else if (i < -P(Icc))   i = -P(Icc);
+
+    return i;
+}
+
 __host__ __device__ __forceinline__ numb diode_current(numb v, numb* parameters)
 {
     numb vu = v + P(Utd);
@@ -117,6 +132,22 @@ __host__ __device__ __forceinline__ numb diode_current(numb v, numb* parameters)
         P(Is) * (exp(vu * invVt) - exp(-vu * invVt)) +
         (P(Ip) * invVp) * vu * exp(-(vu - P(Vp)) * invVp) * quenching +
         P(Iv) * (atan(P(D) * (vu - P(E))) + atan(P(D) * (vu + P(E))));
+}
+
+__host__ __device__ __forceinline__ numb new_x_rhs(numb v, numb x, numb* parameters)
+{
+    numb setGate = 1.0 / (1.0 + exp(-(v - P(Vth_p)) / P(Vs)));
+
+    numb resetGate = 1.0 - 1.0 / (1.0 + exp(-(v - P(Vh_p)) / P(Vr)));
+
+    numb setTerm = (1.0 - 1.0 / exp(P(A) * x + P(Ds))) * (1.0 - x)
+        + x * (1.0 - 1.0 / exp(P(A) * (1.0 - x)));
+
+    numb resetTerm = (1.0 - 1.0 / exp(P(A) * x)) * (1.0 - x)
+        + x * (1.0 - 1.0 / exp(P(A) * (1.0 - x) + P(Dr)));
+
+    return (1.0 / P(tau_s)) * setGate * setTerm
+        - (1.0 / P(tau_r)) * resetGate * resetTerm;
 }
 
 __host__ __device__ __forceinline__ numb x_rhs(numb v, numb x, numb* parameters)
@@ -228,6 +259,8 @@ template <typename InputSignal> __host__ __device__ __forceinline__ void rk4_sch
 
     Vnext(v) = v0 + h6 * sv;
     Vnext(x) = x0 + h6 * sx;
+    if (Vnext(x) < 0.0) Vnext(x) = 0.0;
+    if (Vnext(x) > 1.0) Vnext(x) = 1.0;
     Vnext(t) = t0 + h;
 
     numb vu = v0 + P(Utd);

@@ -131,7 +131,13 @@ std::string exportHeatmapCSV(const std::string& mapName,
         f << (s.minY + s.stepY * (numb)y);
         const size_t base = (size_t)y * (size_t)s.xSize;
         for (int x = 0; x < s.xSize; ++x)
-            f << ',' << vals[base + x];
+        {
+            numb value = vals[base + x];
+            if (!isnan(value))
+                f << ',' << value;
+            else
+                f << ", NaN";
+        }
         f << '\n';
     }
 

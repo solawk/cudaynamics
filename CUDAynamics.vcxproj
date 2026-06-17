@@ -261,6 +261,7 @@
     <ClInclude Include="systemsHeaders.h" />
     <ClInclude Include="systems\henon_heiles\henon_heiles.h" />
     <ClInclude Include="systems\khanov_mod\khanov_mod.h" />
+    <ClInclude Include="systems\standard_map\standard_map.h" />
     <ClInclude Include="variationSteps.h" />
   </ItemGroup>
   <ItemGroup>
@@ -300,6 +301,7 @@
     <CudaCompile Include="systems\sang25\sang25.cu" />
     <CudaCompile Include="systems\sang26\sang26.cu" />
     <CudaCompile Include="systems\sprott14\sprott14.cu" />
+    <CudaCompile Include="systems\standard_map\standard_map.cu" />
     <CudaCompile Include="systems\thomas\thomas.cu" />
     <CudaCompile Include="systems\three_scroll\three_scroll.cu" />
     <CudaCompile Include="systems\ullah\ullah.cu" />
@@ -315,6 +317,7 @@
   <ItemGroup>
     <Text Include="systems\henon_heiles\henon_heiles.txt" />
     <Text Include="systems\khanov_mod\khanov_mod.txt" />
+    <Text Include="systems\standard_map\standard_map.txt" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
