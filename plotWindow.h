@@ -7,12 +7,13 @@
 #include "plots/decay.h"
 #include "plots/trs.h"
 #include "plots/orbit.h"
+#include "plots/recurrence.h"
 #include "index.h"
 
 // Maximum amount of variables and parameters in the plot
 #define MAX_VARS_PARAMS 32
 
-enum PlotType { VarSeries, Phase, Phase2D, Orbit, Heatmap, MCHeatmap, Metric, IndSeries, Decay, PlotType_COUNT };
+enum PlotType { VarSeries, Phase, Phase2D, Orbit, Heatmap, MCHeatmap, Metric, IndSeries, Decay, Recurrence, PlotType_COUNT };
 enum DeltaState { DS_No, DS_Delta, DS_Decay, DS_Lifetime };
 
 struct PlotWindow
@@ -60,6 +61,7 @@ public:
 	DeltaState deltaState;
 
 	DecayProperties decay;
+	RecurrenceProperties recur;
 	
 	ImVec2 dragLineHiresPos;
 

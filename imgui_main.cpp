@@ -1036,6 +1036,7 @@ int imgui_main(int, char**)
 		switch (plotType)
 		{
 		case VarSeries:
+		case Recurrence:
 
 			// Variable adding combo
 
@@ -1234,6 +1235,7 @@ int imgui_main(int, char**)
 		switch (plotType)
 		{
 		case VarSeries:
+		case Recurrence:
 			noMistakes = selectedPlotVarsSet.size() > 0;
 			break;
 		case IndSeries:
@@ -1277,6 +1279,7 @@ int imgui_main(int, char**)
 			if (plotType == Metric) plotWindow.AssignVariables(selectedPlotMapsSetMetric);
 			if (plotType == IndSeries) { plotWindow.AssignVariables(selectedPlotMapSetIndSeries); plotWindow.firstBufferNo = (computations[playedBufferIndex]).bufferNo; plotWindow.prevbufferNo = (computations[playedBufferIndex]).bufferNo; }
 			if (plotType == Decay) plotWindow.AssignVariables(selectedPlotMapDecay);
+			if (plotType == Recurrence) plotWindow.AssignVariables(selectedPlotVarsSet);
 
 			int indexOfColorsLutFrom = -1;
 			if (colorsLUTfrom != nullptr)
@@ -1596,6 +1599,7 @@ int imgui_main(int, char**)
 			HeatmapProperties* heatmap;
 			Kernel* krnl;
 			Computation* cmp;
+			int rqaSize;
 
 			switch (window->type)
 			{
@@ -2502,6 +2506,85 @@ int imgui_main(int, char**)
 					{
 						ImGui::Text("Decay plot not ready yet");
 					}
+					break;
+
+				case Recurrence:
+
+					if (window->whiteBg) ImPlot::PushStyleColor(ImPlotCol_PlotBg, ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
+					ImGui::DragDouble(("Min##" + plotName + "_min").c_str(), &(window->recur.min), 1.0, -9999, 9999, "%f", 0);
+					ImGui::DragDouble(("Max##" + plotName + "_max").c_str(), &(window->recur.max), 1.0, -9999, 9999, "%f", 0);
+					ImGui::InputDouble(("Epsilon##" + plotName + "_epsilon").c_str(), &(window->recur.epsilon));
+					ImGui::InputInt(("Decimation##" + plotName + "_decimation").c_str(), &(window->recur.decimation));
+					ImGui::Text(("DET: " + std::to_string(window->recur.rqa.DET)).c_str());
+					ImGui::Text(("DIV: " + std::to_string(window->recur.rqa.DIV)).c_str());
+					ImGui::Text(("ENTR: " + std::to_string(window->recur.rqa.ENTR)).c_str());
+					ImGui::Text(("LAM: " + std::to_string(window->recur.rqa.LAM)).c_str());
+					ImGui::Text(("TT: " + std::to_string(window->recur.rqa.TT)).c_str());
+
+					rqaSize = (int)window->recur.rqaHistory.size();
+					if (rqaSize > 1)
+					{
+						if (ImPlot::BeginPlot((plotName + "_rqaHistory").c_str()))
+						{
+							double rqaV[100];
+							int rqa;
+
+							ImPlot::SetupAxis(3, "DET", 0);
+							ImPlot::SetupAxis(4, "DIV", 0);
+							ImPlot::SetupAxis(5, "ENTR", 0);
+							ImPlot::SetupAxis(6, "LAM", 0);
+							ImPlot::SetupAxis(7, "TT", 0);
+
+							for (rqa = 0; rqa < rqaSize; rqa++) rqaV[rqa] = window->recur.rqaHistory[rqa].DET;	ImPlot::SetAxes(ImAxis_X1, 3); ImPlot::PlotLine(("DET##" + plotName).c_str(), &(rqaV[0]), rqaSize);
+							for (rqa = 0; rqa < rqaSize; rqa++) rqaV[rqa] = window->recur.rqaHistory[rqa].DIV;	ImPlot::SetAxes(ImAxis_X1, 4); ImPlot::PlotLine(("DIV##" + plotName).c_str(), &(rqaV[0]), rqaSize);
+							for (rqa = 0; rqa < rqaSize; rqa++) rqaV[rqa] = window->recur.rqaHistory[rqa].ENTR;	ImPlot::SetAxes(ImAxis_X1, 5); ImPlot::PlotLine(("ENTR##" + plotName).c_str(), &(rqaV[0]), rqaSize);
+							for (rqa = 0; rqa < rqaSize; rqa++) rqaV[rqa] = window->recur.rqaHistory[rqa].LAM;	ImPlot::SetAxes(ImAxis_X1, 6); ImPlot::PlotLine(("LAM##" + plotName).c_str(), &(rqaV[0]), rqaSize);
+							for (rqa = 0; rqa < rqaSize; rqa++) rqaV[rqa] = window->recur.rqaHistory[rqa].TT;	ImPlot::SetAxes(ImAxis_X1, 7); ImPlot::PlotLine(("TT##" + plotName).c_str(), &(rqaV[0]), rqaSize);
+
+							ImPlot::EndPlot();
+						}
+					}
+
+					if (ImGui::Button("Save RQA")) window->recur.SaveRQAToHistory();
+					ImGui::SameLine();
+					if (ImGui::Button("Clear RQA")) window->recur.ClearRQAHistory();
+
+					if (ImGui::Button("Calculate"))
+					{
+						window->recur.Calculate(&(computations[playedBufferIndex]), variation, window->variables);
+
+						if (window->recur.size > 0)
+						{
+							if (window->recur.texture != nullptr)
+							{
+								((ID3D11ShaderResourceView*)window->recur.texture)->Release();
+								window->recur.texture = nullptr;
+							}
+							if (window->recur.texture == nullptr)
+							{
+								bool ret = LoadTextureFromRaw(&(window->recur.pixelBuffer), window->recur.size, window->recur.size,
+									(ID3D11ShaderResourceView**)&(window->recur.texture), g_pd3dDevice);
+								IM_ASSERT(ret);
+							}
+						}
+					}
+
+					if (window->recur.texture != nullptr)
+					{
+						if (ImPlot::BeginPlot(plotName.c_str(), "", "", ImVec2(-1, -1), ImPlotFlags_NoTitle | ImPlotFlags_NoLegend, axisFlags, axisFlags))
+						{
+							plot = ImPlot::GetPlot(plotName.c_str());
+							plot->is3d = false;
+
+							ImPlot::PlotImage(("##" + plotName + std::to_string(0)).c_str(), (ImTextureID)(window->recur.texture),
+								ImVec2(0.0f, window->recur.steps), ImVec2(window->recur.steps, 0.0f),
+								ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f), ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
+							ImPlot::EndPlot();
+						}
+					}
+
+					if (window->whiteBg) ImPlot::PopStyleColor();
+
 					break;
 
 				case Heatmap:

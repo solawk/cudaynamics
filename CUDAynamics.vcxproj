@@ -164,6 +164,7 @@
     <ClCompile Include="main_utils.cpp" />
     <ClCompile Include="map_utils.cpp" />
     <ClCompile Include="rangingTypeFromString.cpp" />
+    <ClCompile Include="recurrenceCalculation.cpp" />
     <ClCompile Include="splitString.cpp" />
     <ClCompile Include="computations.cpp" />
     <ClCompile Include="standalone\standalone_utils.cpp" />
@@ -249,11 +250,13 @@
     <ClInclude Include="perthread_struct.h" />
     <ClInclude Include="plots\decay.h" />
     <ClInclude Include="plots\orbit.h" />
+    <ClInclude Include="plots\recurrence.h" />
     <ClInclude Include="plots\trs.h" />
     <ClInclude Include="plotWindow.h" />
     <ClInclude Include="port.h" />
     <ClInclude Include="quaternion.h" />
     <ClInclude Include="rangingTypeFromString.h" />
+    <ClInclude Include="recurrenceCalculation.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="splitString.h" />
     <ClInclude Include="computations.h" />

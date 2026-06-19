@@ -87,6 +87,7 @@
     <ClCompile Include="gui\hwnd.cpp" />
     <ClCompile Include="gui\ui_strings.cpp" />
     <ClCompile Include="gui\applicationSettings_struct.cpp" />
+    <ClCompile Include="recurrenceCalculation.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="imgui">
@@ -293,6 +294,8 @@
     <ClInclude Include="systems\henon_heiles\henon_heiles.h" />
     <ClInclude Include="systems\khanov_mod\khanov_mod.h" />
     <ClInclude Include="systems\standard_map\standard_map.h" />
+    <ClInclude Include="plots\recurrence.h" />
+    <ClInclude Include="recurrenceCalculation.h" />
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="main.cu" />
