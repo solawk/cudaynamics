@@ -1098,6 +1098,7 @@ struct ImPlotPlot
         Initialized = SetupLocked = FitThisFrame = false;
         Hovered = Held = Selected = Selecting = ContextLocked = false;
         shiftSelected = false;
+        is3d = false;
     }
 
     inline bool IsInputLocked() const {

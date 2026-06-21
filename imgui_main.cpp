@@ -1277,7 +1277,7 @@ int imgui_main(int, char**)
 			if (plotType == MCHeatmap) plotWindow.AssignVariables(selectedPlotMCMaps);
 			if (plotType == Orbit) plotWindow.AssignVariables(selectedPlotVarsOrbitVer);
 			if (plotType == Metric) plotWindow.AssignVariables(selectedPlotMapsSetMetric);
-			if (plotType == IndSeries) { plotWindow.AssignVariables(selectedPlotMapSetIndSeries); plotWindow.firstBufferNo = (computations[playedBufferIndex]).bufferNo; plotWindow.prevbufferNo = (computations[playedBufferIndex]).bufferNo; }
+			if (plotType == IndSeries) { plotWindow.AssignVariables(selectedPlotMapSetIndSeries); plotWindow.firstBufferNo = -2; plotWindow.prevbufferNo = -2; }
 			if (plotType == Decay) plotWindow.AssignVariables(selectedPlotMapDecay);
 			if (plotType == Recurrence) plotWindow.AssignVariables(selectedPlotVarsSet);
 
@@ -2515,14 +2515,19 @@ int imgui_main(int, char**)
 					ImGui::DragDouble(("Max##" + plotName + "_max").c_str(), &(window->recur.max), 1.0, -9999, 9999, "%f", 0);
 					ImGui::InputDouble(("Epsilon##" + plotName + "_epsilon").c_str(), &(window->recur.epsilon));
 					ImGui::InputInt(("Decimation##" + plotName + "_decimation").c_str(), &(window->recur.decimation));
+					ImGui::Checkbox(("Optimize RR##" + plotName + "_rropt").c_str(), &(window->recur.optimRR));
+					ImGui::InputDouble(("Target RR##" + plotName + "_rrtgt").c_str(), &(window->recur.targetRR));
+
+					ImGui::Text(("RR: " + std::to_string(window->recur.rqa.RR)).c_str());
 					ImGui::Text(("DET: " + std::to_string(window->recur.rqa.DET)).c_str());
 					ImGui::Text(("DIV: " + std::to_string(window->recur.rqa.DIV)).c_str());
 					ImGui::Text(("ENTR: " + std::to_string(window->recur.rqa.ENTR)).c_str());
 					ImGui::Text(("LAM: " + std::to_string(window->recur.rqa.LAM)).c_str());
 					ImGui::Text(("TT: " + std::to_string(window->recur.rqa.TT)).c_str());
+					ImGui::Text(("Lmax: " + std::to_string(window->recur.rqa.Lmax)).c_str());
 
-					rqaSize = (int)window->recur.rqaHistory.size();
-					if (rqaSize > 1)
+					//rqaSize = (int)window->recur.rqaHistory.size();
+					if (window->recur.rqaBuffers > 1)
 					{
 						if (ImPlot::BeginPlot((plotName + "_rqaHistory").c_str()))
 						{
@@ -2534,25 +2539,43 @@ int imgui_main(int, char**)
 							ImPlot::SetupAxis(5, "ENTR", 0);
 							ImPlot::SetupAxis(6, "LAM", 0);
 							ImPlot::SetupAxis(7, "TT", 0);
+							ImPlot::SetupAxis(8, "Lmax", 0);
 
-							for (rqa = 0; rqa < rqaSize; rqa++) rqaV[rqa] = window->recur.rqaHistory[rqa].DET;	ImPlot::SetAxes(ImAxis_X1, 3); ImPlot::PlotLine(("DET##" + plotName).c_str(), &(rqaV[0]), rqaSize);
-							for (rqa = 0; rqa < rqaSize; rqa++) rqaV[rqa] = window->recur.rqaHistory[rqa].DIV;	ImPlot::SetAxes(ImAxis_X1, 4); ImPlot::PlotLine(("DIV##" + plotName).c_str(), &(rqaV[0]), rqaSize);
-							for (rqa = 0; rqa < rqaSize; rqa++) rqaV[rqa] = window->recur.rqaHistory[rqa].ENTR;	ImPlot::SetAxes(ImAxis_X1, 5); ImPlot::PlotLine(("ENTR##" + plotName).c_str(), &(rqaV[0]), rqaSize);
-							for (rqa = 0; rqa < rqaSize; rqa++) rqaV[rqa] = window->recur.rqaHistory[rqa].LAM;	ImPlot::SetAxes(ImAxis_X1, 6); ImPlot::PlotLine(("LAM##" + plotName).c_str(), &(rqaV[0]), rqaSize);
-							for (rqa = 0; rqa < rqaSize; rqa++) rqaV[rqa] = window->recur.rqaHistory[rqa].TT;	ImPlot::SetAxes(ImAxis_X1, 7); ImPlot::PlotLine(("TT##" + plotName).c_str(), &(rqaV[0]), rqaSize);
+							for (rqa = 0; rqa < (int)window->recur.rqaBuffers; rqa++) rqaV[rqa] = window->recur.rqaHistory[window->recur.rqaVariations * rqa + variation].DET;
+							ImPlot::SetAxes(ImAxis_X1, 3); ImPlot::PlotLine(("DET##" + plotName).c_str(), &(rqaV[0]), (int)window->recur.rqaBuffers);
+							for (rqa = 0; rqa < (int)window->recur.rqaBuffers; rqa++) rqaV[rqa] = window->recur.rqaHistory[window->recur.rqaVariations * rqa + variation].DIV;
+							ImPlot::SetAxes(ImAxis_X1, 4); ImPlot::PlotLine(("DIV##" + plotName).c_str(), &(rqaV[0]), (int)window->recur.rqaBuffers);
+							for (rqa = 0; rqa < (int)window->recur.rqaBuffers; rqa++) rqaV[rqa] = window->recur.rqaHistory[window->recur.rqaVariations * rqa + variation].ENTR;
+							ImPlot::SetAxes(ImAxis_X1, 5); ImPlot::PlotLine(("ENTR##" + plotName).c_str(), &(rqaV[0]), (int)window->recur.rqaBuffers);
+							for (rqa = 0; rqa < (int)window->recur.rqaBuffers; rqa++) rqaV[rqa] = window->recur.rqaHistory[window->recur.rqaVariations * rqa + variation].LAM;
+							ImPlot::SetAxes(ImAxis_X1, 6); ImPlot::PlotLine(("LAM##" + plotName).c_str(), &(rqaV[0]), (int)window->recur.rqaBuffers);
+							for (rqa = 0; rqa < (int)window->recur.rqaBuffers; rqa++) rqaV[rqa] = window->recur.rqaHistory[window->recur.rqaVariations * rqa + variation].TT;
+							ImPlot::SetAxes(ImAxis_X1, 7); ImPlot::PlotLine(("TT##" + plotName).c_str(), &(rqaV[0]), (int)window->recur.rqaBuffers);
+							for (rqa = 0; rqa < (int)window->recur.rqaBuffers; rqa++) rqaV[rqa] = window->recur.rqaHistory[window->recur.rqaVariations * rqa + variation].Lmax;
+							ImPlot::SetAxes(ImAxis_X1, 8); ImPlot::PlotLine(("Lmax##" + plotName).c_str(), &(rqaV[0]), (int)window->recur.rqaBuffers);
 
 							ImPlot::EndPlot();
 						}
 					}
 
-					if (ImGui::Button("Save RQA")) window->recur.SaveRQAToHistory();
-					ImGui::SameLine();
 					if (ImGui::Button("Clear RQA")) window->recur.ClearRQAHistory();
 
 					if (ImGui::Button("Calculate"))
 					{
-						window->recur.Calculate(&(computations[playedBufferIndex]), variation, window->variables);
+						uint64_t totalVariations = computations[playedBufferIndex].marshal.totalVariations;
+						for (int v = 0; v < totalVariations; v++)
+						{
+							window->recur.Prepare(&(computations[playedBufferIndex]), v == 0);
+							if (window->recur.optimRR)
+							{
+								window->recur.epsilon = window->recur.FindEpsilon(&(computations[playedBufferIndex]), v, window->variables, window->recur.targetRR);
+							}
+							window->recur.Calculate(&(computations[playedBufferIndex]), v, window->variables, v == totalVariations - 1);
+							window->recur.SaveRQAToHistory(totalVariations);
+						}
+						window->recur.rqaBuffers++;
 
+						// It shows the last calculated recurrence plot of the variations
 						if (window->recur.size > 0)
 						{
 							if (window->recur.texture != nullptr)
@@ -3434,67 +3457,76 @@ int imgui_main(int, char**)
 					Marshal* mrsl = &cmp->marshal;
 
 					if (!cmp->marshal.maps) TEXT_AND_BREAK("No variables/parameters ranging")
-					if (indSeriesReset) { window->indSeries.clear(); indSeriesReset = false; }
-					if (cmp->bufferNo != window->prevbufferNo)
-					{
-						window->prevbufferNo = cmp->bufferNo;
-						for (int ind = 0; ind < window->variableCount; ind++)
-						{
-							uint64_t variation;
-							steps2Variation(&variation, &(attributeValueIndices.data()[0]), &KERNEL);
-							mapIndex = (AnalysisIndex)window->variables[ind];
-							numb* MapSlice = cmp->marshal.maps + index2port(cmp->marshal.kernel.analyses, mapIndex)->offset * cmp->marshal.totalVariations;
-							window->indSeries.push_back(MapSlice[variation]);
-						}
+						
+					if (indSeriesReset)
+					{ 
+						window->indSeries.clear(); 
+						window->prevbufferNo = -2; 
+						indSeriesReset = false;
 					}
-
-					if (window->prevbufferNo - window->firstBufferNo <= 1) TEXT_AND_BREAK("Index series not ready yet")
 					else
 					{
-						if (ImPlot::BeginPlot(plotName.c_str(), "", "", ImVec2(-1, -1), ImPlotFlags_NoTitle, axisFlags, axisFlags))
+						if (cmp->bufferNo > window->prevbufferNo)
 						{
-							plot = ImPlot::GetPlot(plotName.c_str());
-							plot->is3d = false;
-							if (!window->ShowMultAxes) ImPlot::SetupAxes(KERNEL.usingTime ? "Time" : "Steps", "Index", toAutofitTimeSeries ? ImPlotAxisFlags_AutoFit : 0, 0);
-							else
-							{
-								ImPlot::SetupAxis(ImAxis_X1, KERNEL.usingTime ? "Time" : "Steps", toAutofitTimeSeries ? ImPlotAxisFlags_AutoFit : 0);
-								for (int i = 0; i < window->variableCount; i++)
-								{
-									ImPlot::SetupAxis(ImAxis_Y1 + i, indices[(AnalysisIndex)window->variables[i]].name.c_str(), 0);
-								}
-							}
-
-							std::vector<numb> Xaxis;
-							std::vector<numb> Yaxis;
-							numb stepsize = KERNEL.GetStepSize();
-							for (int i = 0; i < window->prevbufferNo - window->firstBufferNo; i++)
-							{
-								Xaxis.push_back(KERNEL.usingTime ? krnl->time * i + krnl->transientTime : krnl->steps * i + krnl->transientSteps );
-							}
-
+							window->prevbufferNo = cmp->bufferNo;
 							for (int ind = 0; ind < window->variableCount; ind++)
 							{
-								for (int i = 0; i < window->prevbufferNo - window->firstBufferNo; i++) Yaxis.push_back(window->indSeries[i * window->variableCount + ind]);
-
-								if (window->ShowMultAxes)
-								{
-									ImPlot::SetAxes(ImAxis_X1, ImAxis_Y1 + ind);
-								}
-
-								ImVec4 color;
-								if (window->variableCount > 1)
-								{
-									color = ImPlot::GetColormapColor(ind, window->colormap);
-								}
-
-								ImPlot::SetNextLineStyle(window->variableCount > 1 ? color : window->markerColor, window->markerWidth);
-								ImPlot::PlotLine(indices[(AnalysisIndex)window->variables[ind]].name.c_str(), Xaxis.data(), Yaxis.data(), window->prevbufferNo - window->firstBufferNo);
-								Yaxis.clear();
+								uint64_t variation;
+								steps2Variation(&variation, &(attributeValueIndices.data()[0]), &KERNEL);
+								mapIndex = (AnalysisIndex)window->variables[ind];
+								numb* MapSlice = cmp->marshal.maps + index2port(cmp->marshal.kernel.analyses, mapIndex)->offset * cmp->marshal.totalVariations;
+								window->indSeries.push_back(MapSlice[variation]);
 							}
-							
-							Xaxis.clear();
-							ImPlot::EndPlot();
+						}
+
+						if (window->prevbufferNo - window->firstBufferNo <= 0) TEXT_AND_BREAK("Index series not ready yet")
+						else
+						{
+							if (ImPlot::BeginPlot(plotName.c_str(), "", "", ImVec2(-1, -1), ImPlotFlags_NoTitle, axisFlags, axisFlags))
+							{
+								plot = ImPlot::GetPlot(plotName.c_str());
+								plot->is3d = false;
+								if (!window->ShowMultAxes) ImPlot::SetupAxes(KERNEL.usingTime ? "Time" : "Steps", "Index", toAutofitTimeSeries ? ImPlotAxisFlags_AutoFit : 0, 0);
+								else
+								{
+									ImPlot::SetupAxis(ImAxis_X1, KERNEL.usingTime ? "Time" : "Steps", toAutofitTimeSeries ? ImPlotAxisFlags_AutoFit : 0);
+									for (int i = 0; i < window->variableCount; i++)
+									{
+										ImPlot::SetupAxis(ImAxis_Y1 + i, indices[(AnalysisIndex)window->variables[i]].name.c_str(), 0);
+									}
+								}
+
+								std::vector<numb> Xaxis;
+								std::vector<numb> Yaxis;
+								numb stepsize = KERNEL.GetStepSize();
+								for (int i = 0; i < window->prevbufferNo - window->firstBufferNo + 1; i++)
+								{
+									Xaxis.push_back(KERNEL.usingTime ? krnl->time * i + krnl->transientTime : krnl->steps * i + krnl->transientSteps);
+								}
+
+								for (int ind = 0; ind < window->variableCount; ind++)
+								{
+									for (int i = 0; i < window->prevbufferNo - window->firstBufferNo + 1; i++) Yaxis.push_back(window->indSeries[i * window->variableCount + ind]);
+
+									if (window->ShowMultAxes)
+									{
+										ImPlot::SetAxes(ImAxis_X1, ImAxis_Y1 + ind);
+									}
+
+									ImVec4 color;
+									if (window->variableCount > 1)
+									{
+										color = ImPlot::GetColormapColor(ind, window->colormap);
+									}
+
+									ImPlot::SetNextLineStyle(window->variableCount > 1 ? color : window->markerColor, window->markerWidth);
+									ImPlot::PlotLine(indices[(AnalysisIndex)window->variables[ind]].name.c_str(), Xaxis.data(), Yaxis.data(), window->prevbufferNo - window->firstBufferNo + 1);
+									Yaxis.clear();
+								}
+
+								Xaxis.clear();
+								ImPlot::EndPlot();
+							}
 						}
 					}
 					

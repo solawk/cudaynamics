@@ -1,13 +1,13 @@
 #include "recurrenceCalculation.h"
 
-void CalculateRecurrence(numb* t, std::vector<int> vars, int size, int steps, int decimation, bool* output, numb epsilon, int varCount, uint64_t variation)
+void CalculateRecurrence(double* t, std::vector<int>& vars, int size, int steps, int decimation, double* output, double epsilon, int varCount, uint64_t variation)
 {
 	// Index of variable x value at step y
 	// (vars[x] * steps) + y
 
-	int varsCount = vars.size();
+	int varsCount = (int)vars.size();
 	uint64_t s1, s2, var, step1, step2;
-	numb norm, val1, val2;
+    double norm, val1, val2;
 	for (s1 = 0; s1 < size; s1++)
 	{
 		step1 = s1 * decimation;
@@ -26,84 +26,41 @@ void CalculateRecurrence(numb* t, std::vector<int> vars, int size, int steps, in
 
 			norm = sqrt(norm);
 			if (norm < epsilon)
-				output[s1 * size + s2] = output[s2 * size + s1] = true;
+				output[s1 * size + s2] = output[s2 * size + s1] = 1.0;
 			else
-				output[s1 * size + s2] = output[s2 * size + s1] = false;
+				output[s1 * size + s2] = output[s2 * size + s1] = 0.0;
 		}
 	}
 }
 
-void CalculateRecurrenceAnalog(numb* t, std::vector<int> vars, int size, int steps, int decimation, numb* output, int varCount, uint64_t variation)
+void CalculateRecurrenceGlobal(double* t, std::vector<int>& vars, int size, int steps, int decimation, double* output, int varCount, uint64_t variation)
 {
-	int varsCount = vars.size();
-	uint64_t s1, s2, var, step1, step2;
-	numb norm, val1, val2;
-	for (s1 = 0; s1 < size; s1++)
-	{
-		step1 = s1 * decimation;
+    int varsCount = (int)vars.size();
+    uint64_t s1, s2, var, step1, step2;
+    double norm, val1, val2;
+    for (s1 = 0; s1 < size; s1++)
+    {
+        step1 = s1 * decimation;
 
-		for (s2 = s1; s2 < size; s2++)
-		{
-			step2 = s2 * decimation;
-			norm = 0.0;
+        for (s2 = s1; s2 < size; s2++)
+        {
+            step2 = s2 * decimation;
+            norm = 0.0;
 
-			for (var = 0; var < varsCount; var++)
-			{
-				val1 = t[variation * steps * varCount + step1 * varCount + vars[var]];
-				val2 = t[variation * steps * varCount + step2 * varCount + vars[var]];
-				norm += (val2 - val1) * (val2 - val1);
-			}
+            for (var = 0; var < varsCount; var++)
+            {
+                val1 = t[variation * steps * varCount + step1 * varCount + vars[var]];
+                val2 = t[variation * steps * varCount + step2 * varCount + vars[var]];
+                norm += (val2 - val1) * (val2 - val1);
+            }
 
-			norm = sqrt(norm);
-			output[s1 * size + s2] = output[s2 * size + s1] = norm;
-		}
-	}
+            norm = sqrt(norm);
+            output[s1 * size + s2] = output[s2 * size + s1] = norm;
+        }
+    }
 }
 
-double RecurrenceDET(bool* rec, int size, int lmin)
-{
-	uint64_t recurrencePoints = 0;   // denominator
-	uint64_t diagonalPoints = 0;   // numerator
-
-#define at(row, col)	rec[row * size + col]
-
-	// Scan all diagonals except the main diagonal
-	for (int64_t offset = -(int64_t)size + 1; offset <= (int64_t)size - 1; offset++)
-	{
-		if (offset == 0) continue;
-
-		int row = (offset < 0) ? -offset : 0;
-		int col = (offset > 0) ? offset : 0;
-
-		int runLength = 0;
-
-		while (row < size && col < size)
-		{
-			if (at(row, col))
-			{
-				++runLength;
-				++recurrencePoints;
-			}
-			else
-			{
-				if (runLength >= lmin) diagonalPoints += runLength;
-				runLength = 0;
-			}
-
-			++row;
-			++col;
-		}
-
-		// Handle run reaching end of diagonal
-		if (runLength >= lmin) diagonalPoints += runLength;
-	}
-
-	return recurrencePoints ? ((double)diagonalPoints / (double)recurrencePoints) : 0.0;
-
-#undef at
-}
-
-RQA RecurrenceRQA(bool* rec, int size, int lmin, int vmin)
+RQA RecurrenceRQA(double* rec, int size, int lmin, int vmin)
 {
     RQA result;
 
@@ -140,7 +97,7 @@ RQA RecurrenceRQA(bool* rec, int size, int lmin, int vmin)
 
         while (row < size && col < size)
         {
-            if (at(row, col))
+            if (at(row, col) > 0.0)
             {
                 ++runLength;
                 ++RecurrencePoints;
@@ -204,7 +161,7 @@ RQA RecurrenceRQA(bool* rec, int size, int lmin, int vmin)
 
         for (int row = 0; row < size; ++row)
         {
-            if (at(row, col))
+            if (at(row, col) > 0.0)
             {
                 ++runLength;
             }
@@ -237,6 +194,11 @@ RQA RecurrenceRQA(bool* rec, int size, int lmin, int vmin)
     }
 
 #undef at
+
+    const uint64_t totalCells =
+        (uint64_t)size * (uint64_t)size - size;
+
+    result.RR = totalCells ? (double)RecurrencePoints / (double)totalCells : 0.0;
 
     if (RecurrencePoints)
     {

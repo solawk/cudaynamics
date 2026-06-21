@@ -6,14 +6,14 @@
 #include <unordered_map>
 #include <cmath>
 
-void CalculateRecurrence(numb* t, std::vector<int> vars, int size, int steps, int decimation, bool* output, numb epsilon, int varCount, uint64_t variation);
+void CalculateRecurrence(double* t, std::vector<int>& vars, int size, int steps, int decimation, double* output, double epsilon, int varCount, uint64_t variation);
 
-void CalculateRecurrenceAnalog(numb* t, std::vector<int> vars, int size, int steps, int decimation, numb* output, int varCount, uint64_t variation);
-
-double RecurrenceDET(bool* rec, int size, int lmin = 2);
+void CalculateRecurrenceGlobal(double* t, std::vector<int>& vars, int size, int steps, int decimation, double* output, int varCount, uint64_t variation);
 
 struct RQA
 {
+	double RR = 0.0;
+
 	double DET = 0.0;
 	double DIV = 0.0;
 	double ENTR = 0.0;
@@ -27,4 +27,4 @@ struct RQA
 	int Lmax = 0;
 };
 
-RQA RecurrenceRQA(bool* rec, int size, int lmin, int vmin);
+RQA RecurrenceRQA(double* rec, int size, int lmin, int vmin);
