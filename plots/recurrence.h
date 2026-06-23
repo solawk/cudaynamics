@@ -21,6 +21,8 @@ struct RecurrenceProperties
 	std::vector<RQA> rqaHistory;
 	uint64_t rqaVariations;
 	uint64_t rqaBuffers;
+	std::vector<RQA> rqaDensityAvgHistory;
+	std::vector<RQA> rqaDensityRPPHistory;
 
 	RecurrenceProperties()
 	{
@@ -42,7 +44,7 @@ struct RecurrenceProperties
 	}
 
 #define i4(o) i * 4 + o
-	void MapToImg(numb* mapBuffer, unsigned char** dataBuffer, int width, int height, bool global, double min, double max, ImPlotColormap colormap)
+	void MapToImg(double* mapBuffer, unsigned char** dataBuffer, int width, int height, bool global, double min, double max, ImPlotColormap colormap)
 	{
 		numb v;
 		uint64_t i;
@@ -102,36 +104,43 @@ struct RecurrenceProperties
 		}
 	}
 
-	void Prepare(Computation* cmp, bool firstUse)
+	void Prepare(Computation* cmp)
 	{
 		steps = cmp->marshal.kernel.steps;
 		size = steps / decimation;
 		if (size == 0) return;
 
-		if (firstUse)
+		if (valueBuffer != nullptr)
 		{
-			if (valueBuffer != nullptr)
-			{
-				delete[] valueBuffer;
-			}
-			valueBuffer = new double[size * size];
+			delete[] valueBuffer;
 		}
+		valueBuffer = new double[size * size];
 	}
 
-	void Calculate(Computation* cmp, uint64_t variation, std::vector<int> vars, bool makeImg)
+	void Calculate(Computation* cmp, uint64_t variation, std::vector<int> vars)
 	{
 		CalculateRecurrence(cmp->marshal.trajectory, vars, size, steps, decimation, valueBuffer, epsilon, cmp->marshal.kernel.VAR_COUNT, variation);
 		rqa = RecurrenceRQA(valueBuffer, size, 2, 2);
+	}
 
-		if (makeImg)
+	void CalculateGlobal(Computation* cmp, uint64_t variation, std::vector<int> vars)
+	{
+		CalculateRecurrenceGlobal(cmp->marshal.trajectory, vars, size, steps, decimation, valueBuffer, cmp->marshal.kernel.VAR_COUNT, variation);
+	}
+
+	void MakeRQA()
+	{
+		rqa = RecurrenceRQA(valueBuffer, size, 2, 2);
+	}
+
+	void MakeImage(double* values, bool global, double max)
+	{
+		if (pixelBuffer != nullptr)
 		{
-			if (pixelBuffer != nullptr)
-			{
-				delete[] pixelBuffer;
-			}
-			pixelBuffer = new unsigned char[size * size * 4];
-			MapToImg(valueBuffer, &pixelBuffer, size, size, false, 0.0, 0.0, 0);
+			delete[] pixelBuffer;
 		}
+		pixelBuffer = new unsigned char[size * size * 4];
+		MapToImg(values, &pixelBuffer, size, size, global, 0.0, 1.0, ImPlotColormap_Greys);
 	}
 
 	double FindEpsilon(Computation* cmp, uint64_t variation, std::vector<int> vars, double rr)

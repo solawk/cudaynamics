@@ -2563,17 +2563,40 @@ int imgui_main(int, char**)
 					if (ImGui::Button("Calculate"))
 					{
 						uint64_t totalVariations = computations[playedBufferIndex].marshal.totalVariations;
+						window->recur.Prepare(&(computations[playedBufferIndex]));
+						//double* rpp = new double[window->recur.size * window->recur.size]; // Recurrence Probability Plot
+						//RQA averagedRQA;
 						for (int v = 0; v < totalVariations; v++)
 						{
-							window->recur.Prepare(&(computations[playedBufferIndex]), v == 0);
 							if (window->recur.optimRR)
 							{
 								window->recur.epsilon = window->recur.FindEpsilon(&(computations[playedBufferIndex]), v, window->variables, window->recur.targetRR);
 							}
-							window->recur.Calculate(&(computations[playedBufferIndex]), v, window->variables, v == totalVariations - 1);
+							window->recur.Calculate(&(computations[playedBufferIndex]), v, window->variables);
+							//window->recur.CalculateGlobal(&(computations[playedBufferIndex]), v, window->variables);
+
+							//for (uint64_t t = 0; t < window->recur.size * window->recur.size; t++) rpp[t] += window->recur.valueBuffer[t];
+
 							window->recur.SaveRQAToHistory(totalVariations);
+							//averagedRQA.Add(window->recur.rqa);
 						}
+						//averagedRQA.Div(totalVariations);
 						window->recur.rqaBuffers++;
+						/*for (uint64_t t = 0; t < window->recur.size * window->recur.size; t++)
+						{
+							//rpp[t] /= totalVariations;
+							rpp[t] /= totalVariations;
+							if (rpp[t] >= 0.5) rpp[t] = 1.0; else rpp[t] = 0.0;
+						}*/
+						//window->recur.MakeImage(rpp, true, 1.0);
+						//window->recur.MakeImage(rpp, true, 30.0);
+						//window->recur.MakeImage(rpp, false, 1.0);
+						window->recur.MakeImage(window->recur.valueBuffer, true, 1.0);
+
+						/*memcpy(window->recur.valueBuffer, rpp, window->recur.size * window->recur.size * sizeof(double));
+						window->recur.MakeRQA();
+						window->recur.rqaDensityRPPHistory.push_back(window->recur.rqa);
+						window->recur.rqaDensityAvgHistory.push_back(averagedRQA);*/
 
 						// It shows the last calculated recurrence plot of the variations
 						if (window->recur.size > 0)
@@ -2590,7 +2613,70 @@ int imgui_main(int, char**)
 								IM_ASSERT(ret);
 							}
 						}
+
+						//delete[] rpp;
 					}
+
+					/*
+					if (window->recur.rqaBuffers > 1)
+					{
+						if (ImPlot::BeginPlot((plotName + "_rqaHistoryAvg").c_str()))
+						{
+							double rqaV[100];
+							int rqa;
+
+							ImPlot::SetupAxis(3, "DET", 0);
+							ImPlot::SetupAxis(4, "DIV", 0);
+							ImPlot::SetupAxis(5, "ENTR", 0);
+							ImPlot::SetupAxis(6, "LAM", 0);
+							ImPlot::SetupAxis(7, "TT", 0);
+							ImPlot::SetupAxis(8, "Lmax", 0);
+
+							for (rqa = 0; rqa < (int)window->recur.rqaBuffers; rqa++) rqaV[rqa] = window->recur.rqaDensityAvgHistory[rqa].DET;
+							ImPlot::SetAxes(ImAxis_X1, 3); ImPlot::PlotLine(("DET_avg##" + plotName).c_str(), &(rqaV[0]), (int)window->recur.rqaBuffers);
+							for (rqa = 0; rqa < (int)window->recur.rqaBuffers; rqa++) rqaV[rqa] = window->recur.rqaDensityAvgHistory[rqa].DIV;
+							ImPlot::SetAxes(ImAxis_X1, 4); ImPlot::PlotLine(("DIV_avg##" + plotName).c_str(), &(rqaV[0]), (int)window->recur.rqaBuffers);
+							for (rqa = 0; rqa < (int)window->recur.rqaBuffers; rqa++) rqaV[rqa] = window->recur.rqaDensityAvgHistory[rqa].ENTR;
+							ImPlot::SetAxes(ImAxis_X1, 5); ImPlot::PlotLine(("ENTR_avg##" + plotName).c_str(), &(rqaV[0]), (int)window->recur.rqaBuffers);
+							for (rqa = 0; rqa < (int)window->recur.rqaBuffers; rqa++) rqaV[rqa] = window->recur.rqaDensityAvgHistory[rqa].LAM;
+							ImPlot::SetAxes(ImAxis_X1, 6); ImPlot::PlotLine(("LAM_avg##" + plotName).c_str(), &(rqaV[0]), (int)window->recur.rqaBuffers);
+							for (rqa = 0; rqa < (int)window->recur.rqaBuffers; rqa++) rqaV[rqa] = window->recur.rqaDensityAvgHistory[rqa].TT;
+							ImPlot::SetAxes(ImAxis_X1, 7); ImPlot::PlotLine(("TT_avg##" + plotName).c_str(), &(rqaV[0]), (int)window->recur.rqaBuffers);
+							for (rqa = 0; rqa < (int)window->recur.rqaBuffers; rqa++) rqaV[rqa] = window->recur.rqaDensityAvgHistory[rqa].Lmax;
+							ImPlot::SetAxes(ImAxis_X1, 8); ImPlot::PlotLine(("Lmax_avg##" + plotName).c_str(), &(rqaV[0]), (int)window->recur.rqaBuffers);
+
+							ImPlot::EndPlot();
+						}
+
+						if (ImPlot::BeginPlot((plotName + "_rqaHistoryRPP").c_str()))
+						{
+							double rqaV[100];
+							int rqa;
+
+							ImPlot::SetupAxis(3, "DET", 0);
+							ImPlot::SetupAxis(4, "DIV", 0);
+							ImPlot::SetupAxis(5, "ENTR", 0);
+							ImPlot::SetupAxis(6, "LAM", 0);
+							ImPlot::SetupAxis(7, "TT", 0);
+							ImPlot::SetupAxis(8, "Lmax", 0);
+
+							for (rqa = 0; rqa < (int)window->recur.rqaBuffers; rqa++) rqaV[rqa] = window->recur.rqaDensityRPPHistory[rqa].DET;
+							ImPlot::SetAxes(ImAxis_X1, 3); ImPlot::PlotLine(("DET_rpp##" + plotName).c_str(), &(rqaV[0]), (int)window->recur.rqaBuffers);
+							for (rqa = 0; rqa < (int)window->recur.rqaBuffers; rqa++) rqaV[rqa] = window->recur.rqaDensityRPPHistory[rqa].DIV;
+							ImPlot::SetAxes(ImAxis_X1, 4); ImPlot::PlotLine(("DIV_rpp##" + plotName).c_str(), &(rqaV[0]), (int)window->recur.rqaBuffers);
+							for (rqa = 0; rqa < (int)window->recur.rqaBuffers; rqa++) rqaV[rqa] = window->recur.rqaDensityRPPHistory[rqa].ENTR;
+							ImPlot::SetAxes(ImAxis_X1, 5); ImPlot::PlotLine(("ENTR_rpp##" + plotName).c_str(), &(rqaV[0]), (int)window->recur.rqaBuffers);
+							for (rqa = 0; rqa < (int)window->recur.rqaBuffers; rqa++) rqaV[rqa] = window->recur.rqaDensityRPPHistory[rqa].LAM;
+							ImPlot::SetAxes(ImAxis_X1, 6); ImPlot::PlotLine(("LAM_rpp##" + plotName).c_str(), &(rqaV[0]), (int)window->recur.rqaBuffers);
+							for (rqa = 0; rqa < (int)window->recur.rqaBuffers; rqa++) rqaV[rqa] = window->recur.rqaDensityRPPHistory[rqa].TT;
+							ImPlot::SetAxes(ImAxis_X1, 7); ImPlot::PlotLine(("TT_rpp##" + plotName).c_str(), &(rqaV[0]), (int)window->recur.rqaBuffers);
+							for (rqa = 0; rqa < (int)window->recur.rqaBuffers; rqa++) rqaV[rqa] = window->recur.rqaDensityRPPHistory[rqa].Lmax;
+							ImPlot::SetAxes(ImAxis_X1, 8); ImPlot::PlotLine(("Lmax_rpp##" + plotName).c_str(), &(rqaV[0]), (int)window->recur.rqaBuffers);
+
+							ImPlot::EndPlot();
+						}
+					}
+					*/
 
 					if (window->recur.texture != nullptr)
 					{

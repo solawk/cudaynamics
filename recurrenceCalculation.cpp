@@ -1,6 +1,6 @@
 #include "recurrenceCalculation.h"
 
-void CalculateRecurrence(double* t, std::vector<int>& vars, int size, int steps, int decimation, double* output, double epsilon, int varCount, uint64_t variation)
+void CalculateRecurrence(numb* t, std::vector<int>& vars, int size, int steps, int decimation, double* output, double epsilon, int varCount, uint64_t variation)
 {
 	// Index of variable x value at step y
 	// (vars[x] * steps) + y
@@ -33,7 +33,7 @@ void CalculateRecurrence(double* t, std::vector<int>& vars, int size, int steps,
 	}
 }
 
-void CalculateRecurrenceGlobal(double* t, std::vector<int>& vars, int size, int steps, int decimation, double* output, int varCount, uint64_t variation)
+void CalculateRecurrenceGlobal(numb* t, std::vector<int>& vars, int size, int steps, int decimation, double* output, int varCount, uint64_t variation)
 {
     int varsCount = (int)vars.size();
     uint64_t s1, s2, var, step1, step2;

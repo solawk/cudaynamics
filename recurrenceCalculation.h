@@ -6,9 +6,9 @@
 #include <unordered_map>
 #include <cmath>
 
-void CalculateRecurrence(double* t, std::vector<int>& vars, int size, int steps, int decimation, double* output, double epsilon, int varCount, uint64_t variation);
+void CalculateRecurrence(numb* t, std::vector<int>& vars, int size, int steps, int decimation, double* output, double epsilon, int varCount, uint64_t variation);
 
-void CalculateRecurrenceGlobal(double* t, std::vector<int>& vars, int size, int steps, int decimation, double* output, int varCount, uint64_t variation);
+void CalculateRecurrenceGlobal(numb* t, std::vector<int>& vars, int size, int steps, int decimation, double* output, int varCount, uint64_t variation);
 
 struct RQA
 {
@@ -25,6 +25,32 @@ struct RQA
 	double DiagonalVariance = 0.0;
 
 	int Lmax = 0;
+
+	void Add(RQA& from)
+	{
+		RR += from.RR;
+		DET += from.DET;
+		DIV += from.DIV;
+		ENTR += from.ENTR;
+		LAM += from.LAM;
+		TT += from.TT;
+		MeanDiagonalLength += from.MeanDiagonalLength;
+		DiagonalVariance += from.DiagonalVariance;
+		Lmax += from.Lmax;
+	}
+
+	void Div(double divider)
+	{
+		RR /= divider;
+		DET /= divider;
+		DIV /= divider;
+		ENTR /= divider;
+		LAM /= divider;
+		TT /= divider;
+		MeanDiagonalLength /= divider;
+		DiagonalVariance /= divider;
+		Lmax /= divider;
+	}
 };
 
 RQA RecurrenceRQA(double* rec, int size, int lmin, int vmin);
