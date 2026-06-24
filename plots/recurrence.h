@@ -18,11 +18,15 @@ struct RecurrenceProperties
 	bool optimRR;
 	double targetRR;
 
+	double sigma;
+
 	std::vector<RQA> rqaHistory;
 	uint64_t rqaVariations;
 	uint64_t rqaBuffers;
 	std::vector<RQA> rqaDensityAvgHistory;
 	std::vector<RQA> rqaDensityRPPHistory;
+
+	std::vector<double> histogram;
 
 	RecurrenceProperties()
 	{
@@ -38,6 +42,8 @@ struct RecurrenceProperties
 
 		optimRR = true;
 		targetRR = 0.01;
+
+		sigma = 1.0;
 
 		rqaVariations = 0;
 		rqaBuffers = 0;

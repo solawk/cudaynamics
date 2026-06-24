@@ -1599,7 +1599,7 @@ int imgui_main(int, char**)
 			HeatmapProperties* heatmap;
 			Kernel* krnl;
 			Computation* cmp;
-			int rqaSize;
+			//int rqaSize;
 
 			switch (window->type)
 			{
@@ -2517,6 +2517,7 @@ int imgui_main(int, char**)
 					ImGui::InputInt(("Decimation##" + plotName + "_decimation").c_str(), &(window->recur.decimation));
 					ImGui::Checkbox(("Optimize RR##" + plotName + "_rropt").c_str(), &(window->recur.optimRR));
 					ImGui::InputDouble(("Target RR##" + plotName + "_rrtgt").c_str(), &(window->recur.targetRR));
+					ImGui::InputDouble(("Sigma##" + plotName + "_sigma").c_str(), &(window->recur.sigma));
 
 					ImGui::Text(("RR: " + std::to_string(window->recur.rqa.RR)).c_str());
 					ImGui::Text(("DET: " + std::to_string(window->recur.rqa.DET)).c_str());
@@ -2564,8 +2565,10 @@ int imgui_main(int, char**)
 					{
 						uint64_t totalVariations = computations[playedBufferIndex].marshal.totalVariations;
 						window->recur.Prepare(&(computations[playedBufferIndex]));
+						window->recur.histogram.clear();
 						//double* rpp = new double[window->recur.size * window->recur.size]; // Recurrence Probability Plot
 						//RQA averagedRQA;
+						const int bins = 100;
 						for (int v = 0; v < totalVariations; v++)
 						{
 							if (window->recur.optimRR)
@@ -2575,11 +2578,73 @@ int imgui_main(int, char**)
 							window->recur.Calculate(&(computations[playedBufferIndex]), v, window->variables);
 							//window->recur.CalculateGlobal(&(computations[playedBufferIndex]), v, window->variables);
 
+							/*
+							* JSD stuff
+							// Computing the Gaussian kernel
+							for (uint64_t t = 0; t < window->recur.size * window->recur.size; t++)
+							{
+								double d = window->recur.valueBuffer[t];
+								double sigma = window->recur.sigma;
+								window->recur.valueBuffer[t] = exp(-(d * d) / (sigma * sigma));
+							}
+
+							// Filling the histogram
+							int firstIndex = v * bins;
+							for (int b = 0; b < bins; b++) window->recur.histogram.push_back(0.0);
+
+							for (uint64_t y = 0; y < window->recur.size - 1; y++)
+								for (uint64_t x = 0; x < window->recur.size - 1 - y; x++)
+								{
+									int bin = (int)(window->recur.valueBuffer[y * window->recur.size + x] * 100.0);
+									if (bin > bins - 1) bin = bins - 1;
+									if (bin < 0) bin = 0;
+									window->recur.histogram[firstIndex + bin] += 1.0;
+								}
+
+							for (int b = 0; b < bins; b++) window->recur.histogram[firstIndex + b] /= window->recur.size * (window->recur.size - 1) / 2.0;
+								*/
+
+							//window->recur.CalculateGlobal(&(computations[playedBufferIndex]), v, window->variables);
 							//for (uint64_t t = 0; t < window->recur.size * window->recur.size; t++) rpp[t] += window->recur.valueBuffer[t];
 
 							window->recur.SaveRQAToHistory(totalVariations);
 							//averagedRQA.Add(window->recur.rqa);
 						}
+
+						/*
+							* JSD stuff
+						// Mean histogram
+						std::vector<double> meanHistogram;
+						for (int b = 0; b < bins; b++) meanHistogram.push_back(0.0);
+						for (int v = 0; v < totalVariations; v++)
+							for (int b = 0; b < bins; b++) meanHistogram[b] += window->recur.histogram[v * bins + b] / totalVariations;
+
+						// JSDs for trajectories
+						std::vector<double> JSDs;
+						for (int v = 0; v < totalVariations; v++)
+						{
+							std::vector<double> M;
+							for (int b = 0; b < bins; b++) M.push_back((meanHistogram[b] + window->recur.histogram[v * bins + b]) / 2.0);
+
+							double kl_PM = 0.0;
+							double kl_QM = 0.0;
+
+							for (int b = 0; b < bins; b++)
+							{
+								if (window->recur.histogram[v * bins + b] > 0.0) kl_PM += window->recur.histogram[v * bins + b] * log2(window->recur.histogram[v * bins + b] / M[b]);
+								if (meanHistogram[b] > 0.0) kl_PM += meanHistogram[b] * log2(meanHistogram[b] / M[b]);
+							}
+
+							JSDs.push_back(0.5 * kl_PM + 0.5 * kl_QM);
+							printf("v %i: %f\n", v, (float)(0.5 * kl_PM + 0.5 * kl_QM));
+						}
+
+						// Mean JSD
+						double meanJSD = 0.0;
+						for (int v = 0; v < totalVariations; v++) meanJSD += JSDs[v] / totalVariations;
+						printf("mean: %f\n", (float)meanJSD);
+						*/
+
 						//averagedRQA.Div(totalVariations);
 						window->recur.rqaBuffers++;
 						/*for (uint64_t t = 0; t < window->recur.size * window->recur.size; t++)
@@ -2615,6 +2680,20 @@ int imgui_main(int, char**)
 						}
 
 						//delete[] rpp;
+					}
+
+					if (window->recur.histogram.size() > 0)
+					{
+						if (ImPlot::BeginPlot((plotName + "_rqaHist").c_str()))
+						{
+							const int bins = 100;
+							ImPlot::SetupAxis(3, "Hist", 0);
+
+							ImPlot::SetAxes(ImAxis_X1, 3);
+							ImPlot::PlotLine(("hist##" + plotName).c_str(), &(window->recur.histogram[bins * variation]), bins);
+
+							ImPlot::EndPlot();
+						}
 					}
 
 					/*
