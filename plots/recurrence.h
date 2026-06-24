@@ -19,6 +19,8 @@ struct RecurrenceProperties
 	double targetRR;
 
 	double sigma;
+	int variationToPlot;
+	bool onlyPlot;
 
 	std::vector<RQA> rqaHistory;
 	uint64_t rqaVariations;
@@ -44,6 +46,8 @@ struct RecurrenceProperties
 		targetRR = 0.01;
 
 		sigma = 1.0;
+		variationToPlot = 0;
+		onlyPlot = false;
 
 		rqaVariations = 0;
 		rqaBuffers = 0;
@@ -146,7 +150,7 @@ struct RecurrenceProperties
 			delete[] pixelBuffer;
 		}
 		pixelBuffer = new unsigned char[size * size * 4];
-		MapToImg(values, &pixelBuffer, size, size, global, 0.0, 1.0, ImPlotColormap_Greys);
+		MapToImg(values, &pixelBuffer, size, size, global, 0.0, max, ImPlotColormap_Turbo);
 	}
 
 	double FindEpsilon(Computation* cmp, uint64_t variation, std::vector<int> vars, double rr)
