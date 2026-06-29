@@ -2511,16 +2511,27 @@ int imgui_main(int, char**)
 				case Recurrence:
 
 					if (window->whiteBg) ImPlot::PushStyleColor(ImPlotCol_PlotBg, ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
-					ImGui::DragDouble(("Min##" + plotName + "_min").c_str(), &(window->recur.min), 1.0, -9999, 9999, "%f", 0);
-					ImGui::DragDouble(("Max##" + plotName + "_max").c_str(), &(window->recur.max), 1.0, -9999, 9999, "%f", 0);
+					//ImGui::DragDouble(("Min##" + plotName + "_min").c_str(), &(window->recur.min), 1.0, -9999, 9999, "%f", 0);
+					//ImGui::DragDouble(("Max##" + plotName + "_max").c_str(), &(window->recur.max), 1.0, -9999, 9999, "%f", 0);
 					ImGui::InputDouble(("Epsilon##" + plotName + "_epsilon").c_str(), &(window->recur.epsilon));
-					ImGui::InputInt(("Decimation##" + plotName + "_decimation").c_str(), &(window->recur.decimation));
-					ImGui::Checkbox(("Optimize RR##" + plotName + "_rropt").c_str(), &(window->recur.optimRR));
+					//ImGui::InputInt(("Decimation##" + plotName + "_decimation").c_str(), &(window->recur.decimation));
+					//ImGui::Checkbox(("Optimize RR##" + plotName + "_rropt").c_str(), &(window->recur.optimRR));
 					ImGui::InputDouble(("Target RR##" + plotName + "_rrtgt").c_str(), &(window->recur.targetRR));
 					//ImGui::InputDouble(("Sigma##" + plotName + "_sigma").c_str(), &(window->recur.sigma));
-					ImGui::InputInt(("Plot variation##" + plotName + "toPlot").c_str(), &(window->recur.variationToPlot));
-					ImGui::Checkbox(("Only plot##" + plotName + "_only").c_str(), &(window->recur.onlyPlot));
+					//ImGui::InputInt(("Plot variation##" + plotName + "toPlot").c_str(), &(window->recur.variationToPlot));
+					//ImGui::Checkbox(("Only plot##" + plotName + "_only").c_str(), &(window->recur.onlyPlot));
 
+					//ImGui::InputDouble(("PF threshold##" + plotName + "_pf1").c_str(), &(window->recur.peakThreshold));
+					//ImGui::InputDouble(("PF max value##" + plotName + "_pf2").c_str(), &(window->recur.maxAllowedValue));
+					//ImGui::InputDouble(("PF eps##" + plotName + "_pf3").c_str(), &(window->recur.epsFXP));
+					//ImGui::InputDouble(("PF time frac##" + plotName + "_pf4").c_str(), &(window->recur.timeFractionFXP));
+					//ImGui::InputInt(("PF variable##" + plotName + "_pf5").c_str(), &(window->recur.analysedVariable));
+
+					ImGui::InputInt(("Peak Vicinity##" + plotName + "_pv").c_str(), &(window->recur.peakVicinitySteps));
+					ImGui::Checkbox(("Do Vicinity Ratio##" + plotName + "_dovicratio").c_str(), &(window->recur.chooseVicinityToRatio));
+					ImGui::InputFloat(("Vicinity Ratio##" + plotName + "_vicratio").c_str(), &(window->recur.targetVicinityRatio));
+
+					/*
 					ImGui::Text(("RR: " + std::to_string(window->recur.rqa.RR)).c_str());
 					ImGui::Text(("DET: " + std::to_string(window->recur.rqa.DET)).c_str());
 					ImGui::Text(("DIV: " + std::to_string(window->recur.rqa.DIV)).c_str());
@@ -2528,144 +2539,61 @@ int imgui_main(int, char**)
 					ImGui::Text(("LAM: " + std::to_string(window->recur.rqa.LAM)).c_str());
 					ImGui::Text(("TT: " + std::to_string(window->recur.rqa.TT)).c_str());
 					ImGui::Text(("Lmax: " + std::to_string(window->recur.rqa.Lmax)).c_str());
+					*/
 
 					//rqaSize = (int)window->recur.rqaHistory.size();
-					if (window->recur.rqaBuffers > 1)
-					{
-						if (ImPlot::BeginPlot((plotName + "_rqaHistory").c_str()))
-						{
-							double rqaV[100];
-							int rqa;
-
-							ImPlot::SetupAxis(3, "DET", 0);
-							ImPlot::SetupAxis(4, "DIV", 0);
-							ImPlot::SetupAxis(5, "ENTR", 0);
-							ImPlot::SetupAxis(6, "LAM", 0);
-							ImPlot::SetupAxis(7, "TT", 0);
-							ImPlot::SetupAxis(8, "Lmax", 0);
-
-							for (rqa = 0; rqa < (int)window->recur.rqaBuffers; rqa++) rqaV[rqa] = window->recur.rqaHistory[window->recur.rqaVariations * rqa + variation].DET;
-							ImPlot::SetAxes(ImAxis_X1, 3); ImPlot::PlotLine(("DET##" + plotName).c_str(), &(rqaV[0]), (int)window->recur.rqaBuffers);
-							for (rqa = 0; rqa < (int)window->recur.rqaBuffers; rqa++) rqaV[rqa] = window->recur.rqaHistory[window->recur.rqaVariations * rqa + variation].DIV;
-							ImPlot::SetAxes(ImAxis_X1, 4); ImPlot::PlotLine(("DIV##" + plotName).c_str(), &(rqaV[0]), (int)window->recur.rqaBuffers);
-							for (rqa = 0; rqa < (int)window->recur.rqaBuffers; rqa++) rqaV[rqa] = window->recur.rqaHistory[window->recur.rqaVariations * rqa + variation].ENTR;
-							ImPlot::SetAxes(ImAxis_X1, 5); ImPlot::PlotLine(("ENTR##" + plotName).c_str(), &(rqaV[0]), (int)window->recur.rqaBuffers);
-							for (rqa = 0; rqa < (int)window->recur.rqaBuffers; rqa++) rqaV[rqa] = window->recur.rqaHistory[window->recur.rqaVariations * rqa + variation].LAM;
-							ImPlot::SetAxes(ImAxis_X1, 6); ImPlot::PlotLine(("LAM##" + plotName).c_str(), &(rqaV[0]), (int)window->recur.rqaBuffers);
-							for (rqa = 0; rqa < (int)window->recur.rqaBuffers; rqa++) rqaV[rqa] = window->recur.rqaHistory[window->recur.rqaVariations * rqa + variation].TT;
-							ImPlot::SetAxes(ImAxis_X1, 7); ImPlot::PlotLine(("TT##" + plotName).c_str(), &(rqaV[0]), (int)window->recur.rqaBuffers);
-							for (rqa = 0; rqa < (int)window->recur.rqaBuffers; rqa++) rqaV[rqa] = window->recur.rqaHistory[window->recur.rqaVariations * rqa + variation].Lmax;
-							ImPlot::SetAxes(ImAxis_X1, 8); ImPlot::PlotLine(("Lmax##" + plotName).c_str(), &(rqaV[0]), (int)window->recur.rqaBuffers);
-
-							ImPlot::EndPlot();
-						}
-					}
 
 					if (ImGui::Button("Clear RQA")) window->recur.ClearRQAHistory();
 
 					if (ImGui::Button("Calculate"))
 					{
-						uint64_t totalVariations = computations[playedBufferIndex].marshal.totalVariations;
-						window->recur.Prepare(&(computations[playedBufferIndex]));
-						window->recur.histogram.clear();
-						//double* rpp = new double[window->recur.size * window->recur.size]; // Recurrence Probability Plot
-						RQA averagedRQA;
-						//const int bins = 100;
-						for (int v = 0; v < totalVariations; v++)
+						for (int w = 0; w < window->recur.windowsPerBuffer; w++)
+						// Single window
 						{
-							if (window->recur.optimRR)
+							uint64_t totalVariations = computations[playedBufferIndex].marshal.totalVariations;
+							window->recur.Prepare(&(computations[playedBufferIndex]));
+							window->recur.histogram.clear();
+							for (int v = 0; v < totalVariations; v++)
 							{
-								window->recur.epsilon = window->recur.FindEpsilon(&(computations[playedBufferIndex]), v, window->variables, window->recur.targetRR);
-							}
-							window->recur.Calculate(&(computations[playedBufferIndex]), v, window->variables);
-							//window->recur.CalculateGlobal(&(computations[playedBufferIndex]), v, window->variables);
-							if (v == variation)
-								window->recur.MakeImage(window->recur.valueBuffer, true, window->recur.max);
-							//window->recur.CalculateGlobal(&(computations[playedBufferIndex]), v, window->variables);
-
-							/*
-							* JSD stuff
-							// Computing the Gaussian kernel
-							for (uint64_t t = 0; t < window->recur.size * window->recur.size; t++)
-							{
-								double d = window->recur.valueBuffer[t];
-								double sigma = window->recur.sigma;
-								window->recur.valueBuffer[t] = exp(-(d * d) / (sigma * sigma));
-							}
-
-							// Filling the histogram
-							int firstIndex = v * bins;
-							for (int b = 0; b < bins; b++) window->recur.histogram.push_back(0.0);
-
-							for (uint64_t y = 0; y < window->recur.size - 1; y++)
-								for (uint64_t x = 0; x < window->recur.size - 1 - y; x++)
+								std::vector<int> peakTimes1 = window->recur.PeakFinder(&(computations[playedBufferIndex]), v);
+								std::vector<int> peakTimes2 = window->recur.PeakFinder(&(computations[1 - playedBufferIndex]), v);
+								if (window->recur.chooseVicinityToRatio)
 								{
-									int bin = (int)(window->recur.valueBuffer[y * window->recur.size + x] * 100.0);
-									if (bin > bins - 1) bin = bins - 1;
-									if (bin < 0) bin = 0;
-									window->recur.histogram[firstIndex + bin] += 1.0;
+									window->recur.OptimizePeakVicinity(peakTimes1, peakTimes2);
 								}
+								peakTimes1 = window->recur.BroadenPeaks(peakTimes1);
+								peakTimes2 = window->recur.BroadenPeaks(peakTimes2);
 
-							for (int b = 0; b < bins; b++) window->recur.histogram[firstIndex + b] /= window->recur.size * (window->recur.size - 1) / 2.0;
-								*/
+								// Regular
+								if (window->recur.optimRR)
+								{
+									window->recur.epsilon = window->recur.FindEpsilon(&(computations[playedBufferIndex]), &(computations[1 - playedBufferIndex]),
+										v, window->variables, window->recur.targetRR, window->recur.windowsPerBuffer, w);
+								}
+								window->recur.Calculate(&(computations[playedBufferIndex]), &(computations[1 - playedBufferIndex]), v, window->variables, window->recur.windowsPerBuffer, w);
+								//window->recur.CalculateGlobal(&(computations[playedBufferIndex]), v, window->variables);
+								if (v == variation)
+									window->recur.MakeImage(window->recur.valueBuffer, true, window->recur.max, false);
 
-							//window->recur.CalculateGlobal(&(computations[playedBufferIndex]), v, window->variables);
-							//for (uint64_t t = 0; t < window->recur.size * window->recur.size; t++) rpp[t] += window->recur.valueBuffer[t];
+								if (!window->recur.onlyPlot) window->recur.SaveRQAToHistory(totalVariations);
 
-							if (!window->recur.onlyPlot) window->recur.SaveRQAToHistory(totalVariations);
-							averagedRQA.Add(window->recur.rqa);
-						}
+								// Peaks
+								if (window->recur.optimRR)
+								{
+									window->recur.epsilon = window->recur.FindEpsilonPeaks(&(computations[playedBufferIndex]), &(computations[1 - playedBufferIndex]),
+										v, window->variables, window->recur.targetRR, peakTimes1, peakTimes2, window->recur.windowsPerBuffer, w);
+								}
+								window->recur.CalculatePeaks(&(computations[playedBufferIndex]), &(computations[1 - playedBufferIndex]), 
+									v, window->variables, peakTimes1, peakTimes2, window->recur.windowsPerBuffer, w);
 
-						/*
-							* JSD stuff
-						// Mean histogram
-						std::vector<double> meanHistogram;
-						for (int b = 0; b < bins; b++) meanHistogram.push_back(0.0);
-						for (int v = 0; v < totalVariations; v++)
-							for (int b = 0; b < bins; b++) meanHistogram[b] += window->recur.histogram[v * bins + b] / totalVariations;
+								if (v == variation)
+									window->recur.MakeImage(window->recur.valueBuffer, true, window->recur.max, true);
 
-						// JSDs for trajectories
-						std::vector<double> JSDs;
-						for (int v = 0; v < totalVariations; v++)
-						{
-							std::vector<double> M;
-							for (int b = 0; b < bins; b++) M.push_back((meanHistogram[b] + window->recur.histogram[v * bins + b]) / 2.0);
-
-							double kl_PM = 0.0;
-							double kl_QM = 0.0;
-
-							for (int b = 0; b < bins; b++)
-							{
-								if (window->recur.histogram[v * bins + b] > 0.0) kl_PM += window->recur.histogram[v * bins + b] * log2(window->recur.histogram[v * bins + b] / M[b]);
-								if (meanHistogram[b] > 0.0) kl_PM += meanHistogram[b] * log2(meanHistogram[b] / M[b]);
+								if (!window->recur.onlyPlot) window->recur.SaveRQAToHistoryPeaks(totalVariations);
 							}
 
-							JSDs.push_back(0.5 * kl_PM + 0.5 * kl_QM);
-							printf("v %i: %f\n", v, (float)(0.5 * kl_PM + 0.5 * kl_QM));
+							if (!window->recur.onlyPlot) window->recur.rqaBuffers++;
 						}
-
-						// Mean JSD
-						double meanJSD = 0.0;
-						for (int v = 0; v < totalVariations; v++) meanJSD += JSDs[v] / totalVariations;
-						printf("mean: %f\n", (float)meanJSD);
-						*/
-
-						averagedRQA.Div(totalVariations);
-						if (!window->recur.onlyPlot) window->recur.rqaBuffers++;
-						/*for (uint64_t t = 0; t < window->recur.size * window->recur.size; t++)
-						{
-							//rpp[t] /= totalVariations;
-							rpp[t] /= totalVariations;
-							if (rpp[t] >= 0.5) rpp[t] = 1.0; else rpp[t] = 0.0;
-						}*/
-						//window->recur.MakeImage(rpp, true, 1.0);
-						//window->recur.MakeImage(rpp, true, 30.0);
-						//window->recur.MakeImage(rpp, false, 1.0);
-
-						//memcpy(window->recur.valueBuffer, rpp, window->recur.size * window->recur.size * sizeof(double));
-						//window->recur.MakeRQA();
-						//window->recur.rqaDensityRPPHistory.push_back(window->recur.rqa);
-						window->recur.rqaDensityAvgHistory.push_back(averagedRQA);
 
 						if (window->recur.size > 0)
 						{
@@ -2680,98 +2608,125 @@ int imgui_main(int, char**)
 									(ID3D11ShaderResourceView**)&(window->recur.texture), g_pd3dDevice);
 								IM_ASSERT(ret);
 							}
-						}
 
-						//delete[] rpp;
+
+							if (window->recur.texturePeaks != nullptr)
+							{
+								((ID3D11ShaderResourceView*)window->recur.texturePeaks)->Release();
+								window->recur.texturePeaks = nullptr;
+							}
+							if (window->recur.texturePeaks == nullptr)
+							{
+								bool ret = LoadTextureFromRaw(&(window->recur.pixelBufferPeaks), window->recur.sizePeaks, window->recur.sizePeaks,
+									(ID3D11ShaderResourceView**)&(window->recur.texturePeaks), g_pd3dDevice);
+								IM_ASSERT(ret);
+							}
+						}
 					}
 
-					/*if (window->recur.histogram.size() > 0)
+					if (ImGui::BeginTable((plotName + "_plotTable").c_str(), 2))
 					{
-						if (ImPlot::BeginPlot((plotName + "_rqaHist").c_str()))
+						ImGui::TableNextRow();
+						ImGui::TableNextColumn();
+
+						if (window->recur.rqaBuffers > 1)
 						{
-							const int bins = 100;
-							ImPlot::SetupAxis(3, "Hist", 0);
+							if (ImPlot::BeginPlot((plotName + "_rqaHistory").c_str()))
+							{
+								double rqaV[100];
+								int rqa;
 
-							ImPlot::SetAxes(ImAxis_X1, 3);
-							ImPlot::PlotLine(("hist##" + plotName).c_str(), &(window->recur.histogram[bins * variation]), bins);
+								ImPlot::SetupAxis(3, "DET", 0);
+								ImPlot::SetupAxis(4, "DIV", 0);
+								ImPlot::SetupAxis(5, "ENTR", 0);
+								ImPlot::SetupAxis(6, "LAM", 0);
+								ImPlot::SetupAxis(7, "TT", 0);
+								ImPlot::SetupAxis(8, "Lmax", 0);
 
-							ImPlot::EndPlot();
+								for (rqa = 0; rqa < (int)window->recur.rqaBuffers; rqa++) rqaV[rqa] = window->recur.rqaHistory[window->recur.rqaVariations * rqa + variation].DET;
+								ImPlot::SetAxes(ImAxis_X1, 3); ImPlot::PlotLine(("DET##" + plotName).c_str(), &(rqaV[0]), (int)window->recur.rqaBuffers);
+								for (rqa = 0; rqa < (int)window->recur.rqaBuffers; rqa++) rqaV[rqa] = window->recur.rqaHistory[window->recur.rqaVariations * rqa + variation].DIV;
+								ImPlot::SetAxes(ImAxis_X1, 4); ImPlot::PlotLine(("DIV##" + plotName).c_str(), &(rqaV[0]), (int)window->recur.rqaBuffers);
+								for (rqa = 0; rqa < (int)window->recur.rqaBuffers; rqa++) rqaV[rqa] = window->recur.rqaHistory[window->recur.rqaVariations * rqa + variation].ENTR;
+								ImPlot::SetAxes(ImAxis_X1, 5); ImPlot::PlotLine(("ENTR##" + plotName).c_str(), &(rqaV[0]), (int)window->recur.rqaBuffers);
+								for (rqa = 0; rqa < (int)window->recur.rqaBuffers; rqa++) rqaV[rqa] = window->recur.rqaHistory[window->recur.rqaVariations * rqa + variation].LAM;
+								ImPlot::SetAxes(ImAxis_X1, 6); ImPlot::PlotLine(("LAM##" + plotName).c_str(), &(rqaV[0]), (int)window->recur.rqaBuffers);
+								for (rqa = 0; rqa < (int)window->recur.rqaBuffers; rqa++) rqaV[rqa] = window->recur.rqaHistory[window->recur.rqaVariations * rqa + variation].TT;
+								ImPlot::SetAxes(ImAxis_X1, 7); ImPlot::PlotLine(("TT##" + plotName).c_str(), &(rqaV[0]), (int)window->recur.rqaBuffers);
+								for (rqa = 0; rqa < (int)window->recur.rqaBuffers; rqa++) rqaV[rqa] = window->recur.rqaHistory[window->recur.rqaVariations * rqa + variation].Lmax;
+								ImPlot::SetAxes(ImAxis_X1, 8); ImPlot::PlotLine(("Lmax##" + plotName).c_str(), &(rqaV[0]), (int)window->recur.rqaBuffers);
+
+								ImPlot::EndPlot();
+							}
 						}
-					}*/
 
-					
-					if (window->recur.rqaBuffers > 1)
-					{
-						if (ImPlot::BeginPlot((plotName + "_rqaHistoryAvg").c_str()))
+						ImGui::TableNextColumn();
+
+						if (window->recur.rqaBuffers > 1)
 						{
-							double rqaV[100];
-							int rqa;
+							if (ImPlot::BeginPlot((plotName + "_rqaHistoryPeaks").c_str()))
+							{
+								double rqaV[100];
+								int rqa;
 
-							ImPlot::SetupAxis(3, "DET", 0);
-							ImPlot::SetupAxis(4, "DIV", 0);
-							ImPlot::SetupAxis(5, "ENTR", 0);
-							ImPlot::SetupAxis(6, "LAM", 0);
-							ImPlot::SetupAxis(7, "TT", 0);
-							ImPlot::SetupAxis(8, "Lmax", 0);
+								ImPlot::SetupAxis(3, "DET", 0);
+								ImPlot::SetupAxis(4, "DIV", 0);
+								ImPlot::SetupAxis(5, "ENTR", 0);
+								ImPlot::SetupAxis(6, "LAM", 0);
+								ImPlot::SetupAxis(7, "TT", 0);
+								ImPlot::SetupAxis(8, "Lmax", 0);
 
-							for (rqa = 0; rqa < (int)window->recur.rqaBuffers; rqa++) rqaV[rqa] = window->recur.rqaDensityAvgHistory[rqa].DET;
-							ImPlot::SetAxes(ImAxis_X1, 3); ImPlot::PlotLine(("DET_avg##" + plotName).c_str(), &(rqaV[0]), (int)window->recur.rqaBuffers);
-							for (rqa = 0; rqa < (int)window->recur.rqaBuffers; rqa++) rqaV[rqa] = window->recur.rqaDensityAvgHistory[rqa].DIV;
-							ImPlot::SetAxes(ImAxis_X1, 4); ImPlot::PlotLine(("DIV_avg##" + plotName).c_str(), &(rqaV[0]), (int)window->recur.rqaBuffers);
-							for (rqa = 0; rqa < (int)window->recur.rqaBuffers; rqa++) rqaV[rqa] = window->recur.rqaDensityAvgHistory[rqa].ENTR;
-							ImPlot::SetAxes(ImAxis_X1, 5); ImPlot::PlotLine(("ENTR_avg##" + plotName).c_str(), &(rqaV[0]), (int)window->recur.rqaBuffers);
-							for (rqa = 0; rqa < (int)window->recur.rqaBuffers; rqa++) rqaV[rqa] = window->recur.rqaDensityAvgHistory[rqa].LAM;
-							ImPlot::SetAxes(ImAxis_X1, 6); ImPlot::PlotLine(("LAM_avg##" + plotName).c_str(), &(rqaV[0]), (int)window->recur.rqaBuffers);
-							for (rqa = 0; rqa < (int)window->recur.rqaBuffers; rqa++) rqaV[rqa] = window->recur.rqaDensityAvgHistory[rqa].TT;
-							ImPlot::SetAxes(ImAxis_X1, 7); ImPlot::PlotLine(("TT_avg##" + plotName).c_str(), &(rqaV[0]), (int)window->recur.rqaBuffers);
-							for (rqa = 0; rqa < (int)window->recur.rqaBuffers; rqa++) rqaV[rqa] = window->recur.rqaDensityAvgHistory[rqa].Lmax;
-							ImPlot::SetAxes(ImAxis_X1, 8); ImPlot::PlotLine(("Lmax_avg##" + plotName).c_str(), &(rqaV[0]), (int)window->recur.rqaBuffers);
+								for (rqa = 0; rqa < (int)window->recur.rqaBuffers; rqa++) rqaV[rqa] = window->recur.rqaPeaksHistory[window->recur.rqaVariations * rqa + variation].DET;
+								ImPlot::SetAxes(ImAxis_X1, 3); ImPlot::PlotLine(("DET##" + plotName).c_str(), &(rqaV[0]), (int)window->recur.rqaBuffers);
+								for (rqa = 0; rqa < (int)window->recur.rqaBuffers; rqa++) rqaV[rqa] = window->recur.rqaPeaksHistory[window->recur.rqaVariations * rqa + variation].DIV;
+								ImPlot::SetAxes(ImAxis_X1, 4); ImPlot::PlotLine(("DIV##" + plotName).c_str(), &(rqaV[0]), (int)window->recur.rqaBuffers);
+								for (rqa = 0; rqa < (int)window->recur.rqaBuffers; rqa++) rqaV[rqa] = window->recur.rqaPeaksHistory[window->recur.rqaVariations * rqa + variation].ENTR;
+								ImPlot::SetAxes(ImAxis_X1, 5); ImPlot::PlotLine(("ENTR##" + plotName).c_str(), &(rqaV[0]), (int)window->recur.rqaBuffers);
+								for (rqa = 0; rqa < (int)window->recur.rqaBuffers; rqa++) rqaV[rqa] = window->recur.rqaPeaksHistory[window->recur.rqaVariations * rqa + variation].LAM;
+								ImPlot::SetAxes(ImAxis_X1, 6); ImPlot::PlotLine(("LAM##" + plotName).c_str(), &(rqaV[0]), (int)window->recur.rqaBuffers);
+								for (rqa = 0; rqa < (int)window->recur.rqaBuffers; rqa++) rqaV[rqa] = window->recur.rqaPeaksHistory[window->recur.rqaVariations * rqa + variation].TT;
+								ImPlot::SetAxes(ImAxis_X1, 7); ImPlot::PlotLine(("TT##" + plotName).c_str(), &(rqaV[0]), (int)window->recur.rqaBuffers);
+								for (rqa = 0; rqa < (int)window->recur.rqaBuffers; rqa++) rqaV[rqa] = window->recur.rqaPeaksHistory[window->recur.rqaVariations * rqa + variation].Lmax;
+								ImPlot::SetAxes(ImAxis_X1, 8); ImPlot::PlotLine(("Lmax##" + plotName).c_str(), &(rqaV[0]), (int)window->recur.rqaBuffers);
 
-							ImPlot::EndPlot();
+								ImPlot::EndPlot();
+							}
 						}
-						/*
-						if (ImPlot::BeginPlot((plotName + "_rqaHistoryRPP").c_str()))
+
+						ImGui::TableNextRow();
+						ImGui::TableNextColumn();
+
+						if (window->recur.texture != nullptr)
 						{
-							double rqaV[100];
-							int rqa;
+							if (ImPlot::BeginPlot(plotName.c_str(), "", "", ImVec2(-1, -1), ImPlotFlags_NoTitle | ImPlotFlags_NoLegend, axisFlags, axisFlags))
+							{
+								plot = ImPlot::GetPlot(plotName.c_str());
+								plot->is3d = false;
 
-							ImPlot::SetupAxis(3, "DET", 0);
-							ImPlot::SetupAxis(4, "DIV", 0);
-							ImPlot::SetupAxis(5, "ENTR", 0);
-							ImPlot::SetupAxis(6, "LAM", 0);
-							ImPlot::SetupAxis(7, "TT", 0);
-							ImPlot::SetupAxis(8, "Lmax", 0);
-
-							for (rqa = 0; rqa < (int)window->recur.rqaBuffers; rqa++) rqaV[rqa] = window->recur.rqaDensityRPPHistory[rqa].DET;
-							ImPlot::SetAxes(ImAxis_X1, 3); ImPlot::PlotLine(("DET_rpp##" + plotName).c_str(), &(rqaV[0]), (int)window->recur.rqaBuffers);
-							for (rqa = 0; rqa < (int)window->recur.rqaBuffers; rqa++) rqaV[rqa] = window->recur.rqaDensityRPPHistory[rqa].DIV;
-							ImPlot::SetAxes(ImAxis_X1, 4); ImPlot::PlotLine(("DIV_rpp##" + plotName).c_str(), &(rqaV[0]), (int)window->recur.rqaBuffers);
-							for (rqa = 0; rqa < (int)window->recur.rqaBuffers; rqa++) rqaV[rqa] = window->recur.rqaDensityRPPHistory[rqa].ENTR;
-							ImPlot::SetAxes(ImAxis_X1, 5); ImPlot::PlotLine(("ENTR_rpp##" + plotName).c_str(), &(rqaV[0]), (int)window->recur.rqaBuffers);
-							for (rqa = 0; rqa < (int)window->recur.rqaBuffers; rqa++) rqaV[rqa] = window->recur.rqaDensityRPPHistory[rqa].LAM;
-							ImPlot::SetAxes(ImAxis_X1, 6); ImPlot::PlotLine(("LAM_rpp##" + plotName).c_str(), &(rqaV[0]), (int)window->recur.rqaBuffers);
-							for (rqa = 0; rqa < (int)window->recur.rqaBuffers; rqa++) rqaV[rqa] = window->recur.rqaDensityRPPHistory[rqa].TT;
-							ImPlot::SetAxes(ImAxis_X1, 7); ImPlot::PlotLine(("TT_rpp##" + plotName).c_str(), &(rqaV[0]), (int)window->recur.rqaBuffers);
-							for (rqa = 0; rqa < (int)window->recur.rqaBuffers; rqa++) rqaV[rqa] = window->recur.rqaDensityRPPHistory[rqa].Lmax;
-							ImPlot::SetAxes(ImAxis_X1, 8); ImPlot::PlotLine(("Lmax_rpp##" + plotName).c_str(), &(rqaV[0]), (int)window->recur.rqaBuffers);
-
-							ImPlot::EndPlot();
-						}*/
-					}
-					
-
-					if (window->recur.texture != nullptr)
-					{
-						if (ImPlot::BeginPlot(plotName.c_str(), "", "", ImVec2(-1, -1), ImPlotFlags_NoTitle | ImPlotFlags_NoLegend, axisFlags, axisFlags))
-						{
-							plot = ImPlot::GetPlot(plotName.c_str());
-							plot->is3d = false;
-
-							ImPlot::PlotImage(("##" + plotName + std::to_string(0)).c_str(), (ImTextureID)(window->recur.texture),
-								ImVec2(0.0f, window->recur.steps), ImVec2(window->recur.steps, 0.0f),
-								ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f), ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
-							ImPlot::EndPlot();
+								ImPlot::PlotImage(("##" + plotName + std::to_string(0)).c_str(), (ImTextureID)(window->recur.texture),
+									ImVec2(0.0f, window->recur.steps), ImVec2(window->recur.steps, 0.0f),
+									ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f), ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
+								ImPlot::EndPlot();
+							}
 						}
+
+						ImGui::TableNextColumn();
+
+						if (window->recur.texturePeaks != nullptr)
+						{
+							if (ImPlot::BeginPlot((plotName + "_peaks").c_str(), "", "", ImVec2(-1, -1), ImPlotFlags_NoTitle | ImPlotFlags_NoLegend, axisFlags, axisFlags))
+							{
+								plot = ImPlot::GetPlot(plotName.c_str());
+								plot->is3d = false;
+
+								ImPlot::PlotImage(("##" + plotName + std::to_string(0) + "_peaks").c_str(), (ImTextureID)(window->recur.texturePeaks),
+									ImVec2(0.0f, window->recur.steps), ImVec2(window->recur.steps, 0.0f),
+									ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f), ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
+								ImPlot::EndPlot();
+							}
+						}
+
+						ImGui::EndTable();
 					}
 
 					if (window->whiteBg) ImPlot::PopStyleColor();

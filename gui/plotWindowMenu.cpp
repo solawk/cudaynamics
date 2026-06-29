@@ -639,6 +639,13 @@ void exportWindow(PlotWindow* window)
 		break;
 	}
 
+	case Recurrence:
+	{
+		savedPath = exportRecurrenceRQACSV(window);
+		attempted = true;
+		break;
+	}
+
 	default:
 	{
 		MessageBoxA(NULL, "Export not supported for this plot type.", "Export", MB_OK | MB_ICONWARNING);

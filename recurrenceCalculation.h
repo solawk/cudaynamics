@@ -6,9 +6,12 @@
 #include <unordered_map>
 #include <cmath>
 
-void CalculateRecurrence(numb* t, std::vector<int>& vars, int size, int steps, int decimation, double* output, double epsilon, int varCount, uint64_t variation);
+void CalculateRecurrence(numb* t1, numb* t2, int windows, int windowIndex, std::vector<int>& vars, int size, 
+	int steps, int decimation, double* output, double epsilon, int varCount, uint64_t variation, bool isGlobal);
+void CalculateRecurrenceSpecific(numb* t1, numb* t2, int windows, int windowIndex, std::vector<int>& vars, std::vector<int>& stepsToUse1, std::vector<int>& stepsToUse2,
+	int steps, int decimation, double* output, double epsilon, int varCount, uint64_t variation, bool isGlobal);
 
-void CalculateRecurrenceGlobal(numb* t, std::vector<int>& vars, int size, int steps, int decimation, double* output, int varCount, uint64_t variation);
+int SpecificWindowSize(int size1, int size2, float t);
 
 struct RQA
 {
@@ -24,7 +27,7 @@ struct RQA
 	double MeanDiagonalLength = 0.0;
 	double DiagonalVariance = 0.0;
 
-	int Lmax = 0;
+	double Lmax = 0;
 
 	void Add(RQA& from)
 	{

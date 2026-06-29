@@ -234,4 +234,10 @@ public:
 
 		kernel->analyses = analyses;
 	}
+
+	numb GetStepSize()
+	{
+		if (stepType == ST_Parameter) return parameters[PARAM_COUNT - 1].min;
+		return 1.0f;
+	}
 };

@@ -927,3 +927,47 @@ std::string exportMetricCSV(const PlotWindow* window)
 
     return path;
 }
+
+std::string exportRecurrenceRQACSV(const PlotWindow* window)
+{
+    if (!window) return {};
+
+    const RecurrenceProperties* recur = &(window->recur);
+    const int rows = recur->rqaBuffers;
+
+    // RQA regular
+    std::string systemName = safe_system_name(KERNEL);
+    std::string path = build_export_path(systemName, "recurrence", /*extra*/"", ".csv");
+    std::ofstream f = open_csv(path);
+    if (!f.is_open()) return {};
+    for (int i = 0; i < rows; ++i) 
+    {
+        f << recur->rqaHistory[i].DET << ",";
+        f << recur->rqaHistory[i].DIV << ",";
+        f << recur->rqaHistory[i].ENTR << ",";
+        f << recur->rqaHistory[i].LAM << ",";
+        f << recur->rqaHistory[i].TT << ",";
+        f << recur->rqaHistory[i].Lmax;
+
+        f << '\n';
+    }
+
+    // RQA peaks
+    systemName = safe_system_name(KERNEL);
+    path = build_export_path(systemName, "recurrencePeaks", /*extra*/"", ".csv");
+    f = open_csv(path);
+    if (!f.is_open()) return {};
+    for (int i = 0; i < rows; ++i)
+    {
+        f << recur->rqaPeaksHistory[i].DET << ",";
+        f << recur->rqaPeaksHistory[i].DIV << ",";
+        f << recur->rqaPeaksHistory[i].ENTR << ",";
+        f << recur->rqaPeaksHistory[i].LAM << ",";
+        f << recur->rqaPeaksHistory[i].TT << ",";
+        f << recur->rqaPeaksHistory[i].Lmax;
+
+        f << '\n';
+    }
+
+    return path;
+}
