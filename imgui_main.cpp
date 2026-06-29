@@ -2530,6 +2530,7 @@ int imgui_main(int, char**)
 					ImGui::InputInt(("Peak Vicinity##" + plotName + "_pv").c_str(), &(window->recur.peakVicinitySteps));
 					ImGui::Checkbox(("Do Vicinity Ratio##" + plotName + "_dovicratio").c_str(), &(window->recur.chooseVicinityToRatio));
 					ImGui::InputFloat(("Vicinity Ratio##" + plotName + "_vicratio").c_str(), &(window->recur.targetVicinityRatio));
+					ImGui::InputInt(("Windows per buffer##" + plotName + "_wpb").c_str(), &(window->recur.windowsPerBuffer));
 
 					/*
 					ImGui::Text(("RR: " + std::to_string(window->recur.rqa.RR)).c_str());
