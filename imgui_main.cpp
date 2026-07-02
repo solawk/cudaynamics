@@ -2566,7 +2566,7 @@ int imgui_main(int, char**)
 								peakTimes2 = window->recur.BroadenPeaks(peakTimes2);
 
 								// Regular
-								if (window->recur.optimRR)
+								/*if (window->recur.optimRR)
 								{
 									window->recur.epsilon = window->recur.FindEpsilon(&(computations[playedBufferIndex]), &(computations[1 - playedBufferIndex]),
 										v, window->variables, window->recur.targetRR, window->recur.windowsPerBuffer, w);
@@ -2576,7 +2576,7 @@ int imgui_main(int, char**)
 								if (v == variation)
 									window->recur.MakeImage(window->recur.valueBuffer, true, window->recur.max, false);
 
-								if (!window->recur.onlyPlot) window->recur.SaveRQAToHistory(totalVariations);
+								if (!window->recur.onlyPlot) window->recur.SaveRQAToHistory(totalVariations);*/
 
 								// Peaks
 								if (window->recur.optimRR)
@@ -2630,6 +2630,7 @@ int imgui_main(int, char**)
 						ImGui::TableNextRow();
 						ImGui::TableNextColumn();
 
+						/*
 						if (window->recur.rqaBuffers > 1)
 						{
 							if (ImPlot::BeginPlot((plotName + "_rqaHistory").c_str()))
@@ -2660,6 +2661,7 @@ int imgui_main(int, char**)
 								ImPlot::EndPlot();
 							}
 						}
+						*/
 
 						ImGui::TableNextColumn();
 
@@ -2717,7 +2719,7 @@ int imgui_main(int, char**)
 						{
 							if (ImPlot::BeginPlot((plotName + "_peaks").c_str(), "", "", ImVec2(-1, -1), ImPlotFlags_NoTitle | ImPlotFlags_NoLegend, axisFlags, axisFlags))
 							{
-								plot = ImPlot::GetPlot(plotName.c_str());
+								plot = ImPlot::GetPlot((plotName + "_peaks").c_str());
 								plot->is3d = false;
 
 								ImPlot::PlotImage(("##" + plotName + std::to_string(0) + "_peaks").c_str(), (ImTextureID)(window->recur.texturePeaks),
@@ -2733,6 +2735,91 @@ int imgui_main(int, char**)
 					if (window->whiteBg) ImPlot::PopStyleColor();
 
 					break;
+
+					case TDA:
+
+						if (window->whiteBg) ImPlot::PushStyleColor(ImPlotCol_PlotBg, ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
+
+						ImGui::InputDouble(("PF threshold##" + plotName + "_pf1").c_str(), &(window->recur.peakThreshold));
+						ImGui::InputDouble(("PF max value##" + plotName + "_pf2").c_str(), &(window->recur.maxAllowedValue));
+						ImGui::InputDouble(("PF eps##" + plotName + "_pf3").c_str(), &(window->recur.epsFXP));
+						ImGui::InputDouble(("PF time frac##" + plotName + "_pf4").c_str(), &(window->recur.timeFractionFXP));
+						ImGui::InputInt(("PF variable##" + plotName + "_pf5").c_str(), &(window->recur.analysedVariable));
+
+						if (ImGui::Button("Clear")) 
+						{
+							window->tda.Clear();
+						}
+
+						if (ImGui::Button("Calculate"))
+						{
+							window->tda.PeakFinder(&(computations[playedBufferIndex]), 0);
+							window->tda.metrics.push_back(window->tda.ComputeMetrics());
+							window->tda.tdaar = window->tda.AnalyzeTransientChaos(window->tda.metrics);
+							printf("%i\n", window->tda.tdaar.transitionIndex);
+						}
+
+						// PA-IPI
+						if ((int)window->tda.peakAmplitudes.size() > 0)
+						{
+							if (ImPlot::BeginPlot((plotName + "_pa_ipi").c_str(), ImVec2(-1, 0), ImPlotFlags_NoLegend | ImPlotFlags_NoTitle))
+							{
+								double* intervals = window->tda.peakIntervals.data();
+								double* amplitudes = window->tda.peakAmplitudes.data();
+
+								ImPlot::PlotScatter((plotName + "_pa_ipi_scatter").c_str(),
+									intervals, amplitudes, (int)window->tda.peakIntervals.size());
+
+								ImPlot::EndPlot();
+							}
+						}
+
+						// Metrics
+						if ((int)window->tda.metrics.size() > 1)
+						{
+							if (ImPlot::BeginPlot((plotName + "_tdaHistory").c_str()))
+							{
+								double v[100];
+								int m;
+
+								ImPlot::SetupAxis(3, "MeanA", 0);
+								ImPlot::SetupAxis(4, "MeanI", 0);
+								ImPlot::SetupAxis(5, "SigmaA", 0);
+								ImPlot::SetupAxis(6, "SigmaI", 0);
+								ImPlot::SetupAxis(7, "Lambda1", 0);
+								//ImPlot::SetupAxis(8, "!Lambda2", 0);
+								ImPlot::SetupAxis(8, "Log Area", 0);
+								//ImPlot::SetupAxis(10, "!Elongation", 0);
+								//ImPlot::SetupAxis(11, "!Axis Ratio", 0);
+								ImPlot::SetupAxis(9, "Principal Angle", 0);
+								ImPlot::SetupAxis(10, "Change Rate", 0);
+								ImPlot::SetupAxis(11, "Smooth Rate", 0);
+
+								for (m = 0; m < (int)window->tda.metrics.size(); m++) v[m] = window->tda.metrics[m].meanA;
+								ImPlot::SetAxes(ImAxis_X1, 3); ImPlot::PlotLine(("MeanA##" + plotName).c_str(), &(v[0]), (int)window->tda.metrics.size());
+								for (m = 0; m < (int)window->tda.metrics.size(); m++) v[m] = window->tda.metrics[m].meanI;
+								ImPlot::SetAxes(ImAxis_X1, 4); ImPlot::PlotLine(("MeanI##" + plotName).c_str(), &(v[0]), (int)window->tda.metrics.size());
+								for (m = 0; m < (int)window->tda.metrics.size(); m++) v[m] = window->tda.metrics[m].sigmaA;
+								ImPlot::SetAxes(ImAxis_X1, 5); ImPlot::PlotLine(("SigmaA##" + plotName).c_str(), &(v[0]), (int)window->tda.metrics.size());
+								for (m = 0; m < (int)window->tda.metrics.size(); m++) v[m] = window->tda.metrics[m].sigmaI;
+								ImPlot::SetAxes(ImAxis_X1, 6); ImPlot::PlotLine(("SigmaI##" + plotName).c_str(), &(v[0]), (int)window->tda.metrics.size());
+								for (m = 0; m < (int)window->tda.metrics.size(); m++) v[m] = window->tda.metrics[m].lambda1;
+								ImPlot::SetAxes(ImAxis_X1, 7); ImPlot::PlotLine(("Lambda1##" + plotName).c_str(), &(v[0]), (int)window->tda.metrics.size());
+								for (m = 0; m < (int)window->tda.metrics.size(); m++) v[m] = window->tda.metrics[m].logArea;
+								ImPlot::SetAxes(ImAxis_X1, 8); ImPlot::PlotLine(("Log Area##" + plotName).c_str(), &(v[0]), (int)window->tda.metrics.size());
+								for (m = 0; m < (int)window->tda.metrics.size(); m++) v[m] = window->tda.metrics[m].principalAngle;
+								ImPlot::SetAxes(ImAxis_X1, 9); ImPlot::PlotLine(("Principal Angle##" + plotName).c_str(), &(v[0]), (int)window->tda.metrics.size());
+
+								for (m = 0; m < (int)window->tda.tdaar.changeRate.size(); m++) v[m] = window->tda.tdaar.changeRate[m];
+								ImPlot::SetAxes(ImAxis_X1, 10); ImPlot::PlotLine(("Change Rate##" + plotName).c_str(), &(v[0]), (int)window->tda.tdaar.changeRate.size());
+
+								ImPlot::EndPlot();
+							}
+						}
+
+						if (window->whiteBg) ImPlot::PopStyleColor();
+
+						break;
 
 				case Heatmap:
 				case MCHeatmap:

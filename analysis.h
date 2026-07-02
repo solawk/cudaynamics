@@ -4,5 +4,6 @@
 #include "omp.h"
 
 #include "cuda_macros.h"
+#include "kernels_exclusive_macros.h"
 #include "device_launch_parameters.h"
 #include "perthread_struct.h"

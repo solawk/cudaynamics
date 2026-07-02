@@ -13,6 +13,7 @@
 #include "analysisLobby.cuh"
 #include "gpu_variation.cuh"
 #include "cuda_macros.h"
+#include "kernels_exclusive_macros.h"
 #include "perthread_struct.h"
 
 #define CONCAT(a, b) a##b
