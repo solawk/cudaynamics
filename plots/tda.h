@@ -51,6 +51,16 @@ struct TDAProperties
 	std::vector<TDAMetrics> metrics;
 	TDAAnalysisResult tdaar;
 
+	int peaksPerWindow;
+	std::vector<int> peakTimesGlobal;
+	std::vector<double> peakAmplitudesGlobal;
+	std::vector<double> peakIntervalsGlobal;
+
+	int deltaIntoThePast;
+
+	std::vector<double> windowTimesHistory;
+	std::vector<double> chamferHistory;
+
 	TDAProperties()
 	{
 		peakThreshold = -INFINITY;
@@ -58,17 +68,159 @@ struct TDAProperties
 		epsFXP = 0.001;
 		analysedVariable = 0;
 		timeFractionFXP = 0.05;
+
+		peaksPerWindow = 20;
+		deltaIntoThePast = 2;
 	}
 
 	void Clear()
 	{
 		metrics.clear();
+		peakTimesGlobal.clear();
+		peakAmplitudesGlobal.clear();
+		peakIntervalsGlobal.clear();
+
+		windowTimesHistory.clear();
+		chamferHistory.clear();
 	}
 
-	TDAMetrics ComputeMetrics()
+	void ComputeGlobalMetrics()
+	{
+		std::vector<double> amplitudes, intervals;
+
+		int peaksInWindow = 0;
+		for (int p = 0; p < peakAmplitudesGlobal.size(); p++)
+		{
+			amplitudes.push_back(peakAmplitudesGlobal[p]);
+			intervals.push_back(peakIntervalsGlobal[p]);
+			peaksInWindow++;
+
+			if (peaksInWindow == peaksPerWindow)
+			{
+				TDAMetrics tda = ComputeMetrics(amplitudes, intervals);
+				metrics.push_back(tda);
+
+				amplitudes.clear();
+				intervals.clear();
+				peaksInWindow = 0;
+			}
+		}
+	}
+
+	struct PeaksWindow
+	{
+		int endStep;
+		std::vector<double> amplitudes, intervals;
+	};
+
+	void ComputeDistributions()
+	{
+		windowTimesHistory.clear();
+		chamferHistory.clear();
+
+		std::vector<PeaksWindow> windows;
+		int peaksInWindow = 0;
+		PeaksWindow window;
+		for (int p = 0; p < peakAmplitudesGlobal.size(); p++)
+		{
+			window.amplitudes.push_back(peakAmplitudesGlobal[p]);
+			window.intervals.push_back(peakIntervalsGlobal[p]);
+			peaksInWindow++;
+
+			if (peaksInWindow == peaksPerWindow)
+			{
+				window.endStep = peakTimesGlobal[p];
+				windows.push_back(window);
+				peaksInWindow = 0;
+				window = PeaksWindow();
+			}
+		}
+		printf("Formed %i windows\n", (int)windows.size());
+
+#define dstnce(ax, ay, bx, by) std::sqrt((ax - bx) * (ax - bx) + (ay - by) * (ay - by))
+
+		// Normalizing
+		double maxA = windows[0].amplitudes[0];
+		double minA = windows[0].amplitudes[0];
+		double maxI = windows[0].intervals[0];
+		double minI = windows[0].intervals[0];
+		for (int w = 0; w < windows.size(); w++)
+		{
+			for (int p = 0; p < peaksPerWindow; p++)
+			{
+				if (windows[w].amplitudes[p] > maxA) maxA = windows[w].amplitudes[p];
+				if (windows[w].amplitudes[p] < minA) minA = windows[w].amplitudes[p];
+				if (windows[w].intervals[p] > maxI) maxI = windows[w].intervals[p];
+				if (windows[w].intervals[p] < minI) minI = windows[w].intervals[p];
+			}
+		}
+		for (int w = 0; w < windows.size(); w++)
+		{
+			for (int p = 0; p < peaksPerWindow; p++)
+			{
+				windows[w].amplitudes[p] = (windows[w].amplitudes[p] - minA) / (maxA - minA);
+				windows[w].intervals[p] = (windows[w].intervals[p] - minI) / (maxI - minI);
+			}
+		}
+
+		// Chamfer
+		auto Chamfer = [](PeaksWindow& A, PeaksWindow& B, int ppw)
+		{
+			double chamfer = 0.0;
+			double sum = 0.0;
+
+			// Forward
+			for (int a = 0; a < ppw; a++)
+			{
+				double best = INFINITY;
+
+				for (int b = 0; b < ppw; b++)
+				{
+					double d = dstnce(A.amplitudes[a], A.intervals[a], B.amplitudes[b], B.intervals[b]);
+					if (d < best) best = d;
+				}
+				sum += best;
+			}
+			chamfer += sum / ppw;
+
+			// Inverse
+			sum = 0.0;
+			for (int a = 0; a < ppw; a++)
+			{
+				double best = INFINITY;
+
+				for (int b = 0; b < ppw; b++)
+				{
+					double d = dstnce(A.amplitudes[a], A.intervals[a], B.amplitudes[b], B.intervals[b]);
+					if (d < best) best = d;
+				}
+				sum += best;
+			}
+			chamfer += sum / ppw;
+
+			return chamfer * 0.5;
+		};
+
+		for (int w = 1; w < windows.size(); w++)
+		{
+			double chamferDistance = 0.0;
+
+			for (int prev = 0; (prev < deltaIntoThePast) && (w - prev > 0); prev++)
+			{
+				chamferDistance += Chamfer(windows[w], windows[w - prev - 1], peaksPerWindow);
+			}
+
+			windowTimesHistory.push_back(windows[w].endStep);
+			chamferHistory.push_back(chamferDistance);
+			printf("%i (ends on step %i): %f\n", w, windows[w].endStep, chamferDistance);
+		}
+#undef dstnce
+	}
+
+	TDAMetrics ComputeMetrics(std::vector<double>& amplitudes, std::vector<double>& intervals)
 	{
 		TDAMetrics metric;
-		int peaks = (int)peakIntervals.size();
+		int peaks = (int)intervals.size();
 
 		// Mean
 
@@ -77,8 +229,8 @@ struct TDAProperties
 
 		for (int i = 0; i < peaks; i++)
 		{
-			sumA += peakAmplitudes[i];
-			sumI += peakIntervals[i];
+			sumA += amplitudes[i];
+			sumI += intervals[i];
 		}
 
 		metric.meanA = sumA / peaks;
@@ -92,8 +244,8 @@ struct TDAProperties
 
 		for (int i = 0; i < peaks; i++)
 		{
-			double dA = peakAmplitudes[i] - metric.meanA;
-			double dI = peakIntervals[i] - metric.meanI;
+			double dA = amplitudes[i] - metric.meanA;
+			double dI = intervals[i] - metric.meanI;
 
 			sAA += dA * dA;
 			sII += dI * dI;
@@ -230,15 +382,22 @@ struct TDAProperties
 		result.changeRate[0] = 0.0;
 		double largestChange = 0.0;
 
-		for (size_t i = 1; i < N; ++i)
+		for (int i = 1; i < N; ++i)
 		{
-			Eigen::VectorXd delta = X.row(i) - X.row(i - 1);
-			result.changeRate[i] = delta.norm();
+			double totalDelta = 0.0;
+
+			for (int itp = 0; itp < deltaIntoThePast && i - itp - 1 >= 0; itp++)
+			{
+				Eigen::VectorXd delta = X.row(i) - X.row(i - itp - 1);
+				totalDelta += delta.norm();
+			}
+
+			result.changeRate[i] = totalDelta;
 
 			if (result.changeRate[i] > largestChange)
 			{
 				largestChange = result.changeRate[i];
-				result.transitionIndex = (int)i;
+				result.transitionIndex = i;
 			}
 		}
 
@@ -297,8 +456,11 @@ struct TDAProperties
 						if (WritingData)
 						{
 							peakAmplitudes.push_back(curr);
+							peakAmplitudesGlobal.push_back(curr);
 							peakIntervals.push_back((s - temppeakindex) * stepSize);
+							peakIntervalsGlobal.push_back((s - temppeakindex) * stepSize);
 							peakTimes.push_back(s);
+							peakTimesGlobal.push_back(cmp->bufferNo * cmp->marshal.kernel.steps + s);
 						}
 
 						temppeakindex = s;
@@ -319,8 +481,11 @@ struct TDAProperties
 						if (WritingData)
 						{
 							peakAmplitudes.push_back(tempPeakAmp);
+							peakAmplitudesGlobal.push_back(tempPeakAmp);
 							peakIntervals.push_back((tempPeakTime - temppeakindex) * stepSize);
+							peakIntervalsGlobal.push_back((tempPeakTime - temppeakindex) * stepSize);
 							peakTimes.push_back(s);
+							peakTimesGlobal.push_back(cmp->bufferNo * cmp->marshal.kernel.steps + s);
 						}
 
 						temppeakindex = tempPeakTime;

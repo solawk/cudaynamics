@@ -2740,11 +2740,12 @@ int imgui_main(int, char**)
 
 						if (window->whiteBg) ImPlot::PushStyleColor(ImPlotCol_PlotBg, ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
 
-						ImGui::InputDouble(("PF threshold##" + plotName + "_pf1").c_str(), &(window->recur.peakThreshold));
-						ImGui::InputDouble(("PF max value##" + plotName + "_pf2").c_str(), &(window->recur.maxAllowedValue));
-						ImGui::InputDouble(("PF eps##" + plotName + "_pf3").c_str(), &(window->recur.epsFXP));
-						ImGui::InputDouble(("PF time frac##" + plotName + "_pf4").c_str(), &(window->recur.timeFractionFXP));
-						ImGui::InputInt(("PF variable##" + plotName + "_pf5").c_str(), &(window->recur.analysedVariable));
+						ImGui::InputDouble(("PF threshold##" + plotName + "_pf1").c_str(), &(window->tda.peakThreshold));
+						ImGui::InputDouble(("PF max value##" + plotName + "_pf2").c_str(), &(window->tda.maxAllowedValue));
+						ImGui::InputDouble(("PF eps##" + plotName + "_pf3").c_str(), &(window->tda.epsFXP));
+						ImGui::InputDouble(("PF time frac##" + plotName + "_pf4").c_str(), &(window->tda.timeFractionFXP));
+						ImGui::InputInt(("PF variable##" + plotName + "_pf5").c_str(), &(window->tda.analysedVariable));
+						ImGui::InputInt(("Peaks per window##" + plotName + "_ppw").c_str(), &(window->tda.peaksPerWindow));
 
 						if (ImGui::Button("Clear")) 
 						{
@@ -2754,9 +2755,29 @@ int imgui_main(int, char**)
 						if (ImGui::Button("Calculate"))
 						{
 							window->tda.PeakFinder(&(computations[playedBufferIndex]), 0);
-							window->tda.metrics.push_back(window->tda.ComputeMetrics());
+							window->tda.metrics.push_back(window->tda.ComputeMetrics(window->tda.peakAmplitudes, window->tda.peakIntervals));
 							window->tda.tdaar = window->tda.AnalyzeTransientChaos(window->tda.metrics);
-							printf("%i\n", window->tda.tdaar.transitionIndex);
+							printf("Local: %i\n", window->tda.tdaar.transitionIndex);
+						}
+
+						if (ImGui::Button("Peak Finder"))
+						{
+							window->tda.PeakFinder(&(computations[playedBufferIndex]), 0);
+							printf("Found %i peaks\n", (int)window->tda.peakAmplitudes.size());
+						}
+
+						if (ImGui::Button("Calculate Global"))
+						{
+							window->tda.ComputeGlobalMetrics();
+							window->tda.tdaar = window->tda.AnalyzeTransientChaos(window->tda.metrics);
+							printf("Global: %i (steps %i-%i)\n", window->tda.tdaar.transitionIndex, 
+								window->tda.peakTimesGlobal[window->tda.tdaar.transitionIndex * window->tda.peaksPerWindow],
+								window->tda.peakTimesGlobal[(window->tda.tdaar.transitionIndex + 1) * window->tda.peaksPerWindow - 1]);
+						}
+
+						if (ImGui::Button("Calculate Distributions"))
+						{
+							window->tda.ComputeDistributions();
 						}
 
 						// PA-IPI
@@ -2793,7 +2814,6 @@ int imgui_main(int, char**)
 								//ImPlot::SetupAxis(11, "!Axis Ratio", 0);
 								ImPlot::SetupAxis(9, "Principal Angle", 0);
 								ImPlot::SetupAxis(10, "Change Rate", 0);
-								ImPlot::SetupAxis(11, "Smooth Rate", 0);
 
 								for (m = 0; m < (int)window->tda.metrics.size(); m++) v[m] = window->tda.metrics[m].meanA;
 								ImPlot::SetAxes(ImAxis_X1, 3); ImPlot::PlotLine(("MeanA##" + plotName).c_str(), &(v[0]), (int)window->tda.metrics.size());
@@ -2812,6 +2832,25 @@ int imgui_main(int, char**)
 
 								for (m = 0; m < (int)window->tda.tdaar.changeRate.size(); m++) v[m] = window->tda.tdaar.changeRate[m];
 								ImPlot::SetAxes(ImAxis_X1, 10); ImPlot::PlotLine(("Change Rate##" + plotName).c_str(), &(v[0]), (int)window->tda.tdaar.changeRate.size());
+
+								ImPlot::EndPlot();
+							}
+						}
+
+						// Distributions
+						if ((int)window->tda.chamferHistory.size() > 1)
+						{
+							if (ImPlot::BeginPlot((plotName + "_tdaDistrib").c_str(), ImVec2(-1, 0), ImPlotFlags_NoTitle))
+							{
+								double x[100];
+								double v[100];
+								int m;
+
+								ImPlot::SetupAxis(3, "Chamfer", 0);
+
+								for (m = 0; m < (int)window->tda.chamferHistory.size(); m++) x[m] = window->tda.windowTimesHistory[m];
+								for (m = 0; m < (int)window->tda.chamferHistory.size(); m++) v[m] = window->tda.chamferHistory[m];
+								ImPlot::SetAxes(ImAxis_X1, 3); ImPlot::PlotLine(("Chamfer##" + plotName).c_str(), &(x[0]), &(v[0]), (int)window->tda.chamferHistory.size());
 
 								ImPlot::EndPlot();
 							}
