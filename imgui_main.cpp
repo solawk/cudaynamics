@@ -2746,6 +2746,7 @@ int imgui_main(int, char**)
 						ImGui::InputDouble(("PF time frac##" + plotName + "_pf4").c_str(), &(window->tda.timeFractionFXP));
 						ImGui::InputInt(("PF variable##" + plotName + "_pf5").c_str(), &(window->tda.analysedVariable));
 						ImGui::InputInt(("Peaks per window##" + plotName + "_ppw").c_str(), &(window->tda.peaksPerWindow));
+						ImGui::InputInt(("Overlap back##" + plotName + "_ppw").c_str(), &(window->tda.windowOverlapBack));
 
 						if (ImGui::Button("Clear")) 
 						{
@@ -2847,10 +2848,20 @@ int imgui_main(int, char**)
 								int m;
 
 								ImPlot::SetupAxis(3, "Chamfer", 0);
+								ImPlot::SetupAxis(4, "MMD", 0);
+								ImPlot::SetupAxis(5, "Sinkhorn", 0);
 
-								for (m = 0; m < (int)window->tda.chamferHistory.size(); m++) x[m] = window->tda.windowTimesHistory[m];
+								for (m = 0; m < (int)window->tda.chamferHistory.size(); m++) x[m] = (window->tda.windowStartsHistory[m] + window->tda.windowEndsHistory[m]) / 2.0;
 								for (m = 0; m < (int)window->tda.chamferHistory.size(); m++) v[m] = window->tda.chamferHistory[m];
 								ImPlot::SetAxes(ImAxis_X1, 3); ImPlot::PlotLine(("Chamfer##" + plotName).c_str(), &(x[0]), &(v[0]), (int)window->tda.chamferHistory.size());
+
+								for (m = 0; m < (int)window->tda.mmdHistory.size(); m++) x[m] = (window->tda.windowStartsHistory[m] + window->tda.windowEndsHistory[m]) / 2.0;
+								for (m = 0; m < (int)window->tda.mmdHistory.size(); m++) v[m] = window->tda.mmdHistory[m];
+								ImPlot::SetAxes(ImAxis_X1, 4); ImPlot::PlotLine(("MMD##" + plotName).c_str(), &(x[0]), &(v[0]), (int)window->tda.mmdHistory.size());
+
+								for (m = 0; m < (int)window->tda.sinkhornHistory.size(); m++) x[m] = (window->tda.windowStartsHistory[m] + window->tda.windowEndsHistory[m]) / 2.0;
+								for (m = 0; m < (int)window->tda.sinkhornHistory.size(); m++) v[m] = window->tda.sinkhornHistory[m];
+								ImPlot::SetAxes(ImAxis_X1, 5); ImPlot::PlotLine(("Sinkhorn##" + plotName).c_str(), &(x[0]), &(v[0]), (int)window->tda.sinkhornHistory.size());
 
 								ImPlot::EndPlot();
 							}

@@ -57,9 +57,13 @@ struct TDAProperties
 	std::vector<double> peakIntervalsGlobal;
 
 	int deltaIntoThePast;
+	int windowOverlapBack;
 
-	std::vector<double> windowTimesHistory;
+	std::vector<double> windowStartsHistory;
+	std::vector<double> windowEndsHistory;
 	std::vector<double> chamferHistory;
+	std::vector<double> mmdHistory;
+	std::vector<double> sinkhornHistory;
 
 	TDAProperties()
 	{
@@ -71,6 +75,7 @@ struct TDAProperties
 
 		peaksPerWindow = 20;
 		deltaIntoThePast = 2;
+		windowOverlapBack = 0;
 	}
 
 	void Clear()
@@ -80,8 +85,11 @@ struct TDAProperties
 		peakAmplitudesGlobal.clear();
 		peakIntervalsGlobal.clear();
 
-		windowTimesHistory.clear();
+		windowStartsHistory.clear();
+		windowEndsHistory.clear();
 		chamferHistory.clear();
+		mmdHistory.clear();
+		sinkhornHistory.clear();
 	}
 
 	void ComputeGlobalMetrics()
@@ -109,13 +117,15 @@ struct TDAProperties
 
 	struct PeaksWindow
 	{
+		int startStep;
 		int endStep;
 		std::vector<double> amplitudes, intervals;
 	};
 
 	void ComputeDistributions()
 	{
-		windowTimesHistory.clear();
+		windowStartsHistory.clear();
+		windowEndsHistory.clear();
 		chamferHistory.clear();
 
 		std::vector<PeaksWindow> windows;
@@ -123,6 +133,7 @@ struct TDAProperties
 		PeaksWindow window;
 		for (int p = 0; p < peakAmplitudesGlobal.size(); p++)
 		{
+			if (peaksInWindow == 0) window.startStep = peakTimesGlobal[p];
 			window.amplitudes.push_back(peakAmplitudesGlobal[p]);
 			window.intervals.push_back(peakIntervalsGlobal[p]);
 			peaksInWindow++;
@@ -133,6 +144,7 @@ struct TDAProperties
 				windows.push_back(window);
 				peaksInWindow = 0;
 				window = PeaksWindow();
+				p -= windowOverlapBack;
 			}
 		}
 		printf("Formed %i windows\n", (int)windows.size());
@@ -185,11 +197,11 @@ struct TDAProperties
 
 			// Inverse
 			sum = 0.0;
-			for (int a = 0; a < ppw; a++)
+			for (int b = 0; b < ppw; b++)
 			{
 				double best = INFINITY;
 
-				for (int b = 0; b < ppw; b++)
+				for (int a = 0; a < ppw; a++)
 				{
 					double d = dstnce(A.amplitudes[a], A.intervals[a], B.amplitudes[b], B.intervals[b]);
 					if (d < best) best = d;
@@ -201,18 +213,146 @@ struct TDAProperties
 			return chamfer * 0.5;
 		};
 
+		// MMD
+		auto MMD = [](PeaksWindow& A, PeaksWindow& B, int ppw, double sigma = 0.15)
+		{
+			auto Kernel = [&](double ax, double ay, double bx, double by)
+			{
+				double dx = ax - bx;
+				double dy = ay - by;
+
+				double d2 = dx * dx + dy * dy;
+
+				return exp(-d2 / (2.0 * sigma * sigma));
+			};
+
+			double aa = 0.0;
+			double bb = 0.0;
+			double ab = 0.0;
+
+			for (int i = 0; i < ppw; i++)
+				for (int j = 0; j < ppw; j++)
+					aa += Kernel(A.amplitudes[i], A.intervals[i],
+						A.amplitudes[j], A.intervals[j]);
+
+			for (int i = 0; i < ppw; i++)
+				for (int j = 0; j < ppw; j++)
+					bb += Kernel(B.amplitudes[i], B.intervals[i],
+						B.amplitudes[j], B.intervals[j]);
+
+			for (int i = 0; i < ppw; i++)
+				for (int j = 0; j < ppw; j++)
+					ab += Kernel(A.amplitudes[i], A.intervals[i],
+						B.amplitudes[j], B.intervals[j]);
+
+			aa /= double(ppw * ppw);
+			bb /= double(ppw * ppw);
+			ab /= double(ppw * ppw);
+
+			double result = aa + bb - 2.0 * ab;
+
+			return sqrt(result > 0.0 ? result : 0.0);
+		};
+
+		// Sinkhorn
+		auto Sinkhorn = [](PeaksWindow& A, PeaksWindow& B, int ppw, double epsilon = 0.1, int iterations = 50)
+		{
+			std::vector<std::vector<double>> K(ppw, std::vector<double>(ppw));
+
+			//----------------------------------------------------------
+			// Cost matrix
+			//----------------------------------------------------------
+
+			for (int i = 0; i < ppw; i++)
+			{
+				for (int j = 0; j < ppw; j++)
+				{
+					double c = dstnce(
+						A.amplitudes[i], A.intervals[i],
+						B.amplitudes[j], B.intervals[j]);
+
+					K[i][j] = exp(-c / epsilon);
+				}
+			}
+
+			//----------------------------------------------------------
+			// Uniform masses
+			//----------------------------------------------------------
+
+			std::vector<double> u(ppw, 1.0);
+			std::vector<double> v(ppw, 1.0);
+
+			//----------------------------------------------------------
+			// Sinkhorn iterations
+			//----------------------------------------------------------
+
+			for (int iter = 0; iter < iterations; iter++)
+			{
+				// Update u
+
+				for (int i = 0; i < ppw; i++)
+				{
+					double sum = 0.0;
+
+					for (int j = 0; j < ppw; j++)
+						sum += K[i][j] * v[j];
+
+					u[i] = 1.0 / (ppw * sum);
+				}
+
+				// Update v
+
+				for (int j = 0; j < ppw; j++)
+				{
+					double sum = 0.0;
+
+					for (int i = 0; i < ppw; i++)
+						sum += K[i][j] * u[i];
+
+					v[j] = 1.0 / (ppw * sum);
+				}
+			}
+
+			//----------------------------------------------------------
+			// Transport cost
+			//----------------------------------------------------------
+
+			double distance = 0.0;
+
+			for (int i = 0; i < ppw; i++)
+			{
+				for (int j = 0; j < ppw; j++)
+				{
+					double c = dstnce(
+						A.amplitudes[i], A.intervals[i],
+						B.amplitudes[j], B.intervals[j]);
+
+					distance += u[i] * K[i][j] * v[j] * c;
+				}
+			}
+
+			return distance;
+		};
+
 		for (int w = 1; w < windows.size(); w++)
 		{
 			double chamferDistance = 0.0;
+			double mmdDistance = 0.0;
+			double sinkhornDistance = 0.0;
 
 			for (int prev = 0; (prev < deltaIntoThePast) && (w - prev > 0); prev++)
 			{
 				chamferDistance += Chamfer(windows[w], windows[w - prev - 1], peaksPerWindow);
+				mmdDistance += MMD(windows[w], windows[w - prev - 1], peaksPerWindow);
+				sinkhornDistance += Sinkhorn(windows[w], windows[w - prev - 1], peaksPerWindow);
 			}
 
-			windowTimesHistory.push_back(windows[w].endStep);
+			windowStartsHistory.push_back(windows[w].startStep);
+			windowEndsHistory.push_back(windows[w].endStep);
 			chamferHistory.push_back(chamferDistance);
-			printf("%i (ends on step %i): %f\n", w, windows[w].endStep, chamferDistance);
+			mmdHistory.push_back(mmdDistance);
+			sinkhornHistory.push_back(sinkhornDistance);
+			printf("%i (steps %i-%i): %f %f %f\n", w, windows[w].startStep, windows[w].endStep, chamferDistance, mmdDistance, sinkhornDistance);
 		}
 #undef dstnce
 	}
