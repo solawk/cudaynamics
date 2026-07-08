@@ -111,6 +111,7 @@ struct TDAProperties
 				amplitudes.clear();
 				intervals.clear();
 				peaksInWindow = 0;
+				p -= windowOverlapBack;
 			}
 		}
 	}

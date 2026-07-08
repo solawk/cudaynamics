@@ -33,3 +33,5 @@ std::string exportMCHeatmapCSV(const PlotWindow* window);
 std::string exportMetricCSV(const PlotWindow* window);
 
 std::string exportRecurrenceRQACSV(const PlotWindow* window);
+
+std::string exportTDACSV(const PlotWindow* window);

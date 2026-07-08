@@ -933,11 +933,11 @@ std::string exportRecurrenceRQACSV(const PlotWindow* window)
     if (!window) return {};
 
     const RecurrenceProperties* recur = &(window->recur);
-    const int rows = recur->rqaBuffers;
+    const int rows = recur->rqaPeaksHistory.size();
 
     // RQA regular
-    std::string systemName = safe_system_name(KERNEL);
-    std::string path = build_export_path(systemName, "recurrence", /*extra*/"", ".csv");
+    /*std::string systemName = safe_system_name(KERNEL);
+    std::string path = build_export_path(systemName, "recurrence", ".csv");
     std::ofstream f = open_csv(path);
     if (!f.is_open()) return {};
     for (int i = 0; i < rows; ++i) 
@@ -950,12 +950,12 @@ std::string exportRecurrenceRQACSV(const PlotWindow* window)
         f << recur->rqaHistory[i].Lmax;
 
         f << '\n';
-    }
+    }*/
 
     // RQA peaks
-    systemName = safe_system_name(KERNEL);
-    path = build_export_path(systemName, "recurrencePeaks", /*extra*/"", ".csv");
-    f = open_csv(path);
+    std::string systemName = safe_system_name(KERNEL);
+    std::string path = build_export_path(systemName, "recurrencePeaks", /*extra*/"", ".csv");
+    std::ofstream f = open_csv(path);
     if (!f.is_open()) return {};
     for (int i = 0; i < rows; ++i)
     {
@@ -965,6 +965,52 @@ std::string exportRecurrenceRQACSV(const PlotWindow* window)
         f << recur->rqaPeaksHistory[i].LAM << ",";
         f << recur->rqaPeaksHistory[i].TT << ",";
         f << recur->rqaPeaksHistory[i].Lmax;
+
+        f << '\n';
+    }
+
+    return path;
+}
+
+std::string exportTDACSV(const PlotWindow* window)
+{
+    if (!window) return {};
+
+    const TDAProperties* tda = &(window->tda);
+
+    // Metrics
+    int rows = tda->metrics.size();
+    std::string systemName = safe_system_name(KERNEL);
+    std::string path = build_export_path(systemName, "tda_metrics", /*extra*/"", ".csv");
+    std::ofstream f = open_csv(path);
+    if (!f.is_open()) return {};
+    for (int i = 0; i < rows; ++i)
+    {
+        f << tda->metrics[i].meanA << ",";
+        f << tda->metrics[i].meanI << ",";
+        f << tda->metrics[i].sigmaA << ",";
+        f << tda->metrics[i].sigmaI << ",";
+        f << tda->metrics[i].lambda1 << ",";
+        f << tda->metrics[i].logArea << ",";
+        f << tda->metrics[i].principalAngle << ",";
+        f << tda->tdaar.changeRate[i];
+
+        f << '\n';
+    }
+
+    // Distances
+    rows = tda->windowStartsHistory.size();
+    systemName = safe_system_name(KERNEL);
+    path = build_export_path(systemName, "tda_distances", /*extra*/"", ".csv");
+    f = open_csv(path);
+    if (!f.is_open()) return {};
+    for (int i = 0; i < rows; ++i)
+    {
+        f << tda->windowStartsHistory[i] << ",";
+        f << tda->windowEndsHistory[i] << ",";
+        f << tda->chamferHistory[i] << ",";
+        f << tda->mmdHistory[i] << ",";
+        f << tda->sinkhornHistory[i];
 
         f << '\n';
     }

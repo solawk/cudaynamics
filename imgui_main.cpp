@@ -2625,10 +2625,9 @@ int imgui_main(int, char**)
 						}
 					}
 
-					if (ImGui::BeginTable((plotName + "_plotTable").c_str(), 2))
+					if (ImGui::BeginTable((plotName + "_plotTable").c_str(), 1))
 					{
 						ImGui::TableNextRow();
-						ImGui::TableNextColumn();
 
 						/*
 						if (window->recur.rqaBuffers > 1)
@@ -2662,8 +2661,6 @@ int imgui_main(int, char**)
 							}
 						}
 						*/
-
-						ImGui::TableNextColumn();
 
 						if (window->recur.rqaBuffers > 1)
 						{
