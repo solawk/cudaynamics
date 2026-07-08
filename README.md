@@ -8,7 +8,7 @@ CUDAynamics is a result of an academic research initiative. To support the conti
 - https://doi.org/10.1016/j.chaos.2026.118397
 
 # Installation and Build
-Download CUDAynamics to folder (```.zip``` or clone repository) and CUDAynamics Helper for easier input of dynamical system (optional).
+Download CUDAynamics to folder (```.zip``` or clone repository) and CUDAynamics Helper for easier input of dynamical systems (optional).
 CUDAynamics Helper: https://github.com/thesnowbrah/cudaynamics-helper
 
 To build CUDAynamics open CUDAynamics.sln and choose **Release | x64 → Build**. 
