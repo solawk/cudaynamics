@@ -8,15 +8,15 @@ CUDAynamics is a result of an academic research initiative. To support the conti
 - https://doi.org/10.1016/j.chaos.2026.118397
 
 # Installation and Build
-Download CUDAynamics to folder (```.zip``` or clone repository) and CUDAynamics Helper for easier dynamic system input (optional).
+Download CUDAynamics to folder (```.zip``` or clone repository) and CUDAynamics Helper for easier input of dynamical system (optional).
 CUDAynamics Helper: https://github.com/thesnowbrah/cudaynamics-helper
 
 To build CUDAynamics open CUDAynamics.sln and choose **Release | x64 → Build**. 
 The ```.exe``` file directory is: x64\Release\CUDAynamics.exe
 
-If new systems are added to system library via CUDAynamics Helper or by hand, CUDAynamics must be rebuilt.
+If new systems are added to the library via CUDAynamics Helper or by hand, CUDAynamics must be rebuilt.
 
-To change data type (from ```float``` to ```double``` or vice versa) open the ```numb.h``` file in the CUDAynamics directory and change ```USE_DOUBLE_PRECISION``` from ```0``` to ```1``` or from ```1``` to ```0```.
+To change data type from ```float``` to ```double``` (or vice versa) open the ```numb.h``` file in the CUDAynamics directory and change ```USE_DOUBLE_PRECISION``` from ```0``` to ```1``` (or from ```1``` to ```0```).
 
 # Usage
 When the program is launched, three windows open (as shown below): the main window (“CUDAynamics”), the analysis settings window (“Analysis Settings”), and the graph and chart building window (“Graph Builder”).
