@@ -2625,9 +2625,7 @@ int imgui_main(int, char**)
 						}
 					}
 
-					if (ImGui::BeginTable((plotName + "_plotTable").c_str(), 1))
 					{
-						ImGui::TableNextRow();
 
 						/*
 						if (window->recur.rqaBuffers > 1)
@@ -2693,8 +2691,6 @@ int imgui_main(int, char**)
 							}
 						}
 
-						ImGui::TableNextRow();
-						ImGui::TableNextColumn();
 
 						if (window->recur.texture != nullptr)
 						{
@@ -2710,8 +2706,6 @@ int imgui_main(int, char**)
 							}
 						}
 
-						ImGui::TableNextColumn();
-
 						if (window->recur.texturePeaks != nullptr)
 						{
 							if (ImPlot::BeginPlot((plotName + "_peaks").c_str(), "", "", ImVec2(-1, -1), ImPlotFlags_NoTitle | ImPlotFlags_NoLegend, axisFlags, axisFlags))
@@ -2726,7 +2720,6 @@ int imgui_main(int, char**)
 							}
 						}
 
-						ImGui::EndTable();
 					}
 
 					if (window->whiteBg) ImPlot::PopStyleColor();
@@ -2744,6 +2737,8 @@ int imgui_main(int, char**)
 						ImGui::InputInt(("PF variable##" + plotName + "_pf5").c_str(), &(window->tda.analysedVariable));
 						ImGui::InputInt(("Peaks per window##" + plotName + "_ppw").c_str(), &(window->tda.peaksPerWindow));
 						ImGui::InputInt(("Overlap back##" + plotName + "_ppw").c_str(), &(window->tda.windowOverlapBack));
+						ImGui::InputDouble(("Sigma##" + plotName + "_sigma").c_str(), &(window->tda.sigma));
+						ImGui::InputDouble(("Epsilon##" + plotName + "_epsilon").c_str(), &(window->tda.epsilon));
 
 						if (ImGui::Button("Clear")) 
 						{

@@ -65,6 +65,8 @@ struct TDAProperties
 	std::vector<double> mmdHistory;
 	std::vector<double> sinkhornHistory;
 
+	double sigma, epsilon;
+
 	TDAProperties()
 	{
 		peakThreshold = -INFINITY;
@@ -76,6 +78,9 @@ struct TDAProperties
 		peaksPerWindow = 20;
 		deltaIntoThePast = 2;
 		windowOverlapBack = 0;
+
+		sigma = 0.15;
+		epsilon = 0.1;
 	}
 
 	void Clear()
@@ -215,7 +220,7 @@ struct TDAProperties
 		};
 
 		// MMD
-		auto MMD = [](PeaksWindow& A, PeaksWindow& B, int ppw, double sigma = 0.15)
+		auto MMD = [](PeaksWindow& A, PeaksWindow& B, int ppw, double sigma)
 		{
 			auto Kernel = [&](double ax, double ay, double bx, double by)
 			{
@@ -256,7 +261,7 @@ struct TDAProperties
 		};
 
 		// Sinkhorn
-		auto Sinkhorn = [](PeaksWindow& A, PeaksWindow& B, int ppw, double epsilon = 0.1, int iterations = 50)
+		auto Sinkhorn = [](PeaksWindow& A, PeaksWindow& B, int ppw, double epsilon, int iterations = 50)
 		{
 			std::vector<std::vector<double>> K(ppw, std::vector<double>(ppw));
 
@@ -344,8 +349,8 @@ struct TDAProperties
 			for (int prev = 0; (prev < deltaIntoThePast) && (w - prev > 0); prev++)
 			{
 				chamferDistance += Chamfer(windows[w], windows[w - prev - 1], peaksPerWindow);
-				mmdDistance += MMD(windows[w], windows[w - prev - 1], peaksPerWindow);
-				sinkhornDistance += Sinkhorn(windows[w], windows[w - prev - 1], peaksPerWindow);
+				mmdDistance += MMD(windows[w], windows[w - prev - 1], peaksPerWindow, sigma);
+				sinkhornDistance += Sinkhorn(windows[w], windows[w - prev - 1], peaksPerWindow, epsilon);
 			}
 
 			windowStartsHistory.push_back(windows[w].startStep);
