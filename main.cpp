@@ -37,6 +37,7 @@ void common_main()
     addKernel(ostrovskii);
     addKernel(khanov);
     addKernel(khanov_mod);
+    addKernel(khanov_mod2);
     addKernel(standard_map);
     addKernel(hodgkin_huxley);
     addKernel(sang26);

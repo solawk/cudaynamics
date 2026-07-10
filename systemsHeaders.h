@@ -26,6 +26,7 @@
 #include "systems/ostrovskii/ostrovskii.h"
 #include "systems/khanov/khanov.h"
 #include "systems/khanov_mod/khanov_mod.h"
+#include "systems/khanov_mod2/khanov_mod2.h"
 #include "systems/standard_map/standard_map.h"
 #include "systems/hodgkin_huxley/hodgkin_huxley.h"
 #include "systems/sang26/sang26.h"

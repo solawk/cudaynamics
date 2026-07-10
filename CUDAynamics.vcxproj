@@ -267,6 +267,7 @@
     <ClInclude Include="standalone\standalone_utils.h" />
     <ClInclude Include="systemsHeaders.h" />
     <ClInclude Include="systems\henon_heiles\henon_heiles.h" />
+    <ClInclude Include="systems\khanov_mod2\khanov_mod2.h" />
     <ClInclude Include="systems\khanov_mod\khanov_mod.h" />
     <ClInclude Include="systems\standard_map\standard_map.h" />
     <ClInclude Include="variationSteps.h" />
@@ -293,6 +294,7 @@
     <CudaCompile Include="systems\jj_mcrls\jj_mcrls.cu" />
     <CudaCompile Include="systems\jj_rcls\jj_rcls.cu" />
     <CudaCompile Include="systems\khanov\khanov.cu" />
+    <CudaCompile Include="systems\khanov_mod2\khanov_mod2.cu" />
     <CudaCompile Include="systems\khanov_mod\khanov_mod.cu" />
     <CudaCompile Include="systems\langford\langford.cu" />
     <CudaCompile Include="systems\lorenz84\lorenz84.cu" />
@@ -323,6 +325,7 @@
   </ItemGroup>
   <ItemGroup>
     <Text Include="systems\henon_heiles\henon_heiles.txt" />
+    <Text Include="systems\khanov_mod2\khanov_mod2.txt" />
     <Text Include="systems\khanov_mod\khanov_mod.txt" />
     <Text Include="systems\standard_map\standard_map.txt" />
   </ItemGroup>
