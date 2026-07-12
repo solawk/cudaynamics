@@ -111,38 +111,39 @@ __host__ __device__ __forceinline__ numb diode_current(numb v, numb* parameters)
     numb invVt = (numb)1.0 / P(Vt);
     numb invVp = (numb)1.0 / P(Vp);
 
-    return
-        P(Is) * (exp(vu * invVt) - exp(-vu * invVt)) +
-        (P(Ip) * invVp) * vu * exp(-(vu - P(Vp)) * invVp) +
-        P(Iv) * (atan(P(D) * (vu - P(E))) + atan(P(D) * (vu + P(E))));
+    numb Idiode = P(Is) * (exp(vu * invVt) - exp(-vu * invVt));
+    numb Itunnel = (P(Ip) * invVp) * vu * exp(-(vu - P(Vp)) * invVp);
+    numb Iex = P(Iv) * (atan(P(D) * (vu - P(E))) + atan(P(D) * (vu + P(E))));
+
+    return Idiode + Itunnel + Iex;
 }
 
 __host__ __device__ __forceinline__ numb x_rhs(numb v, numb x, numb* parameters)
 {
-    numb one = (numb)1.0;
-    numb xm1 = one - x;
+    numb xc = (numb)1.0 - x;
+    numb Ax = P(A) * x;
+    numb A1x = P(A) * xc;
 
     numb Xp = (P(Vh_p) - P(Vth_p)) * x + P(Vth_p);
     numb Xn = (P(Vh_n) - P(Vth_n)) * x + P(Vth_n);
 
     numb Vndr = (P(Uvm) - v - Xp) * (P(Uvm) - v - Xn);
 
-    numb sigS = one / (one + exp(-Vndr / (P(Vs) * P(Vs))));
-    numb sigR = one / (one + exp(-Vndr / (P(Vr) * P(Vr))));
+    numb Ss = (numb)1.0 / ((numb)1.0 + exp(-Vndr / (P(Vs) * P(Vs))));
+    numb Sr = (numb)1.0 / ((numb)1.0 + exp(-Vndr / (P(Vr) * P(Vr))));
 
-    numb ax = P(A) * x;
-    numb axm = P(A) * xm1;
+    numb F1 = (numb)1.0 - exp(-(Ax + P(Ds)));
+    numb F2 = (numb)1.0 - exp(-Ax);
+    numb F3 = (numb)1.0 - exp(-A1x);
+    numb F4 = (numb)1.0 - exp(-(A1x + P(Dr)));
 
-    numb f_set =
-        (one - exp(-(ax + P(Ds)))) * xm1 +
-        x * (one - exp(-axm));
+    numb Fs = F1 * xc + x * F3;
+    numb Fr = F2 * xc + x * F4;
 
-    numb f_reset =
-        (one - exp(-ax)) * xm1 +
-        x * (one - exp(-(axm + P(Dr))));
+    numb half_set = (Ss * Fs) / P(tau_s);
+    numb half_reset = (((numb)1.0 - Sr) * Fr) / P(tau_r);
 
-    return (sigS * f_set) / P(tau_s)
-        - ((one - sigR) * f_reset) / P(tau_r);
+    return half_set - half_reset;
 }
 
 template <typename InputSignal> __host__ __device__ __forceinline__ void rk4_scheme(numb* currentV, numb* nextV, numb* parameters, InputSignal signal_fn)

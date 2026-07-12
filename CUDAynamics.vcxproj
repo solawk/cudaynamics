@@ -267,7 +267,6 @@
     <ClInclude Include="standalone\standalone_utils.h" />
     <ClInclude Include="systemsHeaders.h" />
     <ClInclude Include="systems\henon_heiles\henon_heiles.h" />
-    <ClInclude Include="systems\khanov_mod2\khanov_mod2.h" />
     <ClInclude Include="systems\khanov_mod\khanov_mod.h" />
     <ClInclude Include="systems\standard_map\standard_map.h" />
     <ClInclude Include="variationSteps.h" />
@@ -325,7 +324,6 @@
   </ItemGroup>
   <ItemGroup>
     <Text Include="systems\henon_heiles\henon_heiles.txt" />
-    <Text Include="systems\khanov_mod2\khanov_mod2.txt" />
     <Text Include="systems\khanov_mod\khanov_mod.txt" />
     <Text Include="systems\standard_map\standard_map.txt" />
   </ItemGroup>

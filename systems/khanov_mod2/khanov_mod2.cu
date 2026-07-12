@@ -8,9 +8,9 @@ namespace attributes
     enum parameters { 
 		// Circuit
 		Utd, Uvm, C,
-		// Tunnel diode GI403
+		// Tunnel diode
 		Is, Vp, Ip, Iv, B, D, E,
-		// Volatile memristor AND_TS
+		// Volatile memristor
 		Ron_p, Roff_p, R_n, Vth_p, Vh_p, tau_s, tau_r, Vs, Vr, A, Ds, Dr, Ilk, 
 		// Input signal
 		Idc, Iamp, Ifreq, Idel, Idf, Ispc, Inum, Iinc, signal, 
@@ -119,24 +119,27 @@ __host__ __device__ __forceinline__ numb diode_current(numb v, numb* parameters)
 
 __host__ __device__ __forceinline__ numb x_rhs(numb v, numb x, numb* parameters)
 {
-    numb DeltaV = P(Vh_p) - P(Vth_p);
-    numb V_eff = DeltaV * x + P(Vth_p);
-    numb dV = v + P(Uvm) - V_eff;
-
     numb xc = (numb)1.0 - x;
     numb Ax = P(A) * x;
     numb A1x = P(A) * xc;
 
-    numb S_set = (numb)1.0 / ((numb)1.0 + exp(-dV / P(Vs)));
-    numb S_reset = (numb)1.0 / ((numb)1.0 + exp(-dV / P(Vr)));
+    numb DeltaV = P(Vh_p) - P(Vth_p);
+    numb V_eff = DeltaV * x + P(Vth_p);
+    numb dV = v + P(Uvm) - V_eff;
+
+    numb Ss = (numb)1.0 / ((numb)1.0 + exp(-dV / P(Vs)));
+    numb Sr = (numb)1.0 / ((numb)1.0 + exp(-dV / P(Vr)));
 
     numb F1 = (numb)1.0 - exp(-(Ax + P(Ds)));
     numb F2 = (numb)1.0 - exp(-Ax);
     numb F3 = (numb)1.0 - exp(-A1x);
     numb F4 = (numb)1.0 - exp(-(A1x + P(Dr)));
 
-    numb half_set = S_set * (F1 * xc + x * F3) / P(tau_s);
-    numb half_reset = ((numb)1.0 - S_reset) * (F2 * xc + x * F4) / P(tau_r);
+    numb Fs = F1 * xc + x * F3;
+    numb Fr = F2 * xc + x * F4;
+
+    numb half_set = Ss * Fs / P(tau_s);
+    numb half_reset = ((numb)1.0 - Sr) * Fr / P(tau_r);
 
     return half_set - half_reset;
 }

@@ -298,7 +298,6 @@
     <ClInclude Include="recurrenceCalculation.h" />
     <ClInclude Include="plots\tda.h" />
     <ClInclude Include="kernels_exclusive_macros.h" />
-    <ClInclude Include="systems\khanov_mod2\khanov_mod2.h" />
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="main.cu" />
@@ -421,6 +420,5 @@
     <Text Include="systems\henon_heiles\henon_heiles.txt" />
     <Text Include="systems\khanov_mod\khanov_mod.txt" />
     <Text Include="systems\standard_map\standard_map.txt" />
-    <Text Include="systems\khanov_mod2\khanov_mod2.txt" />
   </ItemGroup>
 </Project>
