@@ -1659,7 +1659,7 @@ int imgui_main(int, char**)
 							}
 							ImPlot::SetNextLineStyle(window->variableCount > 1 ? color : window->markerColor, window->markerWidth);
 							ImPlot::PlotLine((KERNEL.variables[window->variables[v]].name + "##" + plotName + std::to_string(v)).c_str(),
-								&((dataBuffer)[window->variables[v]]), computedSteps + 1, scale, start, ImPlotLineFlags_None, 0, sizeof(numb) * KERNEL.VAR_COUNT);
+								&((dataBuffer)[window->variables[v]]), (computedSteps + 1) / window->seriesDecimation, scale * window->seriesDecimation, start, ImPlotLineFlags_None, 0, sizeof(numb) * KERNEL.VAR_COUNT * window->seriesDecimation);
 						}
 					}
 

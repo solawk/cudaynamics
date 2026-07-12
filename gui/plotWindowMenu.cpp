@@ -497,6 +497,7 @@ void plotWindowMenu_SeriesPlot(PlotWindow* window) {
 
 		}
 		ImGui::DragFloat("Line width", &window->markerWidth, 0.1f, 0.5f, 4.0f, "%.1f");
+		ImGui::DragInt("Decimation", &window->seriesDecimation, 1.0f, 1, 1000);
 
 		ImGui::EndMenu();
 	}
