@@ -50,6 +50,7 @@ public:
 	bool whiteBg;
 	bool isImplot3d;
 	bool drawAllTrajectories;
+	int seriesDecimation;
 
 	bool isFrozen;
 	bool isFrozenAsHires;
@@ -114,6 +115,7 @@ public:
 		whiteBg = false;
 		isImplot3d = false;
 		drawAllTrajectories = false;
+		seriesDecimation = 1;
 		
 		deltaState = DS_No;
 		dragLineHiresPos = ImVec2(0.0f, 0.0f);
