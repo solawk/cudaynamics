@@ -60,9 +60,8 @@ A more comprehensive view of the phase space as seen in the second figure can be
 
 If particles mode is turned on in the main window and the "Play" button has been pressed the 3d phase diagram will show the dynamic movement of all calculated variations in phase space through particles as shown below:
 <p align = "center">
-<img width="500" height="400" alt="image" src="https://github.com/user-attachments/assets/691092e2-2012-4c03-a580-7e8c0b0d663c" />
+<img width="500" height="400" alt="gif1" src="https://github.com/user-attachments/assets/a6a3af3d-9c11-4169-bf43-4554202d1640" />
 </p>
-
 
 ## Orbit diagram
 
