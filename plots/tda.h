@@ -66,6 +66,7 @@ struct TDAProperties
 	std::vector<double> sinkhornHistory;
 
 	double sigma, epsilon;
+	double noiseStd;
 
 	TDAProperties()
 	{
@@ -81,6 +82,7 @@ struct TDAProperties
 
 		sigma = 0.15;
 		epsilon = 0.1;
+		noiseStd = 0.0;
 	}
 
 	void Clear()
@@ -99,6 +101,9 @@ struct TDAProperties
 
 	void ComputeGlobalMetrics()
 	{
+		std::chrono::steady_clock::time_point tp[8];
+		tp[0] = std::chrono::steady_clock::now();
+
 		std::vector<double> amplitudes, intervals;
 
 		int peaksInWindow = 0;
@@ -119,6 +124,9 @@ struct TDAProperties
 				p -= windowOverlapBack;
 			}
 		}
+
+		tp[1] = std::chrono::steady_clock::now();
+		printf("metrics: %Ii ms\n", std::chrono::duration_cast<std::chrono::nanoseconds>(tp[1] - tp[0]).count());
 	}
 
 	struct PeaksWindow
@@ -340,6 +348,9 @@ struct TDAProperties
 			return distance;
 		};
 
+		std::chrono::steady_clock::time_point tp[2];
+		long long chamferSum = 0, mmdSum = 0, sinkhornSum = 0;
+
 		for (int w = 1; w < windows.size(); w++)
 		{
 			double chamferDistance = 0.0;
@@ -348,9 +359,16 @@ struct TDAProperties
 
 			for (int prev = 0; (prev < deltaIntoThePast) && (w - prev > 0); prev++)
 			{
+				tp[0] = std::chrono::steady_clock::now();
 				chamferDistance += Chamfer(windows[w], windows[w - prev - 1], peaksPerWindow);
+				tp[1] = std::chrono::steady_clock::now();
+				chamferSum += std::chrono::duration_cast<std::chrono::nanoseconds>(tp[1] - tp[0]).count();
 				mmdDistance += MMD(windows[w], windows[w - prev - 1], peaksPerWindow, sigma);
+				tp[0] = std::chrono::steady_clock::now();
+				mmdSum += std::chrono::duration_cast<std::chrono::nanoseconds>(tp[0] - tp[1]).count();
 				sinkhornDistance += Sinkhorn(windows[w], windows[w - prev - 1], peaksPerWindow, epsilon);
+				tp[1] = std::chrono::steady_clock::now();
+				sinkhornSum += std::chrono::duration_cast<std::chrono::nanoseconds>(tp[0] - tp[1]).count();
 			}
 
 			windowStartsHistory.push_back(windows[w].startStep);
@@ -358,8 +376,12 @@ struct TDAProperties
 			chamferHistory.push_back(chamferDistance);
 			mmdHistory.push_back(mmdDistance);
 			sinkhornHistory.push_back(sinkhornDistance);
-			printf("%i (steps %i-%i): %f %f %f\n", w, windows[w].startStep, windows[w].endStep, chamferDistance, mmdDistance, sinkhornDistance);
+			//printf("%i (steps %i-%i): %f %f %f\n", w, windows[w].startStep, windows[w].endStep, chamferDistance, mmdDistance, sinkhornDistance);
 		}
+
+		printf("chamfer: %Ii ms\n", chamferSum);
+		printf("mmd: %Ii ms\n", mmdSum);
+		printf("sinkhorn: %Ii ms\n", sinkhornSum);
 #undef dstnce
 	}
 
@@ -556,6 +578,9 @@ struct TDAProperties
 		peakAmplitudes.clear();
 		peakIntervals.clear();
 
+		std::default_random_engine generator;
+		std::normal_distribution<double> dist(0.0, noiseStd);
+
 		bool returnNan = false, returnZero = false, WritingData = true; //flags for if the system is dispersive, is a fixed point or if peakfinder has filled buffer and wont write any new peaks
 
 		numb tempPeakAmp = 0, tempPeakTime = 0; bool tempPeakFound = false; // used in case if peak finder finds a horizontal line of equal values and doesnt know if there is a peak there until the line ends, while the line is being analysed the first value of the line is save into tempPeakAmp and tempPeakTime
@@ -570,12 +595,15 @@ struct TDAProperties
 		int varCount = cmp->marshal.kernel.VAR_COUNT;
 		int fixedPointMaxCount = round(steps * timeFractionFXP);   //amount of steps in trajectory that the system need to be fixed point for peak finder to deem it a fixed point
 
+		double* noise = new double[steps];
+		for (int i = 0; i < steps; i++) noise[i] = dist(generator);
+		for (int i = 0; i < steps; i++) trajectory[analysedVariable + varCount * i] += noise[i];
 		//  Peak finder
 		for (int s = 1; s < steps - 1; s++)
 		{
-			numb prev = trajectory[analysedVariable + varCount * s - varCount];
-			numb curr = trajectory[analysedVariable + varCount * s];
-			numb next = trajectory[analysedVariable + varCount * s + varCount];
+			numb prev = trajectory[analysedVariable + varCount * s - varCount]/*		+ noise[s - 1]*/;
+			numb curr = trajectory[analysedVariable + varCount * s]				/*	+ noise[s]*/;
+			numb next = trajectory[analysedVariable + varCount * s + varCount]	/*	+ noise[s + 1]*/;
 
 			if (abs(next - curr) / stepSize < epsFXP) // check the derivative for fixed point requirement
 			{
@@ -646,5 +674,6 @@ struct TDAProperties
 				}
 			}
 		}
+		delete[] noise;
 	}
 };

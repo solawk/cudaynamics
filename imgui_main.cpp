@@ -2548,6 +2548,9 @@ int imgui_main(int, char**)
 
 					if (ImGui::Button("Calculate"))
 					{
+						std::chrono::steady_clock::time_point tp[8];
+						tp[0] = std::chrono::steady_clock::now();
+
 						for (int w = 0; w < window->recur.windowsPerBuffer; w++)
 						// Single window
 						{
@@ -2595,6 +2598,9 @@ int imgui_main(int, char**)
 
 							if (!window->recur.onlyPlot) window->recur.rqaBuffers++;
 						}
+
+						tp[1] = std::chrono::steady_clock::now();
+						printf("this rqa: %Ii ms\n", std::chrono::duration_cast<std::chrono::nanoseconds>(tp[1] - tp[0]).count());
 
 						if (window->recur.size > 0)
 						{
@@ -2739,6 +2745,7 @@ int imgui_main(int, char**)
 						ImGui::InputInt(("Overlap back##" + plotName + "_ppw").c_str(), &(window->tda.windowOverlapBack));
 						ImGui::InputDouble(("Sigma##" + plotName + "_sigma").c_str(), &(window->tda.sigma));
 						ImGui::InputDouble(("Epsilon##" + plotName + "_epsilon").c_str(), &(window->tda.epsilon));
+						ImGui::InputDouble(("Noise std##" + plotName + "_noise").c_str(), &(window->tda.noiseStd));
 
 						if (ImGui::Button("Clear")) 
 						{
