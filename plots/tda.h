@@ -16,6 +16,8 @@ struct TDAMetrics
 
 	double metrics[NumTDAMetrics]{ 0.0 };
 
+	int start, end;
+
 	TDAMetrics()
 	{
 		meanA = meanI = 0.0;
@@ -25,6 +27,8 @@ struct TDAMetrics
 		effectiveArea = logArea = 0.0;
 		elongation = 0.0;
 		axisRatio = principalAngle = 0.0;
+
+		start = end = 0;
 	}
 };
 
@@ -107,8 +111,11 @@ struct TDAProperties
 		std::vector<double> amplitudes, intervals;
 
 		int peaksInWindow = 0;
+		int start = 0;
 		for (int p = 0; p < peakAmplitudesGlobal.size(); p++)
 		{
+			if (peaksInWindow == 0) start = peakTimesGlobal[p];
+
 			amplitudes.push_back(peakAmplitudesGlobal[p]);
 			intervals.push_back(peakIntervalsGlobal[p]);
 			peaksInWindow++;
@@ -116,6 +123,8 @@ struct TDAProperties
 			if (peaksInWindow == peaksPerWindow)
 			{
 				TDAMetrics tda = ComputeMetrics(amplitudes, intervals);
+				tda.start = start;
+				tda.end = peakTimesGlobal[p];
 				metrics.push_back(tda);
 
 				amplitudes.clear();
@@ -126,7 +135,7 @@ struct TDAProperties
 		}
 
 		tp[1] = std::chrono::steady_clock::now();
-		printf("metrics: %Ii ms\n", std::chrono::duration_cast<std::chrono::nanoseconds>(tp[1] - tp[0]).count());
+		//printf("metrics: %Ii ms\n", std::chrono::duration_cast<std::chrono::nanoseconds>(tp[1] - tp[0]).count());
 	}
 
 	struct PeaksWindow
@@ -379,9 +388,9 @@ struct TDAProperties
 			//printf("%i (steps %i-%i): %f %f %f\n", w, windows[w].startStep, windows[w].endStep, chamferDistance, mmdDistance, sinkhornDistance);
 		}
 
-		printf("chamfer: %Ii ms\n", chamferSum);
-		printf("mmd: %Ii ms\n", mmdSum);
-		printf("sinkhorn: %Ii ms\n", sinkhornSum);
+		//printf("chamfer: %Ii ms\n", chamferSum);
+		//printf("mmd: %Ii ms\n", mmdSum);
+		//printf("sinkhorn: %Ii ms\n", sinkhornSum);
 #undef dstnce
 	}
 
@@ -567,6 +576,22 @@ struct TDAProperties
 				largestChange = result.changeRate[i];
 				result.transitionIndex = i;
 			}
+		}
+
+		// Print metrics
+
+		for (int i = 0; i < N; i++)
+		{
+			printf("Metrics of window %i-%i: ua %f ui %f sa %f si %f l1 %f ar %f th %f\n",
+				metrics[i].start,
+				metrics[i].end,
+				(float)metrics[i].meanA,
+				(float)metrics[i].meanI,
+				(float)metrics[i].sigmaA,
+				(float)metrics[i].sigmaI,
+				(float)metrics[i].lambda1,
+				(float)metrics[i].logArea,
+				(float)metrics[i].principalAngle);
 		}
 
 		return result;

@@ -10,9 +10,6 @@ __host__ __device__ void LLE(Computation* data, uint64_t variation, void(* finit
 #if __CUDA_ARCH__
     LOAD_PT_CUDA
 #else
-    std::chrono::steady_clock::time_point tp[2];
-    tp[0] = std::chrono::steady_clock::now();
-
     LOAD_PT_OMP
 #endif
 
@@ -88,13 +85,6 @@ __host__ __device__ void LLE(Computation* data, uint64_t variation, void(* finit
             CUDA_marshal.maps[indexPosition(settings.LLE.offset, 0)] = CUDA_marshal.maps[indexPosition(settings.LLE.offset, 0)] * (1.0f - CUDA_kernel.mapWeight) + mapValue * CUDA_kernel.mapWeight;
         }
     }
-
-#if __CUDA_ARCH__
-    
-#else
-    tp[1] = std::chrono::steady_clock::now();
-    printf("lle: %Ii ms\n", std::chrono::duration_cast<std::chrono::nanoseconds>(tp[1] - tp[0]).count());
-#endif
 }
 
 #pragma warning(pop)
