@@ -199,6 +199,7 @@
     <ClInclude Include="analysis\phaseVolume\phaseVolume_settings.h" />
     <ClInclude Include="analysis\BoA\boa.h" />
     <ClInclude Include="analysis\BoA\boa_settings.h" />
+    <ClInclude Include="analysis\BoA\sweep\boa_sweep.h" />
     <ClInclude Include="anfunc2indices.h" />
     <ClInclude Include="anfuncs.h" />
     <ClInclude Include="anfunc_names.h" />
@@ -322,6 +323,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="analysis\BoA\boa.cu" />
+    <None Include="analysis\BoA\sweep\boa_sweep.cu" />
     <None Include="analysis\BoA\README.md" />
   </ItemGroup>
   <ItemGroup>

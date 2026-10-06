@@ -128,6 +128,9 @@
     <Filter Include="analysis\BoA">
       <UniqueIdentifier>{bfe5ca34-1b8d-4cff-9b71-9b3c7380d388}</UniqueIdentifier>
     </Filter>
+    <Filter Include="analysis\BoA\sweep">
+      <UniqueIdentifier>{68dce08a-a291-4d19-a294-33c279d1996a}</UniqueIdentifier>
+    </Filter>
     <Filter Include="json">
       <UniqueIdentifier>{9532fce9-e3ab-44d9-8809-6ebbc306a8de}</UniqueIdentifier>
     </Filter>
@@ -280,6 +283,9 @@
     <ClInclude Include="analysis\BoA\boa_settings.h">
       <Filter>analysis\BoA</Filter>
     </ClInclude>
+    <ClInclude Include="analysis\BoA\sweep\boa_sweep.h">
+      <Filter>analysis\BoA\sweep</Filter>
+    </ClInclude>
     <ClInclude Include="decaySettings_struct.h" />
     <ClInclude Include="gui\applicationSettings_struct.h">
       <Filter>gui</Filter>
@@ -303,6 +309,9 @@
   <ItemGroup>
     <None Include="analysis\BoA\boa.cu">
       <Filter>analysis\BoA</Filter>
+    </None>
+    <None Include="analysis\BoA\sweep\boa_sweep.cu">
+      <Filter>analysis\BoA\sweep</Filter>
     </None>
     <None Include="analysis\BoA\README.md">
       <Filter>analysis\BoA</Filter>

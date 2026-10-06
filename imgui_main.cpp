@@ -1085,6 +1085,11 @@ int imgui_main(int, char**)
 			break;
 		case BoA:
 			ImGui::TextWrapped("Categorical map of attractor basins. Configure exactly two features in Analysis Settings.");
+			if (kernelNew.analyses.BOA.parameterSweep)
+			{
+				kernelNew.analyses.BOA.DisplaySweepParameterSetting(kernelNew.parameters,
+					kernelNew.stepType == ST_Parameter, "##BOA_sweep_parameter_builder");
+			}
 			break;
 
 		case Decay:
@@ -1208,6 +1213,11 @@ int imgui_main(int, char**)
 		case Phase2D:
 			noMistakes = selectedPlotVars[0] > -1 && selectedPlotVars[1] > -1;
 			break;
+		case BoA:
+			noMistakes = !kernelNew.analyses.BOA.parameterSweep ||
+				BOA_Settings::IsSelectableSweepParameter(kernelNew.parameters,
+					kernelNew.analyses.BOA.sweepParameter, kernelNew.stepType == ST_Parameter);
+			break;
 		}
 
 		if (!noMistakes)
@@ -1280,7 +1290,8 @@ int imgui_main(int, char**)
 					krn->analyses.PV.DisplaySettings(krn->variables);
 					break;
 				case AnalysisFunction::ANF_BOA:
-					krn->analyses.BOA.DisplaySettings(krn->variables);
+					krn->analyses.BOA.DisplaySettings(krn->variables, krn->parameters,
+						krn->stepType == ST_Parameter);
 					break;
 				}
 
@@ -1394,6 +1405,28 @@ int imgui_main(int, char**)
 
 				if (attributeVectorsLoaded)
 				{
+					if (window->type == BoA && kernelNew.analyses.BOA.parameterSweep)
+					{
+						const int previousSweepParameter = kernelNew.analyses.BOA.sweepParameter;
+						kernelNew.analyses.BOA.DisplaySweepParameterSetting(kernelNew.parameters,
+							kernelNew.stepType == ST_Parameter,
+							("##" + windowName + "_BOA_sweep_parameter").c_str());
+						if (previousSweepParameter != kernelNew.analyses.BOA.sweepParameter) anyChanged = true;
+						if (!KERNEL.analyses.BOA.parameterSweep ||
+							KERNEL.analyses.BOA.sweepParameter != kernelNew.analyses.BOA.sweepParameter)
+							ImGui::TextWrapped("Press Compute to apply the selected sweep parameter.");
+						else if (BOA_Settings::IsSelectableSweepParameter(KERNEL.parameters,
+							KERNEL.analyses.BOA.sweepParameter, KERNEL.stepType == ST_Parameter))
+						{
+							const int flatIndex = KERNEL.VAR_COUNT + KERNEL.analyses.BOA.sweepParameter;
+							const int layer = flatIndex < (int)attributeValueIndices.size()
+								? attributeValueIndices[flatIndex] : 0;
+							Attribute& sweep = KERNEL.parameters[KERNEL.analyses.BOA.sweepParameter];
+							if (sweep.values && layer >= 0 && layer < sweep.TrueStepCount())
+								ImGui::Text("Displayed layer: %s = %.8g", sweep.name.c_str(), (double)sweep.values[layer]);
+						}
+					}
+
 					if (ImGui::BeginTable((plotName + "_axisTable").c_str(), columns))
 					{
 						ImGui::TableSetupColumn(nullptr);
@@ -1419,7 +1452,10 @@ int imgui_main(int, char**)
 
 							for (int p = 0; p < krnl->PARAM_COUNT; p++)
 							{
-								if (ImGui::Selectable(krnl->parameters[p].name.c_str()))
+								const bool isSweepDimension = window->type == BoA &&
+									krnl->analyses.BOA.parameterSweep && p == krnl->analyses.BOA.sweepParameter;
+								if (ImGui::Selectable(krnl->parameters[p].name.c_str(), false,
+									isSweepDimension ? ImGuiSelectableFlags_Disabled : 0))
 								{
 									window->hireshmp.indexX = window->hmp.indexX = p;
 									window->hireshmp.typeX = window->hmp.typeX = MDT_Parameter;
@@ -1456,7 +1492,10 @@ int imgui_main(int, char**)
 
 							for (int p = 0; p < krnl->PARAM_COUNT; p++)
 							{
-								if (ImGui::Selectable(krnl->parameters[p].name.c_str()))
+								const bool isSweepDimension = window->type == BoA &&
+									krnl->analyses.BOA.parameterSweep && p == krnl->analyses.BOA.sweepParameter;
+								if (ImGui::Selectable(krnl->parameters[p].name.c_str(), false,
+									isSweepDimension ? ImGuiSelectableFlags_Disabled : 0))
 								{
 									window->hireshmp.indexY = window->hmp.indexY = p;
 									window->hireshmp.typeY = window->hmp.typeY = MDT_Parameter;

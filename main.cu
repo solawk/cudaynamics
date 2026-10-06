@@ -10,11 +10,13 @@
 #include "indices_map.h"
 #include "index2port.h"
 #include "analysis/BoA/boa.h"
+#include "analysis/BoA/sweep/boa_sweep.h"
 
 // Keep BoA implementation in its own analysis .cu file while compiling it into
 // this CUDA translation unit. This avoids the legacy VS CUDA target exceeding
 // cmd.exe's device-link command length limit when one more .cu object is added.
 #include "analysis/BoA/boa.cu"
+#include "analysis/BoA/sweep/boa_sweep.cu"
 
 #define PRINT_TIME 0
 
@@ -108,7 +110,9 @@ cudaError_t execute(Computation* data)
     // normalization; the O(N^2) neighborhood work stays on the GPU.
     if (!data->isHires && CUDA_kernel.analyses.BOA.toCompute)
     {
-        cudaStatus = FinalizeBOACUDA(data, cuda_maps, variations);
+        cudaStatus = CUDA_kernel.analyses.BOA.parameterSweep
+            ? FinalizeBOASweepCUDA(data, cuda_maps, variations)
+            : FinalizeBOACUDA(data, cuda_maps, variations);
         if (cudaStatus != cudaSuccess)
         {
             fprintf(stderr, "CUDA BoA clustering failed: %s\n", cudaGetErrorString(cudaStatus));
@@ -249,7 +253,8 @@ int compute(Computation* data)
                 kernelPrograms[selectedKernel](data, v);
             }
 
-            FinalizeBOAOpenMP(data);
+            if (data->marshal.kernel.analyses.BOA.parameterSweep) FinalizeBOASweepOpenMP(data);
+            else FinalizeBOAOpenMP(data);
 
             cudaStatus = cudaSuccess;
 #if (PRINT_TIME)    
@@ -262,7 +267,11 @@ int compute(Computation* data)
             cudaStatus = execute(data);
         }
         if (cudaStatus != cudaSuccess) { fprintf(stderr, "execute failed!\n"); hasFailed = true; }
-        if (!hasFailed) CompactBOALabels(data);
+        if (!hasFailed)
+        {
+            if (data->marshal.kernel.analyses.BOA.parameterSweep) TrackBOASweepLabels(data);
+            else CompactBOALabels(data);
+        }
     }
     else
     {
