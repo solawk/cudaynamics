@@ -1,5 +1,9 @@
 #include "map_utils.hpp"
 
+#include <algorithm>
+#include <cmath>
+#include <vector>
+
 void extractMap(numb* src, numb* dst, int* indeces, int* steps, int axisXattr, int axisYattr, Kernel* kernel)
 {
 	bool isXparam = axisXattr >= kernel->VAR_COUNT;
@@ -54,4 +58,49 @@ void setupLUT(numb* src, int particleCount, int** lut, int* groupSizes, int grou
 	}
 
 	delete[] thresholds;
+}
+
+void setupCategoricalLUT(numb* src, int particleCount, colorLUT* lut)
+{
+	lut->Clear();
+	if (src == nullptr || particleCount <= 0) return;
+
+	std::vector<int> labels;
+	labels.reserve(particleCount);
+	for (int i = 0; i < particleCount; ++i)
+		labels.push_back(std::isfinite((double)src[i]) ? (int)src[i] : -2);
+
+	std::sort(labels.begin(), labels.end());
+	labels.erase(std::unique(labels.begin(), labels.end()), labels.end());
+
+	lut->lutGroups = (int)labels.size();
+	lut->lut = new int* [lut->lutGroups];
+	lut->lutSizes = new int[lut->lutGroups]{};
+	lut->groupLabels = new int[lut->lutGroups];
+
+	for (int g = 0; g < lut->lutGroups; ++g)
+	{
+		lut->groupLabels[g] = labels[g];
+		lut->lut[g] = nullptr;
+	}
+
+	// Count first so categorical LUT memory is O(number of variations), not
+	// O(number of basins * number of variations).
+	for (int i = 0; i < particleCount; ++i)
+	{
+		const int label = std::isfinite((double)src[i]) ? (int)src[i] : -2;
+		const int group = (int)(std::lower_bound(labels.begin(), labels.end(), label) - labels.begin());
+		++lut->lutSizes[group];
+	}
+
+	for (int g = 0; g < lut->lutGroups; ++g)
+		lut->lut[g] = new int[lut->lutSizes[g]];
+
+	std::vector<int> positions(lut->lutGroups, 0);
+	for (int i = 0; i < particleCount; ++i)
+	{
+		const int label = std::isfinite((double)src[i]) ? (int)src[i] : -2;
+		const int group = (int)(std::lower_bound(labels.begin(), labels.end(), label) - labels.begin());
+		lut->lut[group][positions[group]++] = i;
+	}
 }

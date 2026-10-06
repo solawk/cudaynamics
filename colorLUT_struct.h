@@ -6,12 +6,16 @@ public:
 	int lutGroups;
 	int** lut;
 	int* lutSizes;
+	// For categorical maps (for example BoA), stores the original category
+	// represented by every LUT group. Continuous heatmaps leave this null.
+	int* groupLabels;
 
 	colorLUT()
 	{
 		lutGroups = 1;
 		lut = nullptr;
 		lutSizes = nullptr;
+		groupLabels = nullptr;
 	}
 
 	void Clear()
@@ -35,5 +39,13 @@ public:
 			delete[] lutSizes;
 			lutSizes = nullptr;
 		}
+
+		if (groupLabels != nullptr)
+		{
+			delete[] groupLabels;
+			groupLabels = nullptr;
+		}
+
+		lutGroups = 0;
 	}
 };

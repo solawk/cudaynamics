@@ -1816,6 +1816,18 @@ int imgui_main(int, char**)
 
 					bool usePainting = colorsLUTfrom != nullptr && colorsLUTfrom->hmp.paintLUT.lut != nullptr;
 					colorLUT* lut = usePainting ? &(colorsLUTfrom->hmp.paintLUT) : nullptr;
+					auto paintingColor = [&](int group, float alpha)
+					{
+						ImVec4 color;
+						if (group < 0 || group >= lut->lutGroups)
+							color = ImVec4(0.22f, 0.22f, 0.22f, 1.0f);
+						else if (colorsLUTfrom->type == BoA && lut->groupLabels != nullptr)
+							color = BasinLabelColor(lut->groupLabels[group]);
+						else
+							color = ImPlot::SampleColormap((float)group / (float)(std::max)(1, lut->lutGroups - 1), colorsLUTfrom->hmp.colormap);
+						color.w = alpha;
+						return color;
+					};
 
 					if (computations[playedBufferIndex].ready)
 					{
@@ -1842,8 +1854,7 @@ int imgui_main(int, char**)
 									else
 									{
 										int variationGroup = getVariationGroup(lut, !window->drawAllTrajectories ? variation : drawnVariation);
-										ImVec4 clr = ImPlot::SampleColormap((float)variationGroup / (lut->lutGroups - 1), colorsLUTfrom->hmp.colormap);
-										clr.w = window->plotColor.w;
+										ImVec4 clr = paintingColor(variationGroup, window->plotColor.w);
 										ImPlot::SetNextLineStyle(clr);
 									}
 									ImPlot::PlotLine(plotName.c_str(),
@@ -1858,9 +1869,8 @@ int imgui_main(int, char**)
 										ImPlot3D::SetNextLineStyle(window->plotColor);
 									else
 									{
-										int variationGroup = getVariationGroup(lut, variation);
-										ImVec4 clr = ImPlot3D::SampleColormap((float)variationGroup / (lut->lutGroups - 1), colorsLUTfrom->hmp.colormap);
-										clr.w = window->plotColor.w;
+										int variationGroup = getVariationGroup(lut, !window->drawAllTrajectories ? variation : drawnVariation);
+										ImVec4 clr = paintingColor(variationGroup, window->plotColor.w);
 										ImPlot3D::SetNextLineStyle(clr);
 									}
 
@@ -1915,8 +1925,7 @@ int imgui_main(int, char**)
 											rotateOffsetBuffer(particleBuffer, lutsize, KERNEL.VAR_COUNT, window->variables[0], window->variables[1], window->variables[2],
 												rotationEuler, window->trs.offset, window->trs.scale);
 
-										ImVec4 clr = ImPlot::SampleColormap((float)g / (lut->lutGroups - 1), colorsLUTfrom->hmp.colormap);
-										clr.w = window->markerColor.w;
+										ImVec4 clr = paintingColor(g, window->markerColor.w);
 										ImPlot::SetNextLineStyle(clr);
 										ImPlot::PushStyleVar(ImPlotStyleVar_MarkerWeight, window->markerOutlineWidth);
 										ImPlot::SetNextMarkerStyle(window->markerShape, window->markerWidth);
@@ -1949,8 +1958,7 @@ int imgui_main(int, char**)
 										ImPlot3D::PushStyleVar(ImPlotStyleVar_MarkerWeight, window->markerOutlineWidth);
 										ImPlot3D::SetNextMarkerStyle(window->markerShape, window->markerWidth);
 
-										ImVec4 clr = ImPlot::SampleColormap((float)g / (lut->lutGroups - 1), ImPlotColormap_Jet);
-										clr.w = window->markerColor.w;
+										ImVec4 clr = paintingColor(g, window->markerColor.w);
 										ImPlot3D::SetNextLineStyle(clr);
 										ImPlot3D::PlotScatter(plotName.c_str(), &((particleBuffer)[window->variables[0]]), &((particleBuffer)[window->variables[1]]), &((particleBuffer)[window->variables[2]]),
 											lutsize, 0, 0, sizeof(numb) * KERNEL.VAR_COUNT);
@@ -2919,22 +2927,26 @@ int imgui_main(int, char**)
 									heatmap->isHeatmapDirty = false;
 
 									// COLORS
-									if (!isMC && !isBOA)
+									if (!isMC)
 									{
-										heatmap->paintLUT.Clear();
-
-										heatmap->paintLUT.lutGroups = paintLUTsize;
-										heatmap->paintLUT.lut = new int* [paintLUTsize];
-										for (int i = 0; i < paintLUTsize; i++) heatmap->paintLUT.lut[i] = new int[cmp->marshal.totalVariations];
-										heatmap->paintLUT.lutSizes = new int[paintLUTsize];
-
 										numb* src = cmp->marshal.maps;
 										if (window->deltaState == DS_Delta) src = cmp->marshal.indecesDelta;
 										if (window->deltaState == DS_Decay) src = cmp->marshal.indecesDecay;
 										if (window->deltaState == DS_Lifetime) src = cmp->marshal.indecesDecayLifetime;
-										setupLUT(src + (index2port(cmp->marshal.kernel.analyses, mapIndex)->offset + heatmap->values.mapValueIndex) * cmp->marshal.totalVariations,
-											cmp->marshal.totalVariations, heatmap->paintLUT.lut, heatmap->paintLUT.lutSizes, paintLUTsize,
-											heatmap->values.heatmapMin, heatmap->values.heatmapMax);
+										src += (index2port(cmp->marshal.kernel.analyses, mapIndex)->offset + heatmap->values.mapValueIndex) * cmp->marshal.totalVariations;
+
+										if (isBOA)
+											setupCategoricalLUT(src, cmp->marshal.totalVariations, &heatmap->paintLUT);
+										else
+										{
+											heatmap->paintLUT.Clear();
+											heatmap->paintLUT.lutGroups = paintLUTsize;
+											heatmap->paintLUT.lut = new int* [paintLUTsize];
+											for (int i = 0; i < paintLUTsize; i++) heatmap->paintLUT.lut[i] = new int[cmp->marshal.totalVariations];
+											heatmap->paintLUT.lutSizes = new int[paintLUTsize];
+											setupLUT(src, cmp->marshal.totalVariations, heatmap->paintLUT.lut, heatmap->paintLUT.lutSizes, paintLUTsize,
+												heatmap->values.heatmapMin, heatmap->values.heatmapMax);
+										}
 									}
 
 									releaseHeatmap(window, isHires);
