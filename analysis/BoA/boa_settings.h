@@ -18,6 +18,8 @@ struct BOA_Settings : AbstractAnalysisSettingsStruct
     AnalysisIndex features[2];
     numb epsilon;
     int minimumPoints;
+    bool parameterSweep;
+    int sweepParameter;
     Port basinId;
 
     BOA_Settings()
@@ -26,6 +28,8 @@ struct BOA_Settings : AbstractAnalysisSettingsStruct
         features[1] = IND_MNINT;
         epsilon = (numb)0.05;
         minimumPoints = 4;
+        parameterSweep = false;
+        sweepParameter = -1;
         basinId = Port();
     }
 
@@ -77,19 +81,64 @@ struct BOA_Settings : AbstractAnalysisSettingsStruct
         ImGui::PopItemWidth();
     }
 
-    void DisplaySettings(std::vector<Attribute>&)
+    static bool IsSelectableSweepParameter(const std::vector<Attribute>& parameters,
+        int index, bool lastParameterIsStep)
+    {
+        if (index < 0 || index >= (int)parameters.size()) return false;
+        if (lastParameterIsStep && index == (int)parameters.size() - 1) return false;
+        return const_cast<Attribute&>(parameters[index]).TrueStepCount() > 1;
+    }
+
+    void DisplaySweepParameterSetting(std::vector<Attribute>& parameters, bool lastParameterIsStep,
+        const char* id)
+    {
+        if (!parameterSweep) return;
+        const char* preview = IsSelectableSweepParameter(parameters, sweepParameter, lastParameterIsStep)
+            ? parameters[sweepParameter].name.c_str() : "Select a ranged parameter";
+        ImGui::Text("Sweep parameter");
+        ImGui::SameLine();
+        ImGui::PushItemWidth(210.0f);
+        if (ImGui::BeginCombo(id, preview))
+        {
+            for (int p = 0; p < (int)parameters.size(); ++p)
+            {
+                if (!IsSelectableSweepParameter(parameters, p, lastParameterIsStep)) continue;
+                const bool selected = p == sweepParameter;
+                if (ImGui::Selectable(parameters[p].name.c_str(), selected)) sweepParameter = p;
+            }
+            ImGui::EndCombo();
+        }
+        ImGui::PopItemWidth();
+        if (!IsSelectableSweepParameter(parameters, sweepParameter, lastParameterIsStep))
+            ImGui::TextWrapped("Set a non-step parameter to a range of at least two values.");
+    }
+
+    void DisplaySettings(std::vector<Attribute>&, std::vector<Attribute>& parameters, bool lastParameterIsStep)
     {
         DisplayFeatureSetting("Feature 1", 0);
         DisplayFeatureSetting("Feature 2", 1);
         DisplayNumbSetting("Normalized epsilon", epsilon);
         DisplayIntSetting("Minimum points", minimumPoints);
+        if (ImGui::Checkbox("Parameter sweep", &parameterSweep) && parameterSweep &&
+            !IsSelectableSweepParameter(parameters, sweepParameter, lastParameterIsStep))
+        {
+            for (int p = 0; p < (int)parameters.size(); ++p)
+                if (IsSelectableSweepParameter(parameters, p, lastParameterIsStep))
+                {
+                    sweepParameter = p;
+                    break;
+                }
+        }
+        DisplaySweepParameterSetting(parameters, lastParameterIsStep, "##BOA_sweep_parameter_settings");
         if (epsilon < (numb)0.000001) epsilon = (numb)0.000001;
         if (minimumPoints < 1) minimumPoints = 1;
     }
 
     bool setup(std::vector<std::string> s)
     {
-        if (!isMapSetupOfCorrectLength(s, 4)) return false;
+        // Four fields are the legacy BoA format. The two optional fields keep
+        // old system files loadable while persisting the sweep mode.
+        if (s.size() != 4 && s.size() != 6) return false;
         const AnalysisIndex f0 = (AnalysisIndex)s2i(s[0]);
         const AnalysisIndex f1 = (AnalysisIndex)s2i(s[1]);
         const numb parsedEpsilon = s2n(s[2]);
@@ -102,6 +151,9 @@ struct BOA_Settings : AbstractAnalysisSettingsStruct
         features[1] = f1;
         epsilon = parsedEpsilon;
         minimumPoints = parsedMinimumPoints;
+        parameterSweep = s.size() == 6 ? s2i(s[4]) != 0 : false;
+        sweepParameter = s.size() == 6 ? s2i(s[5]) : -1;
+        if (sweepParameter < -1) return false;
         return true;
     }
 
@@ -114,6 +166,8 @@ struct BOA_Settings : AbstractAnalysisSettingsStruct
         s.push_back(std::to_string((int)features[1]));
         s.push_back(std::to_string(epsilon));
         s.push_back(std::to_string(minimumPoints));
+        s.push_back(parameterSweep ? "1" : "0");
+        s.push_back(std::to_string(sweepParameter));
         j["settings"] = s;
         return j;
     }
