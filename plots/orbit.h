@@ -1,7 +1,6 @@
 #pragma once
+#include <cstdint>
 #include <vector>
-#include "imgui/backends/imgui_impl_win32.h"
-#include "imgui/backends/imgui_impl_dx11.h"
 #include "implot.h"
 #include "../numb.h"
 #include "../kernel_map.h"
@@ -23,6 +22,17 @@ struct OrbitProperties
 	bool invertedAxes;
 
 	bool areValuesDirty;
+	bool rasterDirty;
+	// Kept renderer-agnostic here; imgui_main.cpp owns the DX11 cast and lifetime.
+	void* rasterTexture;
+	std::vector<unsigned char> rasterPixels;
+	int rasterWidth;
+	int rasterHeight;
+	double rasterMinX;
+	double rasterMaxX;
+	double rasterMinY;
+	double rasterMaxY;
+	uint64_t rasterStyleSignature;
 	numb* bifAmps;
 	numb* bifParamIndices;
 	numb* bifIntervals;
@@ -74,6 +84,11 @@ struct OrbitProperties
 		markerWidth = 1;
 		invertedAxes = false;
 		areValuesDirty = true;
+		rasterDirty = true;
+		rasterTexture = nullptr;
+		rasterWidth = rasterHeight = 0;
+		rasterMinX = rasterMaxX = rasterMinY = rasterMaxY = 0;
+		rasterStyleSignature = 0;
 		bifAmps = bifParamIndices = bifIntervals = NULL;
 		isAutoComputeOn = false;
 
@@ -230,6 +245,7 @@ struct OrbitProperties
 				trajectory.clear();
 			}
 			bifDotAmountBack = BifDotAmount;
+			rasterDirty = true;
 
 			redrawContinuation = false;
 			drawingContinuation = true;
@@ -389,41 +405,36 @@ struct OrbitProperties
 
 				}
 				bifDotAmount = BifDotAmount;
+				rasterDirty = true;
+
+				if (bifDotAmount > 0 && type == OPT_Peak_Bifurcation)
+				{
+					minX = maxX = bifParamIndices[0];
+					minY = maxY = bifAmps[0];
+
+					for (int i = 1; i < bifDotAmount; ++i)
+					{
+						if (bifParamIndices[i] < minX) minX = bifParamIndices[i];
+						if (bifParamIndices[i] > maxX) maxX = bifParamIndices[i];
+						if (bifAmps[i] < minY) minY = bifAmps[i];
+						if (bifAmps[i] > maxY) maxY = bifAmps[i];
+					}
+				}
+				else if (bifDotAmount > 0 && type == OPT_Interval_Bifurcation)
+				{
+					minX = maxX = bifParamIndices[0];
+					minY = maxY = bifIntervals[0];
+
+					for (int i = 1; i < bifDotAmount; ++i)
+					{
+						if (bifParamIndices[i] < minX) minX = bifParamIndices[i];
+						if (bifParamIndices[i] > maxX) maxX = bifParamIndices[i];
+						if (bifIntervals[i] < minY) minY = bifIntervals[i];
+						if (bifIntervals[i] > maxY) maxY = bifIntervals[i];
+					}
+				}
+
 				areValuesDirty = false;
-			}
-
-			if (type == OPT_Peak_Bifurcation)
-			{
-				minX = bifParamIndices[0];
-				maxX = bifParamIndices[0];
-				minY = bifIntervals[0];
-				maxY = bifIntervals[0];
-
-				for (int i = 0; i < bifDotAmount - 1; ++i)
-				{
-					maxX = bifParamIndices[i];
-					if (bifAmps[i + 1] < minY) minY = bifAmps[i + 1];
-					if (bifAmps[i + 1] > maxY) maxY = bifAmps[i + 1];
-				}
-			}
-			else if (type == OPT_Interval_Bifurcation)
-			{
-				minX = bifParamIndices[0];
-				maxX = bifParamIndices[0];
-				minY = bifIntervals[0];
-				maxY = bifIntervals[0];
-
-				for (int i = 0; i < bifDotAmount - 1; ++i)
-				{
-					maxX = bifParamIndices[i];
-					if (bifIntervals[i + 1] < minY) minY = bifIntervals[i + 1];
-					if (bifIntervals[i + 1] > maxY) maxY = bifIntervals[i + 1];
-				}
-
-			}
-			else if (type == OPT_Bifurcation_3D)
-			{
-
 			}
 		}
 	}
