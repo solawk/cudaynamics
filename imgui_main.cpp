@@ -6,12 +6,20 @@
 #include "gui/fullscreen_funcs.h"
 #include "gui/window_configs.h"
 
+#include <algorithm>
+#include <cmath>
+#include <cstdint>
+#include <cstring>
+#include <limits>
+
 static ID3D11Device* g_pd3dDevice = nullptr;
 static ID3D11DeviceContext* g_pd3dDeviceContext = nullptr;
 static IDXGISwapChain* g_pSwapChain = nullptr;
 static bool                     g_SwapChainOccluded = false;
 static UINT                     g_ResizeWidth = 0, g_ResizeHeight = 0;
 static ID3D11RenderTargetView* g_mainRenderTargetView = nullptr;
+
+void releaseOrbitRaster(PlotWindow* window);
 
 std::vector<PlotWindow> plotWindows;
 int uniqueIds = 0; // Unique window IDs
@@ -257,8 +265,9 @@ void terminateUIBuffers()
 
 void unloadPlotWindows()
 {
-	for (PlotWindow w : plotWindows)
+	for (PlotWindow& w : plotWindows)
 	{
+		releaseOrbitRaster(&w);
 		w.hmp.paintLUT.Clear();
 		if (w.hmp.pixelBuffer != nullptr) delete[] w.hmp.pixelBuffer;
 		// TODO: Delete hi-res, delete other buffers
@@ -379,6 +388,239 @@ void releaseHeatmap(PlotWindow* window, bool isHires)
 			((ID3D11ShaderResourceView*)window->hireshmp.texture)->Release();
 			window->hireshmp.texture = nullptr;
 		}
+	}
+}
+
+void releaseOrbitRaster(PlotWindow* window)
+{
+	if (window->orbit.rasterTexture != nullptr)
+	{
+		static_cast<ID3D11ShaderResourceView*>(window->orbit.rasterTexture)->Release();
+		window->orbit.rasterTexture = nullptr;
+	}
+	window->orbit.rasterPixels.clear();
+	window->orbit.rasterWidth = 0;
+	window->orbit.rasterHeight = 0;
+	window->orbit.rasterDirty = true;
+}
+
+static void orbitHashBytes(uint64_t& hash, const void* data, size_t size)
+{
+	const unsigned char* bytes = static_cast<const unsigned char*>(data);
+	for (size_t i = 0; i < size; ++i)
+	{
+		hash ^= bytes[i];
+		hash *= 1099511628211ULL;
+	}
+}
+
+template <typename T>
+static void orbitHashValue(uint64_t& hash, const T& value)
+{
+	orbitHashBytes(hash, &value, sizeof(value));
+}
+
+static uint64_t orbitRasterSignature(const PlotWindow* window)
+{
+	uint64_t hash = 1469598103934665603ULL;
+	orbitHashValue(hash, window->orbit.type);
+	orbitHashValue(hash, window->orbit.invertedAxes);
+	orbitHashValue(hash, window->orbit.drawingContinuation);
+	orbitHashValue(hash, window->orbit.bifDotAmount);
+	orbitHashValue(hash, window->orbit.bifDotAmountForward);
+	orbitHashValue(hash, window->orbit.bifDotAmountBack);
+	orbitHashValue(hash, window->markerShape);
+	orbitHashValue(hash, window->orbit.dotShapeForward);
+	orbitHashValue(hash, window->orbit.dotShapeBack);
+	orbitHashValue(hash, window->orbit.pointSize);
+	orbitHashValue(hash, window->orbit.pointSizeForward);
+	orbitHashValue(hash, window->orbit.pointSizeBack);
+	orbitHashValue(hash, window->plotColor);
+	orbitHashValue(hash, window->orbit.dotColorForward);
+	orbitHashValue(hash, window->orbit.dotColorBack);
+	return hash;
+}
+
+struct OrbitRasterBatch
+{
+	const numb* xs;
+	const numb* ys;
+	int count;
+	ImPlotMarker marker;
+	float pointSize;
+	ImVec4 color;
+};
+
+static void drawOrbitRasterPixel(OrbitProperties& orbit, int x, int y, const ImVec4& color)
+{
+	if (x < 0 || x >= orbit.rasterWidth || y < 0 || y >= orbit.rasterHeight)
+		return;
+
+	const size_t pixel = (static_cast<size_t>(y) * orbit.rasterWidth + x) * 4;
+	orbit.rasterPixels[pixel + 0] = static_cast<unsigned char>(std::clamp(color.x, 0.0f, 1.0f) * 255.0f);
+	orbit.rasterPixels[pixel + 1] = static_cast<unsigned char>(std::clamp(color.y, 0.0f, 1.0f) * 255.0f);
+	orbit.rasterPixels[pixel + 2] = static_cast<unsigned char>(std::clamp(color.z, 0.0f, 1.0f) * 255.0f);
+	orbit.rasterPixels[pixel + 3] = static_cast<unsigned char>(std::clamp(color.w, 0.0f, 1.0f) * 255.0f);
+}
+
+static void drawOrbitRasterMarker(OrbitProperties& orbit, int centerX, int centerY, ImPlotMarker marker, float pointSize, const ImVec4& color)
+{
+	const int radius = (std::max)(0, static_cast<int>(std::floor(pointSize)));
+	for (int dy = -radius; dy <= radius; ++dy)
+	{
+		for (int dx = -radius; dx <= radius; ++dx)
+		{
+			bool draw = true;
+			switch (marker)
+			{
+			case ImPlotMarker_Circle:   draw = radius == 0 || dx * dx + dy * dy <= radius * radius; break;
+			case ImPlotMarker_Diamond:  draw = std::abs(dx) + std::abs(dy) <= radius; break;
+			case ImPlotMarker_Up:       draw = std::abs(dx) <= dy + radius; break;
+			case ImPlotMarker_Down:     draw = std::abs(dx) <= radius - dy; break;
+			case ImPlotMarker_Left:     draw = std::abs(dy) <= radius - dx; break;
+			case ImPlotMarker_Right:    draw = std::abs(dy) <= dx + radius; break;
+			case ImPlotMarker_Cross:    draw = dx == dy || dx == -dy; break;
+			case ImPlotMarker_Plus:     draw = dx == 0 || dy == 0; break;
+			case ImPlotMarker_Asterisk: draw = dx == 0 || dy == 0 || dx == dy || dx == -dy; break;
+			default: break;
+			}
+			if (draw)
+				drawOrbitRasterPixel(orbit, centerX + dx, centerY + dy, color);
+		}
+	}
+}
+
+static bool rebuildOrbitRaster(PlotWindow* window, int width, int height, const ImPlotRect& limits, uint64_t signature)
+{
+	OrbitProperties& orbit = window->orbit;
+	const numb* normalY = orbit.type == OPT_Peak_Bifurcation ? orbit.bifAmps : orbit.bifIntervals;
+	const numb* forwardY = orbit.type == OPT_Peak_Bifurcation ? orbit.continuationAmpsForward : orbit.continuationIntervalsForward;
+	const numb* backwardY = orbit.type == OPT_Peak_Bifurcation ? orbit.continuationAmpsBack : orbit.continuationIntervalsBack;
+
+	OrbitRasterBatch batches[3] = {
+		{ orbit.invertedAxes ? normalY : orbit.bifParamIndices, orbit.invertedAxes ? orbit.bifParamIndices : normalY,
+		  orbit.bifDotAmount, window->markerShape, orbit.pointSize, window->plotColor },
+		{ orbit.invertedAxes ? forwardY : orbit.continuationParamIndicesForward, orbit.invertedAxes ? orbit.continuationParamIndicesForward : forwardY,
+		  orbit.drawingContinuation ? orbit.bifDotAmountForward : 0, orbit.dotShapeForward, orbit.pointSizeForward, orbit.dotColorForward },
+		{ orbit.invertedAxes ? backwardY : orbit.continuationParamIndicesBack, orbit.invertedAxes ? orbit.continuationParamIndicesBack : backwardY,
+		  orbit.drawingContinuation ? orbit.bifDotAmountBack : 0, orbit.dotShapeBack, orbit.pointSizeBack, orbit.dotColorBack }
+	};
+
+	const double minX = limits.X.Min;
+	const double maxX = limits.X.Max;
+	const double minY = limits.Y.Min;
+	const double maxY = limits.Y.Max;
+	if (!std::isfinite(minX) || !std::isfinite(maxX) || !std::isfinite(minY) || !std::isfinite(maxY) || maxX <= minX || maxY <= minY)
+		return false;
+
+	const bool canUpdateExistingTexture = orbit.rasterTexture != nullptr && orbit.rasterWidth == width && orbit.rasterHeight == height;
+	orbit.rasterWidth = width;
+	orbit.rasterHeight = height;
+	orbit.rasterMinX = minX;
+	orbit.rasterMaxX = maxX;
+	orbit.rasterMinY = minY;
+	orbit.rasterMaxY = maxY;
+	orbit.rasterPixels.assign(static_cast<size_t>(width) * height * 4, 0);
+
+	for (const OrbitRasterBatch& batch : batches)
+	{
+		if (batch.xs == nullptr || batch.ys == nullptr)
+			continue;
+		for (int i = 0; i < batch.count; ++i)
+		{
+			const double x = static_cast<double>(batch.xs[i]);
+			const double y = static_cast<double>(batch.ys[i]);
+			if (!std::isfinite(x) || !std::isfinite(y))
+				continue;
+			if (x < minX || x > maxX || y < minY || y > maxY)
+				continue;
+			const int pixelX = static_cast<int>(std::lround((x - minX) / (maxX - minX) * (width - 1)));
+			const int pixelY = static_cast<int>(std::lround((maxY - y) / (maxY - minY) * (height - 1)));
+			drawOrbitRasterMarker(orbit, pixelX, pixelY, batch.marker, batch.pointSize, batch.color);
+		}
+	}
+
+	if (canUpdateExistingTexture)
+	{
+		ID3D11Resource* textureResource = nullptr;
+		static_cast<ID3D11ShaderResourceView*>(orbit.rasterTexture)->GetResource(&textureResource);
+		if (textureResource == nullptr)
+			return false;
+		g_pd3dDeviceContext->UpdateSubresource(textureResource, 0, nullptr, orbit.rasterPixels.data(), width * 4, 0);
+		textureResource->Release();
+	}
+	else
+	{
+		if (orbit.rasterTexture != nullptr)
+		{
+			static_cast<ID3D11ShaderResourceView*>(orbit.rasterTexture)->Release();
+			orbit.rasterTexture = nullptr;
+		}
+		unsigned char* pixels = orbit.rasterPixels.data();
+		ID3D11ShaderResourceView* texture = nullptr;
+		if (!LoadTextureFromRaw(&pixels, width, height, &texture, g_pd3dDevice) || texture == nullptr)
+			return false;
+		orbit.rasterTexture = texture;
+	}
+
+	orbit.rasterDirty = false;
+	orbit.rasterStyleSignature = signature;
+	return true;
+}
+
+static bool orbitRasterLimitMatches(double cached, double current)
+{
+	const double scale = (std::max)(1.0, (std::max)(std::abs(cached), std::abs(current)));
+	return std::abs(cached - current) <= scale * 1e-12;
+}
+
+static bool plotOrbitRaster(PlotWindow* window, const std::string& plotName, const ImVec2& plotSize, const ImPlotRect& limits)
+{
+	OrbitProperties& orbit = window->orbit;
+	const int width = std::clamp((static_cast<int>(std::ceil(plotSize.x)) + 63) / 64 * 64, 64, 2048);
+	const int height = std::clamp((static_cast<int>(std::ceil(plotSize.y)) + 63) / 64 * 64, 64, 2048);
+	const uint64_t signature = orbitRasterSignature(window);
+	const bool limitsChanged = !orbitRasterLimitMatches(orbit.rasterMinX, limits.X.Min)
+		|| !orbitRasterLimitMatches(orbit.rasterMaxX, limits.X.Max)
+		|| !orbitRasterLimitMatches(orbit.rasterMinY, limits.Y.Min)
+		|| !orbitRasterLimitMatches(orbit.rasterMaxY, limits.Y.Max);
+	if (signature != orbit.rasterStyleSignature || width != orbit.rasterWidth || height != orbit.rasterHeight || limitsChanged)
+		orbit.rasterDirty = true;
+
+	if (orbit.rasterDirty && !rebuildOrbitRaster(window, width, height, limits, signature))
+		return false;
+	if (orbit.rasterTexture == nullptr)
+		return false;
+
+	ImPlot::PlotImage(("Orbit raster##" + plotName).c_str(), (ImTextureID)orbit.rasterTexture,
+		ImPlotPoint(orbit.rasterMinX, orbit.rasterMinY), ImPlotPoint(orbit.rasterMaxX, orbit.rasterMaxY),
+		ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f), ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
+	return true;
+}
+
+static void plotOrbitScatterFallback(PlotWindow* window, const std::string& plotName)
+{
+	OrbitProperties& orbit = window->orbit;
+	const numb* normalY = orbit.type == OPT_Peak_Bifurcation ? orbit.bifAmps : orbit.bifIntervals;
+	const numb* forwardY = orbit.type == OPT_Peak_Bifurcation ? orbit.continuationAmpsForward : orbit.continuationIntervalsForward;
+	const numb* backwardY = orbit.type == OPT_Peak_Bifurcation ? orbit.continuationAmpsBack : orbit.continuationIntervalsBack;
+	const ImVec4 noOutline(0.0f, 0.0f, 0.0f, 0.0f);
+
+	ImPlot::SetNextMarkerStyle(window->markerShape, orbit.pointSize, window->plotColor, 0.0f, noOutline);
+	ImPlot::PlotScatter(("Standard fallback##" + plotName).c_str(),
+		orbit.invertedAxes ? normalY : orbit.bifParamIndices,
+		orbit.invertedAxes ? orbit.bifParamIndices : normalY, orbit.bifDotAmount);
+
+	if (orbit.drawingContinuation && forwardY != nullptr && backwardY != nullptr)
+	{
+		ImPlot::SetNextMarkerStyle(orbit.dotShapeForward, orbit.pointSizeForward, orbit.dotColorForward, 0.0f, noOutline);
+		ImPlot::PlotScatter(("Forward fallback##" + plotName).c_str(),
+			orbit.invertedAxes ? forwardY : orbit.continuationParamIndicesForward,
+			orbit.invertedAxes ? orbit.continuationParamIndicesForward : forwardY, orbit.bifDotAmountForward);
+		ImPlot::SetNextMarkerStyle(orbit.dotShapeBack, orbit.pointSizeBack, orbit.dotColorBack, 0.0f, noOutline);
+		ImPlot::PlotScatter(("Backward fallback##" + plotName).c_str(),
+			orbit.invertedAxes ? backwardY : orbit.continuationParamIndicesBack,
+			orbit.invertedAxes ? orbit.continuationParamIndicesBack : backwardY, orbit.bifDotAmountBack);
 	}
 }
 
@@ -1313,6 +1555,7 @@ int imgui_main(int, char**)
 			PlotWindow* window = &(plotWindows[w]);
 			if (!window->active)
 			{
+				releaseOrbitRaster(window);
 				plotWindows.erase(plotWindows.begin() + w);
 				w--;
 				continue;
@@ -2016,28 +2259,17 @@ int imgui_main(int, char**)
 
 								if (ImPlot::BeginPlot((plotName + "_BifDiagrams").c_str(), window->orbit.invertedAxes ? "Peaks" : axis->name.c_str(), window->orbit.invertedAxes ? axis->name.c_str() : "Peaks", ImVec2(-1, -1), ImPlotFlags_NoTitle, 0, 0)) {
 									plot = ImPlot::GetPlot((plotName + "_BifDiagrams").c_str()); plot->is3d = false;
-									ImPlot::SetupAxisLimits(ImAxis_X1, window->orbit.minX * 0.95f, window->orbit.maxX * 1.05f, ImGuiCond_None);
-									ImPlot::SetupAxisLimits(ImAxis_Y1, window->orbit.minY * 0.95f, window->orbit.maxY * 1.05f, ImGuiCond_None);
+									const double xMin = window->orbit.invertedAxes ? window->orbit.minY : window->orbit.minX;
+									const double xMax = window->orbit.invertedAxes ? window->orbit.maxY : window->orbit.maxX;
+									const double yMin = window->orbit.invertedAxes ? window->orbit.minX : window->orbit.minY;
+									const double yMax = window->orbit.invertedAxes ? window->orbit.maxX : window->orbit.maxY;
+									const double xPad = (std::max)((xMax - xMin) * 0.05, (std::max)(1.0, std::abs(xMin)) * 1e-6);
+									const double yPad = (std::max)((yMax - yMin) * 0.05, (std::max)(1.0, std::abs(yMin)) * 1e-6);
+									ImPlot::SetupAxisLimits(ImAxis_X1, xMin - xPad, xMax + xPad, ImGuiCond_None);
+									ImPlot::SetupAxisLimits(ImAxis_Y1, yMin - yPad, yMax + yPad, ImGuiCond_None);
 									ImPlot::SetupFinish();
-									ImPlot::SetNextMarkerStyle(window->markerShape, window->orbit.pointSize, window->plotColor, IMPLOT_AUTO, window->plotColor);
-									if (!window->orbit.invertedAxes) {
-										ImPlot::PlotScatter(window->orbit.drawingContinuation ? ("Standard##Peak to Parameter " + plotName).c_str() : ("##Peak to Parameter " + plotName).c_str(), window->orbit.bifParamIndices, window->orbit.bifAmps, window->orbit.bifDotAmount);
-										if (window->orbit.drawingContinuation) {
-											ImPlot::SetNextMarkerStyle(window->orbit.dotShapeForward, window->orbit.pointSizeForward, window->orbit.dotColorForward, IMPLOT_AUTO, window->orbit.dotColorForward);
-											ImPlot::PlotScatter(("Forward continuation##Peak to Parameter " + plotName).c_str(), window->orbit.continuationParamIndicesForward, window->orbit.continuationAmpsForward, window->orbit.bifDotAmountForward);
-											ImPlot::SetNextMarkerStyle(window->orbit.dotShapeBack, window->orbit.pointSizeBack, window->orbit.dotColorBack, IMPLOT_AUTO, window->orbit.dotColorBack);
-											ImPlot::PlotScatter(("Backward continuation##Peak to Parameter " + plotName).c_str(), window->orbit.continuationParamIndicesBack, window->orbit.continuationAmpsBack, window->orbit.bifDotAmountBack);
-										}
-									}
-									else {
-										ImPlot::PlotScatter(window->orbit.drawingContinuation ? ("Standard##Peak to Parameter " + plotName).c_str() : ("##Peak to Parameter " + plotName).c_str(), window->orbit.bifAmps, window->orbit.bifParamIndices, window->orbit.bifDotAmount);
-										if (window->orbit.drawingContinuation) {
-											ImPlot::SetNextMarkerStyle(window->orbit.dotShapeForward, window->orbit.pointSizeForward, window->orbit.dotColorForward, IMPLOT_AUTO, window->orbit.dotColorForward);
-											ImPlot::PlotScatter(("Forward continuation##Peak to Parameter " + plotName).c_str(), window->orbit.continuationAmpsForward, window->orbit.continuationParamIndicesForward, window->orbit.bifDotAmountForward);
-											ImPlot::SetNextMarkerStyle(window->orbit.dotShapeBack, window->orbit.pointSizeBack, window->orbit.dotColorBack, IMPLOT_AUTO, window->orbit.dotColorBack);
-											ImPlot::PlotScatter(("Backward continuation##Peak to Parameter " + plotName).c_str(), window->orbit.continuationAmpsBack, window->orbit.continuationParamIndicesBack, window->orbit.bifDotAmountBack);
-										}
-									}
+									if (!plotOrbitRaster(window, plotName + "_PeakRaster", plot->PlotRect.GetSize(), ImPlot::GetPlotLimits()))
+										plotOrbitScatterFallback(window, plotName + "_PeakRaster");
 									if (ImGui::IsMouseDown(0) && ImGui::IsKeyPressed(ImGuiMod_Shift) && ImGui::IsMouseHoveringRect(plot->PlotRect.Min, plot->PlotRect.Max) && plot->ContextLocked || plot->shiftClicked) {
 										numb MousePosX;
 										window->orbit.invertedAxes ? MousePosX = (numb)ImPlot::GetPlotMousePos().y : MousePosX = (numb)ImPlot::GetPlotMousePos().x;
@@ -2068,29 +2300,17 @@ int imgui_main(int, char**)
 								if (ImPlot::BeginPlot((plotName + "_BifAmp").c_str(), window->orbit.invertedAxes ? "Intervals" : axis->name.c_str(), window->orbit.invertedAxes ? axis->name.c_str() : "Intervals", ImVec2(-1, -1), ImPlotFlags_NoTitle, 0, 0)) 
 								{
 									plot = ImPlot::GetPlot((plotName + "_BifAmp").c_str()); plot->is3d = false;
-									ImPlot::SetupAxisLimits(ImAxis_X1, window->orbit.minX * 0.95f, window->orbit.maxX * 1.05f, ImGuiCond_None);
-									ImPlot::SetupAxisLimits(ImAxis_Y1, window->orbit.minY * 0.95f, window->orbit.maxY * 1.05f, ImGuiCond_None);
+									const double xMin = window->orbit.invertedAxes ? window->orbit.minY : window->orbit.minX;
+									const double xMax = window->orbit.invertedAxes ? window->orbit.maxY : window->orbit.maxX;
+									const double yMin = window->orbit.invertedAxes ? window->orbit.minX : window->orbit.minY;
+									const double yMax = window->orbit.invertedAxes ? window->orbit.maxX : window->orbit.maxY;
+									const double xPad = (std::max)((xMax - xMin) * 0.05, (std::max)(1.0, std::abs(xMin)) * 1e-6);
+									const double yPad = (std::max)((yMax - yMin) * 0.05, (std::max)(1.0, std::abs(yMin)) * 1e-6);
+									ImPlot::SetupAxisLimits(ImAxis_X1, xMin - xPad, xMax + xPad, ImGuiCond_None);
+									ImPlot::SetupAxisLimits(ImAxis_Y1, yMin - yPad, yMax + yPad, ImGuiCond_None);
 									ImPlot::SetupFinish();
-
-									ImPlot::SetNextMarkerStyle(window->markerShape, window->orbit.pointSize, window->plotColor, IMPLOT_AUTO, window->plotColor);
-									if (!window->orbit.invertedAxes) {
-										ImPlot::PlotScatter(window->orbit.drawingContinuation ? ("Standard##Interval to Parameter " + plotName).c_str() : ("##Interval to Parameter " + plotName).c_str(), window->orbit.bifParamIndices, window->orbit.bifIntervals, window->orbit.bifDotAmount);
-										if (window->orbit.drawingContinuation) {
-											ImPlot::SetNextMarkerStyle(window->orbit.dotShapeForward, window->orbit.pointSizeForward, window->orbit.dotColorForward, IMPLOT_AUTO, window->orbit.dotColorForward);
-											ImPlot::PlotScatter(("Forward continuation##Peak to Parameter " + plotName).c_str(), window->orbit.continuationParamIndicesForward, window->orbit.continuationIntervalsForward, window->orbit.bifDotAmountForward);
-											ImPlot::SetNextMarkerStyle(window->orbit.dotShapeBack, window->orbit.pointSizeBack, window->orbit.dotColorBack, IMPLOT_AUTO, window->orbit.dotColorBack);
-											ImPlot::PlotScatter(("Backward continuation##Peak to Parameter " + plotName).c_str(), window->orbit.continuationParamIndicesBack, window->orbit.continuationIntervalsBack, window->orbit.bifDotAmountBack);
-										}
-									}
-									else {
-										ImPlot::PlotScatter(window->orbit.drawingContinuation ? ("Standard##Interval to Parameter " + plotName).c_str() : ("##Interval to Parameter " + plotName).c_str(), window->orbit.bifIntervals, window->orbit.bifParamIndices, window->orbit.bifDotAmount);
-										if (window->orbit.drawingContinuation) {
-											ImPlot::SetNextMarkerStyle(window->orbit.dotShapeForward, window->orbit.pointSizeForward, window->orbit.dotColorForward, IMPLOT_AUTO, window->orbit.dotColorForward);
-											ImPlot::PlotScatter(("Forward continuation##Peak to Parameter " + plotName).c_str(), window->orbit.continuationIntervalsForward, window->orbit.continuationParamIndicesForward, window->orbit.bifDotAmountForward);
-											ImPlot::SetNextMarkerStyle(window->orbit.dotShapeBack, window->orbit.pointSizeBack, window->orbit.dotColorBack, IMPLOT_AUTO, window->orbit.dotColorBack);
-											ImPlot::PlotScatter(("Backward continuation##Peak to Parameter " + plotName).c_str(), window->orbit.continuationIntervalsBack, window->orbit.continuationParamIndicesBack, window->orbit.bifDotAmountBack);
-										}
-									}
+									if (!plotOrbitRaster(window, plotName + "_IntervalRaster", plot->PlotRect.GetSize(), ImPlot::GetPlotLimits()))
+										plotOrbitScatterFallback(window, plotName + "_IntervalRaster");
 
 									if (ImGui::IsMouseDown(0) && ImGui::IsKeyPressed(ImGuiMod_Shift) && ImGui::IsMouseHoveringRect(plot->PlotRect.Min, plot->PlotRect.Max) && plot->ContextLocked || plot->shiftClicked) {
 										numb MousePosX;
@@ -3387,14 +3607,13 @@ int imgui_main(int, char**)
 	ImPlot::DestroyContext();
 	ImGui::DestroyContext();
 
+	unloadPlotWindows();
 	CleanupDeviceD3D();
 	::DestroyWindow(guiHwnd);
 	::UnregisterClassW(wc.lpszClassName, wc.hInstance);
 
 	terminateComputationBuffers(false);
 	terminateUIBuffers();
-	unloadPlotWindows();
-
 	return 0;
 }
 
