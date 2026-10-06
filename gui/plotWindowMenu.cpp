@@ -27,7 +27,7 @@ void plotWindowMenu(PlotWindow* window)
 		plotWindowMenu_View(window);
 		if (window->type == Phase || window->type == Phase2D) plotWindowMenu_PhasePlot(window);
 		if (window->type == Heatmap || window->type == MCHeatmap || window->type == BoA) plotWindowMenu_HeatmapPlot(window);
-		if (window->type == Heatmap) plotWindowMenu_HeatmapColors(window);
+		if (window->type == Heatmap || window->type == BoA) plotWindowMenu_HeatmapColors(window);
 		if (window->type == Heatmap && !window->variables.empty() && window->variables[0] != IND_BOA)
 		{
 			ImGui::Text("   ");
@@ -505,41 +505,49 @@ void plotWindowMenu_HeatmapColors(PlotWindow* window)
 		std::string windowName = window->name + std::to_string(window->id);
 		bool isHires = window->isTheHiresWindow(hiresIndex);
 		HeatmapProperties* heatmap = isHires ? &window->hireshmp : &window->hmp;
+		const bool isCategorical = window->type == BoA;
 
-		std::string colormapStrings[] = { "Deep", "Dark", "Pastel", "Paired", "Viridis", "Plasma", "Hot", "Cool", "Pink", "Jet", "Twilight", "RdBu", "BrBG", "PiYG", "Spectral", "Greys", "Turbo", "PinkGreen", "Spring", "Summer", "Autumn", "Winter" };
-		ImGui::PushItemFlag(ImGuiItemFlags_AutoClosePopups, false);
-		if (ImGui::BeginCombo(("##" + windowName + "colormap").c_str(), (colormapStrings[heatmap->colormap]).c_str()))
+		if (!isCategorical)
 		{
-			for (int i = 0; i < 22; i++)
-				if (ImGui::Selectable(colormapStrings[i].c_str(), heatmap->colormap == i))
-				{
-					heatmap->colormap = i;
-					heatmap->isHeatmapDirty = true;
-				}
-			
-			ImGui::EndCombo();
+			std::string colormapStrings[] = { "Deep", "Dark", "Pastel", "Paired", "Viridis", "Plasma", "Hot", "Cool", "Pink", "Jet", "Twilight", "RdBu", "BrBG", "PiYG", "Spectral", "Greys", "Turbo", "PinkGreen", "Spring", "Summer", "Autumn", "Winter" };
+			ImGui::PushItemFlag(ImGuiItemFlags_AutoClosePopups, false);
+			if (ImGui::BeginCombo(("##" + windowName + "colormap").c_str(), (colormapStrings[heatmap->colormap]).c_str()))
+			{
+				for (int i = 0; i < 22; i++)
+					if (ImGui::Selectable(colormapStrings[i].c_str(), heatmap->colormap == i))
+					{
+						heatmap->colormap = i;
+						heatmap->isHeatmapDirty = true;
+					}
+
+				ImGui::EndCombo();
+			}
+			ImGui::PopItemFlag();
 		}
-		ImGui::PopItemFlag();
 
 		if (colorsLUTfrom != window)
 		{
-			if (ImGui::Button("Use heatmap for painting"))
+			if (ImGui::Button(isCategorical ? "Use basin colors for painting" : "Use heatmap for painting"))
 			{
 				colorsLUTfrom = window;
+				heatmap->isHeatmapDirty = true;
 			}
 		}
 		else
 		{
-			if (ImGui::Button("Stop using heatmap for painting"))
+			if (ImGui::Button(isCategorical ? "Stop using basin colors for painting" : "Stop using heatmap for painting"))
 			{
 				colorsLUTfrom = nullptr;
 			}
 		}
 
-		int tempLS = paintLUTsize;
-		ImGui::DragInt(("##" + windowName + "_paintLUT").c_str(), &(paintLUTsize));	ImGui::SameLine(); ImGui::Text("Colors");
-		if (paintLUTsize < 2) paintLUTsize = 2;
-		if (tempLS != paintLUTsize) window->hmp.isHeatmapDirty = true;
+		if (!isCategorical)
+		{
+			int tempLS = paintLUTsize;
+			ImGui::DragInt(("##" + windowName + "_paintLUT").c_str(), &(paintLUTsize)); ImGui::SameLine(); ImGui::Text("Colors");
+			if (paintLUTsize < 2) paintLUTsize = 2;
+			if (tempLS != paintLUTsize) window->hmp.isHeatmapDirty = true;
+		}
 
 		ImGui::EndMenu();
 	}
