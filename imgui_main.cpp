@@ -457,10 +457,31 @@ static void drawOrbitRasterPixel(OrbitProperties& orbit, int x, int y, const ImV
 		return;
 
 	const size_t pixel = (static_cast<size_t>(y) * orbit.rasterWidth + x) * 4;
-	orbit.rasterPixels[pixel + 0] = static_cast<unsigned char>(std::clamp(color.x, 0.0f, 1.0f) * 255.0f);
-	orbit.rasterPixels[pixel + 1] = static_cast<unsigned char>(std::clamp(color.y, 0.0f, 1.0f) * 255.0f);
-	orbit.rasterPixels[pixel + 2] = static_cast<unsigned char>(std::clamp(color.z, 0.0f, 1.0f) * 255.0f);
-	orbit.rasterPixels[pixel + 3] = static_cast<unsigned char>(std::clamp(color.w, 0.0f, 1.0f) * 255.0f);
+
+	// Compose every point independently, just like the DX11 blend stage used by
+	// ImPlot. Repeated semi-transparent points therefore become progressively
+	// more opaque instead of the last point simply replacing the previous one.
+	const float srcA = std::clamp(color.w, 0.0f, 1.0f);
+	if (srcA <= 0.0f)
+		return;
+
+	const float dstA = orbit.rasterPixels[pixel + 3] / 255.0f;
+	const float oneMinusSrcA = 1.0f - srcA;
+	const float outA = srcA + dstA * oneMinusSrcA;
+	const float srcR = std::clamp(color.x, 0.0f, 1.0f);
+	const float srcG = std::clamp(color.y, 0.0f, 1.0f);
+	const float srcB = std::clamp(color.z, 0.0f, 1.0f);
+	const float dstR = orbit.rasterPixels[pixel + 0] / 255.0f;
+	const float dstG = orbit.rasterPixels[pixel + 1] / 255.0f;
+	const float dstB = orbit.rasterPixels[pixel + 2] / 255.0f;
+
+	const float outR = (srcR * srcA + dstR * dstA * oneMinusSrcA) / outA;
+	const float outG = (srcG * srcA + dstG * dstA * oneMinusSrcA) / outA;
+	const float outB = (srcB * srcA + dstB * dstA * oneMinusSrcA) / outA;
+	orbit.rasterPixels[pixel + 0] = static_cast<unsigned char>(std::lround(std::clamp(outR, 0.0f, 1.0f) * 255.0f));
+	orbit.rasterPixels[pixel + 1] = static_cast<unsigned char>(std::lround(std::clamp(outG, 0.0f, 1.0f) * 255.0f));
+	orbit.rasterPixels[pixel + 2] = static_cast<unsigned char>(std::lround(std::clamp(outB, 0.0f, 1.0f) * 255.0f));
+	orbit.rasterPixels[pixel + 3] = static_cast<unsigned char>(std::lround(std::clamp(outA, 0.0f, 1.0f) * 255.0f));
 }
 
 static void drawOrbitRasterMarker(OrbitProperties& orbit, int centerX, int centerY, ImPlotMarker marker, float pointSize, const ImVec4& color)
@@ -521,6 +542,11 @@ static bool rebuildOrbitRaster(PlotWindow* window, int width, int height, const 
 	orbit.rasterMinY = minY;
 	orbit.rasterMaxY = maxY;
 	orbit.rasterPixels.assign(static_cast<size_t>(width) * height * 4, 0);
+	double dataMinX = std::numeric_limits<double>::infinity();
+	double dataMaxX = -std::numeric_limits<double>::infinity();
+	double dataMinY = std::numeric_limits<double>::infinity();
+	double dataMaxY = -std::numeric_limits<double>::infinity();
+	orbit.rasterHasDataBounds = false;
 
 	for (const OrbitRasterBatch& batch : batches)
 	{
@@ -532,12 +558,24 @@ static bool rebuildOrbitRaster(PlotWindow* window, int width, int height, const 
 			const double y = static_cast<double>(batch.ys[i]);
 			if (!std::isfinite(x) || !std::isfinite(y))
 				continue;
+			dataMinX = (std::min)(dataMinX, x);
+			dataMaxX = (std::max)(dataMaxX, x);
+			dataMinY = (std::min)(dataMinY, y);
+			dataMaxY = (std::max)(dataMaxY, y);
 			if (x < minX || x > maxX || y < minY || y > maxY)
 				continue;
 			const int pixelX = static_cast<int>(std::lround((x - minX) / (maxX - minX) * (width - 1)));
 			const int pixelY = static_cast<int>(std::lround((maxY - y) / (maxY - minY) * (height - 1)));
 			drawOrbitRasterMarker(orbit, pixelX, pixelY, batch.marker, batch.pointSize, batch.color);
 		}
+	}
+	if (std::isfinite(dataMinX) && std::isfinite(dataMaxX) && std::isfinite(dataMinY) && std::isfinite(dataMaxY))
+	{
+		orbit.rasterDataMinX = dataMinX;
+		orbit.rasterDataMaxX = dataMaxX;
+		orbit.rasterDataMinY = dataMinY;
+		orbit.rasterDataMaxY = dataMaxY;
+		orbit.rasterHasDataBounds = true;
 	}
 
 	if (canUpdateExistingTexture)
@@ -592,9 +630,20 @@ static bool plotOrbitRaster(PlotWindow* window, const std::string& plotName, con
 	if (orbit.rasterTexture == nullptr)
 		return false;
 
+	// PlotImage is bound to the current viewport so marker sizes remain constant
+	// while zooming. This invisible two-point item preserves the full data range
+	// for ImPlot's plot/axis double-click auto-fit operation.
+	if (orbit.rasterHasDataBounds)
+	{
+		const double fitX[2] = { orbit.rasterDataMinX, orbit.rasterDataMaxX };
+		const double fitY[2] = { orbit.rasterDataMinY, orbit.rasterDataMaxY };
+		ImPlot::SetNextLineStyle(ImVec4(0.0f, 0.0f, 0.0f, 0.0f), 0.0f);
+		ImPlot::PlotLine(("##Orbit fit bounds " + plotName).c_str(), fitX, fitY, 2, ImPlotItemFlags_NoLegend);
+	}
+
 	ImPlot::PlotImage(("Orbit raster##" + plotName).c_str(), (ImTextureID)orbit.rasterTexture,
 		ImPlotPoint(orbit.rasterMinX, orbit.rasterMinY), ImPlotPoint(orbit.rasterMaxX, orbit.rasterMaxY),
-		ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f), ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
+		ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f), ImVec4(1.0f, 1.0f, 1.0f, 1.0f), ImPlotItemFlags_NoFit);
 	return true;
 }
 
