@@ -1,7 +1,7 @@
 #pragma once
 
 // Put 0 for float, 1 for double
-#define USE_DOUBLE_PRECISION 0
+#define USE_DOUBLE_PRECISION 1
 
 #if !USE_DOUBLE_PRECISION
 	#define numb float
