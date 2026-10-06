@@ -32,6 +32,11 @@ struct OrbitProperties
 	double rasterMaxX;
 	double rasterMinY;
 	double rasterMaxY;
+	double rasterDataMinX;
+	double rasterDataMaxX;
+	double rasterDataMinY;
+	double rasterDataMaxY;
+	bool rasterHasDataBounds;
 	uint64_t rasterStyleSignature;
 	numb* bifAmps;
 	numb* bifParamIndices;
@@ -88,6 +93,8 @@ struct OrbitProperties
 		rasterTexture = nullptr;
 		rasterWidth = rasterHeight = 0;
 		rasterMinX = rasterMaxX = rasterMinY = rasterMaxY = 0;
+		rasterDataMinX = rasterDataMaxX = rasterDataMinY = rasterDataMaxY = 0;
+		rasterHasDataBounds = false;
 		rasterStyleSignature = 0;
 		bifAmps = bifParamIndices = bifIntervals = NULL;
 		isAutoComputeOn = false;
