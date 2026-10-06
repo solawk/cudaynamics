@@ -26,9 +26,9 @@ void plotWindowMenu(PlotWindow* window)
 		plotWindowMenu_File(window);
 		plotWindowMenu_View(window);
 		if (window->type == Phase || window->type == Phase2D) plotWindowMenu_PhasePlot(window);
-		if (window->type == Heatmap || window->type == MCHeatmap) plotWindowMenu_HeatmapPlot(window);
+		if (window->type == Heatmap || window->type == MCHeatmap || window->type == BoA) plotWindowMenu_HeatmapPlot(window);
 		if (window->type == Heatmap) plotWindowMenu_HeatmapColors(window);
-		if (window->type == Heatmap)
+		if (window->type == Heatmap && !window->variables.empty() && window->variables[0] != IND_BOA)
 		{
 			ImGui::Text("   ");
 			ImGui::SameLine();
@@ -101,6 +101,7 @@ void plotWindowMenu_File(PlotWindow* window)
 			{
 				// === HEATMAP (LLE / MAX / ...) ===
 			case Heatmap:
+			case BoA:
 			{
 				const bool isHires = window->isTheHiresWindow(hiresIndex);
 				const HeatmapProperties* heatmap = isHires ? &window->hireshmp : &window->hmp;

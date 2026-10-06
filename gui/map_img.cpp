@@ -82,3 +82,29 @@ void MultichannelMapToImg(HeatmapProperties* heatmap, unsigned char** dataBuffer
 				(*dataBuffer)[i4(3)] = 255;
 		}
 }
+
+ImVec4 BasinLabelColor(int label)
+{
+	if (label == -2) return ImVec4(0.85f, 0.15f, 0.85f, 1.0f); // invalid feature pair
+	if (label == -1) return ImVec4(0.22f, 0.22f, 0.22f, 1.0f); // DBSCAN noise
+	if (label <= 0) return ImVec4(0.0f, 0.0f, 0.0f, 0.0f);
+
+	// Golden-ratio hue stepping does not impose a fixed palette size and keeps
+	// consecutive basin ids visually separated.
+	const float hue = fmodf(0.61803398875f * (float)label, 1.0f);
+	float r, g, b;
+	ImGui::ColorConvertHSVtoRGB(hue, 0.72f, 0.95f, r, g, b);
+	return ImVec4(r, g, b, 1.0f);
+}
+
+void BasinLabelsToImg(numb* mapBuffer, unsigned char** dataBuffer, int width, int height)
+{
+	for (int i = 0; i < width * height; ++i)
+	{
+		const ImVec4 c = BasinLabelColor((int)mapBuffer[i]);
+		(*dataBuffer)[i4(0)] = (unsigned char)(c.x * 255.0f);
+		(*dataBuffer)[i4(1)] = (unsigned char)(c.y * 255.0f);
+		(*dataBuffer)[i4(2)] = (unsigned char)(c.z * 255.0f);
+		(*dataBuffer)[i4(3)] = (unsigned char)(c.w * 255.0f);
+	}
+}
