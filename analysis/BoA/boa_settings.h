@@ -20,6 +20,7 @@ struct BOA_Settings : AbstractAnalysisSettingsStruct
     int minimumPoints;
     bool parameterSweep;
     int sweepParameter;
+    numb sweepTrackingTolerance;
     Port basinId;
 
     BOA_Settings()
@@ -30,6 +31,7 @@ struct BOA_Settings : AbstractAnalysisSettingsStruct
         minimumPoints = 4;
         parameterSweep = false;
         sweepParameter = -1;
+        sweepTrackingTolerance = (numb)0.35;
         basinId = Port();
     }
 
@@ -130,15 +132,21 @@ struct BOA_Settings : AbstractAnalysisSettingsStruct
                 }
         }
         DisplaySweepParameterSetting(parameters, lastParameterIsStep, "##BOA_sweep_parameter_settings");
+        if (parameterSweep)
+        {
+            DisplayNumbSetting("Sweep tracking tolerance", sweepTrackingTolerance);
+            ImGui::TextWrapped("Higher values preserve attractor IDs through larger changes; lower values detect births and deaths more strictly.");
+        }
         if (epsilon < (numb)0.000001) epsilon = (numb)0.000001;
         if (minimumPoints < 1) minimumPoints = 1;
+        if (sweepTrackingTolerance < (numb)0.000001) sweepTrackingTolerance = (numb)0.000001;
     }
 
     bool setup(std::vector<std::string> s)
     {
-        // Four fields are the legacy BoA format. The two optional fields keep
-        // old system files loadable while persisting the sweep mode.
-        if (s.size() != 4 && s.size() != 6) return false;
+        // Four and six fields are legacy BoA formats. The seventh field stores
+        // the user-controlled sweep tracking tolerance.
+        if (s.size() != 4 && s.size() != 6 && s.size() != 7) return false;
         const AnalysisIndex f0 = (AnalysisIndex)s2i(s[0]);
         const AnalysisIndex f1 = (AnalysisIndex)s2i(s[1]);
         const numb parsedEpsilon = s2n(s[2]);
@@ -151,9 +159,11 @@ struct BOA_Settings : AbstractAnalysisSettingsStruct
         features[1] = f1;
         epsilon = parsedEpsilon;
         minimumPoints = parsedMinimumPoints;
-        parameterSweep = s.size() == 6 ? s2i(s[4]) != 0 : false;
-        sweepParameter = s.size() == 6 ? s2i(s[5]) : -1;
+        parameterSweep = s.size() >= 6 ? s2i(s[4]) != 0 : false;
+        sweepParameter = s.size() >= 6 ? s2i(s[5]) : -1;
+        sweepTrackingTolerance = s.size() == 7 ? s2n(s[6]) : (numb)0.35;
         if (sweepParameter < -1) return false;
+        if (!std::isfinite((double)sweepTrackingTolerance) || sweepTrackingTolerance <= 0) return false;
         return true;
     }
 
@@ -168,6 +178,7 @@ struct BOA_Settings : AbstractAnalysisSettingsStruct
         s.push_back(std::to_string(minimumPoints));
         s.push_back(parameterSweep ? "1" : "0");
         s.push_back(std::to_string(sweepParameter));
+        s.push_back(std::to_string(sweepTrackingTolerance));
         j["settings"] = s;
         return j;
     }
