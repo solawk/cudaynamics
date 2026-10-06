@@ -28,6 +28,10 @@ std::vector<AnalysisIndex> anfunc2indices(AnalysisFunction anfunc)
 	case ANF_PV:
 		result.push_back(IND_PV);
 		break;
+
+	case ANF_BOA:
+		result.push_back(IND_BOA);
+		break;
 	}
 
 	return result;

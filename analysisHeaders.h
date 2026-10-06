@@ -4,3 +4,4 @@
 #include "analysis/max/max.h"
 #include "analysis/period/period.h"
 #include "analysis/phaseVolume/phaseVolume.h"
+#include "analysis/BoA/boa.h"

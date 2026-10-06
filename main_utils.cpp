@@ -156,6 +156,9 @@ Kernel readKernelText(std::string name)
 						case ANF_PV:
 							if (!kernel.analyses.PV.setup(settingsVector)) printf("Wrong settings count for PV in %s\n", kernel.name.c_str());
 							break;
+						case ANF_BOA:
+							if (!kernel.analyses.BOA.setup(settingsVector)) printf("Wrong settings for BOA in %s (expected exactly two distinct features, epsilon and min points)\n", kernel.name.c_str());
+							break;
 						}
 					}
 			}

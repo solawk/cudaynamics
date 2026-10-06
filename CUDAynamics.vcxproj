@@ -77,6 +77,7 @@
       <IgnoreSpecificDefaultLibraries>LIBCMT</IgnoreSpecificDefaultLibraries>
     </Link>
     <CudaCompile>
+      <CompileOut>$(IntDir)%(Filename)%(Extension).obj</CompileOut>
       <TargetMachinePlatform>64</TargetMachinePlatform>
       <Include>imgui;imgui/backends;.;backends;systems;implot;dbscan</Include>
       <AdditionalCompilerOptions>
@@ -90,7 +91,12 @@
       <AdditionalOptions>-Xcompiler "/openmp" %(AdditionalOptions)</AdditionalOptions>
       <GPUDebugInfo>true</GPUDebugInfo>
     </CudaCompile>
-    <CudaLink />
+    <CudaLink>
+      <AdditionalDependencies>cudart_static.lib;cudadevrt.lib</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(CudaToolkitLibDir)</AdditionalLibraryDirectories>
+      <UseHostLibraryDependencies>false</UseHostLibraryDependencies>
+      <UseHostLibraryDirectories>false</UseHostLibraryDirectories>
+    </CudaLink>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -111,6 +117,7 @@
       <IgnoreSpecificDefaultLibraries>LIBCMT</IgnoreSpecificDefaultLibraries>
     </Link>
     <CudaCompile>
+      <CompileOut>$(IntDir)%(Filename)%(Extension).obj</CompileOut>
       <TargetMachinePlatform>64</TargetMachinePlatform>
       <Include>imgui;imgui/backends;.;backends;systems;implot;dbscan</Include>
       <FastMath>true</FastMath>
@@ -122,6 +129,12 @@
       <AdditionalOptions>-Xcompiler "/openmp" %(AdditionalOptions)</AdditionalOptions>
       <PtxAsOptionV>false</PtxAsOptionV>
     </CudaCompile>
+    <CudaLink>
+      <AdditionalDependencies>cudart_static.lib;cudadevrt.lib</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(CudaToolkitLibDir)</AdditionalLibraryDirectories>
+      <UseHostLibraryDependencies>false</UseHostLibraryDependencies>
+      <UseHostLibraryDirectories>false</UseHostLibraryDirectories>
+    </CudaLink>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="anfunc2indices.cpp" />
@@ -184,6 +197,8 @@
     <ClInclude Include="analysis\period\period_settings.h" />
     <ClInclude Include="analysis\phaseVolume\phaseVolume.h" />
     <ClInclude Include="analysis\phaseVolume\phaseVolume_settings.h" />
+    <ClInclude Include="analysis\BoA\boa.h" />
+    <ClInclude Include="analysis\BoA\boa_settings.h" />
     <ClInclude Include="anfunc2indices.h" />
     <ClInclude Include="anfuncs.h" />
     <ClInclude Include="anfunc_names.h" />
@@ -304,6 +319,10 @@
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="CUDAynamics.rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="analysis\BoA\boa.cu" />
+    <None Include="analysis\BoA\README.md" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="icon.ico" />

@@ -5,5 +5,6 @@ const char* AnFuncNames[] =
 	"Minimum-maximum",
 	"Largest Lyapunov exponent",
 	"Periodicity",
-	"Phase volume"
+	"Phase volume",
+	"Basins of Attraction"
 };

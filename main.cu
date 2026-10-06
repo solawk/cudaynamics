@@ -9,6 +9,12 @@
 #include <objects.h>
 #include "indices_map.h"
 #include "index2port.h"
+#include "analysis/BoA/boa.h"
+
+// Keep BoA implementation in its own analysis .cu file while compiling it into
+// this CUDA translation unit. This avoids the legacy VS CUDA target exceeding
+// cmd.exe's device-link command length limit when one more .cu object is added.
+#include "analysis/BoA/boa.cu"
 
 #define PRINT_TIME 0
 
@@ -96,6 +102,19 @@ cudaError_t execute(Computation* data)
     KERNEL_GPU <<< blocks, threads >>> (cuda_computation, 0);
     CUDA_LASTERROR;
     CUDA_SYNCHRONIZE;
+
+    // BoA stage 2 deliberately runs while both selected feature maps are still
+    // resident on the device. Only two small feature slices are read for range
+    // normalization; the O(N^2) neighborhood work stays on the GPU.
+    if (!data->isHires && CUDA_kernel.analyses.BOA.toCompute)
+    {
+        cudaStatus = FinalizeBOACUDA(data, cuda_maps, variations);
+        if (cudaStatus != cudaSuccess)
+        {
+            fprintf(stderr, "CUDA BoA clustering failed: %s\n", cudaGetErrorString(cudaStatus));
+            goto Error;
+        }
+    }
     //incompute = std::chrono::steady_clock::now();
 
 #if (PRINT_TIME)    
@@ -157,6 +176,12 @@ int compute(Computation* data)
 {
     std::chrono::steady_clock::time_point before = std::chrono::steady_clock::now();
     std::chrono::steady_clock::time_point after;
+
+    if (data->isHires && data->mapIndex == IND_BOA)
+    {
+        fprintf(stderr, "BoA requires the complete initial-condition grid and is not available in chunked Hi-Res mode.\n");
+        return 1;
+    }
 
     // Preparation
     uint64_t variations = 1; // Parameter/variable variations (ranging steps)
@@ -224,6 +249,8 @@ int compute(Computation* data)
                 kernelPrograms[selectedKernel](data, v);
             }
 
+            FinalizeBOAOpenMP(data);
+
             cudaStatus = cudaSuccess;
 #if (PRINT_TIME)    
             cpuNotHiresTP[1] = std::chrono::steady_clock::now();
@@ -235,6 +262,7 @@ int compute(Computation* data)
             cudaStatus = execute(data);
         }
         if (cudaStatus != cudaSuccess) { fprintf(stderr, "execute failed!\n"); hasFailed = true; }
+        if (!hasFailed) CompactBOALabels(data);
     }
     else
     {
@@ -391,6 +419,15 @@ void setupAnFuncs(Computation* data)
     {
         for (auto& indexPair : indices)
             index2port(CUDA_kernel.analyses, indexPair.first)->used = indexPair.second.enabled;
+
+        // The two configured BoA features are dependencies, even if their own
+        // checkboxes are off. The dependency is local to this computation and
+        // does not change the user's persistent index selection.
+        if (CUDA_kernel.analyses.BOA.basinId.used)
+        {
+            index2port(CUDA_kernel.analyses, CUDA_kernel.analyses.BOA.features[0])->used = true;
+            index2port(CUDA_kernel.analyses, CUDA_kernel.analyses.BOA.features[1])->used = true;
+        }
     }
     else
     {

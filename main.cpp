@@ -45,7 +45,7 @@ void common_main()
 
     //selectKernel(kernels.begin()->first);
     addKernel(hyperchaotic);
-    selectKernel(lorenz);
+    selectKernel(thomas);
 
     // Indices
     addIndex(IND_MAX, "Maximum variable value", MINMAX, 1);
@@ -59,6 +59,8 @@ void common_main()
     addIndex(IND_MXMPEAK, "Maximum peak", PERIOD, 1);
     addIndex(IND_MXMINT, "Maximum interval", PERIOD, 1);
     addIndex(IND_PV, "Phase volume", PV, 1);
+    addIndex(IND_BOA, "Basin of Attraction", BOA, 1);
+    indices[IND_BOA].enabled = false; // O(N^2) postprocessing is opt-in.
 
     // Initialization
     computationsInit();

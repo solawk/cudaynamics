@@ -26,6 +26,8 @@ Port* index2port(AnalysesSettings& analyses, AnalysisIndex index)
 		return &(analyses.PERIOD.maximumInterval);
 	case IND_PV:
 		return &(analyses.PV.PV);
+	case IND_BOA:
+		return &(analyses.BOA.basinId);
 	}
 
 	return nullptr;

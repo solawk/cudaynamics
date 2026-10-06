@@ -39,6 +39,7 @@ json::jobject saveCfg(bool saveHires, bool saveNew)
     analysis.push_back(k->analyses.LLE.ExportSettings());
     analysis.push_back(k->analyses.PERIOD.ExportSettings());
     analysis.push_back(k->analyses.PV.ExportSettings());
+    analysis.push_back(k->analyses.BOA.ExportSettings());
     cfg["analysis"] = analysis;
 
     return cfg;
@@ -198,6 +199,9 @@ bool loadCfg(json::jobject cfg, bool switchSystem, bool cleanStart, bool needPri
                         break;
                     case AnalysisFunction::ANF_PV:
                         k->analyses.PV.setup(settings);
+                        break;
+                    case AnalysisFunction::ANF_BOA:
+                        k->analyses.BOA.setup(settings);
                         break;
                     }
                     break;

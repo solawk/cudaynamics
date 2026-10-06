@@ -7,6 +7,7 @@ enum AnalysisFunction
 	ANF_LLE, 
 	ANF_PERIOD,
 	ANF_PV,
+	ANF_BOA,
 
 	ANF_COUNT
 };

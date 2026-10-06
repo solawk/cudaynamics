@@ -20,4 +20,8 @@ __host__ __device__ void AnalysisLobby(Computation* data, void(*finiteDifference
     {
         PhaseVolume(data, variation, finiteDifferenceScheme);
     }
+    if (CUDA_kernel.analyses.BOA.toCompute)
+    {
+        BOA(data, variation);
+    }
 }

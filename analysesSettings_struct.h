@@ -7,6 +7,7 @@ struct AnalysesSettings
 	LLE_Settings LLE;
 	DBSCAN_Settings PERIOD;
 	PV_Settings PV;
+	BOA_Settings BOA;
 
 	AnalysesSettings() {}
 
@@ -16,5 +17,6 @@ struct AnalysesSettings
 		LLE.toCompute = LLE.LLE.used;
 		PERIOD.toCompute = PERIOD.periodicity.used || PERIOD.minimumPeak.used || PERIOD.minimumInterval.used || PERIOD.meanInterval.used || PERIOD.meanPeak.used || PERIOD.maximumPeak.used || PERIOD.maximumInterval.used ;
 		PV.toCompute = PV.PV.used;
+		BOA.toCompute = BOA.basinId.used;
 	}
 };

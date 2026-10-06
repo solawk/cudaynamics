@@ -1,0 +1,34 @@
+{
+	"preciseNumbDrags": false,
+	"sliderRanging": true,
+	"CPU_mode_interactive": false,
+	"CPU_mode_hires": false,
+	"calculateDeltaDecay": true,
+	"computeOnLaunch": true,
+	"threadsPerBlock": 32,
+	"varPerParallelization": 1000000,
+	"dragChangeSpeed": 1.000000e+00,
+	"cudaColor": [
+		4.000000e-01,
+		5.600000e-01,
+		1.800000e-01,
+		1.000000e+00
+	],
+	"openmpColor": [
+		3.000000e-02,
+		4.500000e-01,
+		4.900000e-01,
+		1.000000e+00
+	],
+	"hiresColor": [
+		5.000000e-01,
+		1.000000e-01,
+		3.000000e-01,
+		1.000000e+00
+	],
+	"appStyle": 0,
+	"globalFontSize": 24,
+	"globalFontFamily": 0,
+	"globalFontIsBold": false,
+	"globalFontIsItalic": false
+}

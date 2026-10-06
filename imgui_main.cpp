@@ -1083,6 +1083,9 @@ int imgui_main(int, char**)
 			break;
 		case MCHeatmap:
 			break;
+		case BoA:
+			ImGui::TextWrapped("Categorical map of attractor basins. Configure exactly two features in Analysis Settings.");
+			break;
 
 		case Decay:
 			// Index adding combo
@@ -1224,6 +1227,7 @@ int imgui_main(int, char**)
 			if (plotType == Phase2D) plotWindow.AssignVariables(selectedPlotVars);
 			if (plotType == Heatmap) plotWindow.AssignVariables(selectedPlotMap);
 			if (plotType == MCHeatmap) plotWindow.AssignVariables(selectedPlotMCMaps);
+			if (plotType == BoA) plotWindow.AssignVariables((int)IND_BOA);
 			if (plotType == Orbit) plotWindow.AssignVariables(selectedPlotVarsOrbitVer);
 			if (plotType == Metric) plotWindow.AssignVariables(selectedPlotMapsSetMetric);
 			if (plotType == IndSeries) { plotWindow.AssignVariables(selectedPlotMapSetIndSeries); plotWindow.firstBufferNo = (computations[playedBufferIndex]).bufferNo; plotWindow.prevbufferNo = (computations[playedBufferIndex]).bufferNo; }
@@ -1274,6 +1278,9 @@ int imgui_main(int, char**)
 					break;
 				case AnalysisFunction::ANF_PV:
 					krn->analyses.PV.DisplaySettings(krn->variables);
+					break;
+				case AnalysisFunction::ANF_BOA:
+					krn->analyses.BOA.DisplaySettings(krn->variables);
 					break;
 				}
 
@@ -1362,7 +1369,7 @@ int imgui_main(int, char**)
 			plotWindowMenu(window);
 
 			// Heatmap axes
-			if (window->type == Heatmap || window->type == MCHeatmap)
+			if (window->type == Heatmap || window->type == MCHeatmap || window->type == BoA)
 			{
 				AnalysisIndex mapIndex = (AnalysisIndex)window->variables[0];
 				bool isHires = window->isTheHiresWindow(hiresIndex);
@@ -1370,7 +1377,7 @@ int imgui_main(int, char**)
 				Kernel* krnl = isHires ? &kernelHiresComputed : &(KERNEL);
 				Port* port;
 				bool isSingleValue = true;
-				if (window->type == Heatmap)
+				if (window->type != MCHeatmap)
 				{
 					port = index2port(krnl->analyses, mapIndex);
 				}
@@ -2448,8 +2455,10 @@ int imgui_main(int, char**)
 
 				case Heatmap:
 				case MCHeatmap:
+				case BoA:
 				{
 					bool isMC = window->type == MCHeatmap; // Is multi-channel (RGB)
+					bool isBOA = window->type == BoA;
 					mapIndex = (AnalysisIndex)window->variables[0];
 					if (isMC) for (int ch = 0; ch < 3; ch++) channelMapIndex[ch] = (AnalysisIndex)window->variables[ch];
 					bool isHires = window->isTheHiresWindow(hiresIndex) || window->isFrozenAsHires;
@@ -2861,7 +2870,9 @@ int imgui_main(int, char**)
 								// Image init
 								if (heatmap->isHeatmapDirty && !window->isFrozen)
 								{
-									if (!isMC)
+									if (isBOA)
+										BasinLabelsToImg(heatmap->values.valueBuffer, &(heatmap->pixelBuffer), sizing.xSize, sizing.ySize);
+									else if (!isMC)
 										MapToImg(heatmap->values.valueBuffer, &(heatmap->pixelBuffer), sizing.xSize, sizing.ySize, heatmap->values.heatmapMin, heatmap->values.heatmapMax, heatmap->colormap);
 									else
 										MultichannelMapToImg(heatmap, &(heatmap->pixelBuffer), sizing.xSize, sizing.ySize, channelMapIndex[0] > -1, channelMapIndex[1] > -1, channelMapIndex[2] > -1);
@@ -2869,7 +2880,7 @@ int imgui_main(int, char**)
 									heatmap->isHeatmapDirty = false;
 
 									// COLORS
-									if (!isMC)
+									if (!isMC && !isBOA)
 									{
 										heatmap->paintLUT.Clear();
 
@@ -3247,6 +3258,24 @@ int imgui_main(int, char**)
 									}
 
 									ImGui::EndTable();
+								}
+							}
+							else if (isBOA)
+							{
+								std::set<int> labels;
+								if (heatmap->values.valueBuffer)
+									for (int i = 0; i < sizing.xSize * sizing.ySize; ++i)
+										labels.insert((int)heatmap->values.valueBuffer[i]);
+								ImGui::Text("Basins: %d", (int)std::count_if(labels.begin(), labels.end(), [](int id) { return id > 0; }));
+								for (int id : labels)
+								{
+									const ImVec4 color = BasinLabelColor(id);
+									ImGui::ColorButton(("##BasinColor" + std::to_string(id)).c_str(), color,
+										ImGuiColorEditFlags_NoTooltip | ImGuiColorEditFlags_NoDragDrop, ImVec2(18, 18));
+									ImGui::SameLine();
+									if (id > 0) ImGui::Text("Attractor %d", id);
+									else if (id == -1) ImGui::Text("Noise");
+									else ImGui::Text("Invalid features");
 								}
 							}
 							else

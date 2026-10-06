@@ -12,7 +12,8 @@
 // Maximum amount of variables and parameters in the plot
 #define MAX_VARS_PARAMS 32
 
-enum PlotType { VarSeries, Phase, Phase2D, Orbit, Heatmap, MCHeatmap, Metric, IndSeries, Decay, PlotType_COUNT };
+// Append new values to preserve numeric ids stored in existing window layouts.
+enum PlotType { VarSeries, Phase, Phase2D, Orbit, Heatmap, MCHeatmap, Metric, IndSeries, Decay, BoA, PlotType_COUNT };
 enum DeltaState { DS_No, DS_Delta, DS_Decay, DS_Lifetime };
 
 struct PlotWindow
