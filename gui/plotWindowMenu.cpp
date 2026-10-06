@@ -336,7 +336,12 @@ void plotWindowMenu_OrbitPlot(PlotWindow* window) {
 			{
 				bool isSelected = window->orbit.type == t;
 				ImGuiSelectableFlags selectableFlags = 0;
-				if (ImGui::Selectable(orbitplottypes[t].c_str(), isSelected, selectableFlags)) window->orbit.type = (OrbitPlotType)t;
+				if (ImGui::Selectable(orbitplottypes[t].c_str(), isSelected, selectableFlags))
+				{
+					window->orbit.type = (OrbitPlotType)t;
+					window->orbit.areValuesDirty = true;
+					window->orbit.rasterDirty = true;
+				}
 			}
 
 			ImGui::EndCombo();
@@ -351,7 +356,7 @@ void plotWindowMenu_OrbitPlot(PlotWindow* window) {
 		{
 			for (int t = 0; t < ImPlotMarker_COUNT; t++)
 			{
-				bool isSelected = window->orbit.type == t;
+				bool isSelected = window->markerShape == t;
 				ImGuiSelectableFlags selectableFlags = 0;
 				if (ImGui::Selectable(orbitdottypes[t].c_str(), isSelected, selectableFlags)) window->markerShape = (ImPlotMarker)t;
 			}
@@ -368,7 +373,7 @@ void plotWindowMenu_OrbitPlot(PlotWindow* window) {
 		{
 			for (int t = 0; t < ImPlotMarker_COUNT; t++)
 			{
-				bool isSelected = window->orbit.type == t;
+				bool isSelected = window->orbit.dotShapeForward == t;
 				ImGuiSelectableFlags selectableFlags = 0;
 				if (ImGui::Selectable(orbitdottypes[t].c_str(), isSelected, selectableFlags)) window->orbit.dotShapeForward = (ImPlotMarker)t;
 			}
@@ -385,7 +390,7 @@ void plotWindowMenu_OrbitPlot(PlotWindow* window) {
 		{
 			for (int t = 0; t < ImPlotMarker_COUNT; t++)
 			{
-				bool isSelected = window->orbit.type == t;
+				bool isSelected = window->orbit.dotShapeBack == t;
 				ImGuiSelectableFlags selectableFlags = 0;
 				if (ImGui::Selectable(orbitdottypes[t].c_str(), isSelected, selectableFlags)) window->orbit.dotShapeBack = (ImPlotMarker)t;
 			}
