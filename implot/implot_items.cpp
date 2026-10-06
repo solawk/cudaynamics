@@ -2764,8 +2764,8 @@ void PlotDigitalG(const char* label_id, ImPlotGetter getter_func, void* data, in
 // [SECTION] PlotImage
 //-----------------------------------------------------------------------------
 
-void PlotImage(const char* label_id, ImTextureID user_texture_id, const ImPlotPoint& bmin, const ImPlotPoint& bmax, const ImVec2& uv0, const ImVec2& uv1, const ImVec4& tint_col, ImPlotImageFlags) {
-    if (BeginItemEx(label_id, FitterRect(bmin,bmax))) {
+void PlotImage(const char* label_id, ImTextureID user_texture_id, const ImPlotPoint& bmin, const ImPlotPoint& bmax, const ImVec2& uv0, const ImVec2& uv1, const ImVec4& tint_col, ImPlotImageFlags flags) {
+    if (BeginItemEx(label_id, FitterRect(bmin,bmax), flags)) {
         ImU32 tint_col32 = ImGui::ColorConvertFloat4ToU32(tint_col);
         GetCurrentItem()->Color = tint_col32;
         ImDrawList& draw_list = *GetPlotDrawList();
