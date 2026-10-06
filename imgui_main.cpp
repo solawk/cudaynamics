@@ -641,9 +641,21 @@ static bool plotOrbitRaster(PlotWindow* window, const std::string& plotName, con
 		ImPlot::PlotLine(("##Orbit fit bounds " + plotName).c_str(), fitX, fitY, 2, ImPlotItemFlags_NoLegend);
 	}
 
-	ImPlot::PlotImage(("Orbit raster##" + plotName).c_str(), (ImTextureID)orbit.rasterTexture,
+	// The three data sets are composited into one texture, but they remain
+	// separate logical entries in the legend.
+	ImPlot::SetNextLineStyle(window->plotColor);
+	ImPlot::PlotDummy(("Orbit##" + plotName).c_str(), ImPlotItemFlags_NoFit);
+	if (orbit.drawingContinuation)
+	{
+		ImPlot::SetNextLineStyle(orbit.dotColorForward);
+		ImPlot::PlotDummy(("Forward##" + plotName).c_str(), ImPlotItemFlags_NoFit);
+		ImPlot::SetNextLineStyle(orbit.dotColorBack);
+		ImPlot::PlotDummy(("Backward##" + plotName).c_str(), ImPlotItemFlags_NoFit);
+	}
+
+	ImPlot::PlotImage(("##Orbit raster " + plotName).c_str(), (ImTextureID)orbit.rasterTexture,
 		ImPlotPoint(orbit.rasterMinX, orbit.rasterMinY), ImPlotPoint(orbit.rasterMaxX, orbit.rasterMaxY),
-		ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f), ImVec4(1.0f, 1.0f, 1.0f, 1.0f), ImPlotItemFlags_NoFit);
+		ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f), ImVec4(1.0f, 1.0f, 1.0f, 1.0f), ImPlotItemFlags_NoFit | ImPlotItemFlags_NoLegend);
 	return true;
 }
 
@@ -656,18 +668,18 @@ static void plotOrbitScatterFallback(PlotWindow* window, const std::string& plot
 	const ImVec4 noOutline(0.0f, 0.0f, 0.0f, 0.0f);
 
 	ImPlot::SetNextMarkerStyle(window->markerShape, orbit.pointSize, window->plotColor, 0.0f, noOutline);
-	ImPlot::PlotScatter(("Standard fallback##" + plotName).c_str(),
+	ImPlot::PlotScatter(("Orbit##" + plotName).c_str(),
 		orbit.invertedAxes ? normalY : orbit.bifParamIndices,
 		orbit.invertedAxes ? orbit.bifParamIndices : normalY, orbit.bifDotAmount);
 
 	if (orbit.drawingContinuation && forwardY != nullptr && backwardY != nullptr)
 	{
 		ImPlot::SetNextMarkerStyle(orbit.dotShapeForward, orbit.pointSizeForward, orbit.dotColorForward, 0.0f, noOutline);
-		ImPlot::PlotScatter(("Forward fallback##" + plotName).c_str(),
+		ImPlot::PlotScatter(("Forward##" + plotName).c_str(),
 			orbit.invertedAxes ? forwardY : orbit.continuationParamIndicesForward,
 			orbit.invertedAxes ? orbit.continuationParamIndicesForward : forwardY, orbit.bifDotAmountForward);
 		ImPlot::SetNextMarkerStyle(orbit.dotShapeBack, orbit.pointSizeBack, orbit.dotColorBack, 0.0f, noOutline);
-		ImPlot::PlotScatter(("Backward fallback##" + plotName).c_str(),
+		ImPlot::PlotScatter(("Backward##" + plotName).c_str(),
 			orbit.invertedAxes ? backwardY : orbit.continuationParamIndicesBack,
 			orbit.invertedAxes ? orbit.continuationParamIndicesBack : backwardY, orbit.bifDotAmountBack);
 	}
