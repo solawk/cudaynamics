@@ -25,7 +25,10 @@ namespace boa_sweep_detail
     {
         if (!data) return false;
         BOA_Settings& settings = data->marshal.kernel.analyses.BOA;
-        Kernel& kernel = data->marshal.kernel;
+        // Keep the concrete marshalled type here. Upcasting to Kernel would
+        // select Kernel::variables/parameters (empty std::vectors) instead of
+        // MarshalledKernel's populated fixed-size attribute arrays.
+        MarshalledKernel& kernel = data->marshal.kernel;
         if (settings.sweepParameter < 0 || settings.sweepParameter >= kernel.PARAM_COUNT) return false;
         if (kernel.stepType == ST_Parameter && settings.sweepParameter == kernel.PARAM_COUNT - 1) return false;
         layers = (uint64_t)kernel.parameters[settings.sweepParameter].TrueStepCount();
@@ -38,10 +41,12 @@ namespace boa_sweep_detail
         offsets[1] = f1->offset;
         offsets[2] = settings.basinId.offset;
 
+        // steps2Variation stores the last attribute as the fastest-changing
+        // dimension. The stride is therefore the product of dimensions after
+        // the swept parameter. For Thomas/b this is 1, so each layer selects
+        // one b value from every initial-condition cell.
         stride = 1;
-        for (int v = 0; v < kernel.VAR_COUNT; ++v)
-            stride *= (uint64_t)kernel.variables[v].TrueStepCount();
-        for (int p = 0; p < settings.sweepParameter; ++p)
+        for (int p = settings.sweepParameter + 1; p < kernel.PARAM_COUNT; ++p)
             stride *= (uint64_t)kernel.parameters[p].TrueStepCount();
         pointsPerLayer = data->marshal.totalVariations / layers;
         return stride > 0 && pointsPerLayer > 0;
@@ -391,8 +396,8 @@ void TrackBOASweepLabels(Computation* data)
     if (!layerClusters.empty())
         for (Cluster& cluster : layerClusters[0]) cluster.track = nextTrack++;
 
-    const double matchThreshold = std::max(0.35,
-        std::min(0.75, (double)data->marshal.kernel.analyses.BOA.epsilon * 6.0));
+    const double matchThreshold =
+        (double)data->marshal.kernel.analyses.BOA.sweepTrackingTolerance;
     struct Candidate { double cost; size_t previous; size_t current; };
     for (size_t layer = 1; layer < layerClusters.size(); ++layer)
     {
@@ -433,4 +438,3 @@ void TrackBOASweepLabels(Computation* data)
                 output[globalIndex(q, stride, layers, pointsPerLayer)] = (numb)cluster.track;
             }
 }
-
