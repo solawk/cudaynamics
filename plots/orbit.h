@@ -4,7 +4,10 @@
 #include "implot.h"
 #include "../numb.h"
 #include "../kernel_map.h"
-#include "../variationSteps.h"
+
+// Keep this UI header independent from CUDA runtime headers. The implementation
+// only needs the Kernel overload declared in variationSteps.h.
+void steps2Variation(uint64_t* variation, int* steps, Kernel* kernel);
 
 enum OrbitPlotType { OPT_Peak_Bifurcation, OPT_Interval_Bifurcation, OPT_Selected_Var_Section, OPT_Bifurcation_3D, OPT_COUNT };
 
@@ -135,7 +138,6 @@ struct OrbitProperties
 			pt.randomCPUdistrib = &distrib;
 
 			numb* startingVariables = new numb[varCount];
-			numb* afterTrstartingVariables = new numb[varCount];
 			numb* newVariables = new numb[varCount];
 			numb* parameters = new numb[paramCount];
 			continuationParamIndicesBack = new numb[MAX_PEAKS * axis->stepCount];
@@ -167,8 +169,6 @@ struct OrbitProperties
 			int BifDotAmount = 0;
 
 			for (int j = 0; j < axis->stepCount; j++) {
-				//for (int i = 0; i < varCount; i++) startingVariables[i] = afterTrstartingVariables[i];
-				//trajectory.push_back(startingVariables[analyzedVariable]);
 				parameters[xIndex] = KERNEL.parameters[xIndex].values[j];
 				for (int trajstep = 0; trajstep < variationSize / varCount; trajstep++) {
 					kernelFDS[selectedKernel](startingVariables, newVariables, parameters, &pt);
@@ -215,8 +215,6 @@ struct OrbitProperties
 
 			BifDotAmount = 0;
 			for (int j = axis->stepCount - 1; j >= 0; j--) {
-				//for (int i = 0; i < varCount; i++) startingVariables[i] = afterTrstartingVariables[i];
-				//trajectory.push_back(startingVariables[analyzedVariable]);
 				parameters[xIndex] = KERNEL.parameters[xIndex].values[j];
 				for (int trajstep = 0; trajstep < variationSize / varCount; trajstep++) {
 					kernelFDS[selectedKernel](startingVariables, newVariables, parameters, &pt);
@@ -434,10 +432,10 @@ struct OrbitProperties
 
 					for (int i = 1; i < bifDotAmount; ++i)
 					{
-						if (bifParamIndices[i] < minX) minX = bifParamIndices[i];
-						if (bifParamIndices[i] > maxX) maxX = bifParamIndices[i];
-						if (bifIntervals[i] < minY) minY = bifIntervals[i];
-						if (bifIntervals[i] > maxY) maxY = bifIntervals[i];
+						minX = bifParamIndices[i] < minX ? bifParamIndices[i] : minX;
+						maxX = bifParamIndices[i] > maxX ? bifParamIndices[i] : maxX;
+						minY = bifIntervals[i] < minY ? bifIntervals[i] : minY;
+						maxY = bifIntervals[i] > maxY ? bifIntervals[i] : maxY;
 					}
 				}
 
